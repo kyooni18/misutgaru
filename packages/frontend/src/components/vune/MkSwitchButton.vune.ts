@@ -43,6 +43,14 @@ export struct MkSwitchButton: View {
 				checked ? 'mk-vune-switch-button--checked' : null,
 				disabled ? 'mk-vune-switch-button--disabled' : null,
 			])
+			.style({
+				// Keep the control measurable while it is mounted through the
+				// display: contents Vue compatibility host. The legacy stylesheet
+				// still owns the visual treatment; these are only intrinsic bounds.
+				flexShrink: 0,
+				width: 'calc(var(--height) * 1.6)',
+				height: 'calc(var(--height) + 2px)',
+			})
 			.withProps({
 				disabled,
 				role: 'switch',

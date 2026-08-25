@@ -30,11 +30,10 @@ let shuttingDown = false;
  * Boot owns signal coordination and receives shutdown tasks through callbacks
  * so individual domains do not depend on each other.
  *
- * 注意: このプロジェクトでは app.enableShutdownHooks() が一切呼ばれていないため、
- * NestJSのOnApplicationShutdown経由のgraceful shutdown(GlobalModule.dispose()によるDB/Redis切断、
- * QueueProcessorService.stop()によるqueue drain、ServerService.dispose()によるfastify/WebSocket close)は
- * SIGTERM/SIGINTを起点には発火しない。このhandlerはそれらを経由せず、登録された終了処理を実行して即exitする。
- * 将来enableShutdownHooks()を配線する場合は、この即exitとNestJS側のshutdown sequenceが競合しないよう順序を設計すること。
+ * Nestのsignal hook自体は使わず、boot側が所有するapplication contextの `close()` を
+ * shutdown taskとして登録する。これによりSIGTERM/SIGINTでもOnApplicationShutdownを通して
+ * HTTP/WebSocket、queue worker、DB/Redis、cache/chart flushを順序立てて閉じてからexitできる。
+ * app.enableShutdownHooks()を将来追加する場合はsignal handlerの二重登録を避けること。
  */
 export function installShutdownSignalHandlers(options: ShutdownHandlerOptions): void {
 	// テストではprocess/exitを差し替え、本番では実processにSIGTERM/SIGINT handlerを登録する。
@@ -90,8 +89,8 @@ export function installShutdownSignalHandlers(options: ShutdownHandlerOptions): 
 	processLike.once('SIGTERM', handleSignal);
 	processLike.once('SIGINT', handleSignal);
 
-	// app.enableShutdownHooks()未配線の現状、SIGTERM/SIGINT時には登録済み終了処理のみを行う。
-	options.onRegistered?.('Registered SIGTERM/SIGINT shutdown handler (this process does not perform NestJS graceful shutdown on these signals).');
+	// Boot owns signal delivery; registered tasks include application-context close when one is running.
+	options.onRegistered?.('Registered SIGTERM/SIGINT shutdown handler with application-context cleanup.');
 }
 
 export function isShutdownInProgress(): boolean {

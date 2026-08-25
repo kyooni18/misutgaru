@@ -42,7 +42,7 @@ export class MetaService implements OnApplicationShutdown {
 					// fetch内でもセットしてるけど仕様変更の可能性もあるため一応
 					this.cache = meta;
 				});
-			}, this.config.lightweightMode ? 1000 * 60 * 15 : 1000 * 60 * 5);
+			}, 1000 * 60 * 5);
 		}
 
 		this.redisForSub.on('message', this.onMessage);

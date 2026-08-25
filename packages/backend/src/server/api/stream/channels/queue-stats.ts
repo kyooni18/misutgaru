@@ -18,6 +18,7 @@ export class QueueStatsChannel extends Channel {
 	public readonly chName = 'queueStats';
 	public static shouldShare = true;
 	public static requireCredential = false as const;
+	private watching = false;
 
 	constructor(
 		@Inject(REQUEST)
@@ -30,7 +31,10 @@ export class QueueStatsChannel extends Channel {
 
 	@bindThis
 	public async init(params: JsonObject) {
+		if (this.watching) return;
+		this.watching = true;
 		ev.addListener('queueStats', this.onStats);
+		ev.emit('queueStats:subscribe');
 	}
 
 	@bindThis
@@ -58,6 +62,9 @@ export class QueueStatsChannel extends Channel {
 
 	@bindThis
 	public dispose() {
+		if (!this.watching) return;
+		this.watching = false;
 		ev.removeListener('queueStats', this.onStats);
+		ev.emit('queueStats:unsubscribe');
 	}
 }

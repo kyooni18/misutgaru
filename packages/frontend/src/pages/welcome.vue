@@ -4,20 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="instance">
-	<XSetup v-if="instance.requireSetup"/>
-	<XEntranceClassic v-else-if="(instance.clientOptions.entrancePageStyle ?? 'classic') === 'classic'"/>
-	<XEntranceSimple v-else/>
-</div>
+<VuneWelcome :instance="instance"/>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
-import XSetup from './welcome.setup.vue';
-import XEntranceClassic from './welcome.entrance.classic.vue';
-import XEntranceSimple from './welcome.entrance.simple.vue';
+import VuneWelcome from './vune/welcome.vune.js';
 import { definePage } from '@/page.js';
 import { fetchInstance } from '@/instance.js';
 

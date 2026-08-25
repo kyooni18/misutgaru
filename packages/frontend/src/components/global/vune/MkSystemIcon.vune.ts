@@ -30,9 +30,8 @@ export struct MkSystemIcon: View {
 			} else if (type !== 'warn') {
 				Circle().className(['mk-vune-system-icon__ring', 'mk-vune-system-icon__ring--draw'])
 			}
-			VuneIcon(
-				systemGlyph(type),
-				className: type === 'waiting'
+			VuneIcon(systemGlyph(type)).className(
+				type === 'waiting'
 					? 'mk-vune-system-icon__glyph mk-vune-system-icon__glyph--hidden'
 					: 'mk-vune-system-icon__glyph',
 			)

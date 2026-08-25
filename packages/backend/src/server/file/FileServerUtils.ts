@@ -8,6 +8,7 @@ import { FILE_TYPE_BROWSERSAFE } from '@/const.js';
 import { contentDisposition } from '@/misc/content-disposition.js';
 import type { IImageStreamable } from '@/core/ImageProcessingService.js';
 import type { FastifyReply } from 'fastify';
+import { BLOCK_IO_READ_HIGH_WATER_MARK } from '@/misc/block-io.js';
 
 export type RangeStream = {
 	stream: fs.ReadStream;
@@ -29,7 +30,7 @@ export function createRangeStream(rangeHeader: string, size: number, path: strin
 	const chunksize = end - start + 1;
 
 	return {
-		stream: fs.createReadStream(path, { start, end }),
+		stream: fs.createReadStream(path, { start, end, highWaterMark: BLOCK_IO_READ_HIGH_WATER_MARK }),
 		start,
 		end,
 		chunksize,
@@ -74,7 +75,7 @@ export function handleRangeRequest(
 		reply.code(206);
 		return stream;
 	}
-	return fs.createReadStream(path);
+	return fs.createReadStream(path, { highWaterMark: BLOCK_IO_READ_HIGH_WATER_MARK });
 }
 
 export type FileResponseOptions = {

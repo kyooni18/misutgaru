@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
-import { Writable } from 'node:stream';
 import { Inject, Injectable } from '@nestjs/common';
 import { format as dateFormat } from 'date-fns';
 import { DI } from '@/di-symbols.js';
@@ -15,6 +13,7 @@ import { createTemp } from '@/misc/create-temp.js';
 import type { MiPoll } from '@/models/Poll.js';
 import type { MiNote } from '@/models/Note.js';
 import { bindThis } from '@/decorators.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import { IdService } from '@/core/IdService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { QueryService } from '@/core/QueryService.js';
@@ -64,9 +63,7 @@ export class ExportClipsProcessorService {
 		this.logger.info(`Temp file is ${path}`);
 
 		try {
-			const stream = Writable.toWeb(fs.createWriteStream(path, { flags: 'a' }));
-			const writer = stream.getWriter();
-			writer.closed.catch(this.logger.error);
+			const writer = new BufferedTextFileWriter(path);
 
 			await writer.write('[');
 
@@ -91,7 +88,7 @@ export class ExportClipsProcessorService {
 		}
 	}
 
-	async processClips(writer: WritableStreamDefaultWriter, user: MiUser, job: Bull.Job<DbJobDataWithUser>) {
+	async processClips(writer: BufferedTextFileWriter, user: MiUser, job: Bull.Job<DbJobDataWithUser>) {
 		let exportedClipsCount = 0;
 		let cursor: MiClip['id'] | null = null;
 
@@ -134,7 +131,7 @@ export class ExportClipsProcessorService {
 		}
 	}
 
-	async processClipNotes(writer: WritableStreamDefaultWriter, clipId: string, userId: string): Promise<void> {
+	async processClipNotes(writer: BufferedTextFileWriter, clipId: string, userId: string): Promise<void> {
 		let exportedClipNotesCount = 0;
 		let cursor: MiClipNote['id'] | null = null;
 

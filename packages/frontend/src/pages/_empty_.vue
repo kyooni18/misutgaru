@@ -1,12 +1,6 @@
-<!--
-SPDX-FileCopyrightText: syuilo and misskey-project
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
-<template>
-<div></div>
-</template>
-
-<script lang="ts" setup>
-import { } from 'vue';
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<script lang="ts">
+import EmptyPage from './vune/_empty_.vune.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+export default createVuneWebHost(EmptyPage);
 </script>

@@ -4,15 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_spacer" style="--MI_SPACER-w: 1200px;">
-	<MkAchievements :user="user" :withLocked="false" :withDescription="$i != null && (props.user.id === $i.id)"/>
-</div>
+<VuneUserAchievements :user="user" :withDescription="$i != null && (props.user.id === $i.id)"/>
 </template>
 
 <script lang="ts" setup>
 import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 import * as Misskey from 'misskey-js';
-import MkAchievements from '@/components/MkAchievements.vue';
+import VuneUserAchievements from './vune/achievements.vune.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { $i } from '@/i.js';
 

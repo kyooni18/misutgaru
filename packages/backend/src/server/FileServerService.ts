@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
 import { resolve } from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Config } from '@/config.js';
@@ -19,6 +18,7 @@ import { VideoProcessingService } from '@/core/VideoProcessingService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { handleRequestRedirectToOmitSearch } from '@/misc/fastify-hook-handlers.js';
+import { createBufferedReadStream } from '@/misc/block-io.js';
 import { FileServerDriveHandler } from './file/FileServerDriveHandler.js';
 import { FileServerFileResolver } from './file/FileServerFileResolver.js';
 import { FileServerProxyHandler } from './file/FileServerProxyHandler.js';
@@ -84,7 +84,7 @@ export class FileServerService {
 		fastify.register((fastify, options, done) => {
 			fastify.addHook('onRequest', handleRequestRedirectToOmitSearch);
 			fastify.get('/files/app-default.jpg', (request, reply) => {
-				const file = fs.createReadStream(`${this.assets}/dummy.png`);
+				const file = createBufferedReadStream(`${this.assets}/dummy.png`);
 				reply.header('Content-Type', 'image/jpeg');
 				reply.header('Cache-Control', 'max-age=31536000, immutable');
 				return reply.send(file);

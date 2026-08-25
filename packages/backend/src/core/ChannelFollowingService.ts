@@ -155,6 +155,7 @@ export class ChannelFollowingService implements OnModuleInit {
 
 	@bindThis
 	public dispose(): void {
+		this.redisForSub.off('message', this.onMessage);
 		this.userFollowingChannelsCache.dispose();
 	}
 

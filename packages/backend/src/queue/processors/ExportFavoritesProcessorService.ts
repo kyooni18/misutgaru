@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { format as dateFormat } from 'date-fns';
 import { DI } from '@/di-symbols.js';
@@ -14,6 +13,7 @@ import { createTemp } from '@/misc/create-temp.js';
 import type { MiPoll } from '@/models/Poll.js';
 import type { MiNote } from '@/models/Note.js';
 import { bindThis } from '@/decorators.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import { IdService } from '@/core/IdService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { QueryService } from '@/core/QueryService.js';
@@ -60,20 +60,9 @@ export class ExportFavoritesProcessorService {
 		this.logger.info(`Temp file is ${path}`);
 
 		try {
-			const stream = fs.createWriteStream(path, { flags: 'a' });
+			const writer = new BufferedTextFileWriter(path);
 
-			const write = (text: string): Promise<void> => {
-				return new Promise<void>((res, rej) => {
-					stream.write(text, err => {
-						if (err) {
-							this.logger.error(err);
-							rej(err);
-						} else {
-							res();
-						}
-					});
-				});
-			};
+			const write = (text: string): Promise<void> => writer.write(text);
 
 			await write('[');
 
@@ -135,7 +124,7 @@ export class ExportFavoritesProcessorService {
 
 			await write(']');
 
-			stream.end();
+			await writer.close();
 			this.logger.succ(`Exported to: ${path}`);
 
 			const fileName = 'favorites-' + dateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.json';

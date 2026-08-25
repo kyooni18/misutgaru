@@ -5,6 +5,7 @@
 
 import { Inject, Module, OnApplicationShutdown } from '@nestjs/common';
 import * as Bull from 'bullmq';
+import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { baseQueueOptions, QUEUE } from '@/queue/const.js';
@@ -31,68 +32,68 @@ export type ObjectStorageQueue = Bull.Queue;
 export type UserWebhookDeliverQueue = Bull.Queue<UserWebhookDeliverJobData>;
 export type SystemWebhookDeliverQueue = Bull.Queue<SystemWebhookDeliverJobData>;
 
-function createQueue<T extends object>(queueName: string, config: Config): Bull.Queue<T> {
-	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName));
+function createQueue<T extends object>(queueName: string, config: Config, connection: Redis.Redis): Bull.Queue<T> {
+	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName, connection));
 }
 
 const $system: Provider = {
 	provide: 'queue:system',
-	useFactory: (config: Config) => createQueue<Record<string, unknown>>(QUEUE.SYSTEM, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<Record<string, unknown>>(QUEUE.SYSTEM, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $endedPollNotification: Provider = {
 	provide: 'queue:endedPollNotification',
-	useFactory: (config: Config) => createQueue<EndedPollNotificationJobData>(QUEUE.ENDED_POLL_NOTIFICATION, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<EndedPollNotificationJobData>(QUEUE.ENDED_POLL_NOTIFICATION, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $postScheduledNote: Provider = {
 	provide: 'queue:postScheduledNote',
-	useFactory: (config: Config) => createQueue<PostScheduledNoteJobData>(QUEUE.POST_SCHEDULED_NOTE, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<PostScheduledNoteJobData>(QUEUE.POST_SCHEDULED_NOTE, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $deliver: Provider = {
 	provide: 'queue:deliver',
-	useFactory: (config: Config) => createQueue<DeliverJobData>(QUEUE.DELIVER, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<DeliverJobData>(QUEUE.DELIVER, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $inbox: Provider = {
 	provide: 'queue:inbox',
-	useFactory: (config: Config) => createQueue<InboxJobData>(QUEUE.INBOX, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<InboxJobData>(QUEUE.INBOX, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $db: Provider = {
 	provide: 'queue:db',
-	useFactory: (config: Config) => createQueue<Record<string, unknown>>(QUEUE.DB, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<Record<string, unknown>>(QUEUE.DB, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $relationship: Provider = {
 	provide: 'queue:relationship',
-	useFactory: (config: Config) => createQueue<RelationshipJobData>(QUEUE.RELATIONSHIP, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<RelationshipJobData>(QUEUE.RELATIONSHIP, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $objectStorage: Provider = {
 	provide: 'queue:objectStorage',
-	useFactory: (config: Config) => createQueue<Record<string, unknown>>(QUEUE.OBJECT_STORAGE, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<Record<string, unknown>>(QUEUE.OBJECT_STORAGE, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $userWebhookDeliver: Provider = {
 	provide: 'queue:userWebhookDeliver',
-	useFactory: (config: Config) => createQueue<UserWebhookDeliverJobData>(QUEUE.USER_WEBHOOK_DELIVER, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<UserWebhookDeliverJobData>(QUEUE.USER_WEBHOOK_DELIVER, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 const $systemWebhookDeliver: Provider = {
 	provide: 'queue:systemWebhookDeliver',
-	useFactory: (config: Config) => createQueue<SystemWebhookDeliverJobData>(QUEUE.SYSTEM_WEBHOOK_DELIVER, config),
-	inject: [DI.config],
+	useFactory: (config: Config, connection: Redis.Redis) => createQueue<SystemWebhookDeliverJobData>(QUEUE.SYSTEM_WEBHOOK_DELIVER, config, connection),
+	inject: [DI.config, DI.redisForJobQueue],
 };
 
 @Module({
@@ -135,6 +136,7 @@ export class QueueModule implements OnApplicationShutdown {
 		@Inject('queue:objectStorage') public objectStorageQueue: ObjectStorageQueue,
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
+		@Inject(DI.redisForJobQueue) private redisForJobQueue: Redis.Redis,
 	) {}
 
 	public async dispose(): Promise<void> {
@@ -153,6 +155,7 @@ export class QueueModule implements OnApplicationShutdown {
 			this.userWebhookDeliverQueue.close(),
 			this.systemWebhookDeliverQueue.close(),
 		]);
+		this.redisForJobQueue.disconnect();
 	}
 
 	async onApplicationShutdown(signal: string): Promise<void> {

@@ -4,18 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader>
-	<div class="_spacer" style="--MI_SPACER-w: 1200px;">
-		<div class="_gaps_s">
-			<MkUserList :paginator="paginator"/>
-		</div>
-	</div>
-</PageWithHeader>
+<VuneUserTag :paginator="paginator"/>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
-import MkUserList from '@/components/MkUserList.vue';
+import VuneUserTag from './vune/user-tag.vune.js';
 import { definePage } from '@/page.js';
 import { Paginator } from '@/utility/paginator.js';
 

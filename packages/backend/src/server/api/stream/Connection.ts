@@ -14,8 +14,6 @@ import type { GlobalEvents, StreamEventEmitter } from '@/core/GlobalEventService
 import { MiFollowing, MiUserProfile } from '@/models/_.js';
 import { CacheService } from '@/core/CacheService.js';
 import { bindThis } from '@/decorators.js';
-import { DI } from '@/di-symbols.js';
-import type { Config } from '@/config.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
 import type { MiUser } from '@/models/User.js';
@@ -44,6 +42,16 @@ import type { EventEmitter } from 'events';
 
 const MAX_CHANNELS_PER_CONNECTION = 32;
 
+export type StreamUserState = {
+	userProfile: MiUserProfile;
+	following: Record<string, Pick<MiFollowing, 'withReplies'> | undefined>;
+	followingChannels: Set<string>;
+	mutingChannels: Set<string>;
+	userIdsWhoMeMuting: Set<string>;
+	userIdsWhoBlockingMe: Set<string>;
+	userIdsWhoMeMutingRenotes: Set<string>;
+};
+
 /**
  * Main stream connection
  */
@@ -64,12 +72,8 @@ export default class Connection {
 	public userIdsWhoBlockingMe: Set<string> = new Set();
 	public userIdsWhoMeMutingRenotes: Set<string> = new Set();
 	public userMutedInstances: Set<string> = new Set();
-	private fetchIntervalId: NodeJS.Timeout | null = null;
 
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
-
 		private moduleRef: ModuleRef,
 		private notificationService: NotificationService,
 		private cacheService: CacheService,
@@ -83,8 +87,21 @@ export default class Connection {
 	}
 
 	@bindThis
-	public async fetch() {
-		if (this.user == null) return;
+	public applyUserState(state: StreamUserState): void {
+		const mutedInstancesChanged = this.userProfile?.mutedInstances !== state.userProfile.mutedInstances;
+		this.userProfile = state.userProfile;
+		this.following = state.following;
+		this.followingChannels = state.followingChannels;
+		this.mutingChannels = state.mutingChannels;
+		this.userIdsWhoMeMuting = state.userIdsWhoMeMuting;
+		this.userIdsWhoBlockingMe = state.userIdsWhoBlockingMe;
+		this.userIdsWhoMeMutingRenotes = state.userIdsWhoMeMutingRenotes;
+		if (mutedInstancesChanged) this.userMutedInstances = new Set(state.userProfile.mutedInstances);
+	}
+
+	@bindThis
+	public async fetch(): Promise<StreamUserState | null> {
+		if (this.user == null) return null;
 		const [
 			userProfile,
 			following,
@@ -102,26 +119,22 @@ export default class Connection {
 			this.cacheService.userBlockedCache.fetch(this.user.id),
 			this.cacheService.renoteMutingsCache.fetch(this.user.id),
 		]);
-		const mutedInstancesChanged = this.userProfile?.mutedInstances !== userProfile.mutedInstances;
-		this.userProfile = userProfile;
-		this.following = following;
-		this.followingChannels = followingChannels;
-		this.mutingChannels = mutingChannels;
-		this.userIdsWhoMeMuting = userIdsWhoMeMuting;
-		this.userIdsWhoBlockingMe = userIdsWhoBlockingMe;
-		this.userIdsWhoMeMutingRenotes = userIdsWhoMeMutingRenotes;
-		if (mutedInstancesChanged) this.userMutedInstances = new Set(userProfile.mutedInstances);
+		const state: StreamUserState = {
+			userProfile,
+			following,
+			followingChannels,
+			mutingChannels,
+			userIdsWhoMeMuting,
+			userIdsWhoBlockingMe,
+			userIdsWhoMeMutingRenotes,
+		};
+		this.applyUserState(state);
+		return state;
 	}
 
 	@bindThis
 	public async init() {
-		if (this.user != null) {
-			await this.fetch();
-
-			if (!this.fetchIntervalId) {
-				this.fetchIntervalId = setInterval(this.fetch, this.config.lightweightMode ? 1000 * 30 : 1000 * 10);
-			}
-		}
+		if (this.user != null) await this.fetch();
 	}
 
 	@bindThis
@@ -386,7 +399,6 @@ export default class Connection {
 	 */
 	@bindThis
 	public dispose() {
-		if (this.fetchIntervalId) clearInterval(this.fetchIntervalId);
 		for (const c of this.channels.values()) {
 			if (c.dispose) c.dispose();
 		}

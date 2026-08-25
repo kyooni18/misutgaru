@@ -1,20 +1,5 @@
-<!--
-SPDX-FileCopyrightText: syuilo and misskey-project
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
-<template>
-<div class="_panel" :class="$style.root">
-	<MkRetentionHeatmap/>
-</div>
-</template>
-
-<script lang="ts" setup>
-import MkRetentionHeatmap from '@/components/MkRetentionHeatmap.vue';
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<script lang="ts">
+import View from './vune/overview.retention.vune.js';
+export default View;
 </script>
-
-<style lang="scss" module>
-.root {
-	padding: 20px;
-}
-</style>

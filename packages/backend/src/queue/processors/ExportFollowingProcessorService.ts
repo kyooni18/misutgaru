@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { In, MoreThan, Not } from 'typeorm';
 import { format as dateFormat } from 'date-fns';
@@ -16,6 +15,7 @@ import type { MiFollowing } from '@/models/Following.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { bindThis } from '@/decorators.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import type { MiUser } from '@/models/User.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
@@ -58,7 +58,7 @@ export class ExportFollowingProcessorService {
 		this.logger.info(`Temp file is ${path}`);
 
 		try {
-			const stream = fs.createWriteStream(path, { flags: 'a' });
+			const writer = new BufferedTextFileWriter(path);
 
 			let cursor: MiFollowing['id'] | null = null;
 
@@ -104,20 +104,11 @@ export class ExportFollowingProcessorService {
 				}
 
 				if (lines.length > 0) {
-					await new Promise<void>((res, rej) => {
-						stream.write(lines.join('\n') + '\n', err => {
-							if (err) {
-								this.logger.error(err);
-								rej(err);
-							} else {
-								res();
-							}
-						});
-					});
+					await writer.write(lines.join('\n') + '\n');
 				}
 			}
 
-			stream.end();
+			await writer.close();
 			this.logger.succ(`Exported to: ${path}`);
 
 			const fileName = 'following-' + dateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.csv';

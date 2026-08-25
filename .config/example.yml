@@ -167,7 +167,7 @@ db:
   user: example-misskey-user
   pass: example-misskey-pass
 
-  # Whether disable Caching queries
+  # Whether to disable database result caches used by endpoints
   #disableCache: true
 
   # Extra Connection options
@@ -348,9 +348,9 @@ id: 'aidx'
 # To configure them in reverse proxy instead, set this to false.
 #enableIpRateLimit: true
 
-# Optionally reduce queue/network/cache/polling pressure for very small instances (default: false).
-# Structural server optimizations do not require this. Enabling it deliberately trades some throughput/freshness for lower peak resource use.
-#lightweightMode: true
+# Run the web server and queue processors in one process/application graph by default.
+# clusterLimit > 1 selects the existing multi-process path automatically unless this is set explicitly.
+#singleProcessMode: true
 
 # Number of worker processes
 #clusterLimit: 1

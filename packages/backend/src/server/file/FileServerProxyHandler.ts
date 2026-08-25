@@ -16,6 +16,7 @@ import { IImageStreamable, ImageProcessingService, webpDefault } from '@/core/Im
 import { createRangeStream, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
 import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { BLOCK_IO_READ_HIGH_WATER_MARK } from '@/misc/block-io.js';
 
 type ProxySource = DownloadedFileResult | FileResolveResult;
 type CleanupableFile = ProxySource & { cleanup: () => void };
@@ -174,7 +175,7 @@ export class FileServerProxyHandler {
 		const isAnimationConvertibleImage = isMimeImage(file.mime, 'sharp-animation-convertible-image-with-bmp');
 		if (!isAnimationConvertibleImage && !('static' in query)) {
 			return {
-				data: fs.createReadStream(file.path),
+				data: fs.createReadStream(file.path, { highWaterMark: BLOCK_IO_READ_HIGH_WATER_MARK }),
 				ext: file.ext,
 				type: file.mime,
 			};
@@ -253,7 +254,7 @@ export class FileServerProxyHandler {
 		}
 
 		return {
-			data: fs.createReadStream(file.path),
+			data: fs.createReadStream(file.path, { highWaterMark: BLOCK_IO_READ_HIGH_WATER_MARK }),
 			ext: file.ext,
 			type: file.mime,
 		};

@@ -65,11 +65,10 @@ const $redis: Provider = {
 
 const $redisForPub: Provider = {
 	provide: DI.redisForPub,
-	useFactory: (config: Config) => {
-		const redis = new Redis.Redis(config.redisForPubsub);
-		return redis;
+	useFactory: (config: Config, redisClient: Redis.Redis) => {
+		return config.redisForPubsub === config.redis ? redisClient : new Redis.Redis(config.redisForPubsub);
 	},
-	inject: [DI.config],
+	inject: [DI.config, DI.redis],
 };
 
 const $redisForSub: Provider = {
@@ -84,16 +83,29 @@ const $redisForSub: Provider = {
 
 const $redisForTimelines: Provider = {
 	provide: DI.redisForTimelines,
-	useFactory: (config: Config) => {
-		return new Redis.Redis(config.redisForTimelines);
+	useFactory: (config: Config, redisClient: Redis.Redis) => {
+		return config.redisForTimelines === config.redis ? redisClient : new Redis.Redis(config.redisForTimelines);
 	},
-	inject: [DI.config],
+	inject: [DI.config, DI.redis],
 };
 
 const $redisForReactions: Provider = {
 	provide: DI.redisForReactions,
+	useFactory: (config: Config, redisClient: Redis.Redis) => {
+		return config.redisForReactions === config.redis ? redisClient : new Redis.Redis(config.redisForReactions);
+	},
+	inject: [DI.config, DI.redis],
+};
+
+const $redisForJobQueue: Provider = {
+	provide: DI.redisForJobQueue,
 	useFactory: (config: Config) => {
-		return new Redis.Redis(config.redisForReactions);
+		// BullMQ producers share this connection. Keep it separate from the general
+		// command client so QueueModule can own its lifecycle safely.
+		return new Redis.Redis({
+			...config.redisForJobQueue,
+			keyPrefix: undefined,
+		});
 	},
 	inject: [DI.config],
 };
@@ -158,8 +170,8 @@ const $meta: Provider = {
 @Global()
 @Module({
 	imports: [RepositoryModule],
-	providers: [$config, $db, $meta, $meilisearch, $redis, $redisForPub, $redisForSub, $redisForTimelines, $redisForReactions],
-	exports: [$config, $db, $meta, $meilisearch, $redis, $redisForPub, $redisForSub, $redisForTimelines, $redisForReactions, RepositoryModule],
+	providers: [$config, $db, $meta, $meilisearch, $redis, $redisForPub, $redisForSub, $redisForTimelines, $redisForReactions, $redisForJobQueue],
+	exports: [$config, $db, $meta, $meilisearch, $redis, $redisForPub, $redisForSub, $redisForTimelines, $redisForReactions, $redisForJobQueue, RepositoryModule],
 })
 export class GlobalModule implements OnApplicationShutdown {
 	constructor(
@@ -175,14 +187,15 @@ export class GlobalModule implements OnApplicationShutdown {
 		// Wait for all potential DB queries
 		await allSettled();
 		// And then disconnect from DB
-		await Promise.all([
-			this.db.destroy(),
-			this.redisClient.disconnect(),
-			this.redisForPub.disconnect(),
-			this.redisForSub.disconnect(),
-			this.redisForTimelines.disconnect(),
-			this.redisForReactions.disconnect(),
+		const redisClients = new Set([
+			this.redisClient,
+			this.redisForPub,
+			this.redisForSub,
+			this.redisForTimelines,
+			this.redisForReactions,
 		]);
+		await this.db.destroy();
+		for (const redis of redisClients) redis.disconnect();
 	}
 
 	async onApplicationShutdown(signal: string): Promise<void> {

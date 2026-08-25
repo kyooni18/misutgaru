@@ -14,7 +14,7 @@ export struct MkRemoteCaution: View {
 
 	var body: some View {
 		HStack(alignment: 'center', spacing: 0) {
-			VuneIcon('ti ti-alert-triangle', className: 'mk-vune-remote-caution__icon')
+			VuneIcon('ti ti-alert-triangle').className('mk-vune-remote-caution__icon')
 			Text(i18n.ts.remoteUserCaution)
 			if (href) {
 				Link(i18n.ts.showOnRemote, href)

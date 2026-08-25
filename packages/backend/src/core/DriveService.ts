@@ -44,6 +44,7 @@ import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { UtilityService } from '@/core/UtilityService.js';
+import { createBufferedReadStream } from '@/misc/block-io.js';
 
 type AddFileArgs = {
 	/** User who wish to add file */
@@ -188,7 +189,7 @@ export class DriveService {
 			//#region Uploads
 			this.registerLogger.info(`uploading original: ${key}`);
 			const uploads = [
-				this.upload(key, fs.createReadStream(path), type, null, name),
+				this.upload(key, createBufferedReadStream(path), type, null, name),
 			];
 
 			if (alts.webpublic) {
@@ -229,20 +230,20 @@ export class DriveService {
 			const thumbnailAccessKey = 'thumbnail-' + randomUUID();
 			const webpublicAccessKey = 'webpublic-' + randomUUID();
 
-			const url = this.internalStorageService.saveFromPath(accessKey, path);
+			// Original, thumbnail, and web-public files are independent. Submit them
+			// together so one slow block write does not serialize the other files.
+			const [url, thumbnailUrl, webpublicUrl] = await Promise.all([
+				this.internalStorageService.saveFromPath(accessKey, path),
+				alts.thumbnail
+					? this.internalStorageService.saveFromBuffer(thumbnailAccessKey, alts.thumbnail.data)
+					: Promise.resolve<string | null>(null),
+				alts.webpublic
+					? this.internalStorageService.saveFromBuffer(webpublicAccessKey, alts.webpublic.data)
+					: Promise.resolve<string | null>(null),
+			]);
 
-			let thumbnailUrl: string | null = null;
-			let webpublicUrl: string | null = null;
-
-			if (alts.thumbnail) {
-				thumbnailUrl = this.internalStorageService.saveFromBuffer(thumbnailAccessKey, alts.thumbnail.data);
-				this.registerLogger.info(`thumbnail stored: ${thumbnailAccessKey}`);
-			}
-
-			if (alts.webpublic) {
-				webpublicUrl = this.internalStorageService.saveFromBuffer(webpublicAccessKey, alts.webpublic.data);
-				this.registerLogger.info(`web stored: ${webpublicAccessKey}`);
-			}
+			if (alts.thumbnail) this.registerLogger.info(`thumbnail stored: ${thumbnailAccessKey}`);
+			if (alts.webpublic) this.registerLogger.info(`web stored: ${webpublicAccessKey}`);
 
 			file.storedInternal = true;
 			file.url = url;
@@ -753,14 +754,14 @@ export class DriveService {
 	@bindThis
 	public async deleteFile(file: MiDriveFile, isExpired = false, deleter?: MiUser) {
 		if (file.storedInternal) {
-			this.internalStorageService.del(file.accessKey!);
+			void this.internalStorageService.del(file.accessKey!);
 
 			if (file.thumbnailUrl) {
-				this.internalStorageService.del(file.thumbnailAccessKey!);
+				void this.internalStorageService.del(file.thumbnailAccessKey!);
 			}
 
 			if (file.webpublicUrl) {
-				this.internalStorageService.del(file.webpublicAccessKey!);
+				void this.internalStorageService.del(file.webpublicAccessKey!);
 			}
 		} else if (!file.isLink) {
 			this.queueService.createDeleteObjectStorageFileJob(file.accessKey!);
@@ -780,15 +781,17 @@ export class DriveService {
 	@bindThis
 	public async deleteFileSync(file: MiDriveFile, isExpired = false, deleter?: MiUser) {
 		if (file.storedInternal) {
-			this.internalStorageService.del(file.accessKey!);
+			const deletes = [this.internalStorageService.del(file.accessKey!)];
 
 			if (file.thumbnailUrl) {
-				this.internalStorageService.del(file.thumbnailAccessKey!);
+				deletes.push(this.internalStorageService.del(file.thumbnailAccessKey!));
 			}
 
 			if (file.webpublicUrl) {
-				this.internalStorageService.del(file.webpublicAccessKey!);
+				deletes.push(this.internalStorageService.del(file.webpublicAccessKey!));
 			}
+
+			await Promise.all(deletes);
 		} else if (!file.isLink) {
 			const promises = [];
 

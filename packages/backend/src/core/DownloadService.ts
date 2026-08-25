@@ -18,6 +18,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
 
 import { bindThis } from '@/decorators.js';
+import { createBufferedWriteStream } from '@/misc/block-io.js';
 
 @Injectable()
 export class DownloadService {
@@ -97,7 +98,7 @@ export class DownloadService {
 		});
 
 		try {
-			await stream.pipeline(req, fs.createWriteStream(path));
+			await stream.pipeline(req, createBufferedWriteStream(path));
 		} catch (e) {
 			if (e instanceof Got.HTTPError) {
 				throw new StatusError(`${e.response.statusCode} ${e.response.statusMessage}`, e.response.statusCode, e.response.statusMessage);

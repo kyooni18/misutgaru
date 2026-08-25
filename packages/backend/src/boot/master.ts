@@ -16,7 +16,7 @@ import type { LogFormat } from '@/logging/types.js';
 import { showMachineInfo } from '@/misc/show-machine-info.js';
 import { envOption } from '@/env.js';
 import { initTelemetry, shutdownTelemetry } from '@/core/telemetry/telemetry-registry.js';
-import { initExtraThreadPool, jobQueue, server } from './common.js';
+import { initExtraThreadPool, jobQueue, server, serverAndJobQueue } from './common.js';
 import { installShutdownSignalHandlers } from './shutdown-handler.js';
 
 const logger = new Logger('core', 'cyan');
@@ -88,16 +88,27 @@ export async function masterMain() {
 		bootLogger.error(e instanceof Error ? e : new Error(String(e)), null, true);
 		process.exit(1);
 	}
+	const applications: Array<{ close(): Promise<void> }> = [];
 	installShutdownSignalHandlers({
-		shutdownTasks: [shutdownTelemetry, shutdownLogging],
+		shutdownTasks: [
+			async () => {
+				for (let i = applications.length - 1; i >= 0; i--) await applications[i].close();
+			},
+			shutdownTelemetry,
+			shutdownLogging,
+		],
 		onRegistered: message => bootLogger.info(message),
 	});
 
 	bootLogger.info(
-		`mode: [disableClustering: ${envOption.disableClustering}, onlyServer: ${envOption.onlyServer}, onlyQueue: ${envOption.onlyQueue}]`,
+		`mode: [singleProcessMode: ${config.singleProcessMode}, disableClustering: ${envOption.disableClustering}, onlyServer: ${envOption.onlyServer}, onlyQueue: ${envOption.onlyQueue}]`,
 	);
 
-	if (!envOption.disableClustering) {
+	if (config.singleProcessMode && !envOption.onlyServer && !envOption.onlyQueue) {
+		// Normal installations keep HTTP and queue processing in one Nest graph.
+		// Explicit role splitting still follows the existing cluster paths below.
+		applications.push(await serverAndJobQueue());
+	} else if (!envOption.disableClustering) {
 		// clusterモジュール有効時
 
 		if (envOption.onlyServer) {
@@ -106,9 +117,9 @@ export async function masterMain() {
 			// そのため、メインプロセスでも直接listenするとポートの競合が発生して起動に失敗してしまう。
 			// see: https://nodejs.org/api/cluster.html#cluster
 		} else if (envOption.onlyQueue) {
-			await jobQueue();
+			applications.push(await jobQueue());
 		} else {
-			await server();
+			applications.push(await server());
 		}
 
 		await spawnWorkers(config.clusterLimit);
@@ -116,12 +127,12 @@ export async function masterMain() {
 		// clusterモジュール無効時
 
 		if (envOption.onlyServer) {
-			await server();
+			applications.push(await server());
 		} else if (envOption.onlyQueue) {
-			await jobQueue();
+			applications.push(await jobQueue());
 		} else {
-			await server();
-			await jobQueue();
+			applications.push(await server());
+			applications.push(await jobQueue());
 		}
 	}
 
@@ -190,7 +201,8 @@ async function connectDb(): Promise<void> {
 */
 
 async function spawnWorkers(limit = 1) {
-	const workers = Math.min(limit, os.cpus().length);
+	const availableCpus = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
+	const workers = Math.min(limit, availableCpus);
 	bootLogger.info(`Starting ${workers} worker${workers === 1 ? '' : 's'}...`);
 	await Promise.all([...Array(workers)].map(spawnWorker));
 	bootLogger.succ('All workers started');

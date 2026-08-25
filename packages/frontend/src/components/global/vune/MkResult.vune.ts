@@ -42,7 +42,7 @@ export struct MkResult: View {
 					.className('mk-vune-result__img')
 					.withProps({ draggable: false })
 			} else {
-				VuneIcon(resultIcon(type), className: 'mk-vune-result__fallback-icon')
+				VuneIcon(resultIcon(type)).className('mk-vune-result__fallback-icon')
 			}
 			Text(text ?? resultText(type)).opacity(0.7)
 		}

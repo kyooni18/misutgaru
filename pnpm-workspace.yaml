@@ -54,12 +54,14 @@ minimumReleaseAgeExclude:
   - slacc-win32-x64-msvc
   - '@typescript/native-preview*'
   - vitest-mock-extended@5.1.1 # そのうち消す
-  - '@vune-ui/core@0.1.12'
-  - '@vune-ui/compiler@0.1.12'
-  - '@vune-ui/vite@0.1.12'
-  - '@vune-ui/vue@0.1.12'
-  - '@vune-ui/web@0.1.12'
-  - vune-ui@0.1.12
+  - '@vune-ui/core@0.1.18'
+  - '@vune-ui/compiler@0.1.18'
+  - '@vune-ui/vite@0.1.18'
+  - '@vune-ui/vue@0.1.18'
+  - '@vune-ui/web@0.1.18'
+  - '@vune-ui/react@0.1.18'
+  - o0o0o@0.2.0
+  - vune-ui@0.1.18
 overrides:
   '@aiscript-dev/aiscript-languageserver': '-'
   chokidar: 5.0.0
@@ -67,5 +69,3 @@ overrides:
 engineStrict: true
 saveExact: true
 shellEmulator: true
-patchedDependencies:
-  '@vune-ui/compiler@0.1.12': patches/@vune-ui__compiler@0.1.12.patch

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import fs from 'node:fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { format as DateFormat } from 'date-fns';
 import { In } from 'typeorm';
@@ -12,6 +11,7 @@ import type { AntennasRepository, UsersRepository, UserListMembershipsRepository
 import Logger from '@/logger.js';
 import { DriveService } from '@/core/DriveService.js';
 import { bindThis } from '@/decorators.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import { createTemp } from '@/misc/create-temp.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { NotificationService } from '@/core/NotificationService.js';
@@ -49,19 +49,7 @@ export class ExportAntennasProcessorService {
 			return;
 		}
 		const [path, cleanup] = await createTemp();
-		const stream = fs.createWriteStream(path, { flags: 'a' });
-		const write = (input: string): Promise<void> => {
-			return new Promise((resolve, reject) => {
-				stream.write(input, err => {
-					if (err) {
-						this.logger.error(err);
-						reject();
-					} else {
-						resolve();
-					}
-				});
-			});
-		};
+		const writer = new BufferedTextFileWriter(path);
 		try {
 			const antennas: MiAntenna[] = await this.antennsRepository.findBy({ userId: job.data.user.id }) as MiAntenna[];
 			const listIds = [...new Set(antennas.map((antenna: MiAntenna) => antenna.userListId).filter((id: string | null): id is string => id != null))];
@@ -106,8 +94,8 @@ export class ExportAntennasProcessorService {
 					excludeNotesInSensitiveChannel: antenna.excludeNotesInSensitiveChannel,
 				} satisfies Required<ExportedAntenna>;
 			});
-			await write(JSON.stringify(exported));
-			stream.end();
+			await writer.write(JSON.stringify(exported));
+			await writer.close();
 
 			const fileName = 'antennas-' + DateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.json';
 			const driveFile = await this.driveService.addFile({ user, path, name: fileName, force: true, ext: 'json' });

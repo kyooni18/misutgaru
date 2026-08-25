@@ -15,6 +15,7 @@ import type Logger from '@/logger.js';
 import type { MiMeta, UserIpsRepository } from '@/models/_.js';
 import { createTemp } from '@/misc/create-temp.js';
 import { bindThis } from '@/decorators.js';
+import { createBufferedWriteStream } from '@/misc/block-io.js';
 import { RoleService } from '@/core/RoleService.js';
 import { TelemetryService } from '@/core/telemetry/TelemetryService.js';
 import type { Config } from '@/config.js';
@@ -202,7 +203,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		const [path, cleanup] = await createTemp();
 
 		try {
-			await stream.pipeline(multipartData.file, fs.createWriteStream(path));
+			await stream.pipeline(multipartData.file, createBufferedWriteStream(path));
 
 			// ファイルサイズが制限を超えていた場合
 			// なお truncated はストリームを読み切ってからでないと機能しないため、stream.pipeline より後にある必要がある

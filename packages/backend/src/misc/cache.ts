@@ -6,6 +6,8 @@
 import * as Redis from 'ioredis';
 import { bindThis } from '@/decorators.js';
 
+const DEFAULT_MEMORY_KV_CACHE_LIMIT = 4096;
+
 type GcTarget = { gc(): void };
 const memoryKvCaches = new Set<GcTarget>();
 let memoryKvGcIntervalHandle: NodeJS.Timeout | null = null;
@@ -264,7 +266,7 @@ export class MemoryKVCache<T> {
 
 	constructor(
 		private readonly lifetime: number,
-		private readonly limit: number = Infinity,
+		private readonly limit: number = DEFAULT_MEMORY_KV_CACHE_LIMIT,
 	) {
 		registerMemoryKvCache(this);
 	}

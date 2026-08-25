@@ -4,15 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkSuspense v-slot="{ result }" :p="_fetch_">
-	<XRoot :post="result"/>
-</MkSuspense>
+<VuneGalleryEdit :fetcher="_fetch_"/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import XRoot from './edit.root.vue';
+import VuneGalleryEdit from '../vune/gallery-edit.vune.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

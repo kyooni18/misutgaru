@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { In, MoreThan } from 'typeorm';
 import { format as dateFormat } from 'date-fns';
@@ -16,6 +15,7 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import type { MiUser } from '@/models/User.js';
 import { bindThis } from '@/decorators.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbJobDataWithUser } from '../types.js';
@@ -54,7 +54,7 @@ export class ExportBlockingProcessorService {
 		this.logger.info(`Temp file is ${path}`);
 
 		try {
-			const stream = fs.createWriteStream(path, { flags: 'a' });
+			const writer = new BufferedTextFileWriter(path);
 
 			let exportedCount = 0;
 			let cursor: MiBlocking['id'] | null = null;
@@ -97,22 +97,13 @@ export class ExportBlockingProcessorService {
 				}
 
 				if (lines.length > 0) {
-					await new Promise<void>((res, rej) => {
-						stream.write(lines.join('\n') + '\n', err => {
-							if (err) {
-								this.logger.error(err);
-								rej(err);
-							} else {
-								res();
-							}
-						});
-					});
+					await writer.write(lines.join('\n') + '\n');
 				}
 
 				job.updateProgress(exportedCount / total * 100);
 			}
 
-			stream.end();
+			await writer.close();
 			this.logger.succ(`Exported to: ${path}`);
 
 			const fileName = 'blocking-' + dateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.csv';

@@ -8,7 +8,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
 import * as WebSocket from 'ws';
 import { DI } from '@/di-symbols.js';
-import type { Config } from '@/config.js';
 import type { MiAccessToken } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
@@ -20,6 +19,18 @@ import type * as http from 'node:http';
 import { ContextIdFactory, ModuleRef } from '@nestjs/core';
 
 type EventListener = (...args: any[]) => void;
+
+const STREAM_USER_STATE_REFRESH_INTERVAL = 10_000;
+const ACTIVE_USER_UPDATE_INTERVAL = 1000 * 60 * 5;
+const ACTIVE_USER_SCHEDULER_INTERVAL = 1000;
+
+type ActiveUser = {
+	user: MiLocalUser;
+	streams: Set<MainStreamConnection>;
+	nextStateRefreshAt: number;
+	nextLastActiveUpdateAt: number;
+	refreshing: boolean;
+};
 
 /**
  * Per-WebSocket subscription scope backed by the shared stream emitter.
@@ -61,13 +72,11 @@ export class StreamingApiServerService {
 	#wss: WebSocket.WebSocketServer;
 	#connections = new Map<WebSocket.WebSocket, number>();
 	#streamEvents = new EventEmitter();
-	#activeUsers = new Map<MiLocalUser['id'], { connections: number; intervalId: NodeJS.Timeout }>();
+	#activeUsers = new Map<MiLocalUser['id'], ActiveUser>();
+	#activeUserSchedulerIntervalId: NodeJS.Timeout | null = null;
 	#cleanConnectionsIntervalId: NodeJS.Timeout | null = null;
 
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
-
 		@Inject(DI.redisForSub)
 		private redisForSub: Redis.Redis,
 
@@ -94,27 +103,70 @@ export class StreamingApiServerService {
 		this.#streamEvents.emit(parsed.channel, parsed.message);
 	}
 
-	private acquireActiveUser(user: MiLocalUser): void {
+	private ensureActiveUserScheduler(): void {
+		if (this.#activeUserSchedulerIntervalId != null) return;
+		this.#activeUserSchedulerIntervalId = setInterval(() => this.refreshActiveUsers(), ACTIVE_USER_SCHEDULER_INTERVAL);
+	}
+
+	private stopActiveUserSchedulerIfIdle(): void {
+		if (this.#activeUsers.size !== 0 || this.#activeUserSchedulerIntervalId == null) return;
+		clearInterval(this.#activeUserSchedulerIntervalId);
+		this.#activeUserSchedulerIntervalId = null;
+	}
+
+	private refreshActiveUsers(): void {
+		const now = Date.now();
+		for (const active of this.#activeUsers.values()) {
+			if (now >= active.nextLastActiveUpdateAt) {
+				active.nextLastActiveUpdateAt = now + ACTIVE_USER_UPDATE_INTERVAL;
+				void this.usersService.updateLastActiveDate(active.user).catch(() => undefined);
+			}
+
+			if (active.refreshing || now < active.nextStateRefreshAt) continue;
+			const primary = active.streams.values().next().value as MainStreamConnection | undefined;
+			if (primary == null) continue;
+
+			active.nextStateRefreshAt = now + STREAM_USER_STATE_REFRESH_INTERVAL;
+			active.refreshing = true;
+			void primary.fetch().then(state => {
+				if (state == null) return;
+				for (const stream of active.streams) {
+					if (stream !== primary) stream.applyUserState(state);
+				}
+			}).catch(() => {
+				// A transient cache/database failure should not terminate the scheduler.
+			}).finally(() => {
+				active.refreshing = false;
+			});
+		}
+	}
+
+	private acquireActiveUser(user: MiLocalUser, stream: MainStreamConnection): void {
 		const active = this.#activeUsers.get(user.id);
 		if (active) {
-			active.connections++;
+			active.streams.add(stream);
 			return;
 		}
 
-		const intervalId = setInterval(() => {
-			void this.usersService.updateLastActiveDate(user);
-		}, this.config.lightweightMode ? 1000 * 60 * 15 : 1000 * 60 * 5);
-		this.#activeUsers.set(user.id, { connections: 1, intervalId });
-		void this.usersService.updateLastActiveDate(user);
+		const now = Date.now();
+		this.#activeUsers.set(user.id, {
+			user,
+			streams: new Set([stream]),
+			nextStateRefreshAt: now + STREAM_USER_STATE_REFRESH_INTERVAL,
+			nextLastActiveUpdateAt: now + ACTIVE_USER_UPDATE_INTERVAL,
+			refreshing: false,
+		});
+		this.ensureActiveUserScheduler();
+		void this.usersService.updateLastActiveDate(user).catch(() => undefined);
 	}
 
-	private releaseActiveUser(userId: MiLocalUser['id']): void {
+	private releaseActiveUser(userId: MiLocalUser['id'], stream: MainStreamConnection): void {
 		const active = this.#activeUsers.get(userId);
 		if (!active) return;
-		active.connections--;
-		if (active.connections > 0) return;
-		clearInterval(active.intervalId);
+		active.streams.delete(stream);
+		if (active.streams.size > 0) return;
 		this.#activeUsers.delete(userId);
+		this.stopActiveUserSchedulerIfIdle();
 	}
 
 	@bindThis
@@ -198,13 +250,13 @@ export class StreamingApiServerService {
 			await stream.listen(subscriptions as unknown as EventEmitter, connection);
 
 			this.#connections.set(connection, Date.now());
-			if (user) this.acquireActiveUser(user);
+			if (user) this.acquireActiveUser(user, stream);
 
 			connection.once('close', () => {
 				stream.dispose();
 				subscriptions.dispose();
 				this.#connections.delete(connection);
-				if (user) this.releaseActiveUser(user.id);
+				if (user) this.releaseActiveUser(user.id, stream);
 			});
 
 			connection.on('pong', () => {
@@ -229,8 +281,15 @@ export class StreamingApiServerService {
 	@bindThis
 	public detach(): Promise<void> {
 		this.redisForSub.off('message', this.onRedisMessage);
-		for (const active of this.#activeUsers.values()) clearInterval(active.intervalId);
+		// ws.Server#close waits for upgraded clients. Terminate owned sockets first
+		// so application shutdown cannot be held open by idle browser connections.
+		for (const connection of this.#connections.keys()) connection.terminate();
+		this.#connections.clear();
 		this.#activeUsers.clear();
+		if (this.#activeUserSchedulerIntervalId != null) {
+			clearInterval(this.#activeUserSchedulerIntervalId);
+			this.#activeUserSchedulerIntervalId = null;
+		}
 		this.#streamEvents.removeAllListeners();
 		if (this.#cleanConnectionsIntervalId) {
 			clearInterval(this.#cleanConnectionsIntervalId);

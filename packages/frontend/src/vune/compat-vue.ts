@@ -15,13 +15,17 @@ import {
 } from 'vue';
 import {
 	State,
+	actionClosure,
 	defineView,
 	initializer,
 	initializersOf,
-	type InitializerParameter,
-	type ModifiableViewNode,
-	type ViewConstructor,
-	type ViewGraphValue,
+	namedArguments,
+} from 'vune-ui';
+import type {
+	InitializerParameter,
+	ModifiableViewNode,
+	ViewConstructor,
+	ViewGraphValue,
 } from 'vune-ui';
 import { mount } from '@vune-ui/web';
 
@@ -101,15 +105,43 @@ function instantiateView(
 	const initializer = initializers[options.initializerIndex ?? 0];
 	if (!initializer) return ViewType();
 	const parameters = initializer.parameters ?? [];
-	const args = parameters.map(parameter => {
+	const values = parameters.map(parameter => {
 		const name = parameter.name ?? parameter.label;
 		if (!name) return undefined;
 		const legacyName = options.aliases?.[name] ?? name;
 		const raw = attrs[legacyName];
 		const custom = options.coerce?.[name];
-		return custom ? custom(raw) : coerceByParameter(parameter, raw);
+		const value = custom ? custom(raw) : coerceByParameter(parameter, raw);
+		return parameter.kind === 'action' && typeof value === 'function'
+			? actionClosure(value as (...args: any[]) => any)
+			: value;
 	});
-	return ViewType(...args);
+	// Vue attrs are sparse. Passing positional `undefined` placeholders makes
+	// optional Vune initializers ambiguous (for example `MkLoading(undefined,
+	// true)`), because the runtime resolver deliberately treats omitted values
+	// differently from explicit positional gaps. Preserve the required
+	// positional prefix and carry labeled values through Vune's named-argument
+	// adapter instead.
+	const positional: unknown[] = [];
+	const labeled: Record<string, unknown> = {};
+	let sawLabel = false;
+	for (const [index, value] of values.entries()) {
+		if (value === undefined) continue;
+		const parameter = parameters[index];
+		if (parameter?.label) {
+			sawLabel = true;
+			labeled[parameter.label] = value;
+		} else if (!sawLabel) {
+			positional.push(value);
+		} else {
+			// A later unlabeled parameter cannot be represented after a named
+			// carrier. Keep the old positional shape for this uncommon legacy
+			// initializer rather than silently shifting its arguments.
+			return ViewType(...values);
+		}
+	}
+	if (Object.keys(labeled).length > 0) positional.push(namedArguments(labeled));
+	return ViewType(...positional);
 }
 
 function decorateLegacyRoot(view: ModifiableViewNode, attrs: LegacyAttrs): ModifiableViewNode {

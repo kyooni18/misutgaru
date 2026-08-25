@@ -11,6 +11,7 @@ export const DI = {
 	redis: Symbol('redis'),
 	redisForPub: Symbol('redisForPub'),
 	redisForSub: Symbol('redisForSub'),
+	redisForJobQueue: Symbol('redisForJobQueue'),
 	redisForTimelines: Symbol('redisForTimelines'),
 	redisForReactions: Symbol('redisForReactions'),
 

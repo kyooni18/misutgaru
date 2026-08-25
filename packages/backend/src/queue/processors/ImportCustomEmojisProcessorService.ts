@@ -57,7 +57,6 @@ export class ImportCustomEmojisProcessorService {
 		const destPath = path + '/emojis.zip';
 
 		try {
-			fs.writeFileSync(destPath, '', 'binary');
 			await this.downloadService.downloadUrl(file.url, destPath);
 		} catch (e) { // TODO: 何度か再試行
 			if (e instanceof Error || typeof e === 'string') {
@@ -70,7 +69,7 @@ export class ImportCustomEmojisProcessorService {
 		try {
 			this.logger.succ(`Unzipping to ${outputPath}`);
 			ZipReader.withDestinationPath(outputPath).viaBuffer(await fs.promises.readFile(destPath));
-			const metaRaw = fs.readFileSync(outputPath + '/meta.json', 'utf-8');
+			const metaRaw = await fs.promises.readFile(outputPath + '/meta.json', 'utf-8');
 			const meta = JSON.parse(metaRaw);
 
 			for (const record of meta.emojis) {

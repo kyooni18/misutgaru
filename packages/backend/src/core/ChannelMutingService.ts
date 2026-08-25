@@ -215,6 +215,7 @@ export class ChannelMutingService {
 
 	@bindThis
 	public dispose(): void {
+		this.redisForSub.off('message', this.onMessage);
 		this.mutingChannelsCache.dispose();
 	}
 

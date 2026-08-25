@@ -4,16 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader>
-	<div class="_spacer" style="--MI_SPACER-w: 1200px;">
-		<MkAchievements :user="$i"/>
-	</div>
-</PageWithHeader>
+<VuneAchievements :user="$i"/>
 </template>
 
 <script lang="ts" setup>
 import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
-import MkAchievements from '@/components/MkAchievements.vue';
+import VuneAchievements from './vune/achievements.vune.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { ensureSignin } from '@/i.js';

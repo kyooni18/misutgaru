@@ -4,9 +4,12 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import * as Redis from 'ioredis';
 import type { InstancesRepository, NoteReactionsRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
+import type { Config } from '@/config.js';
+import { RedisSingleCache } from '@/misc/cache.js';
 import NotesChart from '@/core/chart/charts/notes.js';
 import UsersChart from '@/core/chart/charts/users.js';
 
@@ -74,9 +77,36 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.noteReactionsRepository)
 		private noteReactionsRepository: NoteReactionsRepository,
 
+		@Inject(DI.redis)
+		redisClient: Redis.Redis,
+
+		@Inject(DI.config)
+		config: Config,
+
 		private notesChart: NotesChart,
 		private usersChart: UsersChart,
 	) {
+		const reactionsCountCache = new RedisSingleCache<number>(redisClient, 'stats:reactionsCount', {
+			lifetime: 1000 * 60 * 60,
+			memoryCacheLifetime: 1000 * 60 * 60,
+			fetcher: () => noteReactionsRepository.count(),
+			toRedisConverter: value => value.toString(),
+			fromRedisConverter: value => {
+				const parsed = Number(value);
+				return Number.isFinite(parsed) ? parsed : undefined;
+			},
+		});
+		const instancesCountCache = new RedisSingleCache<number>(redisClient, 'stats:instancesCount', {
+			lifetime: 1000 * 60 * 60,
+			memoryCacheLifetime: 1000 * 60 * 60,
+			fetcher: () => instancesRepository.count(),
+			toRedisConverter: value => value.toString(),
+			fromRedisConverter: value => {
+				const parsed = Number(value);
+				return Number.isFinite(parsed) ? parsed : undefined;
+			},
+		});
+
 		super(meta, paramDef, async () => {
 			const notesChart = await this.notesChart.getChart('hour', 1, null);
 			const notesCount = notesChart.local.total[0] + notesChart.remote.total[0];
@@ -91,9 +121,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				//originalReactionsCount,
 				instances,
 			] = await Promise.all([
-				this.noteReactionsRepository.count({ cache: 3600000 }), // 1 hour
-				//this.noteReactionsRepository.count({ where: { userHost: IsNull() }, cache: 3600000 }),
-				this.instancesRepository.count({ cache: 3600000 }),
+				config.db.disableCache ? this.noteReactionsRepository.count() : reactionsCountCache.fetch(),
+				//this.noteReactionsRepository.count({ where: { userHost: IsNull() } }),
+				config.db.disableCache ? this.instancesRepository.count() : instancesCountCache.fetch(),
 			]);
 
 			return {

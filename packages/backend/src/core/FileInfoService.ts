@@ -22,6 +22,7 @@ import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import type { Prediction } from '@/core/SensitiveMediaDetectionService.js';
+import { BLOCK_IO_HASH_HIGH_WATER_MARK, BLOCK_IO_READ_HIGH_WATER_MARK } from '@/misc/block-io.js';
 
 export type FileInfo = {
 	size: number;
@@ -76,7 +77,7 @@ export class FileInfoService {
 		const size = await this.getFileSize(path);
 		const md5 = await this.calcHash(path);
 
-		let type = await this.detectType(path);
+		let type = await this.detectType(path, size);
 
 		if (type.mime === TYPE_OCTET_STREAM.mime && opts.fileName != null) {
 			const ext = opts.fileName.split('.').pop();
@@ -388,12 +389,12 @@ export class FileInfoService {
 	 * Detect MIME Type and extension
 	 */
 	@bindThis
-	public async detectType(path: string): Promise<{
+	public async detectType(path: string, knownSize?: number): Promise<{
 		mime: string;
 		ext: string | null;
 	}> {
 	// Check 0 byte
-		const fileSize = await this.getFileSize(path);
+		const fileSize = knownSize ?? await this.getFileSize(path);
 		if (fileSize === 0) {
 			return TYPE_OCTET_STREAM;
 		}
@@ -402,7 +403,7 @@ export class FileInfoService {
 
 		if (type) {
 		// XMLはSVGかもしれない
-			if (type.mime === 'application/xml' && await this.checkSvg(path)) {
+			if (type.mime === 'application/xml' && await this.checkSvg(path, fileSize)) {
 				return TYPE_SVG;
 			}
 
@@ -427,7 +428,7 @@ export class FileInfoService {
 		}
 
 		// 種類が不明でもSVGかもしれない
-		if (await this.checkSvg(path)) {
+		if (await this.checkSvg(path, fileSize)) {
 			return TYPE_SVG;
 		}
 
@@ -439,9 +440,9 @@ export class FileInfoService {
 	 * Check the file is SVG or not
 	 */
 	@bindThis
-	public async checkSvg(path: string): Promise<boolean> {
+	public async checkSvg(path: string, knownSize?: number): Promise<boolean> {
 		try {
-			const size = await this.getFileSize(path);
+			const size = knownSize ?? await this.getFileSize(path);
 			if (size > 1 * 1024 * 1024) return false;
 			const buffer = await fs.promises.readFile(path);
 			return isSvg(buffer.toString());
@@ -464,7 +465,7 @@ export class FileInfoService {
 	@bindThis
 	private async calcHash(path: string): Promise<string> {
 		const hash = crypto.createHash('md5').setEncoding('hex');
-		await stream.pipeline(fs.createReadStream(path), hash);
+		await stream.pipeline(fs.createReadStream(path, { highWaterMark: BLOCK_IO_HASH_HIGH_WATER_MARK }), hash);
 		return hash.read();
 	}
 
@@ -479,7 +480,7 @@ export class FileInfoService {
 		hUnits: string;
 		orientation?: number;
 	}> {
-		const readable = fs.createReadStream(path);
+		const readable = fs.createReadStream(path, { highWaterMark: BLOCK_IO_READ_HIGH_WATER_MARK });
 		const imageSize = await probeImageSize(readable);
 		readable.destroy();
 		return imageSize;

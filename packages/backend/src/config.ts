@@ -4,6 +4,7 @@
  */
 
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { type FastifyServerOptions } from 'fastify';
@@ -94,8 +95,8 @@ type Source = {
 
 	maxFileSize?: number;
 
-	/** Lower background/queue/network pressure for small instances. Explicit knobs below still win. */
-	lightweightMode?: boolean;
+	/** Run HTTP and queue processing in one Nest application graph unless roles are explicitly split. */
+	singleProcessMode?: boolean;
 	clusterLimit?: number;
 	threadPoolSize?: number;
 
@@ -179,7 +180,7 @@ export type Config = {
 	proxyBypassHosts: string[] | undefined;
 	allowedPrivateNetworks: string[] | undefined;
 	maxFileSize: number;
-	lightweightMode: boolean;
+	singleProcessMode: boolean;
 	clusterLimit: number | undefined;
 	threadPoolSize: number;
 	id: string;
@@ -295,9 +296,15 @@ export function loadConfig(): Config {
 	const dbUser = config.db.user ?? process.env.DATABASE_USER ?? '';
 	const dbPass = config.db.pass ?? process.env.DATABASE_PASSWORD ?? '';
 
-	// Structural optimizations are always enabled. Resource throttling remains
-	// opt-in so default throughput and refresh cadence stay upstream-like.
-	const lightweightMode = config.lightweightMode ?? false;
+	const cpuCount = Math.max(1, typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length);
+	const deliverJobConcurrency = config.deliverJobConcurrency ?? Math.min(128, Math.max(32, cpuCount * 16));
+	const inboxJobConcurrency = config.inboxJobConcurrency ?? Math.min(16, Math.max(4, cpuCount * 4));
+	const relationshipJobConcurrency = config.relationshipJobConcurrency ?? Math.min(16, Math.max(4, cpuCount * 4));
+	const userWebhookJobConcurrency = config.userWebhookJobConcurrency ?? Math.min(64, Math.max(8, cpuCount * 8));
+	const systemWebhookJobConcurrency = config.systemWebhookJobConcurrency ?? Math.min(16, Math.max(4, cpuCount * 4));
+	const objectStorageJobConcurrency = config.objectStorageJobConcurrency ?? Math.min(16, Math.max(2, cpuCount * 2));
+	const httpMaxSockets = config.httpMaxSockets ?? Math.min(256, Math.max(64, cpuCount * 32));
+	const httpMaxFreeSockets = config.httpMaxFreeSockets ?? Math.min(httpMaxSockets, Math.max(16, cpuCount * 16));
 
 	const externalMediaProxy = config.mediaProxy ?
 		config.mediaProxy.endsWith('/') ? config.mediaProxy.substring(0, config.mediaProxy.length - 1) : config.mediaProxy
@@ -349,24 +356,24 @@ export function loadConfig(): Config {
 		proxyBypassHosts: config.proxyBypassHosts,
 		allowedPrivateNetworks: config.allowedPrivateNetworks,
 		maxFileSize: config.maxFileSize ?? 262144000,
-		lightweightMode,
-		clusterLimit: config.clusterLimit ?? (lightweightMode ? 1 : undefined),
+		singleProcessMode: config.singleProcessMode ?? (config.clusterLimit == null || config.clusterLimit <= 1),
+		clusterLimit: config.clusterLimit,
 		threadPoolSize: config.threadPoolSize ?? 1,
 		outgoingAddress: config.outgoingAddress,
 		outgoingAddressFamily: config.outgoingAddressFamily,
-		deliverJobConcurrency: config.deliverJobConcurrency ?? (lightweightMode ? 16 : undefined),
-		inboxJobConcurrency: config.inboxJobConcurrency ?? (lightweightMode ? 4 : undefined),
-		relationshipJobConcurrency: config.relationshipJobConcurrency ?? (lightweightMode ? 4 : undefined),
-		userWebhookJobConcurrency: config.userWebhookJobConcurrency ?? (lightweightMode ? 8 : undefined),
-		systemWebhookJobConcurrency: config.systemWebhookJobConcurrency ?? (lightweightMode ? 4 : undefined),
-		objectStorageJobConcurrency: config.objectStorageJobConcurrency ?? (lightweightMode ? 4 : undefined),
-		deliverJobPerSec: config.deliverJobPerSec ?? (lightweightMode ? 32 : undefined),
-		inboxJobPerSec: config.inboxJobPerSec ?? (lightweightMode ? 8 : undefined),
-		relationshipJobPerSec: config.relationshipJobPerSec ?? (lightweightMode ? 16 : undefined),
+		deliverJobConcurrency,
+		inboxJobConcurrency,
+		relationshipJobConcurrency,
+		userWebhookJobConcurrency,
+		systemWebhookJobConcurrency,
+		objectStorageJobConcurrency,
+		deliverJobPerSec: config.deliverJobPerSec,
+		inboxJobPerSec: config.inboxJobPerSec,
+		relationshipJobPerSec: config.relationshipJobPerSec,
 		deliverJobMaxAttempts: config.deliverJobMaxAttempts,
 		inboxJobMaxAttempts: config.inboxJobMaxAttempts,
-		httpMaxSockets: config.httpMaxSockets ?? (lightweightMode ? 32 : undefined),
-		httpMaxFreeSockets: config.httpMaxFreeSockets ?? (lightweightMode ? 16 : undefined),
+		httpMaxSockets,
+		httpMaxFreeSockets,
 		mediaProxy: externalMediaProxy ?? internalMediaProxy,
 		externalMediaProxyEnabled: externalMediaProxy !== null && externalMediaProxy !== internalMediaProxy,
 		videoThumbnailGenerator: config.videoThumbnailGenerator ?
@@ -376,8 +383,8 @@ export function loadConfig(): Config {
 		frontendManifestExists: frontendManifestExists,
 		frontendEmbedManifestExists: frontendEmbedManifestExists,
 		rootDir,
-		perChannelMaxNoteCacheCount: config.perChannelMaxNoteCacheCount ?? (lightweightMode ? 256 : 1000),
-		perUserNotificationsMaxCount: config.perUserNotificationsMaxCount ?? (lightweightMode ? 128 : 500),
+		perChannelMaxNoteCacheCount: config.perChannelMaxNoteCacheCount ?? 1000,
+		perUserNotificationsMaxCount: config.perUserNotificationsMaxCount ?? 500,
 		deactivateAntennaThreshold: config.deactivateAntennaThreshold ?? (1000 * 60 * 60 * 24 * 7),
 		pidFile: config.pidFile,
 		logging: config.logging,

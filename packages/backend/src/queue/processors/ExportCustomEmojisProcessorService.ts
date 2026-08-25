@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import * as fs from 'node:fs';
+import * as fs from 'node:fs/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import { IsNull } from 'typeorm';
 import { format as dateFormat } from 'date-fns';
@@ -18,6 +18,8 @@ import { createTemp, createTempDir } from '@/misc/create-temp.js';
 import { DownloadService } from '@/core/DownloadService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { bindThis } from '@/decorators.js';
+import { createBufferedWriteStream } from '@/misc/block-io.js';
+import { BufferedTextFileWriter } from '@/misc/BufferedTextFileWriter.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -58,22 +60,9 @@ export class ExportCustomEmojisProcessorService {
 
 		const metaPath = path + '/meta.json';
 
-		fs.writeFileSync(metaPath, '', 'utf-8');
-
-		const metaStream = fs.createWriteStream(metaPath, { flags: 'a' });
-
-		const writeMeta = (text: string): Promise<void> => {
-			return new Promise<void>((res, rej) => {
-				metaStream.write(text, err => {
-					if (err) {
-						this.logger.error(err);
-						rej(err);
-					} else {
-						res();
-					}
-				});
-			});
-		};
+		await fs.writeFile(metaPath, '', 'utf-8');
+		const metaWriter = new BufferedTextFileWriter(metaPath);
+		const writeMeta = (text: string): Promise<void> => metaWriter.write(text);
 
 		await writeMeta(`{"metaVersion":2,"host":"${this.config.host}","exportedAt":"${new Date().toString()}","emojis":[`);
 
@@ -86,6 +75,7 @@ export class ExportCustomEmojisProcessorService {
 			},
 		});
 
+		let wroteEmoji = false;
 		for (const emoji of customEmojis) {
 			if (!/^[a-zA-Z0-9_]+$/.test(emoji.name)) {
 				this.logger.error(`invalid emoji name: ${emoji.name}`);
@@ -94,7 +84,6 @@ export class ExportCustomEmojisProcessorService {
 			const ext = mime.extension(emoji.type ?? 'image/png');
 			const fileName = emoji.name + (ext ? '.' + ext : '');
 			const emojiPath = path + '/' + fileName;
-			fs.writeFileSync(emojiPath, '', 'binary');
 			let downloaded = false;
 
 			try {
@@ -105,7 +94,7 @@ export class ExportCustomEmojisProcessorService {
 			}
 
 			if (!downloaded) {
-				fs.unlinkSync(emojiPath);
+				await fs.unlink(emojiPath).catch(() => undefined);
 			}
 
 			const content = JSON.stringify({
@@ -113,42 +102,56 @@ export class ExportCustomEmojisProcessorService {
 				downloaded: downloaded,
 				emoji: emoji,
 			});
-			const isFirst = customEmojis.indexOf(emoji) === 0;
-
-			await writeMeta(isFirst ? content : ',\n' + content);
+			await writeMeta(wroteEmoji ? ',\n' + content : content);
+			wroteEmoji = true;
 		}
 
 		await writeMeta(']}');
 
-		metaStream.end();
+		await metaWriter.close();
 
-		// Create archive
+		// Create archive. Keep the async Drive upload outside stream event handlers
+		// so an upload failure rejects the job instead of becoming an unhandled
+		// rejection while the outer Promise waits forever.
 		const [archivePath, archiveCleanup] = await createTemp();
-		await new Promise<void>((resolve) => {
-			const archiveStream = fs.createWriteStream(archivePath);
-			const archive = new ZipArchive({
-				zlib: { level: 0 },
-			});
-			archiveStream.on('close', async () => {
-				this.logger.succ(`Exported to: ${archivePath}`);
-
-				const fileName = 'custom-emojis-' + dateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.zip';
-				const driveFile = await this.driveService.addFile({ user, path: archivePath, name: fileName, force: true });
-
-				this.logger.succ(`Exported to: ${driveFile.id}`);
-
-				this.notificationService.createNotification(user.id, 'exportCompleted', {
-					exportedEntity: 'customEmoji',
-					fileId: driveFile.id,
+		try {
+			await new Promise<void>((resolve, reject) => {
+				const archiveStream = createBufferedWriteStream(archivePath);
+				const archive = new ZipArchive({
+					zlib: { level: 0 },
 				});
-
-				cleanup();
-				archiveCleanup();
-				resolve();
+				let settled = false;
+				const fail = (error: Error) => {
+					if (settled) return;
+					settled = true;
+					reject(error);
+				};
+				archiveStream.once('error', fail);
+				archive.once('error', fail);
+				archiveStream.once('close', () => {
+					if (settled) return;
+					settled = true;
+					resolve();
+				});
+				archive.pipe(archiveStream);
+				archive.directory(path, false);
+				archive.finalize().catch(fail);
 			});
-			archive.pipe(archiveStream);
-			archive.directory(path, false);
-			archive.finalize();
-		});
+
+			this.logger.succ(`Exported to: ${archivePath}`);
+
+			const fileName = 'custom-emojis-' + dateFormat(new Date(), 'yyyy-MM-dd-HH-mm-ss') + '.zip';
+			const driveFile = await this.driveService.addFile({ user, path: archivePath, name: fileName, force: true });
+
+			this.logger.succ(`Exported to: ${driveFile.id}`);
+
+			this.notificationService.createNotification(user.id, 'exportCompleted', {
+				exportedEntity: 'customEmoji',
+				fileId: driveFile.id,
+			});
+		} finally {
+			cleanup();
+			archiveCleanup();
+		}
 	}
 }

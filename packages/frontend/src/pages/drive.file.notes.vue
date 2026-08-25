@@ -4,17 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps">
-	<MkInfo>{{ i18n.ts._fileViewer.thisPageCanBeSeenFromTheAuthor }}</MkInfo>
-	<MkNotesTimeline :paginator="paginator"/>
-</div>
+<VuneDriveFileNotes :paginator="paginator"/>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, markRaw } from 'vue';
 import { i18n } from '@/i18n.js';
-import MkInfo from '@/components/MkInfo.vue';
-import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
+import VuneDriveFileNotes from './vune/drive.file.notes.view.vune.js';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

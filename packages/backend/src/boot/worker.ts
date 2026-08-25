@@ -39,17 +39,24 @@ export async function workerMain() {
 		bootLogger.error(e instanceof Error ? e : new Error(String(e)), null, true);
 		process.exit(1);
 	}
+	const applications: Array<{ close(): Promise<void> }> = [];
 	installShutdownSignalHandlers({
-		shutdownTasks: [shutdownTelemetry, shutdownLogging],
+		shutdownTasks: [
+			async () => {
+				for (let i = applications.length - 1; i >= 0; i--) await applications[i].close();
+			},
+			shutdownTelemetry,
+			shutdownLogging,
+		],
 		onRegistered: message => bootLogger.info(message),
 	});
 
 	if (envOption.onlyServer) {
-		await server();
+		applications.push(await server());
 	} else if (envOption.onlyQueue) {
-		await jobQueue();
+		applications.push(await jobQueue());
 	} else {
-		await jobQueue();
+		applications.push(await jobQueue());
 	}
 
 	if (cluster.isWorker) {

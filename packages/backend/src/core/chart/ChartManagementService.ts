@@ -62,12 +62,12 @@ export class ChartManagementService implements OnApplicationShutdown {
 
 	@bindThis
 	public async start() {
-		// Periodically flush in-memory chart data to the DB; lightweight mode uses a longer interval.
+		// Periodically flush in-memory chart data to the DB.
 		this.saveIntervalId = setInterval(async () => {
 			for (const chart of this.charts) {
 				await chart.save();
 			}
-		}, this.config.lightweightMode ? 1000 * 60 * 60 : 1000 * 60 * 20);
+		}, 1000 * 60 * 20);
 	}
 
 	@bindThis

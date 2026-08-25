@@ -8,15 +8,14 @@
 import {
 	defineComponent,
 	h,
-	type Component as VueComponentType,
-	type Slots,
-	type VNode,
 } from 'vue';
+import type { Component as VueComponentType, Slots, VNode } from 'vue';
 import {
 	Component as VuneVueComponent,
 	VuneView,
 } from '@vune-ui/vue';
-import type { ViewGraphValue } from 'vune-ui';
+import { initializersOf } from 'vune-ui';
+import type { ViewConstructor, ViewGraphValue } from 'vune-ui';
 
 /** Vue leaves bare boolean attributes as an empty string when there is no runtime prop schema. */
 export function vuneBoolean(value: unknown, defaultValue = false): boolean {
@@ -60,11 +59,23 @@ export function VueSlot(slot: (() => VNode[]) | undefined): ViewGraphValue {
 	return VuneVueComponent(SlotOutlet, { render: slot });
 }
 
+function isAdaptedVueComponent(value: unknown): value is ViewConstructor {
+	if (typeof value !== 'function') return false;
+	return initializersOf(value).some(item => item.signature === 'VueComponent(props?)');
+}
+
 /** Embed a Vue-only component until a Vune replacement exists. */
 export function VueComponent(
 	component: VueComponentType,
 	props: Record<string, unknown> = {},
 	slots: Record<string, ViewGraphValue | ((...args: unknown[]) => ViewGraphValue)> = {},
 ): ViewGraphValue {
-	return VuneVueComponent(component as object, { ...props, slots } as never);
+	const adaptedProps = { ...props, slots };
+	// The Vune compiler already turns `.vue` imports into the official
+	// `foreignComponent(...)` View constructor. Calling the compatibility helper
+	// around one of those constructors must therefore use its single props
+	// initializer; passing `(props, slots)` creates the observed
+	// `VueComponent(object, object)` mismatch.
+	if (isAdaptedVueComponent(component)) return component(adaptedProps);
+	return VuneVueComponent(component as object, adaptedProps as never);
 }

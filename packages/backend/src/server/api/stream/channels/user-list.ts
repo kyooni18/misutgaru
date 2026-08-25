@@ -70,7 +70,7 @@ export class UserListChannel extends Channel {
 		this.subscriber.on('notesStream', this.onNote);
 
 		this.updateListUsers();
-		this.listUsersClock = setInterval(this.updateListUsers, this.config.lightweightMode ? 15_000 : 5_000);
+		this.listUsersClock = setInterval(this.updateListUsers, 5_000);
 
 		return true;
 	}

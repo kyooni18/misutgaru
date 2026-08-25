@@ -20,9 +20,9 @@ export const QUEUE = {
 	SYSTEM_WEBHOOK_DELIVER: 'systemWebhookDeliver',
 };
 
-export function baseQueueOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE]): Bull.QueueOptions {
+export function baseQueueOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE], connection?: Bull.QueueOptions['connection']): Bull.QueueOptions {
 	return {
-		connection: {
+		connection: connection ?? {
 			...config.redisForJobQueue,
 			keyPrefix: undefined,
 		},
@@ -30,9 +30,9 @@ export function baseQueueOptions(config: Config, queueName: typeof QUEUE[keyof t
 	};
 }
 
-export function baseWorkerOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE]): Bull.WorkerOptions {
+export function baseWorkerOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE], connection?: Bull.WorkerOptions['connection']): Bull.WorkerOptions {
 	return {
-		...baseQueueOptions(config, queueName),
+		...baseQueueOptions(config, queueName, connection),
 		metrics: {
 			maxDataPoints: MetricsTime.ONE_WEEK,
 		},

@@ -18,6 +18,7 @@ export class ServerStatsChannel extends Channel {
 	public readonly chName = 'serverStats';
 	public static shouldShare = true;
 	public static requireCredential = false as const;
+	private watching = false;
 
 	constructor(
 		@Inject(REQUEST)
@@ -30,7 +31,10 @@ export class ServerStatsChannel extends Channel {
 
 	@bindThis
 	public async init(params: JsonObject) {
+		if (this.watching) return;
+		this.watching = true;
 		ev.addListener('serverStats', this.onStats);
+		ev.emit('serverStats:subscribe');
 	}
 
 	@bindThis
@@ -56,6 +60,9 @@ export class ServerStatsChannel extends Channel {
 
 	@bindThis
 	public dispose() {
+		if (!this.watching) return;
+		this.watching = false;
 		ev.removeListener('serverStats', this.onStats);
+		ev.emit('serverStats:unsubscribe');
 	}
 }

@@ -4,24 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps">
-	<MkInfo>{{ i18n.ts._fileViewer.thisPageCanBeSeenFromTheAuthor }}</MkInfo>
-
-	<MkPagination :paginator="paginator">
-		<template #default="{ items }">
-			<XMessage v-for="item in items" :key="item.id" :message="item" :isSearchResult="true"/>
-		</template>
-	</MkPagination>
-</div>
+<VuneAdminFileChat :paginator="paginator"/>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, markRaw } from 'vue';
-import XMessage from './chat/XMessage.vue';
-import { i18n } from '@/i18n.js';
-import MkInfo from '@/components/MkInfo.vue';
+import { computed, markRaw } from 'vue';
+import VuneAdminFileChat from './vune/admin-file.chat.view.vune.js';
 import { Paginator } from '@/utility/paginator.js';
-import MkPagination from '@/components/MkPagination.vue';
 
 const props = defineProps<{
 	fileId: string;

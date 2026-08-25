@@ -5,6 +5,7 @@
 
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import * as Bull from 'bullmq';
+import * as Redis from 'ioredis';
 import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import type Logger from '@/logger.js';
@@ -88,6 +89,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 	private objectStorageQueueWorker: Bull.Worker;
 	private endedPollNotificationQueueWorker: Bull.Worker;
 	private postScheduledNoteQueueWorker: Bull.Worker;
+	private workerRedis: Redis.Redis;
 
 	constructor(
 		@Inject(DI.config)
@@ -132,6 +134,12 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private cleanRemoteNotesProcessorService: CleanRemoteNotesProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
+
+		this.workerRedis = new Redis.Redis({
+			...this.config.redisForJobQueue,
+			keyPrefix: undefined,
+			maxRetriesPerRequest: null,
+		});
 
 		function renderError(e?: Error) {
 			// 何故かeがundefinedで来ることがある
@@ -192,7 +200,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.SYSTEM),
+				...baseWorkerOptions(this.config, QUEUE.SYSTEM, this.workerRedis),
 				autorun: false,
 			});
 
@@ -246,7 +254,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.DB),
+				...baseWorkerOptions(this.config, QUEUE.DB, this.workerRedis),
 				autorun: false,
 			});
 
@@ -276,7 +284,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.DELIVER),
+				...baseWorkerOptions(this.config, QUEUE.DELIVER, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.deliverJobConcurrency ?? 128,
 				limiter: {
@@ -315,7 +323,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.INBOX),
+				...baseWorkerOptions(this.config, QUEUE.INBOX, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.inboxJobConcurrency ?? 16,
 				limiter: {
@@ -353,7 +361,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.USER_WEBHOOK_DELIVER),
+				...baseWorkerOptions(this.config, QUEUE.USER_WEBHOOK_DELIVER, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.userWebhookJobConcurrency ?? 64,
 				limiter: {
@@ -391,7 +399,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.SYSTEM_WEBHOOK_DELIVER),
+				...baseWorkerOptions(this.config, QUEUE.SYSTEM_WEBHOOK_DELIVER, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.systemWebhookJobConcurrency ?? 16,
 				limiter: {
@@ -438,7 +446,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.RELATIONSHIP),
+				...baseWorkerOptions(this.config, QUEUE.RELATIONSHIP, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.relationshipJobConcurrency ?? 16,
 				limiter: {
@@ -480,7 +488,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.OBJECT_STORAGE),
+				...baseWorkerOptions(this.config, QUEUE.OBJECT_STORAGE, this.workerRedis),
 				autorun: false,
 				concurrency: this.config.objectStorageJobConcurrency ?? 16,
 			});
@@ -511,7 +519,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.ENDED_POLL_NOTIFICATION),
+				...baseWorkerOptions(this.config, QUEUE.ENDED_POLL_NOTIFICATION, this.workerRedis),
 				autorun: false,
 			});
 		}
@@ -535,7 +543,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					},
 				);
 			}, {
-				...baseWorkerOptions(this.config, QUEUE.POST_SCHEDULED_NOTE),
+				...baseWorkerOptions(this.config, QUEUE.POST_SCHEDULED_NOTE, this.workerRedis),
 				autorun: false,
 			});
 		}
@@ -572,6 +580,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 			this.endedPollNotificationQueueWorker.close(),
 			this.postScheduledNoteQueueWorker.close(),
 		]);
+		this.workerRedis.disconnect();
 	}
 
 	@bindThis
