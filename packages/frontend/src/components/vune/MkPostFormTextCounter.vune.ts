@@ -1,0 +1,63 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Circle, HStack, Text, VStack, ZStack } from 'vune-ui';
+import { instance } from '@/instance.js';
+import { i18n } from '@/i18n.js';
+import number from '@/filters/number.js';
+import './misskey-vune.scss';
+
+function maximumTextLength(): number {
+	return instance ? instance.maxNoteTextLength : 1000;
+}
+
+function textPercentage(textLength: number): number {
+	return textLength / maximumTextLength() * 100;
+}
+
+function counterClass(textLength: number): string | null {
+	let percentage = textPercentage(textLength);
+	if (percentage > 100) return 'mk-vune-text-counter--danger';
+	if (percentage > 90) return 'mk-vune-text-counter--warning';
+	return null;
+}
+
+function counterGradient(textLength: number): string {
+	let progress = Math.min(100, textPercentage(textLength));
+	return `conic-gradient(var(--countColor) 0% ${progress}%, rgba(0, 0, 0, .2) ${progress}% 100%)`;
+}
+
+export struct MkPostFormTextCounter: View {
+	let textLength: number
+
+	init(_ textLength: number) {
+		self.textLength = textLength
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 4) {
+			Text(i18n.ts.textCount).className('mk-vune-text-counter__label')
+			HStack(alignment: 'center', spacing: 'var(--MI-marginHalf)') {
+				ZStack(alignment: 'center') {
+					Circle()
+						.frame({ width: 24, height: 24 })
+						.style({ gridArea: '1 / 1', backgroundImage: counterGradient(textLength) })
+					Circle()
+						.frame({ width: 16, height: 16 })
+						.style({ gridArea: '1 / 1', background: 'var(--MI_THEME-popup)' })
+				}
+					.frame({ width: 24, height: 24 })
+				HStack(alignment: 'center', spacing: 4) {
+					Text(number(textLength)).className('mk-vune-text-counter__current')
+					Text('/')
+					Text(number(maximumTextLength()))
+				}
+					.style({ width: 'auto' })
+			}
+				.className(['mk-vune-text-counter__count', counterClass(textLength)])
+				.style({ justifyContent: 'flex-start' })
+		}
+			.className('mk-vune-text-counter')
+	}
+}
+
+export default MkPostFormTextCounter
