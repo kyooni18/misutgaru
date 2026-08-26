@@ -4,31 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.sortOrderArea">
-	<div :class="$style.sortOrderAreaTags">
-		<MkTagItem
-			v-for="order in currentOrders"
-			:key="order.key"
-			:iconClass="order.direction === '+' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"
-			:exButtonIconClass="'ti ti-x'"
-			:content="order.key"
-			:class="$style.sortOrderTag"
-			@click="onToggleSortOrderButtonClicked(order)"
-			@exButtonClick="onRemoveSortOrderButtonClicked(order)"
-		/>
-	</div>
-	<MkButton :class="$style.sortOrderAddButton" @click="onAddSortOrderButtonClicked">
-		<span class="ti ti-plus"></span>
-	</MkButton>
-</div>
+<VuneSortOrderEditor
+	:currentOrders="currentOrders"
+	:classes="$style"
+	:onToggle="onToggleSortOrderButtonClicked"
+	:onAdd="onAddSortOrderButtonClicked"
+	:onRemove="onRemoveSortOrderButtonClicked"
+/>
 </template>
 
 <script setup lang="ts" generic="T extends string">
 import { toRefs } from 'vue';
+import VuneSortOrderEditor from './vune/MkSortOrderEditor.vune';
 import type { MenuItem } from '@/types/menu.js';
 import type { SortOrder } from '@/components/MkSortOrderEditor.define.js';
-import MkTagItem from '@/components/MkTagItem.vue';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 
 const emit = defineEmits<{

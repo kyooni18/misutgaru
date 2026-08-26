@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkLoading from '@/components/global/MkLoading.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { state: 'fetching' | 'done'; headerActions?: PageHeaderItem[]; headerTabs?: unknown[]; onClose?: () => void; onGoToMisskey?: () => void };
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
+		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+			props.state === 'done'
+				? Element('div', { className: '_buttonsCenter' },
+					VueComponent(MkButton, { onClick: () => props.onClose?.() }, { default: () => Text(i18n.ts.close) }),
+					VueComponent(MkButton, { onClick: () => props.onGoToMisskey?.() }, { default: () => Text(i18n.ts.goToMisskey) }),
+				)
+				: Element('div', { className: '_fullInfo' }, VueComponent(MkLoading)),
+		),
+	})
+);

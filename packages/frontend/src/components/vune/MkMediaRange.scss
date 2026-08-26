@@ -1,0 +1,103 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-media-range {
+	position: relative;
+	--sliderBg: light-dark(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.15));
+	--thumbSize: 17px;
+}
+
+.mk-vune-media-range__seek {
+	position: relative;
+	-webkit-appearance: none;
+	appearance: none;
+	background: transparent;
+	border: 0;
+	border-radius: 26px;
+	color: var(--MI_THEME-accent);
+	display: block;
+	height: 24px;
+	margin: 0;
+	min-width: 0;
+	padding: 0;
+	transition: box-shadow .3s ease;
+	width: 100%;
+}
+
+.mk-vune-media-range__seek::-webkit-slider-runnable-track {
+	background-color: var(--sliderBg);
+	background-image: linear-gradient(to right,currentColor var(--value,0),transparent var(--value,0));
+	border: 0;
+	border-radius: 99rem;
+	height: 5px;
+	transition: box-shadow .3s ease;
+	user-select: none;
+}
+
+.mk-vune-media-range__seek::-moz-range-track {
+	background: transparent;
+	border: 0;
+	border-radius: 99rem;
+	height: 5px;
+	transition: box-shadow .3s ease;
+	user-select: none;
+	background-color: var(--sliderBg);
+}
+
+.mk-vune-media-range__seek::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	background: #fff;
+	border: 0;
+	border-radius: 100%;
+	box-shadow: 0 1px 1px rgba(35, 40, 47, .15),0 0 0 1px rgba(35, 40, 47, .2);
+	height: var(--thumbSize);
+	margin-top: calc((5px - var(--thumbSize)) / 2);
+	position: relative;
+	transition: all .2s ease;
+	width: var(--thumbSize);
+}
+
+.mk-vune-media-range__seek::-webkit-slider-thumb:active,
+.mk-vune-media-range__seek::-moz-range-thumb:active {
+	box-shadow: 0 1px 1px rgba(35, 40, 47, .15), 0 0 0 1px rgba(35, 40, 47, .15), 0 0 0 3px rgba(255, 255, 255, .5);
+}
+
+.mk-vune-media-range__seek::-moz-range-thumb {
+	background: #fff;
+	border: 0;
+	border-radius: 100%;
+	box-shadow: 0 1px 1px rgba(35, 40, 47, .15),0 0 0 1px rgba(35, 40, 47, .2);
+	height: var(--thumbSize);
+	position: relative;
+	transition: all .2s ease;
+	width: var(--thumbSize);
+}
+
+.mk-vune-media-range__seek::-moz-range-progress {
+	background: currentColor;
+	border-radius: 99rem;
+	height: 5px;
+}
+
+.mk-vune-media-range__buffer {
+	appearance: none;
+	background: transparent;
+	color: color(from var(--MI_THEME-accent) srgb r g b / 0.25);
+	border: 0;
+	border-radius: 99rem;
+	height: 5px;
+	left: 0;
+	margin-top: -2.5px;
+	padding: 0;
+	position: absolute;
+	top: 50%;
+	width: 100%;
+}
+
+.mk-vune-media-range__buffer::-webkit-progress-bar { background: transparent; }
+.mk-vune-media-range__buffer::-webkit-progress-value,
+.mk-vune-media-range__buffer::-moz-progress-bar {
+	background: currentColor;
+	border-radius: 100px;
+	min-width: 5px;
+	transition: width .2s ease;
+}

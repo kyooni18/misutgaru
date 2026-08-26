@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import MkStickyContainer from '@/components/global/MkStickyContainer.vue';
+import MkTab from '@/components/MkTab.vue';
+import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import type { IPaginator } from '@/utility/paginator.js';
+
+type UserTab = 'featured' | 'notes' | 'all' | 'files';
+type Props = { tab: UserTab; featuredPaginator: IPaginator<any, any>; notesPaginator: IPaginator<any, any>; tabClass: string; timelineClass: string; onTabChange?: (tab: UserTab) => void };
+const tabs = [
+	{ key: 'featured', label: i18n.ts.featured }, { key: 'notes', label: i18n.ts.notes }, { key: 'all', label: i18n.ts.all }, { key: 'files', label: i18n.ts.withFiles },
+];
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+		VueComponent(MkStickyContainer, {}, {
+			header: () => VueComponent(MkTab, { modelValue: props.tab, tabs, class: props.tabClass, 'onUpdate:modelValue': (value: UserTab) => props.onTabChange?.(value) }),
+			default: () => VueComponent(MkNotesTimeline, { noGap: true, paginator: props.tab === 'featured' ? props.featuredPaginator : props.notesPaginator, class: props.timelineClass }),
+		}),
+	)
+);

@@ -4,17 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<button class="_button" :class="$style.root" @click="menu">
-	<img :src="emoji.url" :class="$style.img" loading="lazy"/>
-	<div :class="$style.body">
-		<div :class="$style.name" class="_monospace">{{ emoji.name }}</div>
-		<div :class="$style.info">{{ emoji.aliases.join(' ') }}</div>
-	</div>
-</button>
+<VuneEmojiCard :emoji="emoji" :classes="$style" :onMenu="menu"/>
 </template>
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
+import VuneEmojiCard from './vune/emojis.emoji.vune';
 import type { MenuItem } from '@/types/menu.js';
 import * as os from '@/os.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';

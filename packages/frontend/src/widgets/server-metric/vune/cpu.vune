@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import XPie from '@/widgets/server-metric/pie.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { usage: number; meta: Misskey.entities.ServerInfoResponse };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: 'vrvdvrys' },
+		VueComponent(XPie, { class: 'pie', value: props.usage }),
+		Element('div', {},
+			Element('p', {}, Element('i', { className: 'ti ti-cpu' }), 'CPU'),
+			Element('p', {}, `${props.meta.cpu.cores} Logical cores`),
+			Element('p', {}, props.meta.cpu.model),
+		),
+	)
+);

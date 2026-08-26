@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -10,14 +15,14 @@ if (roots.length === 0) roots.push('packages/frontend/src');
 async function collect(target, output) {
 	const stat = await import('node:fs/promises').then(fs => fs.stat(target));
 	if (stat.isFile()) {
-		if (/\.vune\.[cm]?[jt]sx?$/.test(target)) output.push(target);
+		if (/\.vune(?:\.[cm]?[jt]sx?)?$/.test(target)) output.push(target);
 		return;
 	}
 	for (const entry of await readdir(target, { withFileTypes: true })) {
 		if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
 		const child = path.join(target, entry.name);
 		if (entry.isDirectory()) await collect(child, output);
-		else if (/\.vune\.[cm]?[jt]sx?$/.test(entry.name)) output.push(child);
+		else if (/\.vune(?:\.[cm]?[jt]sx?)?$/.test(entry.name)) output.push(child);
 	}
 }
 

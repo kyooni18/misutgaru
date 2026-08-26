@@ -4,35 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_spacer" style="--MI_SPACER-w: 800px;">
-	<div>
-		<MkStickyContainer>
-			<template #header>
-				<MkTab
-					v-model="tab"
-					:tabs="[
-						{ key: 'featured', label: i18n.ts.featured },
-						{ key: 'notes', label: i18n.ts.notes },
-						{ key: 'all', label: i18n.ts.all },
-						{ key: 'files', label: i18n.ts.withFiles },
-					]"
-					:class="$style.tab"
-				>
-				</MkTab>
-			</template>
-			<MkNotesTimeline v-if="tab === 'featured'" :noGap="true" :paginator="featuredPaginator" :class="$style.tl"/>
-			<MkNotesTimeline v-else :noGap="true" :paginator="notesPaginator" :class="$style.tl"/>
-		</MkStickyContainer>
-	</div>
-</div>
+<VuneUserNotes :tab="tab" :featuredPaginator="featuredPaginator" :notesPaginator="notesPaginator" :tabClass="$style.tab" :timelineClass="$style.tl" :onTabChange="value => tab = value"/>
 </template>
 
 <script lang="ts" setup>
+import VuneUserNotes from './vune/notes.vune';
 import { ref, computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
-import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
-import MkTab from '@/components/MkTab.vue';
-import { i18n } from '@/i18n.js';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

@@ -4,15 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root">
-	<input v-model="query" :class="$style.input" type="search" :placeholder="q">
-	<button :class="$style.button" @click="search"><i class="ti ti-search"></i> {{ i18n.ts.searchByGoogle }}</button>
-</div>
+<NativeGoogle :query="query" :q="q" :classes="$style" :onUpdateQuery="(value: string) => query = value" :onSearch="search"/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import { i18n } from '@/i18n.js';
+import VuneGoogle from './vune/MkGoogle.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const NativeGoogle = createVuneWebHost(VuneGoogle);
 
 const props = defineProps<{
 	q: string;

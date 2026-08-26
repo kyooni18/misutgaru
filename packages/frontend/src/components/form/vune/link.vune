@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group } from 'vune-ui';
+import MkA from '@/components/global/MkA.vue';
+import MkCondensedLine from '@/components/global/MkCondensedLine.vue';
+import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+
+type Props = { to?: string; active?: boolean; external?: boolean; behavior?: null | 'window' | 'browser'; inline?: boolean; classes: Record<string, string> };
+
+export default createVuneComponent<Props>((props, slots) => {
+	const content = () => Group() {
+		Element('span', { className: props.classes.icon }, VueSlot(slots.icon))
+		Element('div', { className: props.classes.headerText },
+			Element('div', {}, VueComponent(MkCondensedLine, { minScale: 2 / 3 }, { default: () => VueSlot(slots.default) })),
+		)
+		Element('span', { className: props.classes.suffix },
+			Element('span', { className: props.classes.suffixText }, VueSlot(slots.suffix)),
+			Element('i', { className: props.to && props.external ? 'ti ti-external-link' : 'ti ti-chevron-right' }),
+		)
+	};
+	const mainClass = [props.classes.main, props.active ? props.classes.active : null, '_button'];
+	const main = props.to
+		? (props.external
+			? Element('a', { className: mainClass, href: props.to, target: '_blank' }, content())
+			: VueComponent(MkA, { class: mainClass, to: props.to, behavior: props.behavior }, { default: content }))
+		: Element('div', { className: mainClass }, content());
+	return Element(props.to ? 'div' : 'button', {
+		className: [props.classes.root, props.inline ? props.classes.inline : null, props.to ? null : '_button'],
+	}, main);
+});

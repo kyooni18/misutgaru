@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import { defineAsyncComponent } from 'vue';
+import MkQrShow from '@/pages/qr.show.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkPolkadots from '@/components/MkPolkadots.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+const MkQrRead = defineAsyncComponent(() => import('@/pages/qr.read.vue'));
+
+type Props = { read?: boolean; rootClass: string; mainClass: string; buttonClass: string; onToggle?: () => void };
+export default createVuneComponent<Props>((props) => {
+	const read = vuneBoolean(props.read);
+	return Element('div', { className: [props.rootClass, '_pageScrollable'] },
+		Element('div', { className: ['_spacer', props.mainClass] },
+			VueComponent(MkButton, { class: props.buttonClass, rounded: true, onClick: () => props.onToggle?.() }, {
+				default: () => Group() { Element('i', { className: read ? 'ti ti-qrcode' : 'ti ti-scan' }); Text(read ? i18n.ts._qr.showTabTitle : i18n.ts._qr.readTabTitle) },
+			}),
+			read ? VueComponent(MkQrRead) : VueComponent(MkQrShow),
+		),
+		!read ? VueComponent(MkPolkadots, { accented: true, revered: true, height: 200, style: { position: 'sticky', bottom: 0, marginTop: '-200px' } }) : null,
+	);
+});

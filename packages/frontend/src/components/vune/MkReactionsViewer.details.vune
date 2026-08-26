@@ -1,0 +1,49 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { getEmojiName } from '@@/js/emojilist.js';
+import MkTooltip from '@/components/MkTooltip.vue';
+import MkReactionIcon from '@/components/MkReactionIcon.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	showing: boolean;
+	reaction: string;
+	users: Misskey.entities.UserLite[];
+	count: number;
+	anchorElement: HTMLElement;
+	classes: Record<string, string>;
+	onClosed?: () => void;
+};
+
+function reactionName(reaction: string) {
+	const trimLocal = reaction.replace('@.', '');
+	return trimLocal.startsWith(':') ? trimLocal : getEmojiName(reaction);
+}
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkTooltip, {
+		showing: props.showing,
+		anchorElement: props.anchorElement,
+		maxWidth: 340,
+		onClosed: () => props.onClosed?.(),
+	}, {
+		default: () => Element('div', { className: props.classes.root },
+			Element('div', { className: props.classes.reaction },
+				VueComponent(MkReactionIcon, { reaction: props.reaction, class: props.classes.reactionIcon, noStyle: true }),
+				Element('div', { className: props.classes.reactionName }, reactionName(props.reaction)),
+			),
+			Element('div', { className: props.classes.users },
+				ForEach(props.users, key: (user) => user.id) { user in
+					Element('div', { className: props.classes.user },
+						VueComponent(MkAvatar, { class: props.classes.avatar, user }),
+						VueComponent(MkUserName, { user, nowrap: true }),
+					)
+				},
+				props.count > 10 ? Element('div', { className: props.classes.more }, `+${props.count - 10}`) : null,
+			),
+		),
+	})
+);

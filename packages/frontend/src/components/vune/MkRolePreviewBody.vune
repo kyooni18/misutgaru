@@ -1,0 +1,66 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Box, Image, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import VuneIcon from '@/vune/Icon.vune';
+
+type Role = Misskey.entities.Role | Misskey.entities.IResponse['roles'][number];
+type StyleClasses = Record<string, string>;
+
+function roleIcon(role: Role): string {
+	if (role.isAdministrator) return 'ti ti-crown';
+	if (role.isModerator) return 'ti ti-shield';
+	return 'ti ti-user';
+}
+
+function roleIconStyle(role: Role): { color: string } | { opacity: number } {
+	return role.isAdministrator || role.isModerator
+		? { color: 'var(--MI_THEME-accent)' }
+		: { opacity: 0.7 };
+}
+
+function roleUsers(role: Role): string | undefined {
+	if (!('target' in role) || !('usersCount' in role)) return undefined;
+	if (role.target === 'manual') return `${role.usersCount} users`;
+	if (role.target === 'conditional') return '? users';
+	return '';
+}
+
+export struct MkRolePreviewBody: View {
+	let role: Role
+	let detailed: boolean
+	let classes: StyleClasses
+
+	init(_ role: Role, detailed: boolean = false, classes: StyleClasses) {
+		self.role = role
+		self.detailed = detailed
+		self.classes = classes
+	}
+
+	var body: some View {
+		Box() {
+			Box() {
+				Box() {
+					if (role.iconUrl) {
+						Image(role.iconUrl, { alt: '' }).className(classes.bodyBadge)
+					} else {
+						VuneIcon(roleIcon(role)).style(roleIconStyle(role))
+					}
+				}
+					.className(classes.bodyIcon)
+				Text(role.name).className(classes.bodyName)
+				if (detailed && roleUsers(role) !== undefined) {
+					Text(roleUsers(role)!).className(classes.bodyUsers)
+				}
+			}
+				.className(classes.bodyTitle)
+			Box() {
+				Text(role.description)
+			}
+				.className(classes.bodyDescription)
+		}
+			.style({ display: 'contents' })
+	}
+}
+
+export default MkRolePreviewBody

@@ -8,6 +8,10 @@ import sharedConfig from '../shared/eslint.config.js';
 export default [
 	...sharedConfig,
 	{
+		// Vune sources use SwiftUI-style syntax and are validated by the Vune compiler check.
+		ignores: ['**/*.vune', '**/*.vune.*'],
+	},
+	{
 		files: ['src/**/*.vue'],
 		...pluginMisskey.configs.typescript,
 	},

@@ -1,0 +1,71 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text, VStack } from 'vune-ui';
+import MkInput from '@/components/MkInput.vue';
+import FormSection from '@/components/form/section.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	name: string;
+	url: string;
+	secret: string;
+	eventFollow: boolean;
+	eventFollowed: boolean;
+	eventNote: boolean;
+	eventReply: boolean;
+	eventRenote: boolean;
+	eventReaction: boolean;
+	eventMention: boolean;
+	onName?: (value: string) => void;
+	onUrl?: (value: string) => void;
+	onSecret?: (value: string) => void;
+	onEventFollow?: (value: boolean) => void;
+	onEventFollowed?: (value: boolean) => void;
+	onEventNote?: (value: boolean) => void;
+	onEventReply?: (value: boolean) => void;
+	onEventRenote?: (value: boolean) => void;
+	onEventReaction?: (value: boolean) => void;
+	onEventMention?: (value: boolean) => void;
+	onCreate?: () => void;
+};
+
+function switchRow(value: boolean, label: string, onChange: ((value: boolean) => void) | undefined, disabled = false) {
+	return VueComponent(MkSwitch, {
+		modelValue: value,
+		disabled,
+		'onUpdate:modelValue': (next: boolean) => onChange?.(next),
+	}, { default: () => Text(label) });
+}
+
+export default createVuneComponent<Props>((props) =>
+	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkInput, { modelValue: props.name, 'onUpdate:modelValue': (value: string) => props.onName?.(value) }, {
+			label: () => Text(i18n.ts._webhookSettings.name),
+		})
+		VueComponent(MkInput, { modelValue: props.url, type: 'url', 'onUpdate:modelValue': (value: string) => props.onUrl?.(value) }, {
+			label: () => Text('URL'),
+		})
+		VueComponent(MkInput, { modelValue: props.secret, 'onUpdate:modelValue': (value: string) => props.onSecret?.(value) }, {
+			prefix: () => Element('i', { className: 'ti ti-lock' }),
+			label: () => Text(i18n.ts._webhookSettings.secret),
+		})
+		VueComponent(FormSection, {}, {
+			label: () => Text(i18n.ts._webhookSettings.trigger),
+			default: () => VStack(alignment: 'stretch', spacing: 'var(--MI-marginHalf)') {
+				switchRow(props.eventFollow, i18n.ts._webhookSettings._events.follow, props.onEventFollow)
+				switchRow(props.eventFollowed, i18n.ts._webhookSettings._events.followed, props.onEventFollowed)
+				switchRow(props.eventNote, i18n.ts._webhookSettings._events.note, props.onEventNote)
+				switchRow(props.eventReply, i18n.ts._webhookSettings._events.reply, props.onEventReply)
+				switchRow(props.eventRenote, i18n.ts._webhookSettings._events.renote, props.onEventRenote)
+				switchRow(props.eventReaction, i18n.ts._webhookSettings._events.reaction, props.onEventReaction, true)
+				switchRow(props.eventMention, i18n.ts._webhookSettings._events.mention, props.onEventMention)
+			}.className('_gaps_s'),
+		})
+		VueComponent(MkButton, { primary: true, inline: true, onClick: () => props.onCreate?.() }, {
+			default: () => Group() { Element('i', { className: 'ti ti-check' }); Text(` ${i18n.ts.create}`) },
+		})
+	}
+		.className('_gaps_m')
+);

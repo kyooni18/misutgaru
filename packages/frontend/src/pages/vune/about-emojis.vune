@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import XEmoji from '@/pages/emojis.emoji.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkFoldableSection from '@/components/MkFoldableSection.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = { q: string; searchEmojis?: Misskey.entities.EmojiSimple[] | null; customEmojis: Misskey.entities.EmojiSimple[]; categories: Array<string | null>; canManage?: boolean; emojisClass: string; onQChange?: (value: string) => void };
+function emojiGrid(items: Misskey.entities.EmojiSimple[], className: string) {
+	return Element('div', { className }, ForEach(items, key: emoji => emoji.name) { emoji in VueComponent(XEmoji, { emoji }) });
+}
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_gaps' },
+		vuneBoolean(props.canManage) ? VueComponent(MkButton, { primary: true, type: 'routerLink', to: '/custom-emojis-manager' }, { default: () => Text(i18n.ts.manageCustomEmojis) }) : null,
+		Element('div', { className: 'query' },
+			VueComponent(MkInput, { modelValue: props.q, placeholder: i18n.ts.search, autocapitalize: 'off', 'onUpdate:modelValue': (value: string) => props.onQChange?.(value) }, {
+				prefix: () => Element('i', { className: 'ti ti-search' }),
+			}),
+		),
+		props.searchEmojis ? VueComponent(MkFoldableSection, {}, {
+			header: () => Text(i18n.ts.searchResult),
+			default: () => emojiGrid(props.searchEmojis!, props.emojisClass),
+		}) : null,
+		ForEach(props.categories, key: category => category ?? '___root___') { category in
+			VueComponent(MkFoldableSection, { expanded: false }, {
+				header: () => Text(category || i18n.ts.other),
+				default: () => emojiGrid(props.customEmojis.filter(e => e.category === category), props.emojisClass),
+			})
+		},
+	)
+);

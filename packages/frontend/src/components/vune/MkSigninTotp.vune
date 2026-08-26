@@ -1,0 +1,33 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = { token: string; backup?: boolean; classes: Record<string,string>; onTokenChange?: (value: string) => void; onToggleBackup?: () => void; onSubmit?: () => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.classes.wrapper },
+		Element('div', { className: ['_gaps', props.classes.root] },
+			Element('div', { className: '_gaps_s' },
+				Element('div', { className: props.classes.totpIcon }, Element('i', { className: 'ti ti-key' })),
+				Element('div', { className: props.classes.totpDescription }, i18n.ts['2fa']),
+			),
+			Element('form', { className: '_gaps_s', onSubmit: (ev: SubmitEvent) => { ev.preventDefault(); props.onSubmit?.(); } },
+				VueComponent(MkInput, {
+					modelValue: props.token,
+					type: 'text',
+					pattern: vuneBoolean(props.backup) ? '^[A-Z0-9]{32}$' : '^[0-9]{6}$',
+					autocomplete: 'one-time-code', required: true, autofocus: true, spellcheck: false,
+					inputmode: vuneBoolean(props.backup) ? undefined : 'numeric',
+					'onUpdate:modelValue': (value: string) => props.onTokenChange?.(value),
+				}, {
+					label: () => Text(`${i18n.ts.token} (${i18n.ts['2fa']})`),
+					prefix: () => Element('i', { className: vuneBoolean(props.backup) ? 'ti ti-key' : 'ti ti-123' }),
+					caption: () => Element('button', { className: '_textButton', type: 'button', onClick: () => props.onToggleBackup?.() }, vuneBoolean(props.backup) ? i18n.ts.useTotp : i18n.ts.useBackupCode),
+				}),
+				VueComponent(MkButton, { type: 'submit', large: true, primary: true, rounded: true, style: { margin: '0 auto' } }, { default: () => Group() { Text(i18n.ts.continue); Element('i', { className: 'ti ti-arrow-right' }) } }),
+			),
+		),
+	)
+);

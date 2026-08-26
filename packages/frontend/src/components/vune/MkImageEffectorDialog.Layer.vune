@@ -1,0 +1,39 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import type { ImageEffectorLayer } from '@/utility/image-effector/ImageEffector.js';
+import MkFolder from '@/components/MkFolder.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkImageEffectorFxForm from '@/components/MkImageEffectorFxForm.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	label: string;
+	params: ImageEffectorLayer['params'];
+	paramDefs: unknown;
+	onUpdateParams?: (params: ImageEffectorLayer['params']) => void;
+	onDelete?: () => void;
+	onSwapUp?: () => void;
+	onSwapDown?: () => void;
+};
+
+function iconButton(icon: string, action?: () => void) {
+	return VueComponent(MkButton, { iconOnly: true, onClick: () => action?.() }, {
+		default: () => Element('i', { className: icon }),
+	});
+}
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkFolder, { defaultOpen: true, canPage: false }, {
+		label: () => Text(props.label),
+		footer: () => Element('div', { className: '_buttons' },
+			iconButton('ti ti-trash', props.onDelete),
+			iconButton('ti ti-arrow-up', props.onSwapUp),
+			iconButton('ti ti-arrow-down', props.onSwapDown),
+		),
+		default: () => VueComponent(MkImageEffectorFxForm, {
+			modelValue: props.params,
+			paramDefs: props.paramDefs,
+			'onUpdate:modelValue': (value: ImageEffectorLayer['params']) => props.onUpdateParams?.(value),
+		}),
+	})
+);

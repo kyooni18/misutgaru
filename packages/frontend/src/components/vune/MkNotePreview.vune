@@ -1,0 +1,38 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import Mfm from '@/components/global/MkMfm.js';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import MkCwButton from '@/components/MkCwButton.vue';
+import type { PollEditorModelValue } from '@/components/MkPollEditor.types.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	text: string;
+	files: Misskey.entities.DriveFile[];
+	poll?: PollEditorModelValue;
+	useCw: boolean;
+	cw: string | null;
+	user: Misskey.entities.User;
+	showContent?: boolean;
+	classes: Record<string, string>;
+	onShowContent?: (value: boolean) => void;
+};
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.classes.root },
+		VueComponent(MkAvatar, { class: props.classes.avatar, user: props.user }),
+		Element('div', { className: props.classes.main },
+			Element('div', { className: props.classes.header }, VueComponent(MkUserName, { user: props.user, nowrap: true })),
+			Element('div', {},
+				props.useCw ? Element('p', { className: props.classes.cw },
+					props.cw ? VueComponent(Mfm as any, { text: props.cw, author: props.user, nyaize: 'respect', i: props.user, style: { marginRight: '8px' } }) : null,
+					VueComponent(MkCwButton, { modelValue: props.showContent, text: props.text.trim(), files: props.files, poll: props.poll, style: { margin: '4px 0' }, 'onUpdate:modelValue': (value: boolean) => props.onShowContent?.(value) }),
+				) : null,
+				Element('div', { style: { display: !props.useCw || props.showContent ? '' : 'none' } },
+					VueComponent(Mfm as any, { text: props.text.trim(), author: props.user, nyaize: 'respect', i: props.user }),
+				),
+			),
+		),
+	)
+);

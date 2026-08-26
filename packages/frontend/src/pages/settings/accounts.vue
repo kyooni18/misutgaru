@@ -4,33 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker path="/settings/accounts" :label="i18n.ts.accounts" :keywords="['accounts']" icon="ti ti-users">
-	<div class="_gaps">
-		<div class="_buttons">
-			<MkButton primary @click="addAccount"><i class="ti ti-plus"></i> {{ i18n.ts.addAccount }}</MkButton>
-			<!--<MkButton @click="refreshAllAccounts"><i class="ti ti-refresh"></i></MkButton>-->
-		</div>
-
-		<template v-for="x in accounts" :key="x.host + x.id">
-			<MkUserCardMini v-if="x.user" :user="x.user" :class="$style.user" @click.prevent="showMenu(x.host, x.id, $event)"/>
-		</template>
-	</div>
-</SearchMarker>
+<VuneAccounts :accounts="accounts" :userClass="$style.user" :onAddAccount="addAccount" :onShowMenu="showMenu"/>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import * as Misskey from 'misskey-js';
+import VuneAccounts from './vune/accounts.vune';
+import { computed } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i } from '@/i.js';
 import { switchAccount, removeAccount, login, getAccountWithSigninDialog, getAccountWithSignupDialog, getAccounts } from '@/accounts.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import MkUserCardMini from '@/components/MkUserCardMini.vue';
-import { prefer } from '@/preferences.js';
 
 const accounts = await getAccounts();
 

@@ -4,34 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<MkSelect v-model="selectedThemeId" :items="selectedThemeIdDef">
-		<template #label>{{ i18n.ts.theme }}</template>
-	</MkSelect>
-	<template v-if="selectedTheme != null">
-		<MkInput readonly :modelValue="selectedTheme.author">
-			<template #label>{{ i18n.ts.author }}</template>
-		</MkInput>
-		<MkTextarea v-if="selectedTheme.desc" readonly :modelValue="selectedTheme.desc">
-			<template #label>{{ i18n.ts._theme.description }}</template>
-		</MkTextarea>
-		<MkTextarea readonly tall :modelValue="selectedThemeCode">
-			<template #label>{{ i18n.ts._theme.code }}</template>
-			<template #caption><button class="_textButton" @click="copyThemeCode()">{{ i18n.ts.copy }}</button></template>
-		</MkTextarea>
-		<MkButton v-if="!builtinThemes.some(t => t.id == selectedTheme!.id)" danger @click="uninstall()"><i class="ti ti-trash"></i> {{ i18n.ts.uninstall }}</MkButton>
-	</template>
-</div>
+<VuneThemeManage
+	:selectedThemeId="selectedThemeId"
+	:selectedThemeIdDef="selectedThemeIdDef"
+	:selectedTheme="selectedTheme"
+	:selectedThemeCode="selectedThemeCode"
+	:isBuiltin="selectedTheme != null && builtinThemes.some(t => t.id === selectedTheme.id)"
+	:onThemeId="value => selectedThemeId = value"
+	:onCopy="copyThemeCode"
+	:onUninstall="uninstall"
+/>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
+import VuneThemeManage from './vune/theme.manage.vune';
 import JSON5 from 'json5';
 import type { Theme } from '@@/js/theme.js';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkSelect from '@/components/MkSelect.vue';
-import MkInput from '@/components/MkInput.vue';
-import MkButton from '@/components/MkButton.vue';
 import { removeTheme } from '@/theme.js';
 import { getBuiltinThemes } from '@@/js/theme.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';

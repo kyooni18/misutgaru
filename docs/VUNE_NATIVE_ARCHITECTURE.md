@@ -12,7 +12,7 @@ A native Vune component is marked with:
 
 Marked source is renderer-independent and may use Vune Views, builders, state, collections, controls, shapes, and modifiers. It must not import `@vune-ui/vue` or the legacy `@/vune/vue.js` bridge, call `VueComponent(...)` / `VueSlot(...)`, or instantiate raw `Element(...)` nodes in feature code. `scripts/check-vune-native.mjs` enforces this boundary.
 
-If a low-level web semantic has no first-class Vune primitive yet, it belongs in the small platform primitive module at `src/vune/native.ts`, not scattered through components. The current phase-1 native set needs no raw `Element(...)` escape hatch at all.
+If a low-level web semantic has no first-class Vune primitive yet, it belongs in the small platform primitive module at `src/vune/native.ts`, not scattered through components. The current SVG and anchor cases use this centralized helper; feature Views still never call raw `Element(...)` directly.
 
 ## Renderers
 
@@ -70,4 +70,4 @@ pnpm vune:report
 
 `vune:check` performs Vune compiler validation plus the native-boundary rule. Native files are also expected to produce valid TypeScript after Vune lowering.
 
-The migration report deliberately separates "Vune source" from "native Vune". A file does not count as native merely because its extension is `.vune.ts`. Native Vue-component calls, native Vue-slot calls, and native raw-Element calls must all remain zero.
+The migration report deliberately separates "Vune source" from "native Vune". A file does not count as native merely because its extension is `.vune`. Native Vue-component calls, native Vue-slot calls, and native raw-Element calls must all remain zero.

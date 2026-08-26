@@ -4,14 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root" :style="{ zIndex, top: `${y - 64}px`, left: `${x - 64}px` }">
-	<span class="text" :class="{ up }">+{{ value }}</span>
-</div>
+<NativePlusOneEffect :x="props.x" :y="props.y" :value="props.value" :zIndex="zIndex" :up="up" :angle="angle" :rootClass="$style.root"/>
 </template>
 
 <script lang="ts" setup>
+import VunePlusOneEffect from './vune/MkPlusOneEffect.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
+
+const NativePlusOneEffect = createVuneWebHost(VunePlusOneEffect);
 
 const props = withDefaults(defineProps<{
 	x: number;

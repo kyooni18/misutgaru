@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import XQueue from '@/pages/admin/federation-job-queue.chart.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { tab: 'deliver' | 'inbox'; headerActions?: PageHeaderItem[]; headerTabs?: unknown[]; onTabChange?: (value: 'deliver' | 'inbox') => void; onPromote?: () => void; onClear?: () => void };
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], 'onUpdate:tab': (value: 'deliver' | 'inbox') => props.onTabChange?.(value) }, {
+		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+			VueComponent(XQueue, { domain: props.tab }),
+			Element('br'),
+			Element('div', { className: '_buttons' },
+				VueComponent(MkButton, { onClick: () => props.onPromote?.() }, { default: () => Group() { Element('i', { className: 'ti ti-reload' }); Text(i18n.ts.retryAllQueuesNow) } }),
+				VueComponent(MkButton, { danger: true, onClick: () => props.onClear?.() }, { default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(i18n.ts.clearQueue) } }),
+			),
+		),
+	})
+);

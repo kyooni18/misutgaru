@@ -1,0 +1,48 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import MkEllipsis from '@/components/global/MkEllipsis.vue';
+import PageWithAnimBg from '@/components/global/PageWithAnimBg.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = { submitting?: boolean; onSubmit?: () => void };
+
+export default createVuneComponent<Props>((props) => {
+	const submitting = vuneBoolean(props.submitting, false);
+	return VueComponent(PageWithAnimBg, {}, {
+		default: () => Element('div', { className: 'mk-vune-signup-complete' },
+			Element('form', {
+				className: '_panel mk-vune-signup-complete__form',
+				onSubmit: (event) => {
+					event.preventDefault?.();
+					props.onSubmit?.();
+				},
+			},
+				Element('div', { className: 'mk-vune-signup-complete__banner' },
+					Element('i', { className: 'ti ti-user-check' }),
+				),
+				Element('div', { className: '_gaps_m', style: { padding: '32px' } },
+					Element('div', {}, i18n.tsx.clickToFinishEmailVerification({ ok: i18n.ts.gotIt })),
+					Element('div', {},
+						VueComponent(MkButton, {
+							gradate: true,
+							large: true,
+							rounded: true,
+							type: 'submit',
+							disabled: submitting,
+							'data-testid': 'admin-ok',
+							style: 'margin: 0 auto;',
+						}, {
+							default: () => Group() {
+								Text(submitting ? i18n.ts.processing : i18n.ts.gotIt)
+								if (submitting) { VueComponent(MkEllipsis) }
+							},
+						}),
+					),
+				),
+			),
+		),
+	});
+});

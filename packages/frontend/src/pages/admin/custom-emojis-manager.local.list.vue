@@ -4,48 +4,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header>
-		<MkPageHeader :overridePageMetadata="headerPageMetadata" :actions="headerActions"/>
-	</template>
-	<template #default>
-		<div class="_gaps" :class="$style.main">
-			<component :is="loadingHandler.component.value" v-if="loadingHandler.showing.value"/>
-			<template v-else>
-				<div v-if="gridItems.length === 0" style="text-align: center">
-					{{ i18n.ts._customEmojisManager._local._list.emojisNothing }}
-				</div>
-
-				<template v-else>
-					<div :class="$style.grid">
-						<MkGrid :data="gridItems" :settings="setupGrid()" @event="onGridEvent"/>
-					</div>
-				</template>
-			</template>
-		</div>
-	</template>
-
-	<template #footer>
-		<div v-if="gridItems.length > 0" :class="$style.footer">
-			<div :class="$style.left">
-				<MkButton danger style="margin-right: auto" @click="onDeleteButtonClicked">
-					{{ i18n.ts.delete }} ({{ deleteItemsCount }})
-				</MkButton>
-			</div>
-
-			<div :class="$style.center">
-				<MkPagingButtons :current="currentPage" :max="allPages" :buttonCount="5" @pageChanged="onPageChanged"/>
-			</div>
-
-			<div :class="$style.right">
-				<MkButton primary :disabled="updateButtonDisabled" @click="onUpdateButtonClicked">
-					{{ i18n.ts.update }} ({{ updatedItemsCount }})
-				</MkButton>
-				<MkButton @click="onGridResetButtonClicked">{{ i18n.ts.reset }}</MkButton>
-			</div>
-		</div>
-	</template>
-</MkStickyContainer>
+<VuneEmojiLocalList
+	:headerPageMetadata="headerPageMetadata"
+	:headerActions="headerActions"
+	:loadingComponent="loadingHandler.component.value"
+	:loadingShowing="loadingHandler.showing.value"
+	:gridItems="gridItems"
+	:gridSettings="setupGrid()"
+	:classes="$style"
+	:deleteItemsCount="deleteItemsCount"
+	:updatedItemsCount="updatedItemsCount"
+	:updateButtonDisabled="updateButtonDisabled"
+	:currentPage="currentPage"
+	:allPages="allPages"
+	:onGridEvent="onGridEvent"
+	:onDelete="onDeleteButtonClicked"
+	:onPageChanged="onPageChanged"
+	:onUpdate="onUpdateButtonClicked"
+	:onReset="onGridResetButtonClicked"
+/>
 </template>
 
 <script lang="ts">
@@ -72,6 +49,7 @@ export type EmojiSearchQuery = {
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref, nextTick, useCssModule } from 'vue';
 import * as Misskey from 'misskey-js';
+import VuneEmojiLocalList from './vune/custom-emojis-manager.local.list.vune';
 import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
 import type { GridCellValidationEvent, GridCellValueChangeEvent, GridEvent } from '@/components/grid/grid-event.js';
 import type { GridSetting } from '@/components/grid/grid.js';
@@ -82,15 +60,14 @@ import {
 	emptyStrToUndefined,
 	roleIdsParser,
 } from '@/pages/admin/custom-emojis-manager.impl.js';
-import MkGrid from '@/components/grid/MkGrid.vue';
 import { i18n } from '@/i18n.js';
-import MkButton from '@/components/MkButton.vue';
 import { validators } from '@/components/grid/cell-validators.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import MkPagingButtons from '@/components/MkPagingButtons.vue';
 import { selectFile } from '@/utility/drive.js';
 import { copyGridDataToClipboard, removeDataFromGrid } from '@/components/grid/grid-utils.js';
 import { useLoading } from '@/composables/use-loading.js';
+
+const $style = useCssModule();
 
 type GridItem = {
 	checked: boolean;
@@ -112,8 +89,6 @@ type GridItem = {
 };
 
 function setupGrid(): GridSetting {
-	const $style = useCssModule();
-
 	const required = validators.required();
 	const regex = validators.regex(/^[a-zA-Z0-9_]+$/);
 	const unique = validators.unique();

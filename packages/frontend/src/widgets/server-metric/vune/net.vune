@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import bytes from '@/filters/bytes.js';
+import { createVuneComponent } from '@/vune/vue.js';
+
+type Props = {
+	viewBoxX: number;
+	viewBoxY: number;
+	inPolygonPoints: string;
+	outPolygonPoints: string;
+	inPolylinePoints: string;
+	outPolylinePoints: string;
+	inHeadX?: number;
+	inHeadY?: number;
+	outHeadX?: number;
+	outHeadY?: number;
+	inRecent: number;
+	outRecent: number;
+};
+
+function graph(
+	viewBoxX: number,
+	viewBoxY: number,
+	polygonPoints: string,
+	polylinePoints: string,
+	headX: number | undefined,
+	headY: number | undefined,
+	color: string,
+	label: string,
+	recent: number,
+) {
+	return Element('svg', {},
+		Element('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
+		Element('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
+		Element('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
+		Element('text', {}, `${label} `, Element('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
+	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
+}
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: 'oxxrhrto' },
+		graph(props.viewBoxX, props.viewBoxY, props.inPolygonPoints, props.inPolylinePoints, props.inHeadX, props.inHeadY, '#94a029', 'NET rx', props.inRecent),
+		graph(props.viewBoxX, props.viewBoxY, props.outPolygonPoints, props.outPolylinePoints, props.outHeadX, props.outHeadY, '#ff9156', 'NET tx', props.outRecent),
+	)
+);

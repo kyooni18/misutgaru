@@ -1,0 +1,71 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { HStack, Text, VStack } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkFileListForAdmin from '@/components/MkFileListForAdmin.vue';
+import { i18n } from '@/i18n.js';
+import type { IPaginator } from '@/utility/paginator.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	origin: string;
+	originDef: unknown;
+	searchHost: string;
+	userId: string;
+	mimeType: string | null;
+	viewMode: 'grid' | 'list';
+	paginator: IPaginator<any, any>;
+	hostDisabled: boolean;
+	headerActions?: unknown[];
+	headerTabs?: unknown[];
+	onOrigin?: (value: string) => void;
+	onHost?: (value: string) => void;
+	onUserId?: (value: string) => void;
+	onMimeType?: (value: string | null) => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
+		default: () => VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+			HStack(alignment: 'center', spacing: 'var(--MI-margin)') {
+				VueComponent(MkSelect, {
+					modelValue: props.origin,
+					items: props.originDef,
+					style: { margin: 0, flex: 1 },
+					'onUpdate:modelValue': (value: string) => props.onOrigin?.(value),
+				}, { label: () => Text(i18n.ts.instance) })
+				VueComponent(MkInput, {
+					modelValue: props.searchHost,
+					debounce: true,
+					type: 'search',
+					style: { margin: 0, flex: 1 },
+					disabled: props.hostDisabled,
+					'onUpdate:modelValue': (value: string) => props.onHost?.(value),
+				}, { label: () => Text(i18n.ts.host) })
+			}.style({ flexWrap: 'wrap' })
+			HStack(alignment: 'center', spacing: 'var(--MI-margin)') {
+				VueComponent(MkInput, {
+					modelValue: props.userId,
+					debounce: true,
+					type: 'search',
+					style: { margin: 0, flex: 1 },
+					'onUpdate:modelValue': (value: string) => props.onUserId?.(value),
+				}, { label: () => Text('User ID') })
+				VueComponent(MkInput, {
+					modelValue: props.mimeType,
+					debounce: true,
+					type: 'search',
+					style: { margin: 0, flex: 1 },
+					'onUpdate:modelValue': (value: string | null) => props.onMimeType?.(value),
+				}, { label: () => Text('MIME type') })
+			}.style({ flexWrap: 'wrap' })
+				VueComponent(MkFileListForAdmin, { paginator: props.paginator, viewMode: props.viewMode })
+			}
+				.className('_gaps')
+		}
+			.className('_spacer')
+			.style({ '--MI_SPACER-w': '900px' })
+	})
+);

@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = {
+	fileName: string;
+	friendlyFileName: string;
+	onSelect?: (event: PointerEvent) => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', {},
+		VueComponent(MkButton, {
+			inline: true,
+			rounded: true,
+			primary: true,
+			onClick: (event: PointerEvent) => props.onSelect?.(event),
+		}, { default: () => Text(i18n.ts.selectFile) }),
+		Element('div', {
+			className: ['_nowrap', !props.fileName ? 'mk-vune-form-file__missing' : null],
+		}, props.friendlyFileName),
+	)
+);

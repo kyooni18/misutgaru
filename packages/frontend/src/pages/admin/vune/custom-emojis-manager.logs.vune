@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import MkGrid from '@/components/grid/MkGrid.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
+import type { GridSetting } from '@/components/grid/grid.js';
+
+type Props = { logs: RequestLogItem[]; filteredLogs: RequestLogItem[]; showingSuccessLogs?: boolean; settings: GridSetting; onToggleSuccess?: (value: boolean) => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', {},
+		props.logs.length > 0
+			? Element('div', { style: { display: 'flex', flexDirection: 'column', overflowY: 'scroll', gap: '16px' } },
+				VueComponent(MkSwitch, { modelValue: props.showingSuccessLogs, 'onUpdate:modelValue': (value: boolean) => props.onToggleSuccess?.(value) }, {
+					label: () => Text(i18n.ts._customEmojisManager._logs.showSuccessLogSwitch),
+				}),
+				Element('div', {}, props.filteredLogs.length > 0
+					? Element('div', {}, VueComponent(MkGrid, { data: props.filteredLogs, settings: props.settings }))
+					: Text(i18n.ts._customEmojisManager._logs.failureLogNothing)),
+			)
+			: Text(i18n.ts._customEmojisManager._logs.logNothing),
+	)
+);

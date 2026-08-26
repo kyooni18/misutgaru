@@ -4,20 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader :actions="headerActions" :tabs="headerTabs">
-	<div class="_spacer" style="--MI_SPACER-w: 800px;">
-		<div v-if="state === 'done'" class="_buttonsCenter">
-			<MkButton @click="close">{{ i18n.ts.close }}</MkButton>
-			<MkButton @click="goToMisskey">{{ i18n.ts.goToMisskey }}</MkButton>
-		</div>
-		<div v-else class="_fullInfo">
-			<MkLoading/>
-		</div>
-	</div>
-</PageWithHeader>
+<VuneLookup :state="state" :headerActions="headerActions" :headerTabs="headerTabs" :onClose="close" :onGoToMisskey="goToMisskey"/>
 </template>
 
 <script lang="ts" setup>
+import VuneLookup from '@/pages/vune/lookup.vune';
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
@@ -25,7 +16,6 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { mainRouter } from '@/router.js';
-import MkButton from '@/components/MkButton.vue';
 
 const state = ref<'fetching' | 'done'>('fetching');
 

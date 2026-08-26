@@ -4,37 +4,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps">
-	<MkInput v-model="name_" :disabled="!isOwner">
-		<template #label>{{ i18n.ts.name }}</template>
-	</MkInput>
-
-	<MkTextarea v-model="description_" :disabled="!isOwner">
-		<template #label>{{ i18n.ts.description }}</template>
-	</MkTextarea>
-
-	<MkButton v-if="isOwner" primary @click="save">{{ i18n.ts.save }}</MkButton>
-
-	<hr>
-
-	<MkButton v-if="isOwner || ($i.isAdmin || $i.isModerator)" danger @click="del">{{ i18n.ts._chat.deleteRoom }}</MkButton>
-
-	<MkSwitch v-if="!isOwner" v-model="isMuted">
-		<template #label>{{ i18n.ts._chat.muteThisRoom }}</template>
-	</MkSwitch>
-</div>
+<VuneRoomInfo
+	:name="name_"
+	:description="description_"
+	:isOwner="isOwner"
+	:canDelete="isOwner || $i.isAdmin || $i.isModerator"
+	:isMuted="isMuted"
+	:onName="value => name_ = value"
+	:onDescription="value => description_ = value"
+	:onMuted="value => isMuted = value"
+	:onSave="save"
+	:onDelete="del"
+/>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import VuneRoomInfo from './vune/room.info.vune';
 import * as Misskey from 'misskey-js';
-import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
-import MkInput from '@/components/MkInput.vue';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
 import { useRouter } from '@/router.js';
 
 const router = useRouter();

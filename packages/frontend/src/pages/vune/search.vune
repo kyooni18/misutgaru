@@ -1,0 +1,27 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import { defineAsyncComponent } from 'vue';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+const XNote = defineAsyncComponent(() => import('@/pages/search.note.vue'));
+const XUser = defineAsyncComponent(() => import('@/pages/search.user.vue'));
+type Props = { tab: string; searchProps: Record<string, unknown>; notesAvailable?: boolean; usersAvailable?: boolean; ignoreNotesAvailable?: boolean; headerActions?: PageHeaderItem[]; headerTabs?: unknown[]; onTabChange?: (value: string) => void };
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], swipable: true, 'onUpdate:tab': (value: string) => props.onTabChange?.(value) }, {
+		default: () => props.tab === 'note'
+			? Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+				vuneBoolean(props.notesAvailable) || vuneBoolean(props.ignoreNotesAvailable)
+					? VueComponent(XNote, props.searchProps)
+					: VueComponent(MkInfo, { warn: true }, { default: () => Text(i18n.ts.notesSearchNotAvailable) }),
+			)
+			: Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+				vuneBoolean(props.usersAvailable)
+					? VueComponent(XUser, props.searchProps)
+					: VueComponent(MkInfo, { warn: true }, { default: () => Text(i18n.ts.usersSearchNotAvailable) }),
+			),
+	})
+);

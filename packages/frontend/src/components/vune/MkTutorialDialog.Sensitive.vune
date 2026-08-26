@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkFolder from '@/components/MkFolder.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import MkNote from '@/components/MkNote.vue';
+import MkPostForm from '@/components/MkPostForm.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = {
+	exampleNote: Misskey.entities.Note;
+	onceSucceeded?: boolean;
+	onFileChangeSensitive?: (fileId: string, to: boolean) => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_gaps' },
+		Element('div', { style: { textAlign: 'center', padding: '0 16px' } }, i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.description),
+		Element('div', {}, i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.tryThisFile),
+		VueComponent(MkInfo, {}, { default: () => Text(i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.method) }),
+		VueComponent(MkPostForm, {
+			class: 'mk-vune-tutorial-sensitive-example',
+			mock: true,
+			autofocus: false,
+			initialNote: props.exampleNote,
+			onFileChangeSensitive: (fileId: string, to: boolean) => props.onFileChangeSensitive?.(fileId, to),
+		}),
+		vuneBoolean(props.onceSucceeded, false)
+			? Element('div', {},
+				Element('b', { style: { color: 'var(--MI_THEME-accent)' } },
+					Element('i', { className: 'ti ti-check' }),
+					` ${i18n.ts._initialTutorial.wellDone}`,
+				),
+				` ${i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.sensitiveSucceeded}`,
+			)
+			: null,
+		VueComponent(MkFolder, {}, {
+			label: () => Text(i18n.ts.previewNoteText),
+			default: () => VueComponent(MkNote, { mock: true, note: props.exampleNote, class: 'mk-vune-tutorial-sensitive-example' }),
+		}),
+	)
+);

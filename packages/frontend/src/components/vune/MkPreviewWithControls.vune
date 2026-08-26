@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+
+type Props = {
+	previewLoading?: boolean;
+	animation?: boolean;
+	rootClass: string;
+	containerClass: string;
+	previewClass: string;
+	animatedBgClass: string;
+	previewContentClass: string;
+	previewLoadingClass: string;
+	controlsClass: string;
+};
+
+export default createVuneComponent<Props>((props, slots) =>
+	Element('div', { className: props.rootClass },
+		Element('div', { className: props.containerClass },
+			Element('div', { className: [props.previewClass, props.animation ? props.animatedBgClass : null] },
+				Element('div', { className: props.previewContentClass }, VueSlot(slots.preview)),
+				props.previewLoading ? Element('div', { className: props.previewLoadingClass }, MkLoading()) : null,
+			),
+			Element('div', { className: props.controlsClass }, VueSlot(slots.controls)),
+		),
+	)
+);

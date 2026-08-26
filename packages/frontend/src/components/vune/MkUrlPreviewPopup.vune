@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import MkUrlPreview from '@/components/MkUrlPreview.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import './MkUrlPreviewPopup.scss';
+
+type Props = { url: string; zIndex: number; top: number; left: number };
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkUrlPreview, {
+		class: '_popup _shadow mk-vune-url-preview-popup',
+		url: props.url,
+		showActions: false,
+		style: { zIndex: props.zIndex, top: `${props.top}px`, left: `${props.left}px` },
+	})
+);

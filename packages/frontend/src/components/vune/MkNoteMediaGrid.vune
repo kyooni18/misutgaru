@@ -1,0 +1,70 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkA from '@/components/global/MkA.vue';
+import MkDriveFileThumbnail from '@/components/MkDriveFileThumbnail.vue';
+import { notePage } from '@/filters/note.js';
+import bytes from '@/filters/bytes.js';
+import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	note: Misskey.entities.Note;
+	square?: boolean;
+	classes: Record<string, string>;
+	isHiding: (file: Misskey.entities.DriveFile) => boolean;
+	onReveal?: (file: Misskey.entities.DriveFile) => void;
+};
+
+function sensitiveLabel(file: Misskey.entities.DriveFile) {
+	const detail = prefer.s.dataSaver.media && file.size
+		? (file.isSensitive ? ` (${bytes(file.size)})` : bytes(file.size))
+		: (file.isSensitive ? '' : i18n.ts.image);
+	return Element('div', {},
+		Element('div', {},
+			Element('i', { className: file.isSensitive ? 'ti ti-eye-exclamation' : 'ti ti-photo' }),
+			` ${file.isSensitive ? i18n.ts.sensitive : ''}${detail}`,
+		),
+		Element('div', {}, i18n.ts.clickToShow),
+	);
+}
+
+export default createVuneComponent<Props>((props) => {
+	const square = vuneBoolean(props.square, false);
+	return Group() {
+		ForEach(props.note.files, key: (file) => file.id) { file in
+			if (props.isHiding(file)) {
+				Element('div', {
+					className: [props.classes.filePreview, square ? props.classes.square : null],
+					'data-scroll-anchor': `${props.note.id}:${file.id}`,
+					onClick: () => props.onReveal?.(file),
+				},
+					VueComponent(MkDriveFileThumbnail, {
+						file,
+						fit: 'cover',
+						highlightWhenSensitive: prefer.s.highlightSensitiveMedia,
+						forceBlurhash: true,
+						large: true,
+						class: props.classes.file,
+					}),
+					Element('div', { className: props.classes.sensitive }, sensitiveLabel(file)),
+				)
+			} else {
+				VueComponent(MkA, {
+					class: [props.classes.filePreview, square ? props.classes.square : null],
+					'data-scroll-anchor': `${props.note.id}:${file.id}`,
+					to: notePage(props.note),
+				}, {
+					default: () => VueComponent(MkDriveFileThumbnail, {
+						file,
+						fit: 'cover',
+						highlightWhenSensitive: prefer.s.highlightSensitiveMedia,
+						large: true,
+						class: props.classes.file,
+					}),
+				})
+			}
+		}
+	};
+});

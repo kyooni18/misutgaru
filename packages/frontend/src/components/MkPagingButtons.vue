@@ -4,37 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root">
-	<MkButton primary :disabled="min === current" @click="onToPrevButtonClicked">&lt;</MkButton>
-
-	<div :class="$style.buttons">
-		<div v-if="prevDotVisible" :class="$style.headTailButtons">
-			<MkButton @click="onToHeadButtonClicked">{{ min }}</MkButton>
-			<span class="ti ti-dots"></span>
-		</div>
-
-		<MkButton
-			v-for="i in buttonRanges" :key="i"
-			:disabled="current === i"
-			@click="onNumberButtonClicked(i)"
-		>
-			{{ i }}
-		</MkButton>
-
-		<div v-if="nextDotVisible" :class="$style.headTailButtons">
-			<span class="ti ti-dots"></span>
-			<MkButton @click="onToTailButtonClicked">{{ max }}</MkButton>
-		</div>
-	</div>
-
-	<MkButton primary :disabled="max === current" @click="onToNextButtonClicked">&gt;</MkButton>
-</div>
+<VunePagingButtons :min="min" :current="current" :max="max" :buttonRanges="buttonRanges" :prevDotVisible="prevDotVisible" :nextDotVisible="nextDotVisible" :rootClass="$style.root" :buttonsClass="$style.buttons" :headTailClass="$style.headTailButtons" :onPage="onNumberButtonClicked"/>
 </template>
 
 <script setup lang="ts">
+import VunePagingButtons from './vune/MkPagingButtons.vune';
 
 import { computed, toRefs } from 'vue';
-import MkButton from '@/components/MkButton.vue';
 
 const min = 1;
 

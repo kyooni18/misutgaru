@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import MkCodeEditor from '@/components/MkCodeEditor.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { code?: string | null; onCodeChange?: (value: string | null) => void; onPreview?: (code: string) => void; onInstall?: (code: string) => void };
+export default createVuneComponent<Props>((props) => {
+	const code = props.code ?? '';
+	const disabled = code.trim() === '';
+	return Element('div', { className: '_gaps_m' },
+		VueComponent(MkCodeEditor, { modelValue: props.code, lang: 'json5', 'onUpdate:modelValue': (value: string | null) => props.onCodeChange?.(value) }, {
+			label: () => Text(i18n.ts._theme.code),
+		}),
+		Element('div', { className: '_buttons' },
+			VueComponent(MkButton, { disabled, inline: true, onClick: () => { if (!disabled) props.onPreview?.(code); } }, { default: () => Group() { Element('i', { className: 'ti ti-eye' }); Text(i18n.ts.preview) } }),
+			VueComponent(MkButton, { disabled, primary: true, inline: true, onClick: () => { if (!disabled) props.onInstall?.(code); } }, { default: () => Group() { Element('i', { className: 'ti ti-check' }); Text(i18n.ts.install) } }),
+		),
+	);
+});

@@ -11,41 +11,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 		[$style.large]: large,
 	}]"
 >
-	<MkImgWithBlurhash
-		v-if="isThumbnailAvailable && prefer.s.enableHighQualityImagePlaceholders"
-		:hash="file.blurhash"
-		:src="file.thumbnailUrl"
-		:alt="file.name"
-		:title="file.name"
-		:class="$style.thumbnail"
-		:cover="fit !== 'contain'"
-		:forceBlurhash="forceBlurhash"
-	/>
-	<img
-		v-else-if="isThumbnailAvailable && file.thumbnailUrl != null"
-		:src="file.thumbnailUrl"
-		:alt="file.name"
-		:title="file.name"
-		:class="$style.thumbnail"
-		:style="{ objectFit: fit }"
-	/>
-	<i v-else-if="is === 'image'" class="ti ti-photo" :class="$style.icon"></i>
-	<i v-else-if="is === 'video'" class="ti ti-video" :class="$style.icon"></i>
-	<i v-else-if="is === 'audio' || is === 'midi'" class="ti ti-file-music" :class="$style.icon"></i>
-	<i v-else-if="is === 'csv'" class="ti ti-file-text" :class="$style.icon"></i>
-	<i v-else-if="is === 'pdf'" class="ti ti-file-text" :class="$style.icon"></i>
-	<i v-else-if="is === 'textfile'" class="ti ti-file-text" :class="$style.icon"></i>
-	<i v-else-if="is === 'archive'" class="ti ti-file-zip" :class="$style.icon"></i>
-	<i v-else class="ti ti-file" :class="$style.icon"></i>
-
+	<VuneDriveFileThumbnailBody :file="file" :kind="is" :thumbnailAvailable="isThumbnailAvailable" :highQuality="prefer.s.enableHighQualityImagePlaceholders" :fit="fit" :forceBlurhash="forceBlurhash" :classes="$style"/>
 	<i v-if="isThumbnailAvailable && is === 'video'" class="ti ti-video" :class="$style.iconSub"></i>
 </div>
 </template>
 
 <script lang="ts" setup>
+import VuneDriveFileThumbnailBody from './vune/MkDriveFileThumbnailBody.vune';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
-import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{

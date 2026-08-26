@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkTip from '@/components/global/MkTip.vue';
+import MkPagination from '@/components/MkPagination.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkClipPreview from '@/components/MkClipPreview.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import type { IPaginator } from '@/utility/paginator.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { tab: string; paginator: IPaginator; favoritesPaginator: IPaginator; headerActions?: PageHeaderItem[]; headerTabs?: unknown[]; onCreate?: () => void; onTabChange?: (value: string) => void };
+function clips(paginator: IPaginator) {
+	return VueComponent(MkPagination, { paginator, class: '_gaps', withControl: true }, {
+		default: (...args: unknown[]) => {
+			const slot = (args[0] ?? {}) as { items?: Array<{ id: string } & Record<string, unknown>> };
+			return Element('div', { className: '_gaps' }, ForEach(slot.items ?? [], key: item => item.id) { item in VueComponent(MkClipPreview, { clip: item, noUserInfo: true }) });
+		},
+	});
+}
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], swipable: true, 'onUpdate:tab': (value: string) => props.onTabChange?.(value) }, {
+		default: () => Element('div', { className: '_spacer _gaps', style: { '--MI_SPACER-w': '700px' } },
+			VueComponent(MkTip, { k: 'clips' }, { default: () => Text(i18n.ts._clip.tip) }),
+			props.tab === 'my'
+				? Element('div', { className: '_gaps' },
+					VueComponent(MkButton, { primary: true, rounded: true, class: 'add', onClick: () => props.onCreate?.() }, { default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.add) } }),
+					clips(props.paginator),
+				)
+				: clips(props.favoritesPaginator),
+		),
+	})
+);

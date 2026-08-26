@@ -4,12 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root">
-	<slot></slot>
-</div>
+<VuneFormSplit :minWidth="minWidth" :rootClass="$style.root"><slot></slot></VuneFormSplit>
 </template>
 
 <script lang="ts" setup>
+import VuneFormSplit from './vune/split.vune';
 import { provide } from 'vue';
 
 const props = withDefaults(defineProps<{
@@ -20,13 +19,12 @@ const props = withDefaults(defineProps<{
 
 provide('splited', true);
 
-const minWidth = props.minWidth + 'px';
+const minWidth = props.minWidth;
 </script>
 
 <style lang="scss" module>
 .root {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(v-bind('minWidth'), 1fr));
-	grid-gap: 12px;
+		grid-gap: 12px;
 }
 </style>

@@ -4,77 +4,42 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<MkInput v-model="name">
-		<template #label>{{ i18n.ts._webhookSettings.name }}</template>
-	</MkInput>
-
-	<MkInput v-model="url" type="url">
-		<template #label>URL</template>
-	</MkInput>
-
-	<MkInput v-model="secret">
-		<template #prefix><i class="ti ti-lock"></i></template>
-		<template #label>{{ i18n.ts._webhookSettings.secret }}</template>
-	</MkInput>
-
-	<FormSection>
-		<template #label>{{ i18n.ts._webhookSettings.trigger }}</template>
-
-		<div class="_gaps">
-			<div class="_gaps_s">
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_follow">{{ i18n.ts._webhookSettings._events.follow }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_follow)" @click="test('follow')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_followed">{{ i18n.ts._webhookSettings._events.followed }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_followed)" @click="test('followed')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_note">{{ i18n.ts._webhookSettings._events.note }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_note)" @click="test('note')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_reply">{{ i18n.ts._webhookSettings._events.reply }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_reply)" @click="test('reply')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_renote">{{ i18n.ts._webhookSettings._events.renote }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_renote)" @click="test('renote')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_reaction" :disabled="true">{{ i18n.ts._webhookSettings._events.reaction }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_reaction)" @click="test('reaction')"><i class="ti ti-send"></i></MkButton>
-				</div>
-				<div :class="$style.switchBox">
-					<MkSwitch v-model="event_mention">{{ i18n.ts._webhookSettings._events.mention }}</MkSwitch>
-					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_mention)" @click="test('mention')"><i class="ti ti-send"></i></MkButton>
-				</div>
-			</div>
-
-			<div :class="$style.description">
-				{{ i18n.ts._webhookSettings.testRemarks }}
-			</div>
-		</div>
-	</FormSection>
-
-	<MkSwitch v-model="active">{{ i18n.ts._webhookSettings.active }}</MkSwitch>
-
-	<div class="_buttons">
-		<MkButton primary inline @click="save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
-		<MkButton danger inline @click="del"><i class="ti ti-trash"></i> {{ i18n.ts.delete }}</MkButton>
-	</div>
-</div>
+<VuneWebhookEdit
+	:name="name"
+	:url="url"
+	:secret="secret"
+	:active="active"
+	:eventFollow="event_follow"
+	:eventFollowed="event_followed"
+	:eventNote="event_note"
+	:eventReply="event_reply"
+	:eventRenote="event_renote"
+	:eventReaction="event_reaction"
+	:eventMention="event_mention"
+	:switchBoxClass="$style.switchBox"
+	:testButtonClass="$style.testButton"
+	:descriptionClass="$style.description"
+	:onName="value => name = value"
+	:onUrl="value => url = value"
+	:onSecret="value => secret = value"
+	:onActive="value => active = value"
+	:onEventFollow="value => event_follow = value"
+	:onEventFollowed="value => event_followed = value"
+	:onEventNote="value => event_note = value"
+	:onEventReply="value => event_reply = value"
+	:onEventRenote="value => event_renote = value"
+	:onEventReaction="value => event_reaction = value"
+	:onEventMention="value => event_mention = value"
+	:onTest="test"
+	:onSave="save"
+	:onDelete="del"
+/>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
+import VuneWebhookEdit from './vune/webhook.edit.vune';
 import * as Misskey from 'misskey-js';
-import MkInput from '@/components/MkInput.vue';
-import FormSection from '@/components/form/section.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';

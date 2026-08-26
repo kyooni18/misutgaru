@@ -1,0 +1,31 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import MkMiniChart from '@/components/MkMiniChart.vue';
+import { acct } from '@/filters/user.js';
+import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+
+type Props = {
+	user: Misskey.entities.User;
+	chartValues?: number[] | null;
+	avatarClass: string;
+	bodyClass: string;
+	nameClass: string;
+	subClass: string;
+	chartClass: string;
+};
+
+export default createVuneComponent<Props>((props, slots) =>
+	Element('div', { style: { display: 'contents' } },
+		VueComponent(MkAvatar, { class: props.avatarClass, user: props.user, indicator: true }),
+		Element('div', { className: props.bodyClass },
+			Element('span', { className: props.nameClass }, VueComponent(MkUserName, { user: props.user })),
+			Element('span', { className: props.subClass },
+				slots.sub ? VueSlot(slots.sub) : Element('span', { className: '_monospace' }, `@${acct(props.user)}`),
+			),
+		),
+		props.chartValues ? VueComponent(MkMiniChart, { class: props.chartClass, src: props.chartValues }) : null,
+	)
+);

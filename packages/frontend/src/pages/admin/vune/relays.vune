@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import SearchMarker from '@/components/global/SearchMarker.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Relay = Misskey.entities.AdminRelaysListResponse[number];
+type Props = {
+	relays: Relay[];
+	headerActions?: PageHeaderItem[];
+	headerTabs?: unknown[];
+	iconClass: string;
+	onRemove?: (inbox: string) => void;
+};
+
+function relayIcon(relay: Relay, iconClass: string) {
+	if (relay.status === 'accepted') return Element('i', { className: ['ti ti-check', iconClass], style: { color: 'var(--MI_THEME-success)' } });
+	if (relay.status === 'rejected') return Element('i', { className: ['ti ti-ban', iconClass], style: { color: 'var(--MI_THEME-error)' } });
+	return Element('i', { className: ['ti ti-clock', iconClass] });
+}
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
+		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+			VueComponent(SearchMarker, { path: '/admin/relays', label: i18n.ts.relays, keywords: ['relays'], icon: 'ti ti-planet' }, {
+				default: () => Element('div', { className: '_gaps' },
+					ForEach(props.relays, key: (relay) => relay.inbox) { relay in
+						Element('div', { className: 'relaycxt _panel', style: { padding: '16px' } },
+							Element('div', {}, relay.inbox),
+							Element('div', { style: { margin: '8px 0' } }, relayIcon(relay, props.iconClass), Element('span', {}, i18n.ts._relayStatus[relay.status])),
+							VueComponent(MkButton, { class: 'button', inline: true, danger: true, onClick: () => props.onRemove?.(relay.inbox) }, {
+								default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(i18n.ts.remove) },
+							}),
+						)
+					},
+				),
+			}),
+		),
+	})
+);

@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneOwnedRooms from './vune/home.ownedRooms.vune.js';
+import VuneOwnedRooms from './vune/home.ownedRooms.vune';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const fetching = ref(true);

@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Text } from 'vune-ui';
+import MkContainer from '@/components/MkContainer.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type LogEntry = { id: string; text: string; print: boolean };
+type Props = {
+	showHeader?: boolean;
+	script: string;
+	logs: LogEntry[];
+	onScriptInput?: (value: string) => void;
+	onRun?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, {
+		showHeader: vuneBoolean(props.showHeader, true),
+		'data-testid': 'mkw-aiscript',
+		class: 'mkw-aiscript',
+	}, {
+		icon: () => Element('i', { className: 'ti ti-terminal-2' }),
+		header: () => Text(i18n.ts._widgets.aiscript),
+		default: () => Element('div', { className: 'mk-vune-aiscript _monospace' },
+			Element('textarea', {
+				className: 'mk-vune-aiscript__textarea',
+				value: props.script,
+				placeholder: '(1 + 1)',
+				onInput: (event) => props.onScriptInput?.(event.target?.value ?? ''),
+			}),
+			Element('button', {
+				className: '_buttonPrimary mk-vune-aiscript__run',
+				onClick: () => props.onRun?.(),
+			}, 'RUN'),
+			Element('div', { className: 'mk-vune-aiscript__logs' },
+				ForEach(props.logs, key: (log) => log.id) { log in
+					Element('div', {
+						className: ['mk-vune-aiscript__log', log.print ? 'mk-vune-aiscript__log--print' : null],
+					}, log.text)
+				},
+			),
+		),
+	})
+);

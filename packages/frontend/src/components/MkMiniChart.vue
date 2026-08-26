@@ -4,42 +4,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<svg :viewBox="`0 0 ${ viewBoxX } ${ viewBoxY }`" style="overflow:visible">
-	<defs>
-		<linearGradient :id="gradientId" x1="0" x2="0" y1="1" y2="0">
-			<stop offset="0%" :stop-color="color" stop-opacity="0"></stop>
-			<stop offset="100%" :stop-color="color" stop-opacity="0.65"></stop>
-		</linearGradient>
-	</defs>
-	<polygon
-		:points="polygonPoints"
-		:style="`stroke: none; fill: url(#${ gradientId });`"
-	/>
-	<polyline
-		:points="polylinePoints"
-		fill="none"
-		:stroke="color"
-		stroke-width="2"
-	/>
-	<circle
-		:cx="headX ?? undefined"
-		:cy="headY ?? undefined"
-		r="3"
-		:fill="color"
-	/>
-</svg>
+<NativeMiniChart :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :gradientId="gradientId" :color="color" :polygonPoints="polygonPoints" :polylinePoints="polylinePoints" :headX="headX" :headY="headY" :className="chartClass"/>
 </template>
 
 <script lang="ts" setup>
-import { watch, ref } from 'vue';
+import VuneMiniChart from './vune/MkMiniChart.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+import { computed, useAttrs, watch, ref } from 'vue';
 import { genId } from '@/utility/id.js';
 import { themeManager } from '@/theme.js';
 import tinycolor from 'tinycolor2';
 import { useInterval } from '@@/js/use-interval.js';
 
+const NativeMiniChart = createVuneWebHost(VuneMiniChart);
+
 const props = defineProps<{
 	src: number[];
 }>();
+
+const attrs = useAttrs();
+const chartClass = computed(() => typeof attrs.class === 'string' ? attrs.class : undefined);
 
 const viewBoxX = 50;
 const viewBoxY = 50;

@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkMiniChart from '@/components/MkMiniChart.vue';
+import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = {
+	instance: Misskey.entities.FederationInstance;
+	chartValues?: number[] | null;
+};
+
+function getInstanceIcon(instance: Misskey.entities.FederationInstance): string {
+	return getProxiedImageUrlNullable(instance.iconUrl, 'preview')
+		?? getProxiedImageUrlNullable(instance.faviconUrl, 'preview')
+		?? '/client-assets/dummy.png';
+}
+
+export default createVuneComponent<Props>((props) => {
+	const instance = props.instance;
+	return Element('div', {
+		className: [
+			'mk-vune-instance-mini',
+			instance.isNotResponding ? 'mk-vune-instance-mini--yellow' : null,
+			instance.isBlocked ? 'mk-vune-instance-mini--red' : null,
+			instance.isSuspended ? 'mk-vune-instance-mini--gray' : null,
+			instance.isSilenced ? 'mk-vune-instance-mini--blue' : null,
+		],
+	},
+		Element('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
+		Element('div', { className: 'mk-vune-instance-mini__body' },
+			Element('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
+			Element('span', { className: 'mk-vune-instance-mini__sub _monospace' },
+				Element('b', {}, instance.host),
+				` / ${instance.softwareName || '?'} ${instance.softwareVersion}`,
+			),
+		),
+		props.chartValues ? VueComponent(MkMiniChart, { class: 'mk-vune-instance-mini__chart', src: props.chartValues }) : null,
+	);
+});

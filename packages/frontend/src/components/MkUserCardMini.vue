@@ -4,22 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-adaptive-bg :class="[$style.root]">
-	<MkAvatar :class="$style.avatar" :user="user" indicator/>
-	<div :class="$style.body">
-		<span :class="$style.name"><MkUserName :user="user"/></span>
-		<span :class="$style.sub"><slot name="sub"><span class="_monospace">@{{ acct(user) }}</span></slot></span>
-	</div>
-	<MkMiniChart v-if="chartValues" :class="$style.chart" :src="chartValues"/>
+<div v-adaptive-bg :class="$style.root">
+	<VuneUserCardMini :user="user" :chartValues="chartValues" :avatarClass="$style.avatar" :bodyClass="$style.body" :nameClass="$style.name" :subClass="$style.sub" :chartClass="$style.chart">
+		<template v-if="$slots.sub" #sub><slot name="sub"></slot></template>
+	</VuneUserCardMini>
 </div>
 </template>
 
 <script lang="ts" setup>
+import VuneUserCardMini from './vune/MkUserCardMini.vune';
 import * as Misskey from 'misskey-js';
 import { onMounted, ref } from 'vue';
-import MkMiniChart from '@/components/MkMiniChart.vue';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
-import { acct } from '@/filters/user.js';
 
 const props = withDefaults(defineProps<{
 	user: Misskey.entities.User;

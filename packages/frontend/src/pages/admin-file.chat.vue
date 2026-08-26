@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
-import VuneAdminFileChat from './vune/admin-file.chat.view.vune.js';
+import VuneAdminFileChat from './vune/admin-file.chat.view.vune';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

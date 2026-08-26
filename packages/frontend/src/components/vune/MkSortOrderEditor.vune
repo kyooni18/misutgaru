@@ -1,0 +1,37 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach } from 'vune-ui';
+import type { SortOrder } from '@/components/MkSortOrderEditor.define.js';
+import MkTagItem from '@/components/MkTagItem.vue';
+import MkButton from '@/components/MkButton.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	currentOrders: SortOrder<string>[];
+	classes: Record<string, string>;
+	onToggle?: (order: SortOrder<string>) => void;
+	onAdd?: (ev: PointerEvent) => void;
+	onRemove?: (order: SortOrder<string>) => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.classes.sortOrderArea },
+		Element('div', { className: props.classes.sortOrderAreaTags },
+			ForEach(props.currentOrders, key: (order) => order.key) { order in
+				VueComponent(MkTagItem, {
+					iconClass: order.direction === '+' ? 'ti ti-arrow-up' : 'ti ti-arrow-down',
+					exButtonIconClass: 'ti ti-x',
+					content: order.key,
+					class: props.classes.sortOrderTag,
+					onClick: () => props.onToggle?.(order),
+					onExButtonClick: () => props.onRemove?.(order),
+				})
+			},
+		),
+		VueComponent(MkButton, {
+			class: props.classes.sortOrderAddButton,
+			onClick: (ev: PointerEvent) => props.onAdd?.(ev),
+		}, {
+			default: () => Element('span', { className: 'ti ti-plus' }),
+		}),
+	)
+);

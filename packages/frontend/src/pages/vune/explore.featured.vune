@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import MkTab from '@/components/MkTab.vue';
+import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import type { IPaginator } from '@/utility/paginator.js';
+
+type FeaturedTab = 'notes' | 'polls';
+type Props = { tab: FeaturedTab; notesPaginator: IPaginator<any, any>; pollsPaginator: IPaginator<any, any>; onTabChange?: (tab: FeaturedTab) => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+		VueComponent(MkTab, {
+			modelValue: props.tab,
+			tabs: [
+				{ key: 'notes', label: i18n.ts.notes },
+				{ key: 'polls', label: i18n.ts.poll },
+			],
+			style: { marginBottom: 'var(--MI-margin)' },
+			'onUpdate:modelValue': (value: FeaturedTab) => props.onTabChange?.(value),
+		}),
+		VueComponent(MkNotesTimeline, { paginator: props.tab === 'notes' ? props.notesPaginator : props.pollsPaginator }),
+	)
+);

@@ -4,37 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<component
-	:is="to ? 'div' : 'button'"
-	:class="[
-		$style.root,
-		{
-			[$style.inline]: inline,
-			'_button': !to,
-		},
-	]"
->
-	<component
-		:is="to ? (external ? 'a' : 'MkA') : 'div'"
-		:class="[$style.main, { [$style.active]: active }]"
-		class="_button"
-		v-bind="to ? (external ? { href: to, target: '_blank' } : { to, behavior }) : {}"
-	>
-		<span :class="$style.icon"><slot name="icon"></slot></span>
-		<div :class="$style.headerText">
-			<div>
-				<MkCondensedLine :minScale="2 / 3"><slot></slot></MkCondensedLine>
-			</div>
-		</div>
-		<span :class="$style.suffix">
-			<span :class="$style.suffixText"><slot name="suffix"></slot></span>
-			<i :class="to && external ? 'ti ti-external-link' : 'ti ti-chevron-right'"></i>
-		</span>
-	</component>
-</component>
+<VuneFormLink :to="to" :active="active" :external="external" :behavior="behavior" :inline="inline" :classes="$style">
+	<template #icon><slot name="icon"></slot></template>
+	<slot></slot>
+	<template #suffix><slot name="suffix"></slot></template>
+</VuneFormLink>
 </template>
 
 <script lang="ts" setup>
+import VuneFormLink from './vune/link.vune';
 defineProps<{
 	to?: string;
 	active?: boolean;

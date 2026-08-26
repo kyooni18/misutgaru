@@ -1,0 +1,120 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkButton from '@/components/MkButton.vue';
+import FormSplit from '@/components/form/split.vue';
+import MkCode from '@/components/MkCode.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkKeyValue from '@/components/MkKeyValue.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+
+export type Extension = {
+	type: 'plugin';
+	raw: string;
+	meta: {
+		name: string;
+		version: string;
+		author: string;
+		description?: string;
+		permissions?: (typeof Misskey.permissions)[number][];
+		config?: Record<string, unknown>;
+	};
+} | {
+	type: 'theme';
+	raw: string;
+	meta: {
+		name: string;
+		author: string;
+		base?: 'light' | 'dark';
+	};
+};
+
+type Props = {
+	extension: Extension;
+	classes: Record<string, string>;
+	onConfirm?: () => void;
+	onCancel?: () => void;
+};
+
+function keyValue(key: string, value: unknown) {
+	return VueComponent(MkKeyValue, {}, {
+		key: () => Text(key),
+		value: () => Text(String(value ?? '')),
+	});
+}
+
+export default createVuneComponent<Props>((props, slots) => {
+	const extension = props.extension;
+	return Element('div', { className: [props.classes.extInstallerRoot, '_gaps_m'] },
+		Element('div', { className: props.classes.extInstallerIconWrapper },
+			Element('i', { className: extension.type === 'plugin' ? 'ti ti-plug' : 'ti ti-palette' }),
+		),
+		Element('h2', { className: props.classes.extInstallerTitle },
+			extension.type === 'plugin' ? i18n.ts._externalResourceInstaller._plugin.title : i18n.ts._externalResourceInstaller._theme.title,
+		),
+		VueComponent(MkInfo, { warn: true }, {
+			default: () => Text(i18n.ts._externalResourceInstaller.checkVendorBeforeInstall),
+		}),
+		extension.type === 'plugin' ? Group() {
+			VueComponent(MkFolder, { defaultOpen: true }, {
+				icon: () => Element('i', { className: 'ti ti-info-circle' }),
+				label: () => Text(i18n.ts.metadata),
+				default: () => Element('div', { className: '_gaps_s' },
+					VueComponent(FormSplit, {}, {
+						default: () => Group() {
+							keyValue(i18n.ts.name, extension.meta.name)
+							keyValue(i18n.ts.author, extension.meta.author)
+						},
+					}),
+					keyValue(i18n.ts.description, extension.meta.description ?? i18n.ts.none),
+					keyValue(i18n.ts.version, extension.meta.version),
+					VueComponent(MkKeyValue, {}, {
+						key: () => Text(i18n.ts.permission),
+						value: () => extension.meta.permissions && extension.meta.permissions.length > 0
+							? Element('ul', { className: props.classes.extInstallerKVList },
+								ForEach(extension.meta.permissions, key: (permission) => permission) { permission in
+									Element('li', {}, i18n.ts._permissions[permission] ?? permission)
+								},
+							)
+							: Text(i18n.ts.none),
+					}),
+				),
+			})
+			VueComponent(MkFolder, { withSpacer: false }, {
+				icon: () => Element('i', { className: 'ti ti-code' }),
+				label: () => Text(i18n.ts._plugin.viewSource),
+				default: () => VueComponent(MkCode, { code: extension.raw }),
+			})
+		} : Group() {
+			VueComponent(MkFolder, { defaultOpen: true }, {
+				icon: () => Element('i', { className: 'ti ti-info-circle' }),
+				label: () => Text(i18n.ts.metadata),
+				default: () => Element('div', { className: '_gaps_s' },
+					VueComponent(FormSplit, {}, {
+						default: () => Group() {
+							keyValue(i18n.ts.name, extension.meta.name)
+							keyValue(i18n.ts.author, extension.meta.author)
+						},
+					}),
+					keyValue(i18n.ts._externalResourceInstaller._meta.base, { light: i18n.ts.light, dark: i18n.ts.dark, none: i18n.ts.none }[extension.meta.base ?? 'none']),
+				),
+			})
+			VueComponent(MkFolder, { withSpacer: false }, {
+				icon: () => Element('i', { className: 'ti ti-code' }),
+				label: () => Text(i18n.ts._theme.code),
+				default: () => VueComponent(MkCode, { code: extension.raw }),
+			})
+		},
+		VueSlot(slots.additionalInfo),
+		Element('div', { className: '_buttonsCenter' },
+			VueComponent(MkButton, { danger: true, rounded: true, large: true, onClick: () => props.onCancel?.() }, {
+				default: () => Group() { Element('i', { className: 'ti ti-x' }); ` ${i18n.ts.cancel}` },
+			}),
+			VueComponent(MkButton, { gradate: true, rounded: true, large: true, onClick: () => props.onConfirm?.() }, {
+				default: () => Group() { Element('i', { className: 'ti ti-download' }); ` ${i18n.ts.install}` },
+			}),
+		),
+	);
+});

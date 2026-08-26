@@ -4,23 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div data-testid="mkw-digitalClock" class="_monospace" :class="[$style.root, { _panel: !widgetProps.transparent }]" :style="{ fontSize: `${widgetProps.fontSize}em` }">
-	<div v-if="widgetProps.showLabel" :class="$style.label">{{ tzAbbrev }}</div>
-	<div>
-		<MkDigitalClock :showMs="widgetProps.showMs" :offset="tzOffset"/>
-	</div>
-	<div v-if="widgetProps.showLabel" :class="$style.label">{{ tzOffsetLabel }}</div>
-</div>
+<VuneDigitalClock :transparent="widgetProps.transparent" :fontSize="widgetProps.fontSize" :showMs="widgetProps.showMs" :showLabel="widgetProps.showLabel" :tzAbbrev="tzAbbrev" :tzOffset="tzOffset" :tzOffsetLabel="tzOffsetLabel" :rootClass="$style.root" :labelClass="$style.label"/>
 </template>
 
 <script lang="ts" setup>
+import VuneDigitalClock from './vune/WidgetDigitalClock.vune';
 import { computed } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { timezones } from '@/utility/timezones.js';
 import { i18n } from '@/i18n.js';
-import MkDigitalClock from '@/components/MkDigitalClock.vue';
 
 const name = 'digitalClock';
 

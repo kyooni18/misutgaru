@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Text } from 'vune-ui';
+import MkFolder from '@/components/MkFolder.vue';
+import MkPagination from '@/components/MkPagination.vue';
+import XUser from '@/components/MkUserSetupDialog.User.vue';
+import { i18n } from '@/i18n.js';
+import type { IPaginator } from '@/utility/paginator.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = {
+	pinnedUsersPaginator: IPaginator;
+	popularUsersPaginator: IPaginator;
+};
+
+function userFolder(label: string, paginator: IPaginator) {
+	return VueComponent(MkFolder, { defaultOpen: true }, {
+		label: () => Text(label),
+		default: () => VueComponent(MkPagination, { paginator }, {
+			default: (slotProps: any) => Element('div', { className: 'mk-vune-follow-setup-grid' },
+				ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
+					VueComponent(XUser, { user: item })
+				},
+			),
+		}),
+	});
+}
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_gaps' },
+		Element('div', { style: { textAlign: 'center' } }, i18n.ts._initialAccountSetting.followUsers),
+		userFolder(i18n.ts.recommended, props.pinnedUsersPaginator),
+		userFolder(i18n.ts.popularUsers, props.popularUsersPaginator),
+	)
+);

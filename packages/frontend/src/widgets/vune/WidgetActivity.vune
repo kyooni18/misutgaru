@@ -1,0 +1,42 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import MkContainer from '@/components/MkContainer.vue';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import XCalendar from '@/widgets/WidgetActivity.calendar.vue';
+import XChart from '@/widgets/WidgetActivity.chart.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Activity = { total: number; notes: number; replies: number; renotes: number }[];
+type Props = {
+	showHeader?: boolean;
+	transparent?: boolean;
+	view: number;
+	fetching?: boolean;
+	activity?: Activity | null;
+	onToggleView?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, {
+		showHeader: vuneBoolean(props.showHeader, true),
+		naked: vuneBoolean(props.transparent),
+		'data-testid': 'mkw-activity',
+		class: 'mkw-activity',
+	}, {
+		icon: () => Element('i', { className: 'ti ti-chart-line' }),
+		header: () => Text(i18n.ts._widgets.activity),
+		func: (slotProps: any) => Element('button', {
+			className: ['_button', slotProps.buttonStyleClass],
+			onClick: () => props.onToggleView?.(),
+		}, Element('i', { className: 'ti ti-selector' })),
+		default: () => Element('div', {},
+			vuneBoolean(props.fetching)
+				? MkLoading()
+				: Group() {
+					VueComponent(XCalendar, { activity: props.activity ?? [], style: { display: props.view === 0 ? '' : 'none' } })
+					VueComponent(XChart, { activity: props.activity ?? [], style: { display: props.view === 1 ? '' : 'none' } })
+				},
+		),
+	})
+);

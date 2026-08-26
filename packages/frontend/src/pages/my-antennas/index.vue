@@ -4,26 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader :actions="headerActions" :tabs="headerTabs">
-	<div class="_spacer" style="--MI_SPACER-w: 700px;">
-		<div>
-			<MkResult v-if="antennas.length === 0" type="empty"/>
-
-			<MkButton type="routerLink" to="/my/antennas/create" primary :class="$style.add"><i class="ti ti-plus"></i> {{ i18n.ts.add }}</MkButton>
-
-			<div v-if="antennas.length > 0" class="_gaps">
-				<MkA v-for="antenna in antennas" :key="antenna.id" :class="$style.antenna" :to="`/timeline/antenna/${antenna.id}`">
-					<div class="name">{{ antenna.name }}</div>
-				</MkA>
-			</div>
-		</div>
-	</div>
-</PageWithHeader>
+<VuneMyAntennasIndex :antennas="antennas" :headerActions="headerActions" :headerTabs="headerTabs" :addClass="$style.add" :antennaClass="$style.antenna" :nameClass="$style.name"/>
 </template>
 
 <script lang="ts" setup>
+import VuneMyAntennasIndex from '@/pages/vune/my-antennas-index.vune';
 import { onActivated, computed } from 'vue';
-import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { antennasCache } from '@/cache.js';

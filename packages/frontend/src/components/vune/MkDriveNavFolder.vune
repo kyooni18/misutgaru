@@ -1,0 +1,69 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Box, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { i18n } from '@/i18n.js';
+
+type DragAction = (event: DragEvent) => void;
+type VoidAction = () => void;
+type DriveNavFolderActions = {
+	dragover: DragAction;
+	dragenter: VoidAction;
+	dragleave: VoidAction;
+	drop: DragAction;
+};
+
+function ignoreDragAction(_event: DragEvent): void {}
+function ignoreVoidAction(): void {}
+
+export struct MkDriveNavFolder: View {
+	let folder: Misskey.entities.DriveFolder | null | undefined
+	let draghover: boolean
+	let rootClass: string
+	let draghoverClass: string
+	let actions: DriveNavFolderActions
+
+	init(
+		folder: Misskey.entities.DriveFolder | null | undefined = undefined,
+		draghover: boolean = false,
+		rootClass: string,
+		draghoverClass: string,
+		@Action onDragover: DragAction = ignoreDragAction,
+		@Action onDragenter: VoidAction = ignoreVoidAction,
+		@Action onDragleave: VoidAction = ignoreVoidAction,
+		@Action onDrop: DragAction = ignoreDragAction,
+	) {
+		self.folder = folder
+		self.draghover = draghover
+		self.rootClass = rootClass
+		self.draghoverClass = draghoverClass
+		self.actions = { dragover: onDragover, dragenter: onDragenter, dragleave: onDragleave, drop: onDrop }
+	}
+
+	var body: some View {
+		Box() {
+			if (folder == null) {
+				Text('')
+					.className('ti ti-cloud')
+					.style({ marginRight: '4px' })
+			}
+			Text(folder == null ? i18n.ts.drive : folder.name)
+		}
+			.className([rootClass, draghover ? draghoverClass : null])
+			.withProps({
+				onDragover: (event: DragEvent) => {
+					event.preventDefault()
+					event.stopPropagation()
+					actions.dragover(event)
+				},
+				onDragenter: () => actions.dragenter(),
+				onDragleave: () => actions.dragleave(),
+				onDrop: (event: DragEvent) => {
+					event.stopPropagation()
+					actions.drop(event)
+				},
+			})
+	}
+}
+
+export default MkDriveNavFolder

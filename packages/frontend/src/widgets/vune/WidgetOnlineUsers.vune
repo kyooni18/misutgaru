@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import I18n from '@/components/global/I18n.vue';
+import { i18n } from '@/i18n.js';
+import number from '@/filters/number.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	onlineUsersCount: number;
+	transparent?: boolean;
+	classes: Record<string, string>;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', {
+		'data-testid': 'mkw-onlineUsers',
+		className: [props.classes.root, !vuneBoolean(props.transparent, true) ? '_panel' : null, !vuneBoolean(props.transparent, true) ? props.classes.pad : null],
+	},
+		Element('span', { className: props.classes.text },
+			props.onlineUsersCount ? VueComponent(I18n, {
+				src: i18n.ts.onlineUsersCount,
+				textTag: 'span',
+			}, {
+				n: () => Element('b', { style: { color: '#41b781' } }, number(props.onlineUsersCount)),
+			}) : null,
+		),
+	)
+);

@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = { users: Misskey.entities.UserLite[]; limit: number };
+
+export default createVuneComponent<Props>((props) => {
+	const visible = props.users.slice(0, props.limit);
+	return Element('div', {},
+		ForEach(visible, key: (user) => user.id) { user in
+			Element('div', { className: 'mk-vune-avatars__item' },
+				VueComponent(MkAvatar, {
+					class: 'mk-vune-avatars__avatar',
+					user,
+					indicator: true,
+					link: true,
+					preview: true,
+				}),
+			)
+		},
+		props.users.length > props.limit ? Element('div', { className: 'mk-vune-avatars__more' }, '...') : null,
+	);
+});

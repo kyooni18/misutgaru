@@ -173,7 +173,19 @@ function isCssModuleAccess(node: ESTree.Node, ctxName: string, key: string): nod
 	if (node.object.object.type !== 'Identifier') return false;
 	if (node.object.object.name !== ctxName) return false;
 	return getMemberPropertyName(node.object.property, node.object.computed) === key;
-	}
+}
+
+/**
+ * A CSS module can be passed across a component boundary as the whole map
+ * (`classes: e.$style`) instead of as an individual class (`e.$style.root`).
+ * The former must keep the runtime CSS-module binding alive even though it
+ * cannot be inlined into a static class name.
+ */
+function isCssModuleObjectReference(node: ESTree.Node, ctxName: string, key: string): boolean {
+	if (node.type !== 'MemberExpression') return false;
+	if (node.object.type !== 'Identifier' || node.object.name !== ctxName) return false;
+	return getMemberPropertyName(node.property, node.computed) === key;
+}
 
 function isCssModuleReference(node: ESTree.Node, ctxName: string, key: string): node is Extract<ESTree.Node, { type: 'MemberExpression' }> {
 	if (!isCssModuleAccess(node, ctxName, key)) return false;
@@ -409,7 +421,7 @@ export function unwindCssModuleClassName(ast: ESTree.Node, magicString: Rolldown
 				let found = false;
 				walk(render.body, {
 					enter(childNode: ESTree.Node) {
-						if (!isCssModuleAccess(childNode, ctx.name, key)) return;
+						if (!isCssModuleAccess(childNode, ctx.name, key) && !isCssModuleObjectReference(childNode, ctx.name, key)) return;
 						found = true;
 						this.skip();
 					},

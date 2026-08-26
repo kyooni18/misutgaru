@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-toast {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 50px;
+	margin: 16px auto 0;
+	min-width: 300px;
+	max-width: calc(100% - 32px);
+	width: min-content;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
+	overflow: clip;
+	text-align: center;
+	pointer-events: none;
+}
+.mk-vune-toast__message { padding: 16px 24px; }

@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import Mfm from '@/components/global/MkMfm.js';
+import MkA from '@/components/global/MkA.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkTime from '@/components/global/MkTime.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import number from '@/filters/number.js';
+import { $i } from '@/i.js';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = { clip: Misskey.entities.Clip; noUserInfo?: boolean };
+
+export default createVuneComponent<Props>((props) => {
+	const clip = props.clip;
+	const remaining = ($i?.policies && clip.notesCount != null)
+		? ($i.policies.noteEachClipsLimit - clip.notesCount)
+		: i18n.ts.unknown;
+	const noUserInfo = vuneBoolean(props.noUserInfo, false);
+
+	return VueComponent(MkA, { to: `/clips/${clip.id}`, class: 'mk-vune-clip-preview-link' }, {
+		default: () => Element('div', { className: '_panel _gaps_s mk-vune-clip-preview' },
+			Element('b', {}, clip.name),
+			Element('div', { className: 'mk-vune-clip-preview__description' },
+				clip.description ? Element('div', {}, VueComponent(Mfm as any, { text: clip.description, plain: true, nowrap: true })) : null,
+				clip.lastClippedAt ? Element('div', {},
+					`${i18n.ts.updatedAt}: `,
+					VueComponent(MkTime, { time: clip.lastClippedAt, mode: 'detail' }),
+				) : null,
+				clip.notesCount != null ? Element('div', {},
+					`${i18n.ts.notesCount}: ${number(clip.notesCount)} / ${$i?.policies.noteEachClipsLimit} (${i18n.tsx.remainingN({ n: remaining })})`,
+				) : null,
+			),
+			!noUserInfo ? Group() {
+				Element('div', { className: 'mk-vune-clip-preview__divider' })
+				Element('div', {},
+					VueComponent(MkAvatar, { user: clip.user, class: 'mk-vune-clip-preview__avatar', indicator: true, link: true, preview: true }),
+					' ',
+					VueComponent(MkUserName, { user: clip.user, nowrap: false }),
+				)
+			} : null,
+		),
+	});
+});

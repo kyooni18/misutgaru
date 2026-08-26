@@ -1,0 +1,16 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import XFollowList from '@/pages/user/follow-list.vue';
+import MkError from '@/components/global/MkError.vue';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { user?: Misskey.entities.UserDetailed | null; error?: unknown; type: 'followers' | 'following'; onRetry?: () => void };
+export default createVuneComponent<Props>((props) =>
+	props.user
+		? Element('div', {}, VueComponent(XFollowList, { user: props.user, type: props.type }))
+		: props.error
+			? VueComponent(MkError, { onRetry: () => props.onRetry?.() })
+			: MkLoading()
+);

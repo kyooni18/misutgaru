@@ -4,27 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs" :swipable="true">
-	<div class="_spacer" style="--MI_SPACER-w: 800px;">
-		<div v-if="tab === 'all'">
-			<MkStreamingNotificationsTimeline :class="$style.notifications" :excludeTypes="excludeTypes"/>
-		</div>
-		<div v-else-if="tab === 'mentions'">
-			<MkNotesTimeline :paginator="mentionsPaginator"/>
-		</div>
-		<div v-else-if="tab === 'directNotes'">
-			<MkNotesTimeline :paginator="directNotesPaginator"/>
-		</div>
-	</div>
-</PageWithHeader>
+<VuneNotifications :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :excludeTypes="excludeTypes" :mentionsPaginator="mentionsPaginator" :directNotesPaginator="directNotesPaginator" :notificationsClass="$style.notifications" :onTabChange="value => tab = value"/>
 </template>
 
 <script lang="ts" setup>
+import VuneNotifications from '@/pages/vune/notifications.vune';
 import { computed, markRaw, ref } from 'vue';
 import { notificationTypes } from 'misskey-js';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import MkStreamingNotificationsTimeline from '@/components/MkStreamingNotificationsTimeline.vue';
-import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

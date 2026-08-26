@@ -15,7 +15,7 @@ import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import * as os from '@/os.js';
 import { aiScriptReadline, createAiScriptEnv } from '@/aiscript/api.js';
 import { $i } from '@/i.js';
-import VuneWidgetButton from './vune/WidgetButton.vune.js';
+import VuneWidgetButton from './vune/WidgetButton.vune';
 import { i18n } from '@/i18n.js';
 
 const name = 'button';

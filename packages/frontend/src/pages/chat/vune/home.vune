@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkPolkadots from '@/components/MkPolkadots.vue';
+import XHome from '@/pages/chat/home.home.vue';
+import XInvitations from '@/pages/chat/home.invitations.vue';
+import XJoiningRooms from '@/pages/chat/home.joiningRooms.vue';
+import XOwnedRooms from '@/pages/chat/home.ownedRooms.vue';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { tab: string; headerActions?: PageHeaderItem[]; headerTabs?: any[]; onTabChange?: (tab: string) => void };
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], swipable: true, 'onUpdate:tab': (value: string) => props.onTabChange?.(value) }, {
+		default: () => Element('div', {},
+			props.tab === 'home' ? VueComponent(MkPolkadots, { accented: true, height: 200, style: { marginBottom: '-200px' } }) : null,
+			Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
+				props.tab === 'home' ? VueComponent(XHome)
+					: props.tab === 'invitations' ? VueComponent(XInvitations)
+						: props.tab === 'joiningRooms' ? VueComponent(XJoiningRooms)
+							: VueComponent(XOwnedRooms),
+			),
+		),
+	})
+);

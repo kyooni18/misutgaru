@@ -1,0 +1,18 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import XPie from '@/widgets/server-metric/pie.vue';
+import bytes from '@/filters/bytes.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { usage: number; total: number; used: number; free: number };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: 'zlxnikvl' },
+		VueComponent(XPie, { class: 'pie', value: props.usage }),
+		Element('div', {},
+			Element('p', {}, Element('i', { className: 'ti ti-section' }), 'RAM'),
+			Element('p', {}, `Total: ${bytes(props.total, 1)}`),
+			Element('p', {}, `Used: ${bytes(props.used, 1)}`),
+			Element('p', {}, `Free: ${bytes(props.free, 1)}`),
+		),
+	)
+);

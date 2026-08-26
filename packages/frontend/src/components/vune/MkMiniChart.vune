@@ -1,0 +1,59 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
+
+export struct MkMiniChart: View {
+	let viewBoxX: number
+	let viewBoxY: number
+	let gradientId: string
+	let color: string
+	let polygonPoints: string
+	let polylinePoints: string
+	let headX: number | null | undefined
+	let headY: number | null | undefined
+	let className: string | undefined
+
+	init(
+		viewBoxX: number,
+		viewBoxY: number,
+		gradientId: string,
+		color: string,
+		polygonPoints: string,
+		polylinePoints: string,
+		headX: number | null | undefined = undefined,
+		headY: number | null | undefined = undefined,
+		className: string | undefined = undefined,
+	) {
+		self.viewBoxX = viewBoxX
+		self.viewBoxY = viewBoxY
+		self.gradientId = gradientId
+		self.color = color
+		self.polygonPoints = polygonPoints
+		self.polylinePoints = polylinePoints
+		self.headX = headX
+		self.headY = headY
+		self.className = className
+	}
+
+	var body: some View {
+		nativeElement(
+			'svg',
+			{ className, style: { overflow: 'visible' }, viewBox: `0 0 ${viewBoxX} ${viewBoxY}` },
+			nativeElement(
+				'defs',
+				null,
+				nativeElement(
+					'linearGradient',
+					{ id: gradientId, x1: '0', x2: '0', y1: '1', y2: '0' },
+					nativeElement('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0' }),
+					nativeElement('stop', { offset: '100%', 'stop-color': color, 'stop-opacity': '0.65' }),
+				),
+			),
+			nativeElement('polygon', { points: polygonPoints, style: `stroke: none; fill: url(#${gradientId});` }),
+			nativeElement('polyline', { points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '2' }),
+			nativeElement('circle', { cx: headX ?? undefined, cy: headY ?? undefined, r: '3', fill: color }),
+		)
+	}
+}
+
+export default MkMiniChart

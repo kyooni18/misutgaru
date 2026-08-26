@@ -4,17 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div
-	:class="[$style.root, { [$style.active]: active }]"
-	@click="emit('click')"
->
-	<div :class="$style.name"><MkCondensedLine :minScale="0.5">{{ decoration.name }}</MkCondensedLine></div>
-	<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: decoration.url, angle, flipH, offsetX, offsetY }]" forceShowDecoration/>
-	<i v-if="locked" :class="$style.lock" class="ti ti-lock"></i>
-</div>
+<VuneAvatarDecoration :active="props.active" :decoration="props.decoration" :angle="props.angle" :flipH="props.flipH" :offsetX="props.offsetX" :offsetY="props.offsetY" :locked="locked" :user="$i" :rootClass="$style.root" :activeClass="$style.active" :nameClass="$style.name" :lockClass="$style.lock" :onClick="() => emit('click')"/>
 </template>
 
 <script lang="ts" setup>
+import VuneAvatarDecoration from './vune/avatar-decoration.decoration.vune';
 import { computed } from 'vue';
 import { ensureSignin } from '@/i.js';
 

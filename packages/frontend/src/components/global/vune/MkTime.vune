@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	absolute: string;
+	relative: string;
+	invalid?: boolean;
+	mode?: 'relative' | 'absolute' | 'detail';
+	colored?: boolean;
+	ago: number;
+	old1Class: string;
+	old2Class: string;
+};
+
+export default createVuneComponent<Props>((props) => {
+	const mode = props.mode ?? 'relative';
+	const content = vuneBoolean(props.invalid)
+		? i18n.ts._ago.invalid
+		: mode === 'absolute'
+			? props.absolute
+			: mode === 'detail'
+				? `${props.absolute} (${props.relative})`
+				: props.relative;
+	const colored = vuneBoolean(props.colored);
+	return Element('time', {
+		title: props.absolute,
+		className: [
+			colored && props.ago > 60 * 60 * 24 * 90 ? props.old1Class : null,
+			colored && props.ago > 60 * 60 * 24 * 180 ? props.old2Class : null,
+		],
+	}, content);
+});

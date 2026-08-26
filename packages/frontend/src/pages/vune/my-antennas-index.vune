@@ -1,0 +1,39 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkResult from '@/components/global/MkResult.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkA from '@/components/global/MkA.vue';
+import { i18n } from '@/i18n.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	antennas: Misskey.entities.Antenna[];
+	headerActions?: PageHeaderItem[];
+	headerTabs?: unknown[];
+	addClass: string;
+	antennaClass: string;
+	nameClass: string;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
+		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
+			Element('div', {},
+				props.antennas.length === 0 ? VueComponent(MkResult, { type: 'empty' }) : null,
+				VueComponent(MkButton, { type: 'routerLink', to: '/my/antennas/create', primary: true, class: props.addClass }, {
+					default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.add) },
+				}),
+				props.antennas.length > 0 ? Element('div', { className: '_gaps' },
+					ForEach(props.antennas, key: (antenna) => antenna.id) { antenna in
+						VueComponent(MkA, { class: props.antennaClass, to: `/timeline/antenna/${antenna.id}` }, {
+							default: () => Element('div', { className: props.nameClass }, antenna.name),
+						})
+					},
+				) : null,
+			),
+		),
+	})
+);

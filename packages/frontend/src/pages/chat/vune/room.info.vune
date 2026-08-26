@@ -1,0 +1,50 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Divider, Text, VStack } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	name: string;
+	description: string;
+	isOwner: boolean;
+	canDelete: boolean;
+	isMuted: boolean;
+	onName?: (value: string) => void;
+	onDescription?: (value: string) => void;
+	onMuted?: (value: boolean) => void;
+	onSave?: () => void;
+	onDelete?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkInput, {
+			modelValue: props.name,
+			disabled: !props.isOwner,
+			'onUpdate:modelValue': (value: string) => props.onName?.(value),
+		}, { label: () => Text(i18n.ts.name) })
+		VueComponent(MkTextarea, {
+			modelValue: props.description,
+			disabled: !props.isOwner,
+			'onUpdate:modelValue': (value: string) => props.onDescription?.(value),
+		}, { label: () => Text(i18n.ts.description) })
+		if (props.isOwner) {
+			VueComponent(MkButton, { primary: true, onClick: () => props.onSave?.() }, { default: () => Text(i18n.ts.save) })
+		}
+		Divider()
+		if (props.canDelete) {
+			VueComponent(MkButton, { danger: true, onClick: () => props.onDelete?.() }, { default: () => Text(i18n.ts._chat.deleteRoom) })
+		}
+		if (!props.isOwner) {
+			VueComponent(MkSwitch, {
+				modelValue: props.isMuted,
+				'onUpdate:modelValue': (value: boolean) => props.onMuted?.(value),
+			}, { label: () => Text(i18n.ts._chat.muteThisRoom) })
+		}
+	}
+		.className('_gaps')
+);

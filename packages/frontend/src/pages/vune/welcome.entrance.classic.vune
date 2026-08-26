@@ -1,0 +1,52 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import XTimeline from '@/pages/welcome.timeline.vue';
+import MkMarqueeText from '@/components/MkMarqueeText.vue';
+import MkFeaturedPhotos from '@/components/vune/MkFeaturedPhotos.vune';
+import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
+import MkA from '@/components/global/MkA.vue';
+import misskeysvg from '/client-assets/misskey.svg';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	meta: unknown;
+	instances?: Misskey.entities.FederationInstance[];
+	classes: Record<string, string>;
+	getInstanceIcon: (instance: Misskey.entities.FederationInstance) => string;
+};
+
+export default createVuneComponent<Props>((props) => {
+	if (!props.meta) return Group() {};
+	return Element('div', { className: props.classes.root },
+		MkFeaturedPhotos().className(props.classes.bg),
+		VueComponent(XTimeline, { class: props.classes.tl }),
+		Element('div', { className: props.classes.shape1 }),
+		Element('div', { className: props.classes.shape2 }),
+		Element('div', { className: props.classes.logoWrapper },
+			Element('div', { className: props.classes.poweredBy }, 'Powered by'),
+			Element('img', { src: misskeysvg, className: props.classes.misskey, alt: 'Misskey' }),
+		),
+		Element('div', { className: props.classes.contents }, VueComponent(MkVisitorDashboard)),
+		props.instances && props.instances.length > 0 ? Element('div', { className: props.classes.federation },
+			VueComponent(MkMarqueeText, { duration: 40 }, {
+				default: () => Group() {
+					ForEach(props.instances ?? [], key: (instance) => instance.id) { instance in
+						VueComponent(MkA, {
+							class: props.classes.federationInstance,
+							to: `/instance-info/${instance.host}`,
+							behavior: 'window',
+						}, {
+							default: () => Group() {
+								if (instance.iconUrl) {
+									Element('img', { className: props.classes.federationInstanceIcon, src: props.getInstanceIcon(instance), alt: '' })
+								}
+								Element('span', { className: '_monospace' }, instance.host)
+							},
+						})
+					}
+				},
+			}),
+		) : null,
+	);
+});

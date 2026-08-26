@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = { file: Misskey.entities.DriveFile; kind: string; thumbnailAvailable?: boolean; highQuality?: boolean; fit: 'cover'|'contain'; forceBlurhash?: boolean; classes: Record<string,string> };
+function icon(kind: string) {
+	if (kind === 'image') return 'ti ti-photo';
+	if (kind === 'video') return 'ti ti-video';
+	if (kind === 'audio' || kind === 'midi') return 'ti ti-file-music';
+	if (kind === 'csv' || kind === 'pdf' || kind === 'textfile') return 'ti ti-file-text';
+	if (kind === 'archive') return 'ti ti-file-zip';
+	return 'ti ti-file';
+}
+export default createVuneComponent<Props>((props) =>
+	vuneBoolean(props.thumbnailAvailable) && vuneBoolean(props.highQuality)
+		? VueComponent(MkImgWithBlurhash, { hash: props.file.blurhash, src: props.file.thumbnailUrl, alt: props.file.name, title: props.file.name, class: props.classes.thumbnail, cover: props.fit !== 'contain', forceBlurhash: vuneBoolean(props.forceBlurhash) })
+		: vuneBoolean(props.thumbnailAvailable) && props.file.thumbnailUrl != null
+			? Element('img', { src: props.file.thumbnailUrl, alt: props.file.name, title: props.file.name, className: props.classes.thumbnail, style: { objectFit: props.fit } })
+			: Element('i', { className: [icon(props.kind), props.classes.icon] },
+				vuneBoolean(props.thumbnailAvailable) && props.kind === 'video' ? Element('i', { className: ['ti ti-video', props.classes.iconSub] }) : null,
+			)
+);

@@ -1,0 +1,39 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkA from '@/components/global/MkA.vue';
+import MkAcct from '@/components/global/MkAcct.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import { userPage } from '@/filters/user.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = { user: Misskey.entities.UserDetailed };
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: '_panel' },
+		Element('div', {
+			className: 'mk-vune-identity-widget',
+			style: { backgroundImage: props.user.bannerUrl ? `url(${props.user.bannerUrl})` : undefined },
+		},
+			Element('div', { className: 'mk-vune-identity-widget__avatar-wrap' },
+				VueComponent(MkAvatar, {
+					class: 'mk-vune-identity-widget__avatar',
+					user: props.user,
+				}),
+			),
+			Element('div', { className: 'mk-vune-identity-widget__body-wrap' },
+				Element('div', { className: 'mk-vune-identity-widget__body' },
+					VueComponent(MkA, {
+						class: 'mk-vune-identity-widget__name',
+						to: userPage(props.user),
+					}, { default: () => VueComponent(MkUserName, { user: props.user }) }),
+					Element('div', { className: 'mk-vune-identity-widget__sub' },
+						VueComponent(MkAcct, { user: props.user, detail: true }),
+					),
+				),
+			),
+		),
+	)
+);

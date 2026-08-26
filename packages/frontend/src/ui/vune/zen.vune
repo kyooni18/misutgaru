@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueSlot, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = { showDeckNav?: boolean; onGoToDeck?: () => void };
+
+export default createVuneComponent<Props>((props, slots) =>
+	Element('div', {},
+		Element('div', { className: 'mk-vune-zen__contents' },
+			vuneBoolean(props.showDeckNav, false) ? Element('button', {
+				className: '_buttonPrimary mk-vune-zen__deck-nav',
+				onClick: () => props.onGoToDeck?.(),
+			}, Text(i18n.ts.goToDeck)) : null,
+			Element('div', { className: 'mk-vune-zen__route' }, VueSlot(slots.router)),
+		),
+		VueSlot(slots.common),
+	)
+);

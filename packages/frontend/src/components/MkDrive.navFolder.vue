@@ -4,25 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div
-	:class="[$style.root, { [$style.draghover]: draghover }]"
-	@dragover.prevent.stop="onDragover"
-	@dragenter="onDragenter"
-	@dragleave="onDragleave"
-	@drop.stop="onDrop"
->
-	<i v-if="folder == null" class="ti ti-cloud" style="margin-right: 4px;"></i>
-	<span>{{ folder == null ? i18n.ts.drive : folder.name }}</span>
-</div>
+<NativeDriveNavFolder :folder="props.folder" :draghover="draghover" :rootClass="$style.root" :draghoverClass="$style.draghover" :onDragover="onDragover" :onDragenter="onDragenter" :onDragleave="onDragleave" :onDrop="onDrop"/>
 </template>
 
 <script lang="ts" setup>
+import VuneDriveNavFolder from './vune/MkDriveNavFolder.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { globalEvents } from '@/events.js';
 import { checkDragDataType, getDragData } from '@/drag-and-drop.js';
+
+const NativeDriveNavFolder = createVuneWebHost(VuneDriveNavFolder);
 
 const props = defineProps<{
 	folder?: Misskey.entities.DriveFolder;

@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
-import component from './vune/MkUserName.vune.js';
+import component from './vune/MkUserName.vune';
 export default component;
 </script>

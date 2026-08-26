@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import { Suspense, defineAsyncComponent } from 'vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+const XCode = defineAsyncComponent(() => import('@/components/MkCode.core.vue'));
+type Props = { code: string; lang?: string; show?: boolean; copyButton?: boolean; withOuterStyle?: boolean; classes: Record<string,string>; onCopy?: () => void; onShow?: () => void };
+function fallback(props: Props) {
+	return Element('pre', { className: ['_selectable', props.classes.codeBlockFallbackRoot, vuneBoolean(props.withOuterStyle, true) ? props.classes.outerStyle : null] },
+		Element('code', { className: props.classes.codeBlockFallbackCode }, props.code),
+	);
+}
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.classes.codeBlockRoot },
+		vuneBoolean(props.copyButton, true) ? Element('button', { className: [props.classes.codeBlockCopyButton, vuneBoolean(props.withOuterStyle, true) ? props.classes.withOuterStyle : null, '_button'], onClick: () => props.onCopy?.() }, Element('i', { className: 'ti ti-copy' })) : null,
+		VueComponent(Suspense as any, {}, {
+			fallback: () => Element('pre', { className: ['_selectable', props.classes.codeBlockFallbackRoot, vuneBoolean(props.withOuterStyle, true) ? props.classes.outerStyle : null] }, Element('code', { className: props.classes.codeBlockFallbackCode }, 'Loading...')),
+			default: () => vuneBoolean(props.show)
+				? (props.lang ? VueComponent(XCode, { class: '_selectable', code: props.code, lang: props.lang, withOuterStyle: vuneBoolean(props.withOuterStyle, true) }) : fallback(props))
+				: Element('button', { className: props.classes.codePlaceholderRoot, onClick: () => props.onShow?.() },
+					Element('div', { className: props.classes.codePlaceholderContainer },
+						Element('div', {}, Element('i', { className: 'ti ti-code' }), ' ', i18n.ts.code),
+						Element('div', {}, i18n.ts.clickToShow),
+					),
+				),
+		}),
+	)
+);

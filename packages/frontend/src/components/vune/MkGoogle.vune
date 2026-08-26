@@ -1,0 +1,59 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Binding, Box, Button, Group, Text, TextField } from 'vune-ui';
+import { i18n } from '@/i18n.js';
+import VuneIcon from '@/vune/Icon.vune';
+
+type QueryAction = (value: string) => void;
+type SearchAction = () => void;
+type StyleClasses = Record<string, string>;
+type GoogleActions = { updateQuery: QueryAction; search: SearchAction };
+
+function ignoreQueryAction(_value: string): void {}
+function ignoreSearchAction(): void {}
+
+export struct MkGoogle: View {
+	let query: string
+	let q: string
+	let classes: StyleClasses
+	let actions: GoogleActions
+
+	init(
+		_ query: string,
+		q: string,
+		classes: StyleClasses,
+		@Action onUpdateQuery: QueryAction = ignoreQueryAction,
+		@Action onSearch: SearchAction = ignoreSearchAction,
+	) {
+		self.query = query
+		self.q = q
+		self.classes = classes
+		self.actions = { updateQuery: onUpdateQuery, search: onSearch }
+	}
+
+	var body: some View {
+		Box() {
+			TextField(
+				Binding(
+					() => query,
+					(value: string) => actions.updateQuery(value),
+				),
+				q,
+			)
+				.className(classes.input)
+				.withProps({ type: 'search' })
+			Button(action: {
+				actions.search()
+			}, label: {
+				Group() {
+					VuneIcon('ti ti-search')
+					Text(` ${i18n.ts.searchByGoogle}`)
+				}
+			})
+				.className(classes.button)
+		}
+			.className(classes.root)
+	}
+}
+
+export default MkGoogle

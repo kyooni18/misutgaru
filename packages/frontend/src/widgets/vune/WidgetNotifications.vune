@@ -1,0 +1,33 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import MkContainer from '@/components/MkContainer.vue';
+import MkStreamingNotificationsTimeline from '@/components/MkStreamingNotificationsTimeline.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	showHeader?: boolean;
+	height: number;
+	excludeTypes: readonly string[];
+	onConfigure?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, {
+		style: `height: ${props.height}px;`,
+		showHeader: vuneBoolean(props.showHeader, true),
+		scrollable: true,
+		'data-testid': 'mkw-notifications',
+		class: 'mkw-notifications',
+	}, {
+		icon: () => Element('i', { className: 'ti ti-bell' }),
+		header: () => Text(i18n.ts.notifications),
+		func: (slotProps: any) => Element('button', {
+			className: ['_button', slotProps.buttonStyleClass],
+			onClick: () => props.onConfigure?.(),
+		}, Element('i', { className: 'ti ti-settings' })),
+		default: () => Element('div', {},
+			VueComponent(MkStreamingNotificationsTimeline, { excludeTypes: props.excludeTypes }),
+		),
+	})
+);

@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text, VStack } from 'vune-ui';
+import MkSelect from '@/components/MkSelect.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+type NotificationConfigType = 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'list' | 'never';
+
+type Props = {
+	type: NotificationConfigType;
+	typeDef: unknown;
+	userListId: string | null;
+	userListIdDef: unknown;
+	onType?: (value: NotificationConfigType) => void;
+	onUserListId?: (value: string | null) => void;
+	onSave?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkSelect, {
+			modelValue: props.type,
+			items: props.typeDef,
+			'onUpdate:modelValue': (value: NotificationConfigType) => props.onType?.(value),
+		})
+		if (props.type === 'list') {
+			VueComponent(MkSelect, {
+				modelValue: props.userListId,
+				items: props.userListIdDef,
+				'onUpdate:modelValue': (value: string | null) => props.onUserListId?.(value),
+			}, { label: () => Text(i18n.ts.userList) })
+		}
+		VueComponent(MkButton, {
+			inline: true,
+			primary: true,
+			disabled: props.type === 'list' && props.userListId === null,
+			onClick: () => props.onSave?.(),
+		}, { default: () => Group() { Element('i', { className: 'ti ti-check' }); Text(` ${i18n.ts.save}`) } })
+	}
+		.className('_gaps_m')
+);

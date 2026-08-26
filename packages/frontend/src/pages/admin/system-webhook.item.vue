@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { entities } from 'misskey-js';
 import { toRefs } from 'vue';
-import VuneSystemWebhookItem from './vune/system-webhook.item.vune.js';
+import VuneSystemWebhookItem from './vune/system-webhook.item.vune';
 
 const emit = defineEmits<{
 	(ev: 'edit', value: entities.SystemWebhook): void;

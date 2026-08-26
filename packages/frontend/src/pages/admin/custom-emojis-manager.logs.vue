@@ -4,34 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div>
-	<div v-if="logs.length > 0" style="display:flex; flex-direction: column; overflow-y: scroll; gap: 16px;">
-		<MkSwitch v-model="showingSuccessLogs">
-			<template #label>{{ i18n.ts._customEmojisManager._logs.showSuccessLogSwitch }}</template>
-		</MkSwitch>
-		<div>
-			<div v-if="filteredLogs.length > 0">
-				<MkGrid
-					:data="filteredLogs"
-					:settings="setupGrid()"
-				/>
-			</div>
-			<div v-else>
-				{{ i18n.ts._customEmojisManager._logs.failureLogNothing }}
-			</div>
-		</div>
-	</div>
-	<div v-else>
-		{{ i18n.ts._customEmojisManager._logs.logNothing }}
-	</div>
-</div>
+<VuneEmojiLogs :logs="logs" :filteredLogs="filteredLogs" :showingSuccessLogs="showingSuccessLogs" :settings="setupGrid()" :onToggleSuccess="value => showingSuccessLogs = value"/>
 </template>
 
 <script setup lang="ts">
+import VuneEmojiLogs from './vune/custom-emojis-manager.logs.vune';
 import { computed, ref, toRefs } from 'vue';
 import { i18n } from '@/i18n.js';
-import MkGrid from '@/components/grid/MkGrid.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
 import { copyGridDataToClipboard } from '@/components/grid/grid-utils.js';
 
 import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';

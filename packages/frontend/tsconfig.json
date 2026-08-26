@@ -55,6 +55,7 @@
 	],
 	"exclude": [
 		"./src/**/*.stories.ts",
-		"./src/**/*.vune.ts"
+		"./src/**/*.vune",
+		"./src/**/*.vune.*"
 	]
 }

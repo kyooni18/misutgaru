@@ -1,0 +1,75 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import type { Component as VueComponentType } from 'vue';
+import MkStickyContainer from '@/components/global/MkStickyContainer.vue';
+import MkPageHeader from '@/components/global/MkPageHeader.vue';
+import MkGrid from '@/components/grid/MkGrid.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkPagingButtons from '@/components/MkPagingButtons.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	headerPageMetadata: unknown;
+	headerActions: unknown[];
+	loadingComponent?: VueComponentType;
+	loadingShowing?: boolean;
+	gridItems: any[];
+	gridSettings: unknown;
+	classes: Record<string, string>;
+	deleteItemsCount: number;
+	updatedItemsCount: number;
+	updateButtonDisabled?: boolean;
+	currentPage: number;
+	allPages: number;
+	onGridEvent?: (...args: any[]) => void;
+	onDelete?: () => void;
+	onPageChanged?: (page: number) => void;
+	onUpdate?: () => void;
+	onReset?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkStickyContainer, {}, {
+		header: () => VueComponent(MkPageHeader, {
+			overridePageMetadata: props.headerPageMetadata,
+			actions: props.headerActions,
+		}),
+		default: () => Element('div', { className: ['_gaps', props.classes.main] },
+			vuneBoolean(props.loadingShowing) && props.loadingComponent
+				? VueComponent(props.loadingComponent)
+				: props.gridItems.length === 0
+					? Element('div', { style: { textAlign: 'center' } }, i18n.ts._customEmojisManager._local._list.emojisNothing)
+					: Element('div', { className: props.classes.grid },
+						VueComponent(MkGrid, {
+							data: props.gridItems,
+							settings: props.gridSettings,
+							onEvent: (...args: any[]) => props.onGridEvent?.(...args),
+						}),
+					),
+		),
+		footer: () => props.gridItems.length > 0 ? Element('div', { className: props.classes.footer },
+			Element('div', { className: props.classes.left },
+				VueComponent(MkButton, { danger: true, style: 'margin-right: auto', onClick: () => props.onDelete?.() }, {
+					default: () => Text(`${i18n.ts.delete} (${props.deleteItemsCount})`),
+				}),
+			),
+			Element('div', { className: props.classes.center },
+				VueComponent(MkPagingButtons, {
+					current: props.currentPage,
+					max: props.allPages,
+					buttonCount: 5,
+					onPageChanged: (page: number) => props.onPageChanged?.(page),
+				}),
+			),
+			Element('div', { className: props.classes.right },
+				VueComponent(MkButton, { primary: true, disabled: vuneBoolean(props.updateButtonDisabled), onClick: () => props.onUpdate?.() }, {
+					default: () => Text(`${i18n.ts.update} (${props.updatedItemsCount})`),
+				}),
+				VueComponent(MkButton, { onClick: () => props.onReset?.() }, {
+					default: () => Text(i18n.ts.reset),
+				}),
+			),
+		) : Group() {},
+	})
+);

@@ -4,18 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<MkSelect v-model="type" :items="typeDef">
-	</MkSelect>
-
-	<MkSelect v-if="type === 'list'" v-model="userListId" :items="userListIdDef">
-		<template #label>{{ i18n.ts.userList }}</template>
-	</MkSelect>
-
-	<div class="_buttons">
-		<MkButton inline primary :disabled="type === 'list' && userListId === null" @click="save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
-	</div>
-</div>
+<VuneNotificationConfig
+	:type="type"
+	:typeDef="typeDef"
+	:userListId="userListId"
+	:userListIdDef="userListIdDef"
+	:onType="value => type = value"
+	:onUserListId="value => userListId = value"
+	:onSave="save"
+/>
 </template>
 
 <script lang="ts">
@@ -39,9 +36,8 @@ export type NotificationConfig = {
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
+import VuneNotificationConfig from './vune/notifications.notification-config.vune';
 import { ref, computed } from 'vue';
-import MkSelect from '@/components/MkSelect.vue';
-import MkButton from '@/components/MkButton.vue';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { i18n } from '@/i18n.js';
 

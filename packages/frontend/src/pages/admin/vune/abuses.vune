@@ -1,0 +1,65 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { ForEach, HStack, Text, VStack } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkPagination from '@/components/MkPagination.vue';
+import XAbuseReport from '@/components/MkAbuseReport.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkTip from '@/components/global/MkTip.vue';
+import { i18n } from '@/i18n.js';
+import type { IPaginator } from '@/utility/paginator.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	state: string;
+	stateDef: unknown;
+	reporterOrigin: string;
+	reporterOriginDef: unknown;
+	targetUserOrigin: string;
+	targetUserOriginDef: unknown;
+	paginator: IPaginator<any, any>;
+	rootClass: string;
+	subMenusClass: string;
+	inputsClass: string;
+	headerActions?: unknown[];
+	headerTabs?: unknown[];
+	onState?: (value: string) => void;
+	onReporterOrigin?: (value: string) => void;
+	onTargetUserOrigin?: (value: string) => void;
+	onResolved?: (id: string) => void;
+};
+
+type PaginationSlot = { items?: Array<{ id: string } & Record<string, unknown>> };
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
+		default: () => VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+				HStack(alignment: 'center', spacing: 'var(--MI-marginHalf)') {
+					VueComponent(MkButton, { type: 'routerLink', to: '/admin/abuse-report-notification-recipient', primary: true }, {
+						default: () => Text(i18n.ts.notificationSetting),
+					})
+				}.className([props.subMenusClass, '_gaps'])
+			VueComponent(MkTip, { k: 'abuses' }, { default: () => Text(i18n.ts._abuseUserReport.resolveTutorial) })
+			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+				VueComponent(MkSelect, { modelValue: props.state, items: props.stateDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onState?.(value) }, { label: () => Text(i18n.ts.state) })
+				VueComponent(MkSelect, { modelValue: props.targetUserOrigin, items: props.targetUserOriginDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onTargetUserOrigin?.(value) }, { label: () => Text(i18n.ts.reporteeOrigin) })
+				VueComponent(MkSelect, { modelValue: props.reporterOrigin, items: props.reporterOriginDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onReporterOrigin?.(value) }, { label: () => Text(i18n.ts.reporterOrigin) })
+			}.className([props.inputsClass, '_gaps'])
+				VueComponent(MkPagination, { paginator: props.paginator }, {
+					default: (...args: unknown[]) => {
+						let slot = (args[0] ?? {}) as PaginationSlot;
+						return VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+							ForEach(slot.items ?? [], key: (report) => report.id) { report in
+								VueComponent(XAbuseReport, { report, onResolved: (id: string) => props.onResolved?.(id) })
+							}
+						}.className('_gaps')
+					},
+				})
+			}
+				.className([props.rootClass, '_gaps'])
+		}
+			.className('_spacer')
+			.style({ '--MI_SPACER-w': '900px' })
+	})
+);

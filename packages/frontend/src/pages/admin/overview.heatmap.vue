@@ -4,16 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_panel" :class="$style.root">
-	<MkSelect v-model="src" :items="srcDef" style="margin: 0 0 12px 0;" small>
-	</MkSelect>
-	<MkHeatmap :src="src"/>
-</div>
+<VuneOverviewHeatmap :src="src" :srcDef="srcDef" :rootClass="$style.root" :onUpdateSrc="value => src = value"/>
 </template>
 
 <script lang="ts" setup>
-import MkHeatmap from '@/components/MkHeatmap.vue';
-import MkSelect from '@/components/MkSelect.vue';
+import VuneOverviewHeatmap from './vune/overview.heatmap.vune';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 
 const {

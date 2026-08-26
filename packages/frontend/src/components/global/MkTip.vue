@@ -4,20 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="!store.r.tips.value[props.k]" :class="[$style.root, { [$style.warn]: warn }]" class="_selectable _gaps_s">
-	<div style="font-weight: bold;"><i class="ti ti-bulb"></i> {{ i18n.ts.tip }}:</div>
-	<div><slot></slot></div>
-	<div>
-		<MkButton inline primary rounded small @click="_closeTip()"><i class="ti ti-check"></i> {{ i18n.ts.gotIt }}</MkButton>
-		<button class="_button" style="padding: 8px; margin-left: 4px;" @click="showMenu"><i class="ti ti-dots"></i></button>
-	</div>
-</div>
+<VuneTip :hidden="!!store.r.tips.value[props.k]" :warn="warn" :rootClass="$style.root" :warnClass="$style.warn" :onClose="_closeTip" :onMenu="showMenu"><slot></slot></VuneTip>
 </template>
 
 <script lang="ts" setup>
+import VuneTip from './vune/MkTip.vune';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { TIPS, hideAllTips, closeTip } from '@/tips.js';
 

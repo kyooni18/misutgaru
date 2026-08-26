@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneUserLists from './vune/lists.vune.js';
+import VuneUserLists from './vune/lists.vune';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

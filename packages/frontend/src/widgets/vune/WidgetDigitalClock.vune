@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import MkDigitalClock from '@/components/MkDigitalClock.vue';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	transparent?: boolean;
+	fontSize: number;
+	showMs?: boolean;
+	showLabel?: boolean;
+	tzAbbrev: string;
+	tzOffset: number;
+	tzOffsetLabel: string;
+	rootClass: string;
+	labelClass: string;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('div', {
+		'data-testid': 'mkw-digitalClock',
+		className: ['_monospace', props.rootClass, !vuneBoolean(props.transparent) ? '_panel' : null],
+		style: { fontSize: `${props.fontSize}em` },
+	},
+		vuneBoolean(props.showLabel) ? Element('div', { className: props.labelClass }, props.tzAbbrev) : null,
+		Element('div', {}, VueComponent(MkDigitalClock, { showMs: vuneBoolean(props.showMs), offset: props.tzOffset })),
+		vuneBoolean(props.showLabel) ? Element('div', { className: props.labelClass }, props.tzOffsetLabel) : null,
+	)
+);

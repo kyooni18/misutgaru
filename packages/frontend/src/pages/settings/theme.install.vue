@@ -4,22 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<MkCodeEditor v-model="installThemeCode" lang="json5">
-		<template #label>{{ i18n.ts._theme.code }}</template>
-	</MkCodeEditor>
-
-	<div class="_buttons">
-		<MkButton :disabled="installThemeCode == null || installThemeCode.trim() === ''" inline @click="() => previewTheme(installThemeCode!)"><i class="ti ti-eye"></i> {{ i18n.ts.preview }}</MkButton>
-		<MkButton :disabled="installThemeCode == null || installThemeCode.trim() === ''" primary inline @click="() => install(installThemeCode!)"><i class="ti ti-check"></i> {{ i18n.ts.install }}</MkButton>
-	</div>
-</div>
+<VuneThemeInstall :code="installThemeCode" :onCodeChange="value => installThemeCode = value" :onPreview="previewTheme" :onInstall="install"/>
 </template>
 
 <script lang="ts" setup>
+import VuneThemeInstall from './vune/theme-install.vune';
 import { ref, computed } from 'vue';
-import MkCodeEditor from '@/components/MkCodeEditor.vue';
-import MkButton from '@/components/MkButton.vue';
 import { themeManager, installTheme, handleThemeInstallError } from '@/theme.js';
 import { parseThemeCode } from '@@/js/theme.js';
 import * as os from '@/os.js';

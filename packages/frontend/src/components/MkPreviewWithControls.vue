@@ -4,24 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root">
-	<div :class="$style.container">
-		<div :class="[$style.preview, prefer.s.animation ? $style.animatedBg : null]">
-			<div :class="$style.previewContent">
-				<slot name="preview"></slot>
-			</div>
-			<div v-if="previewLoading" :class="$style.previewLoading">
-				<MkLoading/>
-			</div>
-		</div>
-		<div :class="$style.controls">
-			<slot name="controls"></slot>
-		</div>
-	</div>
-</div>
+<VunePreviewWithControls :previewLoading="previewLoading" :animation="prefer.s.animation" :rootClass="$style.root" :containerClass="$style.container" :previewClass="$style.preview" :animatedBgClass="$style.animatedBg" :previewContentClass="$style.previewContent" :previewLoadingClass="$style.previewLoading" :controlsClass="$style.controls">
+	<template #preview><slot name="preview"></slot></template>
+	<template #controls><slot name="controls"></slot></template>
+</VunePreviewWithControls>
 </template>
 
 <script lang="ts" setup>
+import VunePreviewWithControls from './vune/MkPreviewWithControls.vune';
 import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{

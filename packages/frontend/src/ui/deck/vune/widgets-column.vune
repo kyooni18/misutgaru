@@ -1,0 +1,51 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import XColumn from '@/ui/deck/column.vue';
+import XWidgets from '@/components/MkWidgets.vue';
+import type { Column } from '@/deck.js';
+import type { Widget } from '@/components/MkWidgets.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+type Props = {
+	column: Column;
+	isStacked: boolean;
+	edit?: boolean;
+	menu: unknown[];
+	onAddWidget?: (widget: Widget) => void;
+	onRemoveWidget?: (widget: Widget) => void;
+	onUpdateWidget?: (widget: { id: Widget['id']; data: Widget['data'] }) => void;
+	onUpdateWidgets?: (widgets: Widget[]) => void;
+	onExitEdit?: () => void;
+};
+
+export default createVuneComponent<Props>((props) => {
+	const editing = vuneBoolean(props.edit, false);
+	const widgets = props.column.widgets ?? [];
+	return VueComponent(XColumn, {
+		menu: props.menu,
+		naked: true,
+		column: props.column,
+		isStacked: props.isStacked,
+	}, {
+		header: () => Group() {
+			Element('i', { className: 'ti ti-apps', style: { marginRight: '8px' } })
+			Text(props.column.name || i18n.ts._deck._columns[props.column.type])
+		},
+		default: () => Element('div', { className: 'mk-vune-deck-widgets' },
+			widgets.length === 0 && !editing
+				? Element('div', { className: 'mk-vune-deck-widgets__intro' }, i18n.ts._deck.widgetsIntroduction)
+				: null,
+			VueComponent(XWidgets, {
+				edit: editing,
+				widgets,
+				onAddWidget: (widget: Widget) => props.onAddWidget?.(widget),
+				onRemoveWidget: (widget: Widget) => props.onRemoveWidget?.(widget),
+				onUpdateWidget: (widget: { id: Widget['id']; data: Widget['data'] }) => props.onUpdateWidget?.(widget),
+				onUpdateWidgets: (next: Widget[]) => props.onUpdateWidgets?.(next),
+				onExit: () => props.onExitEdit?.(),
+			}),
+		),
+	});
+});

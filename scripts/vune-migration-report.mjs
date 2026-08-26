@@ -19,7 +19,7 @@ async function walk(dir) {
 
 const files = await walk(root);
 const vueFiles = files.filter(file => extname(file) === '.vue');
-const vuneFiles = files.filter(file => /\.vune\.[cm]?[jt]sx?$/.test(file));
+const vuneFiles = files.filter(file => /\.vune(?:\.[cm]?[jt]sx?)?$/.test(file));
 const wrappers = [];
 const nativeFiles = [];
 const featureCounts = new Map();
@@ -37,7 +37,7 @@ let forEachFiles = 0;
 
 for (const file of vueFiles) {
 	const source = await readFile(file, 'utf8');
-	if (/\.vune\.js['"]/.test(source)) wrappers.push(file);
+	if (/\.vune['"]/.test(source)) wrappers.push(file);
 	for (const feature of ['v-if', 'v-for', '<Transition', '<Teleport', '<slot', 'v-model', 'ref=', ':is=', '<component']) {
 		if (source.includes(feature)) featureCounts.set(feature, (featureCounts.get(feature) ?? 0) + 1);
 	}

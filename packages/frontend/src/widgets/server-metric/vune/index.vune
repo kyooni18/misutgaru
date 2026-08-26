@@ -1,0 +1,44 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkContainer from '@/components/MkContainer.vue';
+import XCpuMemory from '@/widgets/server-metric/cpu-mem.vue';
+import XNet from '@/widgets/server-metric/net.vue';
+import XCpu from '@/widgets/server-metric/cpu.vue';
+import XMemory from '@/widgets/server-metric/mem.vue';
+import XDisk from '@/widgets/server-metric/disk.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	showHeader?: boolean;
+	transparent?: boolean;
+	view: number;
+	connection: unknown;
+	meta?: Misskey.entities.ServerInfoResponse | null;
+	onToggleView?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, {
+		showHeader: vuneBoolean(props.showHeader, true),
+		naked: vuneBoolean(props.transparent, false),
+	}, {
+		icon: () => Element('i', { className: 'ti ti-server' }),
+		header: () => Text(i18n.ts._widgets.serverMetric),
+		func: (slotProps: any) => Element('button', {
+			className: ['_button', slotProps.buttonStyleClass],
+			onClick: () => props.onToggleView?.(),
+		}, Element('i', { className: 'ti ti-selector' })),
+		default: () => props.meta ? Element('div', {
+			'data-testid': 'mkw-serverMetric',
+			className: 'mkw-serverMetric',
+		},
+			props.view === 0 ? VueComponent(XCpuMemory, { connection: props.connection, meta: props.meta }) :
+			props.view === 1 ? VueComponent(XNet, { connection: props.connection, meta: props.meta }) :
+			props.view === 2 ? VueComponent(XCpu, { connection: props.connection, meta: props.meta }) :
+			props.view === 3 ? VueComponent(XMemory, { connection: props.connection, meta: props.meta }) :
+			props.view === 4 ? VueComponent(XDisk, { meta: props.meta }) : Group() {},
+		) : Group() {},
+	})
+);

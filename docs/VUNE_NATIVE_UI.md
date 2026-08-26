@@ -36,7 +36,7 @@ Use Vune Views (`Text`, `Image`, `Button`, `Link`, `HStack`, `VStack`, `ZStack`,
 
 Legacy `.vue` call sites may temporarily use `createVuneWebHost(ViewType)`. That adapter only supplies old Vue attrs/events and a lifecycle placeholder. `@vune-ui/web` owns and renders the native Vune subtree.
 
-Compatibility code belongs outside `.vune.ts`. When a parent migrates to Vune, it should call the child View initializer directly and the Vue placement shell can be deleted.
+Compatibility code belongs outside `.vune`. When a parent migrates to Vune, it should call the child View initializer directly and the Vue placement shell can be deleted.
 
 ## Migration order
 

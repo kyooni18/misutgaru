@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Text } from 'vune-ui';
+import { TransitionGroup } from 'vue';
+import type * as Misskey from 'misskey-js';
+import MkContainer from '@/components/MkContainer.vue';
+import MkLoading from '@/components/global/MkLoading.vue';
+import MkA from '@/components/global/MkA.vue';
+import MkMiniChart from '@/components/MkMiniChart.vue';
+import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	showHeader?: boolean;
+	fetching?: boolean;
+	stats: Misskey.entities.HashtagsTrendResponse;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, {
+		showHeader: vuneBoolean(props.showHeader, true),
+		'data-testid': 'mkw-trends',
+		class: 'mkw-trends',
+	}, {
+		icon: () => Element('i', { className: 'ti ti-hash' }),
+		header: () => Text(i18n.ts._widgets.trends),
+		default: () => Element('div', { className: 'wbrkwala' },
+			vuneBoolean(props.fetching) ? VueComponent(MkLoading) : VueComponent(TransitionGroup as any, {
+				tag: 'div',
+				name: prefer.s.animation ? 'chart' : '',
+				class: 'tags',
+			}, {
+				default: () => ForEach(props.stats, key: (stat) => stat.tag) { stat in
+					Element('div', {},
+						Element('div', { className: 'tag' },
+							VueComponent(MkA, { class: 'a', to: `/tags/${encodeURIComponent(stat.tag)}`, title: stat.tag }, {
+								default: () => Text(`#${stat.tag}`),
+							}),
+							Element('p', {}, i18n.tsx.nUsersMentioned({ n: stat.usersCount })),
+						),
+						VueComponent(MkMiniChart, { class: 'chart', src: stat.chart }),
+					)
+				},
+			}),
+		),
+	})
+);

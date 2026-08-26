@@ -4,34 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root" class="_pageScrollable">
-	<div class="_spacer" :class="$style.main">
-		<MkButton v-if="read" :class="$style.button" rounded @click="read = false"><i class="ti ti-qrcode"></i> {{ i18n.ts._qr.showTabTitle }}</MkButton>
-		<MkButton v-else :class="$style.button" rounded @click="read = true"><i class="ti ti-scan"></i> {{ i18n.ts._qr.readTabTitle }}</MkButton>
-
-		<MkQrRead v-if="read"/>
-		<MkQrShow v-else/>
-	</div>
-	<MkPolkadots v-if="!read" accented revered :height="200" style="position: sticky; bottom: 0; margin-top: -200px;"/>
-</div>
+<VuneQr :read="read" :rootClass="$style.root" :mainClass="$style.main" :buttonClass="$style.button" :onToggle="() => read = !read"/>
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, ref, shallowRef } from 'vue';
-import MkQrShow from './qr.show.vue';
+import VuneQr from './vune/qr.vune';
+import { ref } from 'vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i';
-import MkButton from '@/components/MkButton.vue';
-import MkPolkadots from '@/components/MkPolkadots.vue';
 
 // router definitionでloginRequiredが設定されているためエラーハンドリングしない
 const $i = ensureSignin();
 
 const read = ref(false);
-
-const MkQrRead = defineAsyncComponent(() => import('./qr.read.vue'));
-
 definePage(() => ({
 	title: i18n.ts.qr,
 	icon: 'ti ti-qrcode',

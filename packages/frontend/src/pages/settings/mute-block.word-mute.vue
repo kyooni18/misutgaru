@@ -4,21 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<div>
-		<MkTextarea v-model="mutedWords">
-			<span>{{ i18n.ts._wordMute.muteWords }}</span>
-			<template #caption>{{ i18n.ts._wordMute.muteWordsDescription }}<br>{{ i18n.ts._wordMute.muteWordsDescription2 }}</template>
-		</MkTextarea>
-	</div>
-	<MkButton primary inline :disabled="!changed" @click="save()"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
-</div>
+<VuneWordMute
+	:mutedWords="mutedWords"
+	:changed="changed"
+	:onChange="value => mutedWords = value"
+	:onSave="save"
+/>
 </template>
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkButton from '@/components/MkButton.vue';
+import VuneWordMute from './vune/mute-block.word-mute.vune';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 

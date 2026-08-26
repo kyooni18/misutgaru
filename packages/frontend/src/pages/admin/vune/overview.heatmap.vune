@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import MkHeatmap from '@/components/MkHeatmap.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { src: string; srcDef: any; rootClass: string; onUpdateSrc?: (value: string) => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: ['_panel', props.rootClass] },
+		VueComponent(MkSelect, { modelValue: props.src, items: props.srcDef, style: { margin: '0 0 12px 0' }, small: true, 'onUpdate:modelValue': (value: string) => props.onUpdateSrc?.(value) }),
+		VueComponent(MkHeatmap, { src: props.src }),
+	)
+);

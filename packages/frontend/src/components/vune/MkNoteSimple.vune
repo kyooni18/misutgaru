@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import Mfm from '@/components/global/MkMfm.js';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkNoteHeader from '@/components/MkNoteHeader.vue';
+import MkSubNoteContent from '@/components/MkSubNoteContent.vue';
+import MkCwButton from '@/components/MkCwButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = { note: Misskey.entities.Note | null; showContent?: boolean; useStickyIcons?: boolean; classes: Record<string, string>; onShowContent?: (value: boolean) => void };
+export default createVuneComponent<Props>((props) => {
+	const note = props.note;
+	if (!note) return Element('div', { className: props.classes.deleted }, Text(i18n.ts.deletedNote));
+	return Element('div', { className: props.classes.root },
+		VueComponent(MkAvatar, { class: [props.classes.avatar, props.useStickyIcons ? props.classes.useSticky : null], user: note.user, link: true, preview: true }),
+		Element('div', { className: props.classes.main },
+			VueComponent(MkNoteHeader, { class: props.classes.header, note, mini: true }),
+			Element('div', {},
+				note.cw != null ? Element('p', { className: props.classes.cw },
+					note.cw !== '' ? VueComponent(Mfm as any, { text: note.cw, author: note.user, nyaize: 'respect', emojiUrls: note.emojis, style: { marginRight: '8px' } }) : null,
+					VueComponent(MkCwButton, { modelValue: props.showContent, text: note.text, files: note.files, poll: note.poll, 'onUpdate:modelValue': (value: boolean) => props.onShowContent?.(value) }),
+				) : null,
+				Element('div', { style: { display: note.cw == null || props.showContent ? '' : 'none' } }, VueComponent(MkSubNoteContent, { class: props.classes.text, note })),
+			),
+		),
+	);
+});

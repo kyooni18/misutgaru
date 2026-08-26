@@ -1,0 +1,30 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import PageWithHeader from '@/components/global/PageWithHeader.vue';
+import MkStreamingNotificationsTimeline from '@/components/MkStreamingNotificationsTimeline.vue';
+import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import type { IPaginator } from '@/utility/paginator.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	tab: string;
+	headerActions?: PageHeaderItem[];
+	headerTabs?: unknown[];
+	excludeTypes?: string[] | null;
+	mentionsPaginator: IPaginator;
+	directNotesPaginator: IPaginator;
+	notificationsClass: string;
+	onTabChange?: (value: string) => void;
+};
+export default createVuneComponent<Props>((props) =>
+	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], swipable: true, 'onUpdate:tab': (value: string) => props.onTabChange?.(value) }, {
+		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
+			props.tab === 'all'
+				? VueComponent(MkStreamingNotificationsTimeline, { class: props.notificationsClass, excludeTypes: props.excludeTypes })
+				: props.tab === 'mentions'
+					? VueComponent(MkNotesTimeline, { paginator: props.mentionsPaginator })
+					: VueComponent(MkNotesTimeline, { paginator: props.directNotesPaginator }),
+		),
+	})
+);

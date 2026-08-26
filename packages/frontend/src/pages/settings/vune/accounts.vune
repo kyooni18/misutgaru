@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Group, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import SearchMarker from '@/components/global/SearchMarker.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkUserCardMini from '@/components/MkUserCardMini.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Account = { host: string; id: string; user?: Misskey.entities.UserDetailed | null };
+type Props = {
+	accounts: Account[];
+	userClass: string;
+	onAddAccount?: (ev: PointerEvent) => void;
+	onShowMenu?: (host: string, id: string, ev: PointerEvent) => void;
+};
+export default createVuneComponent<Props>((props) =>
+	VueComponent(SearchMarker, { path: '/settings/accounts', label: i18n.ts.accounts, keywords: ['accounts'], icon: 'ti ti-users' }, {
+		default: () => Element('div', { className: '_gaps' },
+			Element('div', { className: '_buttons' },
+				VueComponent(MkButton, { primary: true, onClick: (ev: PointerEvent) => props.onAddAccount?.(ev) }, {
+					default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.addAccount) },
+				}),
+			),
+			ForEach(props.accounts.filter(x => x.user), key: x => `${x.host}${x.id}`) { x in
+				VueComponent(MkUserCardMini, {
+					user: x.user!,
+					class: props.userClass,
+					onClick: (ev: PointerEvent) => { ev.preventDefault(); props.onShowMenu?.(x.host, x.id, ev); },
+				})
+			},
+		),
+	})
+);

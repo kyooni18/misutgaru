@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
-import VuneWelcome from './vune/welcome.vune.js';
+import VuneWelcome from './vune/welcome.vune';
 import { definePage } from '@/page.js';
 import { fetchInstance } from '@/instance.js';
 

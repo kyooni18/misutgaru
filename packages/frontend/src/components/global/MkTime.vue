@@ -4,15 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<time :title="absolute" :class="{ [$style.old1]: colored && (ago > 60 * 60 * 24 * 90), [$style.old2]: colored && (ago > 60 * 60 * 24 * 180) }">
-	<template v-if="invalid">{{ i18n.ts._ago.invalid }}</template>
-	<template v-else-if="mode === 'relative'">{{ relative }}</template>
-	<template v-else-if="mode === 'absolute'">{{ absolute }}</template>
-	<template v-else-if="mode === 'detail'">{{ absolute }} ({{ relative }})</template>
-</time>
+<VuneTime :absolute="absolute" :relative="relative" :invalid="invalid" :mode="props.mode" :colored="props.colored" :ago="ago" :old1Class="$style.old1" :old2Class="$style.old2"/>
 </template>
 
 <script lang="ts" setup>
+import VuneTime from './vune/MkTime.vune';
 import isChromatic from 'chromatic/isChromatic';
 import { computed } from 'vue';
 import { i18n } from '@/i18n.js';

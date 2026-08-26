@@ -1,0 +1,50 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text, VStack } from 'vune-ui';
+import type { Theme } from '@@/js/theme.js';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	selectedThemeId: string | null;
+	selectedThemeIdDef: unknown;
+	selectedTheme: Theme | null | undefined;
+	selectedThemeCode: string | null;
+	isBuiltin: boolean;
+	onThemeId?: (value: string | null) => void;
+	onCopy?: () => void;
+	onUninstall?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkSelect, {
+			modelValue: props.selectedThemeId,
+			items: props.selectedThemeIdDef,
+			'onUpdate:modelValue': (value: string | null) => props.onThemeId?.(value),
+		}, { label: () => Text(i18n.ts.theme) })
+		if (props.selectedTheme != null) {
+			VueComponent(MkInput, { readonly: true, modelValue: props.selectedTheme.author }, {
+				label: () => Text(i18n.ts.author),
+			})
+			if (props.selectedTheme.desc) {
+				VueComponent(MkTextarea, { readonly: true, modelValue: props.selectedTheme.desc }, {
+					label: () => Text(i18n.ts._theme.description),
+				})
+			}
+			VueComponent(MkTextarea, { readonly: true, tall: true, modelValue: props.selectedThemeCode }, {
+				label: () => Text(i18n.ts._theme.code),
+				caption: () => Element('button', { className: '_textButton', onClick: () => props.onCopy?.() }, Text(i18n.ts.copy)),
+			})
+			if (!props.isBuiltin) {
+				VueComponent(MkButton, { danger: true, onClick: () => props.onUninstall?.() }, {
+					default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(` ${i18n.ts.uninstall}`) },
+				})
+			}
+		}
+	}
+		.className('_gaps_m')
+);

@@ -1,0 +1,43 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach } from 'vune-ui';
+import { deepClone } from '@/utility/clone.js';
+import { createVuneComponent } from '@/vune/vue.js';
+import './WidgetActivity.calendar.scss';
+
+type Item = { total: number; notes: number; replies: number; renotes: number };
+type RecordItem = Item & { x: number; date: { year: number; month: number; day: number; weekday: number }; v: number; color: string };
+
+function prepare(input: Item[]): RecordItem[] {
+	const activity = deepClone(input).map(d => ({ ...d, total: d.notes + d.replies + d.renotes, x: 0, date: { year: 0, month: 0, day: 0, weekday: 0 }, v: 0, color: '' }));
+	const peak = Math.max(0, ...activity.map(d => d.total));
+	const now = new Date();
+	let x = 20;
+	activity.slice().forEach((d, i) => {
+		d.x = x;
+		const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+		d.date = { year: date.getFullYear(), month: date.getMonth(), day: date.getDate(), weekday: date.getDay() };
+		d.v = peak === 0 ? 0 : Math.min(1, d.total / (peak / 2));
+		const ch = d.date.weekday === 0 || d.date.weekday === 6 ? 275 : 170;
+		d.color = `hsl(${ch}, ${d.v * 100}%, ${15 + ((1 - d.v) * 80)}%)`;
+		if (d.date.weekday === 0) x--;
+	});
+	return activity;
+}
+
+export default createVuneComponent<{ activity: Item[] }>((props) => {
+	const activity = prepare(props.activity);
+	const today = activity[0];
+	return Element('svg', { className: 'mk-vune-activity-calendar' },
+		ForEach(activity, key: record => `bg-${record.date.year}-${record.date.month}-${record.date.day}`) { record in
+			Element('rect', { className: 'day' },
+				Element('title', {}, `${record.date.year}/${record.date.month + 1}/${record.date.day}`),
+			).withProps({ width: '1', height: '1', x: record.x, y: record.date.weekday, rx: '1', ry: '1', fill: 'transparent' })
+		},
+		ForEach(activity, key: record => `fg-${record.date.year}-${record.date.month}-${record.date.day}`) { record in
+			Element('rect', { className: 'day', style: { pointerEvents: 'none' } }).withProps({
+				width: record.v, height: record.v, x: record.x + ((1 - record.v) / 2), y: record.date.weekday + ((1 - record.v) / 2), rx: '1', ry: '1', fill: record.color,
+			})
+		},
+		today ? Element('rect', { className: 'today' }).withProps({ width: '1', height: '1', x: today.x, y: today.date.weekday, rx: '1', ry: '1', fill: 'none', 'stroke-width': '0.1', stroke: '#f73520' }) : null,
+	).withProps({ viewBox: '0 0 21 7' });
+});

@@ -4,24 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div data-testid="mkw-onlineUsers" :class="[$style.root, { _panel: !widgetProps.transparent, [$style.pad]: !widgetProps.transparent }]">
-	<span :class="$style.text">
-		<I18n v-if="onlineUsersCount" :src="i18n.ts.onlineUsersCount" textTag="span">
-			<template #n><b style="color: #41b781;">{{ number(onlineUsersCount) }}</b></template>
-		</I18n>
-	</span>
-</div>
+<VuneOnlineUsers :onlineUsersCount="onlineUsersCount" :transparent="widgetProps.transparent" :classes="$style"/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import VuneOnlineUsers from './vune/WidgetOnlineUsers.vune';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { useInterval } from '@@/js/use-interval.js';
 import { i18n } from '@/i18n.js';
-import number from '@/filters/number.js';
 
 const name = 'onlineUsers';
 

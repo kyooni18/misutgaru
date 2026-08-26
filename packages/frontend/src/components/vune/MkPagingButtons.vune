@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Text } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = { min: number; current: number; max: number; buttonRanges: number[]; prevDotVisible?: boolean; nextDotVisible?: boolean; rootClass: string; buttonsClass: string; headTailClass: string; onPage?: (page: number) => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.rootClass },
+		VueComponent(MkButton, { primary: true, disabled: props.min === props.current, onClick: () => props.onPage?.(Math.max(props.min, props.current - 1)) }, { default: () => Text('<') }),
+		Element('div', { className: props.buttonsClass },
+			vuneBoolean(props.prevDotVisible) ? Element('div', { className: props.headTailClass },
+				VueComponent(MkButton, { onClick: () => props.onPage?.(props.min) }, { default: () => Text(String(props.min)) }),
+				Element('span', { className: 'ti ti-dots' }),
+			) : null,
+			ForEach(props.buttonRanges, key: i => i) { i in
+				VueComponent(MkButton, { disabled: props.current === i, onClick: () => props.onPage?.(i) }, { default: () => Text(String(i)) })
+			},
+			vuneBoolean(props.nextDotVisible) ? Element('div', { className: props.headTailClass },
+				Element('span', { className: 'ti ti-dots' }),
+				VueComponent(MkButton, { onClick: () => props.onPage?.(props.max) }, { default: () => Text(String(props.max)) }),
+			) : null,
+		),
+		VueComponent(MkButton, { primary: true, disabled: props.max === props.current, onClick: () => props.onPage?.(Math.min(props.max, props.current + 1)) }, { default: () => Text('>') }),
+	)
+);

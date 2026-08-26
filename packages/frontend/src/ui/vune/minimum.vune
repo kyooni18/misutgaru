@@ -1,0 +1,12 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import RouterView from '@/components/global/RouterView.vue';
+import XCommon from '@/ui/_common_/common.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+export default createVuneComponent<{ rootClass: string }>((props) =>
+	Element('div', { className: props.rootClass },
+		VueComponent(RouterView),
+		VueComponent(XCommon),
+	)
+);

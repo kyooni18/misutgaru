@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneContact from './vune/contact.view.vune.js';
+import VuneContact from './vune/contact.view.vune';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { getUserEnvironment } from '@/utility/get-user-environment.js';

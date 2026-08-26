@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach } from 'vune-ui';
+import * as Misskey from 'misskey-js';
+import MkA from '@/components/global/MkA.vue';
+import MkUserCardMini from '@/components/MkUserCardMini.vue';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+export default createVuneComponent<{ users: Misskey.entities.UserDetailed[] }>((props) =>
+	Element('div', { className: 'users' },
+		ForEach(props.users, key: user => user.id) { user in
+			VueComponent(MkA, { to: `/admin/user/${user.id}`, class: 'user' }, { default: () => VueComponent(MkUserCardMini, { user }) })
+		},
+	)
+);

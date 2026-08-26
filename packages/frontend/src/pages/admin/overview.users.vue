@@ -7,21 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root">
 	<Transition :name="prefer.s.animation ? '_transition_zoom' : ''" mode="out-in">
 		<MkLoading v-if="fetching"/>
-		<div v-else class="users">
-			<MkA v-for="(user, i) in newUsers" :key="user.id" :to="`/admin/user/${user.id}`" class="user">
-				<MkUserCardMini :user="user"/>
-			</MkA>
-		</div>
+		<VuneOverviewUsers v-else :users="newUsers ?? []"/>
 	</Transition>
 </div>
 </template>
 
 <script lang="ts" setup>
+import VuneOverviewUsers from './vune/overview.users.vune';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import { prefer } from '@/preferences.js';
 
 const newUsers = ref<Misskey.entities.UserDetailed[] | null>(null);

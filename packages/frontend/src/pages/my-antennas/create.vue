@@ -13,7 +13,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { antennasCache } from '@/cache.js';
 import { useRouter } from '@/router.js';
-import VuneAntennaCreate from '../vune/my-antennas-create.vune.js';
+import VuneAntennaCreate from '../vune/my-antennas-create.vune';
 
 const router = useRouter();
 

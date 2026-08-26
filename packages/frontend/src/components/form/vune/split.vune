@@ -1,0 +1,11 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+
+type Props = { minWidth?: number; rootClass: string };
+export default createVuneComponent<Props>((props, slots) =>
+	Element('div', {
+		className: props.rootClass,
+		style: { gridTemplateColumns: `repeat(auto-fill, minmax(${props.minWidth ?? 210}px, 1fr))` },
+	}, VueSlot(slots.default))
+);

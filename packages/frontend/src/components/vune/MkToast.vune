@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Text, VStack } from 'vune-ui';
+import './MkToast.scss';
+
+export struct MkToast: View {
+	let message: string
+	let zIndex: number
+
+	init(_ message: string, zIndex: number) {
+		self.message = message
+		self.zIndex = zIndex
+	}
+
+	var body: some View {
+		VStack(alignment: 'center', spacing: 0) {
+			Text(message).className('mk-vune-toast__message')
+		}
+			.className(['_acrylic', 'mk-vune-toast'])
+			.style({ zIndex })
+	}
+}
+
+export default MkToast

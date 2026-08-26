@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneUserIndexActivity from './vune/index.activity.vune.js';
+import VuneUserIndexActivity from './vune/index.activity.vune';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 

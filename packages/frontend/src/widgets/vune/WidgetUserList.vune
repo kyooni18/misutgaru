@@ -1,0 +1,46 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, ForEach, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkContainer from '@/components/MkContainer.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = {
+	showHeader?: boolean;
+	listId?: string | null;
+	list?: Misskey.entities.UserList | null;
+	users: Misskey.entities.UserDetailed[];
+	fetching?: boolean;
+	rootClass: string;
+	onChooseList?: () => void;
+	onConfigure?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VueComponent(MkContainer, { showHeader: vuneBoolean(props.showHeader, true), class: 'mkw-userList' }, {
+		icon: () => Element('i', { className: 'ti ti-users' }),
+		header: () => Text(props.list ? props.list.name : i18n.ts._widgets.userList),
+		func: (slotProps: any) => Element('button', {
+			className: ['_button', slotProps.buttonStyleClass],
+			onClick: () => props.onConfigure?.(),
+		}, Element('i', { className: 'ti ti-settings' })),
+		default: () => Element('div', { className: props.rootClass },
+			props.listId == null
+				? Element('div', { className: 'init' },
+					VueComponent(MkButton, { primary: true, onClick: () => props.onChooseList?.() }, { default: () => Text(i18n.ts._widgets._userList.chooseList) }),
+				)
+				: vuneBoolean(props.fetching)
+					? MkLoading()
+					: Element('div', { className: 'users' },
+						ForEach(props.users, key: (user) => user.id) { user in
+							Element('span', { className: 'user' },
+								VueComponent(MkAvatar, { user, class: 'avatar', indicator: true, link: true, preview: true }),
+							)
+						},
+					),
+		),
+	})
+);

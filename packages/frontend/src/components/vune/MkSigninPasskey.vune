@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+
+type Props = { queryingKey?: boolean; passwordless?: boolean; classes: Record<string,string>; onRetry?: () => void; onUseTotp?: () => void };
+export default createVuneComponent<Props>((props) =>
+	Element('div', { className: props.classes.wrapper },
+		Element('div', { className: ['_gaps', props.classes.root] },
+			Element('div', { className: '_gaps_s' },
+				Element('div', { className: props.classes.passkeyIcon }, Element('i', { className: 'ti ti-fingerprint' })),
+				Element('div', { className: props.classes.passkeyDescription }, i18n.ts.useSecurityKey),
+			),
+			VueComponent(MkButton, { large: true, primary: true, rounded: true, disabled: vuneBoolean(props.queryingKey), style: { margin: '0 auto' }, onClick: () => props.onRetry?.() }, { default: () => Text(i18n.ts.retry) }),
+			!vuneBoolean(props.passwordless) ? VueComponent(MkButton, { transparent: true, rounded: true, disabled: vuneBoolean(props.queryingKey), style: { margin: '0 auto' }, onClick: () => props.onUseTotp?.() }, { default: () => Text(i18n.ts.useTotp) }) : null,
+		),
+	)
+);

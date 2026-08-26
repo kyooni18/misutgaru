@@ -4,51 +4,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="serverRules" :keywords="['rules']">
-	<MkFolder>
-		<template #icon><SearchIcon><i class="ti ti-checkbox"></i></SearchIcon></template>
-		<template #label><SearchLabel>{{ i18n.ts.serverRules }}</SearchLabel></template>
-
-		<div class="_gaps_m">
-			<div><SearchText>{{ i18n.ts._serverRules.description }}</SearchText></div>
-
-			<MkDraggable
-				v-model="serverRules"
-				direction="vertical"
-				withGaps
-				manualDragStart
-			>
-				<template #default="{ item, index, dragStart }">
-					<div :class="$style.item">
-						<div :class="$style.itemHeader">
-							<div :class="$style.itemNumber">{{ index + 1 }}</div>
-							<span :class="$style.itemHandle" :draggable="true" @dragstart.stop="dragStart"><i class="ti ti-menu"></i></span>
-							<button class="_button" :class="$style.itemRemove" @click="remove(item.id)"><i class="ti ti-x"></i></button>
-						</div>
-						<MkInput :modelValue="item.text" @update:modelValue="serverRules[index].text = $event"/>
-					</div>
-				</template>
-			</MkDraggable>
-			<div :class="$style.commands">
-				<MkButton rounded @click="add"><i class="ti ti-plus"></i> {{ i18n.ts.add }}</MkButton>
-				<MkButton primary rounded @click="save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
-			</div>
-		</div>
-	</MkFolder>
-</SearchMarker>
+<VuneServerRules
+	:serverRules="serverRules"
+	:classes="$style"
+	:onUpdateRules="updateRules"
+	:onUpdateText="updateRuleText"
+	:onRemove="remove"
+	:onAdd="add"
+	:onSave="save"
+/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import VuneServerRules from './vune/server-rules.vune';
 import * as os from '@/os.js';
 import { fetchInstance, instance } from '@/instance.js';
-import { i18n } from '@/i18n.js';
-import MkButton from '@/components/MkButton.vue';
-import MkInput from '@/components/MkInput.vue';
-import MkFolder from '@/components/MkFolder.vue';
-import MkDraggable from '@/components/MkDraggable.vue';
 
 const serverRules = ref<{ text: string; id: string; }[]>(instance.serverRules.map(text => ({ text, id: Math.random().toString() })));
+
+function updateRules(rules: { text: string; id: string }[]) {
+	serverRules.value = rules;
+}
+
+function updateRuleText(index: number, value: string) {
+	if (serverRules.value[index]) serverRules.value[index].text = value;
+}
 
 async function save() {
 	await os.apiWithDialog('admin/update-meta', {

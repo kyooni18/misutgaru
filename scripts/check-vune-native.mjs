@@ -11,14 +11,14 @@ if (roots.length === 0) roots.push('packages/frontend/src');
 async function collect(target, output) {
 	const info = await stat(target);
 	if (info.isFile()) {
-		if (/\.vune\.[cm]?[jt]sx?$/.test(target)) output.push(target);
+		if (/\.vune(?:\.[cm]?[jt]sx?)?$/.test(target)) output.push(target);
 		return;
 	}
 	for (const entry of await readdir(target, { withFileTypes: true })) {
 		if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
 		const child = path.join(target, entry.name);
 		if (entry.isDirectory()) await collect(child, output);
-		else if (/\.vune\.[cm]?[jt]sx?$/.test(entry.name)) output.push(child);
+		else if (/\.vune(?:\.[cm]?[jt]sx?)?$/.test(entry.name)) output.push(child);
 	}
 }
 

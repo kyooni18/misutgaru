@@ -1,0 +1,42 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text, VStack } from 'vune-ui';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import MkButton from '@/components/MkButton.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	instanceMutes: string;
+	changed: boolean;
+	onChange?: (value: string) => void;
+	onSave?: () => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkInfo, {}, { default: () => Text(i18n.ts._instanceMute.title) })
+		VueComponent(MkTextarea, {
+			modelValue: props.instanceMutes,
+			'onUpdate:modelValue': (value: string) => props.onChange?.(value),
+		}, {
+			label: () => Text(i18n.ts._instanceMute.heading),
+			caption: () => Group() {
+				Text(i18n.ts._instanceMute.instanceMuteDescription)
+				Element('br')
+				Text(i18n.ts._instanceMute.instanceMuteDescription2)
+			},
+		})
+		VueComponent(MkButton, {
+			primary: true,
+			disabled: !props.changed,
+			onClick: () => props.onSave?.(),
+		}, {
+			default: () => Group() {
+				Element('i', { className: 'ti ti-device-floppy' })
+				Text(` ${i18n.ts.save}`)
+			},
+		})
+	}
+		.className('_gaps_m')
+);

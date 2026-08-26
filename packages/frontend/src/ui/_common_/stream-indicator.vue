@@ -4,20 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="hasDisconnected && prefer.s.serverDisconnectedBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetDisconnected">
-	<div><i class="ti ti-alert-triangle"></i> {{ i18n.ts.disconnectedFromServer }}</div>
-	<div :class="$style.command" class="_buttons">
-		<MkButton small primary @click="reload">{{ i18n.ts.reload }}</MkButton>
-		<MkButton small>{{ i18n.ts.doNothing }}</MkButton>
-	</div>
-</div>
+<VuneStreamIndicator :visible="hasDisconnected && prefer.s.serverDisconnectedBehavior === 'quiet'" :zIndex="zIndex" :rootClass="$style.root" :commandClass="$style.command" :onReset="resetDisconnected" :onReload="reload"/>
 </template>
 
 <script lang="ts" setup>
+import VuneStreamIndicator from './vune/stream-indicator.vune';
 import { onUnmounted, ref } from 'vue';
 import { useStream } from '@/stream.js';
-import { i18n } from '@/i18n.js';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';

@@ -4,14 +4,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<span>{{ number(Math.floor(tweened.number)) }}</span>
+<NativeMkNumber :value="tweened.number"/>
 </template>
 
 <script lang="ts" setup>
+import VuneMkNumber from './vune/MkNumber.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onUnmounted, reactive, watch } from 'vue';
 import { Animation } from 'vune-ui';
 import number from '@/filters/number.js';
-import { vuneMotion, type MotionHandle } from '@/vune/motion.js';
+import { vuneMotion } from '@/vune/motion.js';
+import type { MotionHandle } from '@/vune/motion.js';
+
+const NativeMkNumber = createVuneWebHost(VuneMkNumber);
 
 const props = defineProps<{
 	value: number;

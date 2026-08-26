@@ -698,6 +698,35 @@ export { CurrentComponent as default };
   expect(output).not.toContain('}), []);');
 });
 
+it('should keep cssModules when passing the whole module map to a child', () => {
+	const code = `
+import { b as defineComponent, c as _export_sfc } from './runtime.js';
+
+const CurrentComponent = /* @__PURE__ */ _export_sfc(defineComponent({
+  __name: "CurrentComponent",
+  setup() {
+    return (e, n) => h(ChildComponent, {
+      classes: e.$style
+    });
+  }
+}), [["__cssModules", {
+  "$style": {
+    root: "x1234",
+    thumbnail: "x5678"
+  }
+}]]);
+
+export { CurrentComponent as default };
+`.slice(1);
+	const ast = parseAst(code, { sourceType: 'module' });
+	const magicString = new RolldownMagicString(code);
+	unwindCssModuleClassName(ast, magicString);
+	const output = magicString.toString();
+	expect(output).toContain('classes: e.$style');
+	expect(output).toContain('__cssModules');
+	expect(output).not.toContain('}), []);');
+});
+
 it('should inline cssModules references used inside class expressions', () => {
 	const code = `
 import { a as classHelper, b as defineComponent, c as _export_sfc } from './runtime.js';

@@ -602,3 +602,43 @@
 }
 .mk-vune-system-icon--warn .mk-vune-system-icon__glyph { font-size: 0.68em; }
 .mk-vune-system-icon__glyph--hidden { visibility: hidden; }
+
+/* Phase 7: native channel follow button */
+.mk-vune-channel-follow-button {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	color: var(--MI_THEME-accent);
+	background: #fff;
+	border: solid 1px var(--MI_THEME-accent);
+	padding: 0;
+	width: 31px;
+	height: 31px;
+	font-size: 16px;
+	border-radius: 32px;
+}
+.mk-vune-channel-follow-button--full {
+	width: auto;
+	padding: 0 8px 0 12px;
+	font-size: 14px;
+}
+.mk-vune-channel-follow-button:focus-visible { outline-offset: 2px; }
+.mk-vune-channel-follow-button--active {
+	color: var(--MI_THEME-fgOnAccent);
+	background: var(--MI_THEME-accent);
+}
+.mk-vune-channel-follow-button--active:hover {
+	background: hsl(from var(--MI_THEME-accent) h s calc(l + 10));
+	border-color: hsl(from var(--MI_THEME-accent) h s calc(l + 10));
+}
+.mk-vune-channel-follow-button--active:active {
+	background: hsl(from var(--MI_THEME-accent) h s calc(l - 10));
+	border-color: hsl(from var(--MI_THEME-accent) h s calc(l - 10));
+}
+.mk-vune-channel-follow-button--wait {
+	cursor: wait !important;
+	opacity: 0.7;
+}
+.mk-vune-channel-follow-button__text { margin-right: 6px; }

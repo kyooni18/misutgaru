@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import { host } from '@@/js/config.js';
+import { instance } from '@/instance.js';
+import { createVuneComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+export default createVuneComponent(() =>
+	Element('div', { className: 'mk-vune-titlebar' },
+		Element('div', { className: 'mk-vune-titlebar__title' },
+			Element('img', {
+				className: 'mk-vune-titlebar__icon',
+				src: instance.iconUrl || '/favicon.ico',
+				alt: '',
+			}),
+			Element('span', { className: 'mk-vune-titlebar__instance' }, instance.name ?? host),
+		),
+		Element('div', { className: 'mk-vune-titlebar__controls' },
+			Element('span', { className: 'mk-vune-titlebar__left' },
+				Element('button', {
+					className: '_button mk-vune-titlebar__button',
+					onClick: () => window.history.back(),
+				}, Element('i', { className: 'ti ti-arrow-left' })),
+			),
+			Element('span', { className: 'mk-vune-titlebar__right' }),
+		),
+	)
+);

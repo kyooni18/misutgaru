@@ -7,20 +7,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 <PageWithHeader :actions="headerActions" :tabs="headerTabs">
 	<div class="_spacer" style="--MI_SPACER-w: 1000px;">
 		<Transition name="fade" mode="out-in">
-			<div v-if="user">
-				<XFollowList :user="user" type="following"/>
-			</div>
-			<MkError v-else-if="error" @retry="fetchUser()"/>
-			<MkLoading v-else/>
+			<VuneFollowState :user="user" :error="error" type="following" :onRetry="fetchUser"/>
 		</Transition>
 	</div>
 </PageWithHeader>
 </template>
 
 <script lang="ts" setup>
+import VuneFollowState from './vune/follow-state.vune';
 import { computed, watch, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import XFollowList from './follow-list.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';

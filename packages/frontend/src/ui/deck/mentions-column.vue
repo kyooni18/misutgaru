@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 <script lang="ts" setup>
 import { markRaw } from 'vue';
-import VuneMentionsColumn from './vune/mentions-column.vune.js';
+import VuneMentionsColumn from './vune/mentions-column.vune';
 import type { Column } from '@/deck.js';
 import { Paginator } from '@/utility/paginator.js';
 

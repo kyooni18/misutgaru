@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { createVuneComponent } from '@/vune/vue.js';
+
+type Props = {
+	emoji: Misskey.entities.EmojiSimple;
+	classes: Record<string, string>;
+	onMenu?: (ev: PointerEvent) => void;
+};
+
+export default createVuneComponent<Props>((props) =>
+	Element('button', {
+		className: ['_button', props.classes.root],
+		onClick: (ev: PointerEvent) => props.onMenu?.(ev),
+	},
+		Element('img', {
+			src: props.emoji.url,
+			className: props.classes.img,
+			loading: 'lazy',
+			alt: '',
+		}),
+		Element('div', { className: props.classes.body },
+			Element('div', { className: [props.classes.name, '_monospace'] }, props.emoji.name),
+			Element('div', { className: props.classes.info }, props.emoji.aliases.join(' ')),
+		),
+	)
+);

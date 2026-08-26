@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
-import MkFeaturedPhotos from './vune/MkFeaturedPhotos.vune.js';
+import MkFeaturedPhotos from './vune/MkFeaturedPhotos.vune';
 import { createVuneWebHost } from '@/vune/compat-vue.js';
 export default createVuneWebHost(MkFeaturedPhotos);
 </script>

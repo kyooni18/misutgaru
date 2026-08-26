@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
-import Clicker from './vune/clicker.vune.js';
+import Clicker from './vune/clicker.vune';
 export default Clicker;
 </script>

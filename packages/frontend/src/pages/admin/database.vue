@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneDatabase from './vune/database.vune.js';
+import VuneDatabase from './vune/database.vune';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Text } from 'vune-ui';
+import MkA from '@/components/global/MkA.vue';
+import { host } from '@@/js/config.js';
+import { instance } from '@/instance.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import '@/vune/phase6-migration.scss';
+
+export default createVuneComponent(() =>
+	Element('div', { className: '_panel' },
+		Element('div', {
+			className: 'mk-vune-identity-widget',
+			style: { backgroundImage: instance.bannerUrl ? `url(${instance.bannerUrl})` : undefined },
+		},
+			Element('div', { className: 'mk-vune-identity-widget__avatar-wrap' },
+				Element('img', {
+					className: 'mk-vune-identity-widget__avatar mk-vune-identity-widget__avatar--instance',
+					src: instance.iconUrl ?? '/favicon.ico',
+					alt: '',
+				}),
+			),
+			Element('div', { className: 'mk-vune-identity-widget__body-wrap' },
+				Element('div', { className: 'mk-vune-identity-widget__body' },
+					VueComponent(MkA, {
+						class: 'mk-vune-identity-widget__name',
+						to: '/about',
+						behavior: 'window',
+					}, { default: () => Text(instance.name ?? '') }),
+					Element('div', { className: 'mk-vune-identity-widget__sub' }, host),
+				),
+			),
+		),
+	)
+);

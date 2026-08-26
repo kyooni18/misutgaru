@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import VuneNotFound from './vune/not-found.vune.js';
+import VuneNotFound from './vune/not-found.vune';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { pleaseLogin } from '@/utility/please-login.js';

@@ -1,0 +1,37 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Element, Group, Text, VStack } from 'vune-ui';
+import MkCodeEditor from '@/components/MkCodeEditor.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import { i18n } from '@/i18n.js';
+import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+
+type Props = {
+	code: string | null;
+	onCodeChange?: (value: string | null) => void;
+	onInstall?: () => void;
+};
+
+export default createVuneComponent<Props>((props) => {
+	const disabled = props.code == null || props.code.trim() === '';
+	return VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+		VueComponent(MkInfo, { warn: true }, { default: () => Text(i18n.ts._plugin.installWarn) })
+		VueComponent(MkCodeEditor, {
+			modelValue: props.code,
+			lang: 'is',
+			'onUpdate:modelValue': (value: string | null) => props.onCodeChange?.(value),
+		}, { label: () => Text(i18n.ts.code) })
+		VueComponent(MkButton, {
+			disabled,
+			primary: true,
+			inline: true,
+			onClick: () => { if (!disabled) props.onInstall?.(); },
+		}, {
+			default: () => Group() {
+				Element('i', { className: 'ti ti-check' })
+				Text(` ${i18n.ts.install}`)
+			},
+		})
+	}
+		.className('_gaps_m')
+});

@@ -29,8 +29,8 @@ importers:
         specifier: 7.5.22
         version: 7.5.22
       vune-ui:
-        specifier: 0.1.18
-        version: 0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(@typescript/typescript6@6.0.2))
+        specifier: 0.1.19
+        version: 0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(@typescript/typescript6@6.0.2))
     devDependencies:
       '@eslint/js':
         specifier: 9.39.5
@@ -51,8 +51,8 @@ importers:
         specifier: npm:typescript@7.0.2
         version: typescript@7.0.2
       '@vune-ui/compiler':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.19
+        version: 0.1.19
       cross-env:
         specifier: 10.1.0
         version: 10.1.0
@@ -658,14 +658,14 @@ importers:
         specifier: 6.0.8
         version: 6.0.8(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.48.0)(tsx@4.23.12))(vue@3.5.41(typescript@6.0.3))
       '@vune-ui/core':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.19
+        version: 0.1.19
       '@vune-ui/vue':
-        specifier: 0.1.18
-        version: 0.1.18(vue@3.5.41(typescript@6.0.3))
+        specifier: 0.1.19
+        version: 0.1.19(vue@3.5.41(typescript@6.0.3))
       '@vune-ui/web':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.19
+        version: 0.1.19
       aiscript-vscode:
         specifier: github:aiscript-dev/aiscript-vscode#v0.1.16
         version: https://codeload.github.com/aiscript-dev/aiscript-vscode/tar.gz/1dc7f60cda78d030dadfc518a33c472202b2ef67
@@ -754,8 +754,8 @@ importers:
         specifier: workspace:*
         version: link:../misskey-reversi
       o0o0o:
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: 0.2.1
+        version: 0.2.1
       punycode.js:
         specifier: 2.3.1
         version: 2.3.1
@@ -790,8 +790,8 @@ importers:
         specifier: 3.5.41
         version: 3.5.41(typescript@6.0.3)
       vune-ui:
-        specifier: 0.1.18
-        version: 0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(typescript@6.0.3))
+        specifier: 0.1.19
+        version: 0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(typescript@6.0.3))
       wanakana:
         specifier: 5.3.1
         version: 5.3.1
@@ -914,11 +914,11 @@ importers:
         specifier: 3.5.41
         version: 3.5.41
       '@vune-ui/compiler':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.19
+        version: 0.1.19
       '@vune-ui/vite':
-        specifier: 0.1.18
-        version: 0.1.18
+        specifier: 0.1.19
+        version: 0.1.19
       astring:
         specifier: 1.9.0
         version: 1.9.0
@@ -4372,28 +4372,28 @@ packages:
       '@vue/server-renderer':
         optional: true
 
-  '@vune-ui/compiler@0.1.18':
-    resolution: {integrity: sha512-WeD7LpO7ZSWBiqWFitT8juH4GsYwyb7AXG1Pbd6GSZLbeHKIB5mZ+Zy1Ot9sYiMJeHMG6/7ttBSecl8W7IZ3Ww==}
+  '@vune-ui/compiler@0.1.19':
+    resolution: {integrity: sha512-A4sVbjxrN3Xa3tyutEeCup0HxN5mTa3Vo+cBF0P0kwiMUO8IXkJL9hsicRd3uoSIft9CxfEzrkbPZDJ1/5L4FQ==}
 
-  '@vune-ui/core@0.1.18':
-    resolution: {integrity: sha512-3Jv4tEdGjL3HdUcg5kmVZjPcFm4uwbKmcJErrrFwdrne35JxU0hw3bqvfjgdcqCJhjqafSz4/uG4SdgwCFjVVQ==}
+  '@vune-ui/core@0.1.19':
+    resolution: {integrity: sha512-YIrsCP2ouIhwTgn2K7Uh/jzv3SeJuoFgjYE3hNnxMnS05jv1ZimsbtLoTewH+GvRuxn9KeMw/fVfjBMaSegblw==}
 
-  '@vune-ui/react@0.1.18':
-    resolution: {integrity: sha512-08cbYBtby5HCyFE62DNkbG1GzowqSc7sr+n5C1g9z8JYlHioEUAo+22uH4HIX0t/1INTyW9+f2pnhVVK1yAujQ==}
+  '@vune-ui/react@0.1.19':
+    resolution: {integrity: sha512-L7hUfN5jCq6tQt6KRMRNIAauebv0jx9N8Qo67BfEbpDSq6y2CYwuMf0VHqGB2temf3g3mpsFessO9r1NeCxosg==}
     peerDependencies:
       react: '>=18 <20'
       react-dom: '>=18 <20'
 
-  '@vune-ui/vite@0.1.18':
-    resolution: {integrity: sha512-grn77wrt+xF8BvM01+10v08UIUpujEihqszYM+emQOceTylErP8aLJPqldp/4Lq8aSp9/CXr0w5Ie7/rmpJarw==}
+  '@vune-ui/vite@0.1.19':
+    resolution: {integrity: sha512-uUPuhe1iS2tybOck0QJ/ooBpR6XI/2WItXbv70Ufsv0ufKIqJEfX0yo4GpP723xBrDc5SYghdIiR3A5iAg4wgQ==}
 
-  '@vune-ui/vue@0.1.18':
-    resolution: {integrity: sha512-CXZMHk4r0TzXnvBH7pjBvqeF5lL+QSSctsTKUHwDoFTmQC0+tFNZL+astnL312zqW8ZtkNhgvwfKtXpSo2hL8A==}
+  '@vune-ui/vue@0.1.19':
+    resolution: {integrity: sha512-hyabY6JLCFcmQRrzLS3fFpZc/EC705hjG63pE9LWKt8j4gryBxg7XpZyxgG52Lu5JsLq83OtPYszK7nDvtvcuA==}
     peerDependencies:
       vue: '>=3.4 <4'
 
-  '@vune-ui/web@0.1.18':
-    resolution: {integrity: sha512-tc9ZICsfLOyXpuEFzO15rjeatQw4AVpjFRtYa7Nhtwuase8v5Tx9D/ygqEBsd+SYoU7t8EsOQOIgrGuha6WX9A==}
+  '@vune-ui/web@0.1.19':
+    resolution: {integrity: sha512-guX3ZVrEMiZi2Dnml1/x6JnTXZKsdbjU56godTcnIa7ABPq8100I6IVJ8fuiW8lxSEWd5p7g/eovlYdZ79Z2Lg==}
 
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
@@ -7198,8 +7198,8 @@ packages:
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
 
-  o0o0o@0.2.0:
-    resolution: {integrity: sha512-aQ9t7p6MH4APKgk59ymsd4vFPeKnYgT1xiME/PquoFgfVAsadutdeiHk5W1LsoFyL+82KI1wAJ6ATMOOjPPgzw==}
+  o0o0o@0.2.1:
+    resolution: {integrity: sha512-xgjuQDlysb/ZjrbRX6+Go27/D6SEK8kbP0gckreum7JfPhu9VGesorO9dFUERTz5KE0AjXJGgEXhuqBEDV+ylw==}
     engines: {node: '>=20'}
 
   object-assign@4.1.1:
@@ -9244,8 +9244,8 @@ packages:
       typescript:
         optional: true
 
-  vune-ui@0.1.18:
-    resolution: {integrity: sha512-R7ZbfVykq8ApTpnIEXTXjWO6UrC4SlyRMBp47/7qJj6FxpwH52702jRaT5Q0bvRLXi0vXH94NdzJjNW4i6dV3Q==}
+  vune-ui@0.1.19:
+    resolution: {integrity: sha512-udrwcARlOEuvZJ+aZDNFFdFdqTwyjnb0XPt81rWBl6vrNf7DXxDNHKNVYNdCvcfuDA67H6Px9FGK2o+apli+Ng==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -12689,38 +12689,38 @@ snapshots:
     optionalDependencies:
       '@vue/server-renderer': 3.5.41
 
-  '@vune-ui/compiler@0.1.18':
+  '@vune-ui/compiler@0.1.19':
     dependencies:
-      '@vune-ui/core': 0.1.18
+      '@vune-ui/core': 0.1.19
       typescript: 5.9.3
 
-  '@vune-ui/core@0.1.18': {}
+  '@vune-ui/core@0.1.19': {}
 
-  '@vune-ui/react@0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@vune-ui/react@0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@vune-ui/core': 0.1.18
+      '@vune-ui/core': 0.1.19
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
       typescript: 5.9.3
 
-  '@vune-ui/vite@0.1.18':
+  '@vune-ui/vite@0.1.19':
     dependencies:
-      '@vune-ui/compiler': 0.1.18
+      '@vune-ui/compiler': 0.1.19
 
-  '@vune-ui/vue@0.1.18(vue@3.5.41(@typescript/typescript6@6.0.2))':
+  '@vune-ui/vue@0.1.19(vue@3.5.41(@typescript/typescript6@6.0.2))':
     dependencies:
-      '@vune-ui/core': 0.1.18
+      '@vune-ui/core': 0.1.19
       vue: 3.5.41(@typescript/typescript6@6.0.2)
 
-  '@vune-ui/vue@0.1.18(vue@3.5.41(typescript@6.0.3))':
+  '@vune-ui/vue@0.1.19(vue@3.5.41(typescript@6.0.3))':
     dependencies:
-      '@vune-ui/core': 0.1.18
+      '@vune-ui/core': 0.1.19
       vue: 3.5.41(typescript@6.0.3)
 
-  '@vune-ui/web@0.1.18':
+  '@vune-ui/web@0.1.19':
     dependencies:
-      '@vune-ui/core': 0.1.18
-      o0o0o: 0.2.0
+      '@vune-ui/core': 0.1.19
+      o0o0o: 0.2.1
 
   '@webcontainer/env@1.1.1': {}
 
@@ -16147,7 +16147,7 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  o0o0o@0.2.0: {}
+  o0o0o@0.2.1: {}
 
   object-assign@4.1.1: {}
 
@@ -18403,27 +18403,27 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  vune-ui@0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(@typescript/typescript6@6.0.2)):
+  vune-ui@0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(@typescript/typescript6@6.0.2)):
     dependencies:
-      '@vune-ui/compiler': 0.1.18
-      '@vune-ui/core': 0.1.18
-      '@vune-ui/react': 0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@vune-ui/vite': 0.1.18
-      '@vune-ui/vue': 0.1.18(vue@3.5.41(@typescript/typescript6@6.0.2))
-      '@vune-ui/web': 0.1.18
+      '@vune-ui/compiler': 0.1.19
+      '@vune-ui/core': 0.1.19
+      '@vune-ui/react': 0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@vune-ui/vite': 0.1.19
+      '@vune-ui/vue': 0.1.19(vue@3.5.41(@typescript/typescript6@6.0.2))
+      '@vune-ui/web': 0.1.19
     transitivePeerDependencies:
       - react
       - react-dom
       - vue
 
-  vune-ui@0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(typescript@6.0.3)):
+  vune-ui@0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(typescript@6.0.3)):
     dependencies:
-      '@vune-ui/compiler': 0.1.18
-      '@vune-ui/core': 0.1.18
-      '@vune-ui/react': 0.1.18(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@vune-ui/vite': 0.1.18
-      '@vune-ui/vue': 0.1.18(vue@3.5.41(typescript@6.0.3))
-      '@vune-ui/web': 0.1.18
+      '@vune-ui/compiler': 0.1.19
+      '@vune-ui/core': 0.1.19
+      '@vune-ui/react': 0.1.19(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@vune-ui/vite': 0.1.19
+      '@vune-ui/vue': 0.1.19(vue@3.5.41(typescript@6.0.3))
+      '@vune-ui/web': 0.1.19
     transitivePeerDependencies:
       - react
       - react-dom

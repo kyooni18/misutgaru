@@ -4,45 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.codeBlockRoot">
-	<button v-if="copyButton" :class="[$style.codeBlockCopyButton, { [$style.withOuterStyle]: withOuterStyle }]" class="_button" @click="copy">
-		<i class="ti ti-copy"></i>
-	</button>
-	<Suspense>
-		<template #fallback>
-			<pre
-				class="_selectable"
-				:class="[$style.codeBlockFallbackRoot, {
-					[$style.outerStyle]: withOuterStyle,
-				}]"
-			><code :class="$style.codeBlockFallbackCode">Loading...</code></pre>
-		</template>
-		<XCode
-			v-if="show && lang"
-			class="_selectable"
-			:code="code"
-			:lang="lang"
-			:withOuterStyle="withOuterStyle"
-		/>
-		<pre
-			v-else-if="show"
-			class="_selectable"
-			:class="[$style.codeBlockFallbackRoot, {
-				[$style.outerStyle]: withOuterStyle,
-			}]"
-		><code :class="$style.codeBlockFallbackCode">{{ code }}</code></pre>
-		<button v-else :class="$style.codePlaceholderRoot" @click="show = true">
-			<div :class="$style.codePlaceholderContainer">
-				<div><i class="ti ti-code"></i> {{ i18n.ts.code }}</div>
-				<div>{{ i18n.ts.clickToShow }}</div>
-			</div>
-		</button>
-	</Suspense>
-</div>
+<VuneCode :code="props.code" :lang="props.lang" :show="show" :copyButton="props.copyButton" :withOuterStyle="props.withOuterStyle" :classes="$style" :onCopy="copy" :onShow="() => show = true"/>
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, ref } from 'vue';
+import VuneCode from './vune/MkCode.vune';
+import { ref } from 'vue';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { prefer } from '@/preferences.js';
@@ -60,8 +27,6 @@ const props = withDefaults(defineProps<{
 });
 
 const show = ref(props.forceShow === true ? true : !prefer.s.dataSaver.code);
-
-const XCode = defineAsyncComponent(() => import('@/components/MkCode.core.vue'));
 
 function copy() {
 	copyToClipboard(props.code);

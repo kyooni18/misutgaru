@@ -4,33 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps">
-	<div style="text-align: center; padding: 0 16px;">{{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.description }}</div>
-	<div>{{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.tryThisFile }}</div>
-	<MkInfo>{{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.method }}</MkInfo>
-	<MkPostForm
-		:class="$style.exampleRoot"
-		:mock="true"
-		:autofocus="false"
-		:initialNote="exampleNote"
-		@fileChangeSensitive="doSucceeded"
-	></MkPostForm>
-	<div v-if="onceSucceeded"><b style="color: var(--MI_THEME-accent);"><i class="ti ti-check"></i> {{ i18n.ts._initialTutorial.wellDone }}</b> {{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.sensitiveSucceeded }}</div>
-	<MkFolder>
-		<template #label>{{ i18n.ts.previewNoteText }}</template>
-		<MkNote :mock="true" :note="exampleNote" :class="$style.exampleRoot"></MkNote>
-	</MkFolder>
-</div>
+<VuneTutorialSensitive
+	:exampleNote="exampleNote"
+	:onceSucceeded="onceSucceeded"
+	:onFileChangeSensitive="doSucceeded"
+/>
 </template>
 
 <script setup lang="ts">
 import * as Misskey from 'misskey-js';
 import { ref, reactive } from 'vue';
+import VuneTutorialSensitive from './vune/MkTutorialDialog.Sensitive.vune';
 import { i18n } from '@/i18n.js';
-import MkPostForm from '@/components/MkPostForm.vue';
-import MkFolder from '@/components/MkFolder.vue';
-import MkInfo from '@/components/MkInfo.vue';
-import MkNote from '@/components/MkNote.vue';
 import { $i } from '@/i.js';
 
 const emit = defineEmits<{
@@ -88,59 +73,3 @@ const exampleNote = reactive<Misskey.entities.Note>({
 });
 
 </script>
-
-<style lang="scss" module>
-.exampleRoot {
-	border-radius: var(--MI-radius);
-	border: var(--MI_THEME-panelBorder);
-	background: var(--MI_THEME-panel);
-}
-
-.divider {
-	height: 1px;
-	background: var(--MI_THEME-divider);
-}
-
-.image {
-	max-width: 300px;
-	margin: 0 auto;
-}
-
-.post {
-	position: relative;
-	display: block;
-	width: 100%;
-	height: 40px;
-	color: var(--MI_THEME-fgOnAccent);
-	font-weight: bold;
-	text-align: left;
-
-	&::before {
-		content: "";
-		display: block;
-		width: calc(100% - 38px);
-		height: 100%;
-		margin: auto;
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		border-radius: 999px;
-		background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
-	}
-
-}
-
-.postIcon {
-	position: relative;
-	margin-left: 30px;
-	margin-right: 8px;
-	width: 32px;
-}
-
-.postText {
-	position: relative;
-	line-height: 40px;
-}
-</style>

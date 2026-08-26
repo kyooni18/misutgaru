@@ -1,0 +1,65 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Button, HStack, Text } from 'vune-ui';
+import MkLoading from '../global/vune/MkLoading.vune';
+import VuneIcon from '@/vune/Icon.vune';
+import { i18n } from '@/i18n.js';
+import {
+	ignoreChannelFollowAction,
+	type ChannelFollowAction,
+	type ChannelFollowActions,
+} from './MkChannelFollowButton.types.js';
+import './misskey-vune.scss';
+
+export struct MkChannelFollowButton: View {
+	let isFollowing: boolean
+	let wait: boolean
+	let full: boolean
+	let actions: ChannelFollowActions
+
+	init(
+		isFollowing: boolean = false,
+		wait: boolean = false,
+		full: boolean = false,
+		@Action onClick: ChannelFollowAction = ignoreChannelFollowAction,
+	) {
+		self.isFollowing = isFollowing
+		self.wait = wait
+		self.full = full
+		self.actions = { click: onClick }
+	}
+
+	var body: some View {
+		Button(action: {
+			if (!wait) {
+				actions.click()
+			}
+		}, label: {
+			HStack(alignment: 'center', spacing: 0) {
+				if (!wait) {
+					if (full) {
+						Text(isFollowing ? i18n.ts.unfollow : i18n.ts.follow)
+							.className('mk-vune-channel-follow-button__text')
+					}
+					VuneIcon(isFollowing ? 'ti ti-minus' : 'ti ti-plus')
+				} else {
+					if (full) {
+						Text(i18n.ts.processing)
+							.className('mk-vune-channel-follow-button__text')
+					}
+					MkLoading(em: true)
+				}
+			}
+		})
+			.className([
+				'_button',
+				'mk-vune-channel-follow-button',
+				wait ? 'mk-vune-channel-follow-button--wait' : null,
+				isFollowing ? 'mk-vune-channel-follow-button--active' : null,
+				full ? 'mk-vune-channel-follow-button--full' : null,
+			])
+			.withProps({ disabled: wait })
+	}
+}
+
+export default MkChannelFollowButton

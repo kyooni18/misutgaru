@@ -4,49 +4,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<MkInput v-model="name">
-		<template #label>{{ i18n.ts._webhookSettings.name }}</template>
-	</MkInput>
-
-	<MkInput v-model="url" type="url">
-		<template #label>URL</template>
-	</MkInput>
-
-	<MkInput v-model="secret">
-		<template #prefix><i class="ti ti-lock"></i></template>
-		<template #label>{{ i18n.ts._webhookSettings.secret }}</template>
-	</MkInput>
-
-	<FormSection>
-		<template #label>{{ i18n.ts._webhookSettings.trigger }}</template>
-
-		<div class="_gaps_s">
-			<MkSwitch v-model="event_follow">{{ i18n.ts._webhookSettings._events.follow }}</MkSwitch>
-			<MkSwitch v-model="event_followed">{{ i18n.ts._webhookSettings._events.followed }}</MkSwitch>
-			<MkSwitch v-model="event_note">{{ i18n.ts._webhookSettings._events.note }}</MkSwitch>
-			<MkSwitch v-model="event_reply">{{ i18n.ts._webhookSettings._events.reply }}</MkSwitch>
-			<MkSwitch v-model="event_renote">{{ i18n.ts._webhookSettings._events.renote }}</MkSwitch>
-			<MkSwitch v-model="event_reaction" :disabled="true">{{ i18n.ts._webhookSettings._events.reaction }}</MkSwitch>
-			<MkSwitch v-model="event_mention">{{ i18n.ts._webhookSettings._events.mention }}</MkSwitch>
-		</div>
-	</FormSection>
-
-	<div class="_buttons">
-		<MkButton primary inline @click="create"><i class="ti ti-check"></i> {{ i18n.ts.create }}</MkButton>
-	</div>
-</div>
+<VuneWebhookNew
+	:name="name"
+	:url="url"
+	:secret="secret"
+	:eventFollow="event_follow"
+	:eventFollowed="event_followed"
+	:eventNote="event_note"
+	:eventReply="event_reply"
+	:eventRenote="event_renote"
+	:eventReaction="event_reaction"
+	:eventMention="event_mention"
+	:onName="value => name = value"
+	:onUrl="value => url = value"
+	:onSecret="value => secret = value"
+	:onEventFollow="value => event_follow = value"
+	:onEventFollowed="value => event_followed = value"
+	:onEventNote="value => event_note = value"
+	:onEventReply="value => event_reply = value"
+	:onEventRenote="value => event_renote = value"
+	:onEventReaction="value => event_reaction = value"
+	:onEventMention="value => event_mention = value"
+	:onCreate="create"
+/>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
+import VuneWebhookNew from './vune/webhook.new.vune';
 import * as Misskey from 'misskey-js';
-import MkInput from '@/components/MkInput.vue';
-import FormSection from '@/components/form/section.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
-import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
-import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 
 const name = ref('');
