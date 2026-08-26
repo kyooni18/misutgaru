@@ -1,7 +1,7 @@
 # 미숫가루 / Misutgaru
 a fork of misskey
 
-—--
+---
 
 <div align="center">
 <a href="https://misskey-hub.net">
