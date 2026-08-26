@@ -37,13 +37,14 @@ export struct MkInstanceTicker: View {
 	}
 
 	var body: some View {
-		HStack(alignment: 'center', spacing: 4) {
+		HStack(alignment: 'leading', spacing: 4) {
 			if (tickerFavicon(host, instance)) {
 				Image(tickerFavicon(host, instance) ?? '', { alt: '' })
 					.className('mk-vune-instance-ticker__icon')
 			}
 			Text(tickerName(host, instance))
 				.className('mk-vune-instance-ticker__name')
+			
 		}
 			.className('mk-vune-instance-ticker')
 			.background(`linear-gradient(90deg, ${tickerThemeColor(host, instance)}, ${tickerThemeColor(host, instance)}00)`)

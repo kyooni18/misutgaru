@@ -21,7 +21,7 @@ type Props = {
 };
 export default createVuneComponent<Props>((props) =>
 	Element('div', { className: props.classes.root },
-		VueComponent(MkAvatar, { class: props.classes.avatar, user: props.user }),
+		VueComponent(MkAvatar, { class: props.classes.avatar, user: props.user, style: { padding: '10px' } }),
 		Element('div', { className: props.classes.main },
 			Element('div', { className: props.classes.header }, VueComponent(MkUserName, { user: props.user, nowrap: true })),
 			Element('div', {},

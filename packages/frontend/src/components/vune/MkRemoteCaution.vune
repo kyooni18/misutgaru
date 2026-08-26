@@ -3,6 +3,8 @@
 import { HStack, Link, Text } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import VuneIcon from '@/vune/Icon.vune';
+import MaterialSurface from '@/vune/MaterialSurface.vune';
+import { Material } from '@/vune/material.js';
 import './misskey-vune.scss';
 
 export struct MkRemoteCaution: View {
@@ -13,17 +15,20 @@ export struct MkRemoteCaution: View {
 	}
 
 	var body: some View {
-		HStack(alignment: 'center', spacing: 0) {
-			VuneIcon('ti ti-alert-triangle').className('mk-vune-remote-caution__icon')
-			Text(i18n.ts.remoteUserCaution)
-			if (href) {
-				Link(i18n.ts.showOnRemote, href)
-					.className('mk-vune-remote-caution__link')
-					.withProps({ rel: 'nofollow noopener', target: '_blank' })
+		MaterialSurface(Material.regular) {
+			HStack(alignment: 'center', spacing: 0) {
+				VuneIcon('ti ti-alert-triangle').className('mk-vune-remote-caution__icon')
+				Text(i18n.ts.remoteUserCaution)
+				if (href) {
+					Link(i18n.ts.showOnRemote, href)
+						.className('mk-vune-remote-caution__link')
+						.withProps({ rel: 'nofollow noopener', target: '_blank' })
+				}
 			}
+				.className('mk-vune-remote-caution__content')
+				.style({ justifyContent: 'flex-start', width: '100%', minWidth: 0 })
 		}
-			.className('mk-vune-remote-caution')
-			.style({ justifyContent: 'flex-start' })
+			.className(['_popup', '_shadow', 'mk-vune-remote-caution'])
 	}
 }
 

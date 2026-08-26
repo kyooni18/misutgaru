@@ -22,6 +22,17 @@
 	}
 }
 
+/*
+ * Keep padding inside an element's declared size. This is especially
+ * important for Vune's raw Element nodes, which do not get the layout
+ * primitive box-sizing normalization automatically.
+ */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
 html {
 	overflow: auto;
 	overflow-wrap: break-word;

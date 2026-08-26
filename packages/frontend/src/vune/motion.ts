@@ -75,6 +75,7 @@ function reportMotionCallbackError(kind: 'update' | 'complete', error: unknown):
 }
 
 function cssPropertyName(property: string): string {
+	if (property.startsWith('--') || property.includes('-')) return property;
 	return property.replace(/[A-Z]/g, character => `-${character.toLowerCase()}`);
 }
 
@@ -83,11 +84,12 @@ function styleOf(element: Element): CSSStyleDeclaration | undefined {
 }
 
 function isColorProperty(property: string): boolean {
-	return property === 'color'
-		|| property === 'background'
-		|| property === 'backgroundColor'
-		|| property === 'borderColor'
-		|| property.endsWith('Color');
+	const cssProperty = cssPropertyName(property).toLowerCase();
+	return cssProperty === 'color'
+		|| cssProperty === 'background'
+		|| cssProperty === 'background-color'
+		|| cssProperty === 'border-color'
+		|| cssProperty.endsWith('-color');
 }
 
 function cssNumberInterpolator(from: unknown, to: unknown): InterpolatorOptions | undefined {
@@ -104,7 +106,7 @@ function cssNumberInterpolator(from: unknown, to: unknown): InterpolatorOptions 
 
 function interpolationOptions(property: string, from: unknown, to: unknown): InterpolatorOptions | undefined {
 	let options: InterpolatorOptions | undefined;
-	if (property === 'transform' && typeof from === 'string' && typeof to === 'string') {
+	if (cssPropertyName(property) === 'transform' && typeof from === 'string' && typeof to === 'string') {
 		options = { type: 'transform' };
 	} else if (isColorProperty(property) && typeof from === 'string' && typeof to === 'string') {
 		options = { type: 'color', color: { space: 'oklab' } };
@@ -149,6 +151,50 @@ function interpolatedKeyframes(keyframes: Keyframe[] | PropertyIndexedKeyframes)
 		result.push({ property, cssProperty: cssPropertyName(property), from, to, options });
 	}
 	return result;
+}
+
+function keyframeProperties(keyframes: Keyframe[] | PropertyIndexedKeyframes): string[] {
+	const properties = Array.isArray(keyframes)
+		? keyframes.flatMap(frame => Object.keys(frame))
+		: Object.keys(keyframes);
+	return [...new Set(properties
+		.filter(property => !keyframeMetadata.has(property))
+		.map(cssPropertyName))];
+}
+
+function finalKeyframeIsReverse(repeatCount: number, autoreverses: boolean): boolean {
+	return autoreverses
+		&& Number.isFinite(repeatCount)
+		&& repeatCount > 1
+		&& repeatCount % 2 === 0;
+}
+
+function applyFinalKeyframe(
+	element: Element,
+	keyframes: Keyframe[] | PropertyIndexedKeyframes,
+	reverse: boolean,
+): void {
+	const style = styleOf(element);
+	if (!style) return;
+
+	if (Array.isArray(keyframes)) {
+		const frame = keyframes[reverse ? 0 : keyframes.length - 1];
+		if (!frame) return;
+		for (const [property, value] of Object.entries(frame)) {
+			if (keyframeMetadata.has(property) || value === undefined || value === null) continue;
+			style.setProperty(cssPropertyName(property), String(value));
+		}
+		return;
+	}
+
+	for (const [property, value] of Object.entries(keyframes)) {
+		if (keyframeMetadata.has(property) || value === undefined || value === null) continue;
+		const finalValue = Array.isArray(value)
+			? value[reverse ? 0 : value.length - 1]
+			: value;
+		if (finalValue === undefined || finalValue === null) continue;
+		style.setProperty(cssPropertyName(property), String(finalValue));
+	}
 }
 
 function settleImmediate(options: MotionOptions, progress: number): MotionStatus {
@@ -225,19 +271,52 @@ export class VuneMotionEngine {
 	private readonly activeCancels = new Set<() => void>();
 	private readonly elementCancels = new Set<() => void>();
 	private readonly elementAnimations = new Set<Animation>();
+	private readonly elementPropertyCancels = new WeakMap<Element, Map<string, () => void>>();
+
+	private cancelElementProperties(element: Element, properties: string[]): void {
+		const cancels = this.elementPropertyCancels.get(element);
+		if (!cancels) return;
+		const pending = new Set<() => void>();
+		for (const property of properties) {
+			const cancel = cancels.get(property);
+			if (cancel) pending.add(cancel);
+		}
+		for (const cancel of pending) cancel();
+	}
+
+	private trackElementProperties(element: Element, properties: string[], handle: MotionHandle): void {
+		if (properties.length === 0) return;
+		let cancels = this.elementPropertyCancels.get(element);
+		if (!cancels) {
+			cancels = new Map();
+			this.elementPropertyCancels.set(element, cancels);
+		}
+		const cancel = (): void => handle.cancel();
+		for (const property of properties) cancels.set(property, cancel);
+		const cleanup = (): void => {
+			const current = this.elementPropertyCancels.get(element);
+			if (!current) return;
+			for (const property of properties) {
+				if (current.get(property) === cancel) current.delete(property);
+			}
+			if (current.size === 0) this.elementPropertyCancels.delete(element);
+		};
+		void handle.finished.then(cleanup, cleanup);
+	}
 
 	public animate(options: MotionOptions): MotionHandle {
 		const animation = options.animation ?? VuneAnimation.default;
 		const { durationMs, delayMs, repeatCount, autoreverses } = animationTiming(animation);
 		let resolveFinished!: (status: MotionStatus) => void;
 		const finished = new Promise<MotionStatus>(resolve => { resolveFinished = resolve; });
+		const finalProgress = finalKeyframeIsReverse(repeatCount, autoreverses) ? 0 : 1;
 
 		if ((options.reducedMotion ?? 'respect') === 'respect' && reducedMotionRequested()) {
-			resolveFinished(settleImmediate(options, 1));
+			resolveFinished(settleImmediate(options, finalProgress));
 			return { finished, cancel() {} };
 		}
 		if (durationMs === 0) {
-			resolveFinished(settleImmediate(options, 1));
+			resolveFinished(settleImmediate(options, finalProgress));
 			return { finished, cancel() {} };
 		}
 
@@ -354,6 +433,7 @@ export class VuneMotionEngine {
 		let cycle = 0;
 		let timer: ReturnType<typeof setTimeout> | null = null;
 		let currentControls: AnimationControls[] = [];
+		let played = false;
 
 		const restoreInitialValues = (): void => {
 			if (options.fill !== 'none' && options.fill !== 'backwards') return;
@@ -365,7 +445,7 @@ export class VuneMotionEngine {
 			settled = true;
 			if (timer !== null) globalThis.clearTimeout(timer);
 			timer = null;
-			if (status === 'finished' && durationMs > 0) restoreInitialValues();
+			if (status === 'finished' && durationMs > 0 && played) restoreInitialValues();
 			this.elementCancels.delete(cancel);
 			resolveFinished(status);
 		};
@@ -380,13 +460,17 @@ export class VuneMotionEngine {
 		this.elementCancels.add(cancel);
 
 		if (reduced || durationMs === 0) {
-			for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.to));
+			const reverse = finalKeyframeIsReverse(repeatCount, autoreverses);
+			for (const entry of entries) {
+				style.setProperty(entry.cssProperty, String(reverse ? entry.from : entry.to));
+			}
 			finish('finished');
 			return { finished, cancel };
 		}
 
 		const startCycle = (): void => {
 			if (settled) return;
+			played = true;
 			const reverse = autoreverses && cycle % 2 === 1;
 			const motionEngine = options.reducedMotion === 'ignore' ? unrestrictedMotionEngine : sharedMotionEngine;
 			const cycleControls: AnimationControls[] = [];
@@ -451,15 +535,23 @@ export class VuneMotionEngine {
 	): MotionHandle {
 		const animation = options.animation ?? VuneAnimation.default;
 		const { durationMs, delayMs, repeatCount, autoreverses } = animationTiming(animation);
+		const properties = keyframeProperties(keyframes);
+		this.cancelElementProperties(element, properties);
 		let resolveFinished!: (status: MotionStatus) => void;
 		const finished = new Promise<MotionStatus>(resolve => { resolveFinished = resolve; });
 		const reduced = (options.reducedMotion ?? 'respect') === 'respect' && reducedMotionRequested();
 		const interpolated = this.animateInterpolatedElement(element, keyframes, animation, options, reduced);
-		if (interpolated) return interpolated;
+		if (interpolated) {
+			this.trackElementProperties(element, properties, interpolated);
+			return interpolated;
+		}
 
 		if (reduced || typeof element.animate !== 'function' || durationMs === 0) {
+			applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			const handle = { finished, cancel() {} };
 			resolveFinished('finished');
-			return { finished, cancel() {} };
+			this.trackElementProperties(element, properties, handle);
+			return handle;
 		}
 
 		let native: Animation;
@@ -475,8 +567,11 @@ export class VuneMotionEngine {
 			});
 		} catch (error) {
 			console.error('[VuneMotion] element animation failed', error);
+			applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
 			resolveFinished('cancelled');
-			return { finished, cancel() {} };
+			const handle = { finished, cancel() {} };
+			this.trackElementProperties(element, properties, handle);
+			return handle;
 		}
 
 		this.elementAnimations.add(native);
@@ -496,10 +591,12 @@ export class VuneMotionEngine {
 		this.elementCancels.add(cancel);
 		void native.finished.then(() => settle('finished')).catch(() => settle('cancelled'));
 
-		return {
+		const handle = {
 			finished,
 			cancel,
 		};
+		this.trackElementProperties(element, properties, handle);
+		return handle;
 	}
 
 	public cancelAll(): void {

@@ -38,7 +38,14 @@ export struct MkMiniChart: View {
 	var body: some View {
 		nativeElement(
 			'svg',
-			{ className, style: { overflow: 'visible' }, viewBox: `0 0 ${viewBoxX} ${viewBoxY}` },
+			{
+				className,
+				// A viewBox-only SVG has an auto-sized intrinsic box. Keep the
+				// mini chart compact even when a legacy parent's `.chart` rule
+				// is not loaded across the Vune compatibility boundary.
+				style: { height: '30px', overflow: 'visible' },
+				viewBox: `0 0 ${viewBoxX} ${viewBoxY}`,
+			},
 			nativeElement(
 				'defs',
 				null,
