@@ -4,11 +4,12 @@
 	--vune-material-opacity: 58%;
 	--vune-material-saturation: 1.35;
 	--vune-material-border-opacity: 13%;
+	--vune-material-surface: var(--MI_THEME-panel);
 	position: relative;
 	isolation: isolate;
 	/* Safe fallback first; newer engines override it with translucency. */
-	background: var(--MI_THEME-panel);
-	background: color-mix(in srgb, var(--MI_THEME-panel) var(--vune-material-opacity), transparent);
+	background: var(--vune-material-surface);
+	background: color-mix(in srgb, var(--vune-material-surface) var(--vune-material-opacity), transparent);
 	-webkit-backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
 	backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
 	border: 1px solid color-mix(in srgb, var(--MI_THEME-fg) var(--vune-material-border-opacity), transparent);
@@ -54,13 +55,13 @@
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
 	.vune-material {
 		background: var(--MI_THEME-panel);
-		background: color-mix(in srgb, var(--MI_THEME-panel) 92%, var(--MI_THEME-bg));
+		background: color-mix(in srgb, var(--vune-material-surface) 92%, var(--MI_THEME-bg));
 	}
 }
 
 @media (prefers-reduced-transparency: reduce) {
 	.vune-material {
-		background: var(--MI_THEME-panel);
+		background: var(--vune-material-surface);
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 	}

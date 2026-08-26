@@ -5,11 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
-	:enterActiveClass="prefer.s.animation ? $style.transition_tooltip_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_tooltip_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_tooltip_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_tooltip_leaveTo : ''"
-	appear :css="prefer.s.animation"
+	appear :css="false"
+	@enter="enter"
+	@leave="leave"
 	@afterLeave="emit('closed')"
 >
 	<div v-show="showing" ref="el" :class="$style.root" class="_acrylic _shadow" :style="{ zIndex, maxWidth: maxWidth + 'px' }">
@@ -28,6 +26,8 @@ import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import * as os from '@/os.js';
 import { calcPopupPosition } from '@/utility/popup-position.js';
 import { prefer } from '@/preferences.js';
+import { Animation } from 'vune-ui';
+import { animateVuneTransition } from '@/vune/motion.js';
 
 const props = withDefaults(defineProps<{
 	showing: boolean;
@@ -54,6 +54,28 @@ if (!props.showing) emit('closed');
 
 const el = useTemplateRef('el');
 const zIndex = os.claimZIndex('high');
+
+function enter(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateVuneTransition(element, [
+		{ opacity: 0, transform: 'scale(0.75)' },
+		{ opacity: 1, transform: 'scale(1)' },
+	], Animation.easeOut(0.2), done);
+}
+
+function leave(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateVuneTransition(element, [
+		{ opacity: 1, transform: 'scale(1)' },
+		{ opacity: 0, transform: 'scale(0.75)' },
+	], Animation.easeIn(0.2), done);
+}
 
 function setPosition() {
 	if (el.value == null) return;
@@ -92,18 +114,6 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" module>
-.transition_tooltip_enterActive,
-.transition_tooltip_leaveActive {
-	opacity: 1;
-	transform: scale(1);
-	transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.transition_tooltip_enterFrom,
-.transition_tooltip_leaveTo {
-	opacity: 0;
-	transform: scale(0.75);
-}
-
 .root {
 	position: absolute;
 	font-size: 0.8em;

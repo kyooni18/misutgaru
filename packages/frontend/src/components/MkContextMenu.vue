@@ -6,13 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <Transition
 	appear
-	:enterActiveClass="prefer.s.animation ? $style.transition_fade_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_fade_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_fade_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_fade_leaveTo : ''"
+	:css="false"
+	@enter="enter"
+	@leave="leave"
 >
 	<div ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
-		<MkMenu :items="items" :align="'left'" @close="emit('closed')"/>
+		<MkMenu :items="items" :align="'left'" material="thin" @close="emit('closed')"/>
 	</div>
 </Transition>
 </template>
@@ -24,6 +23,8 @@ import type { MenuItem } from '@/types/menu.js';
 import { elementContains } from '@/utility/element-contains.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
+import { Animation } from 'vune-ui';
+import { animateVuneTransition } from '@/vune/motion.js';
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -39,6 +40,53 @@ const rootEl = useTemplateRef('rootEl');
 const zIndex = ref<number>(os.claimZIndex('high'));
 
 const SCROLLBAR_THICKNESS = 16;
+
+function enter(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateContextMenuTransition(element, [
+		{ opacity: 0, transform: 'scale(0.9)' },
+		{ opacity: 1, transform: 'scale(1)' },
+	], Animation.easeOut(0.2), done);
+}
+
+function leave(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateContextMenuTransition(element, [
+		{ opacity: 1, transform: 'scale(1)' },
+		{ opacity: 0, transform: 'scale(0.9)' },
+	], Animation.easeIn(0.2), done);
+}
+
+function animateContextMenuTransition(
+	element: Element,
+	keyframes: Keyframe[],
+	animation: Animation,
+	done: () => void,
+) {
+	const materialElement = element.querySelector<HTMLElement>('[data-vune-material]');
+	const materialBlur = materialElement == null
+		? null
+		: window.getComputedStyle(materialElement).getPropertyValue('--vune-material-blur').trim() || '12px';
+	let pending = materialElement == null ? 1 : 2;
+	const finish = () => {
+		pending -= 1;
+		if (pending === 0) done();
+	};
+
+	animateVuneTransition(element, keyframes, animation, finish);
+	if (materialElement != null && materialBlur != null) {
+		animateVuneTransition(materialElement, [
+			{ '--vune-material-blur': keyframes[0].opacity === 0 ? '0px' : materialBlur },
+			{ '--vune-material-blur': keyframes[0].opacity === 0 ? materialBlur : '0px' },
+		], animation, finish);
+	}
+}
 
 onMounted(() => {
 	let left = props.ev.pageX + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
@@ -81,18 +129,8 @@ function onMousedown(evt: MouseEvent) {
 </script>
 
 <style lang="scss" module>
-.transition_fade_enterActive,
-.transition_fade_leaveActive {
-	transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-	transform-origin: left top;
-}
-.transition_fade_enterFrom,
-.transition_fade_leaveTo {
-	opacity: 0;
-	transform: scale(0.9);
-}
-
 .root {
 	position: absolute;
+	transform-origin: left top;
 }
 </style>

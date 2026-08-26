@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
-import MkA from '@/components/global/MkA.vue';
+/* @misutgaru-vune-native */
+import { ForEach, Group, NavigationLink } from 'vune-ui';
 import * as signIn from '@/i.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import { nativeElement } from '@/vune/native.js';
 import '@/vune/phase5-migration.scss';
 
 function iconClass(icon: string) {
@@ -17,18 +17,28 @@ function iconStyle(icon: string) {
 	if (icon === 'success') return { color: 'var(--MI_THEME-success)' };
 	return {};
 }
-export default createVuneComponent(() => {
+function announcementsView() {
 	if (!signIn.$i) return Group() {};
-	const announcements = signIn.$i.unreadAnnouncements.filter(x => x.display === 'banner');
+	let announcements = signIn.$i.unreadAnnouncements.filter(x => x.display === 'banner');
 	return Group() {
 		ForEach(announcements, key: (announcement: any) => announcement.id) { announcement in
-			VueComponent(MkA, { to: `/announcements/${announcement.id}`, class: 'mk-vune-announcement' }, {
-				default: () => Group() {
-					Element('span', { className: 'mk-vune-announcement__icon' }, Element('i', { className: iconClass(announcement.icon), style: iconStyle(announcement.icon) }))
-					Element('span', { className: 'mk-vune-announcement__title' }, announcement.title)
-					Element('span', { className: 'mk-vune-announcement__body' }, announcement.text)
-				},
-			})
+			NavigationLink(`/announcements/${announcement.id}`, label: {
+				nativeElement('span', {},
+					nativeElement('span', { className: 'mk-vune-announcement__icon' }, nativeElement('i', { className: iconClass(announcement.icon), style: iconStyle(announcement.icon) })),
+					nativeElement('span', { className: 'mk-vune-announcement__title' }, announcement.title),
+					nativeElement('span', { className: 'mk-vune-announcement__body' }, announcement.text),
+				)
+			}).className('mk-vune-announcement')
 		}
 	}.className('mk-vune-announcements');
-});
+	}
+
+export struct Announcements: View {
+	init() {}
+
+	var body: some View {
+		return announcementsView();
+	}
+}
+
+export default Announcements

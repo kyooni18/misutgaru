@@ -18,10 +18,15 @@
 	width: 100px;
 	color: var(--MI_THEME-accent);
 }
-.mk-vune-bottom-prompt__main { padding: 25px 25px 25px 0; flex: 1; }
+.mk-vune-bottom-prompt__main { padding: 25px 25px 25px 0; flex: 1; min-width: 0; box-sizing: border-box; }
 .mk-vune-bottom-prompt__close { position: absolute; top: 8px; right: 8px; padding: 8px; }
 .mk-vune-bottom-prompt__title { font-weight: bold; }
 .mk-vune-bottom-prompt__text { margin: .7em 0 1em; }
+.mk-vune-bottom-prompt__link { width: max-content !important; margin-top: .2em; }
+.mk-vune-bottom-prompt__actions { width: auto !important; }
+.mk-vune-bottom-prompt__button { position: relative; z-index: 1; display: block; width: max-content; min-width: 100px; padding: 7px 14px; box-sizing: border-box; border-radius: 5px; overflow: clip; font-size: 95%; text-align: center; background: var(--MI_THEME-buttonBg); transition: background .1s ease; }
+.mk-vune-bottom-prompt__button:not(:disabled):hover,
+.mk-vune-bottom-prompt__button:not(:disabled):active { background: var(--MI_THEME-buttonHoverBg); }
 @media (max-width: 500px) { .mk-vune-bottom-prompt__icon { width: 80px; } }
 @media (max-width: 450px) { .mk-vune-bottom-prompt__icon { width: 70px; } }
 
@@ -69,14 +74,14 @@
 .mk-vune-signup-complete__banner { padding: 16px; text-align: center; font-size: 26px; background-color: var(--MI_THEME-accentedBg); color: var(--MI_THEME-accent); }
 
 /* Compact app title bar. */
-.mk-vune-titlebar { --height: 36px; background: var(--MI_THEME-navBg); height: var(--height); font-size: 90%; }
+.mk-vune-titlebar { --height: 36px; position: relative; box-sizing: border-box; width: 100%; background: var(--MI_THEME-navBg); height: var(--height); font-size: 90%; }
 .mk-vune-titlebar__title { display: flex; justify-content: center; align-items: center; text-align: center; height: var(--height); }
-.mk-vune-titlebar__controls { position: absolute; top: 0; left: 0; display: flex; justify-content: center; align-items: center; height: var(--height); }
+.mk-vune-titlebar__controls { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; height: var(--height); pointer-events: none; }
 .mk-vune-titlebar__icon { display: inline-block; width: 20px; aspect-ratio: 1; border-radius: 5px; margin-right: 8px; }
 .mk-vune-titlebar__instance { display: inline-block; }
 .mk-vune-titlebar__left { margin-right: auto; }
 .mk-vune-titlebar__right { margin-left: auto; }
-.mk-vune-titlebar__button { display: inline-block; height: var(--height); aspect-ratio: 1; }
+.mk-vune-titlebar__button { display: inline-block; height: var(--height); aspect-ratio: 1; pointer-events: auto; }
 
 /* Zen shell. */
 .mk-vune-zen__contents { display: flex; flex-direction: column; height: 100dvh; }
@@ -138,6 +143,7 @@
 .mk-vune-deck-widgets__intro { padding: 16px; text-align: center; }
 
 /* File form row. */
+.mk-vune-form-file__select { padding: 7px 14px; border-radius: 999px; }
 .mk-vune-form-file__missing { font-weight: 700; color: var(--MI_THEME-infoWarnFg); }
 
 /* Sensitive tutorial example cards. */

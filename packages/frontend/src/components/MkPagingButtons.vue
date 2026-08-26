@@ -8,9 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script setup lang="ts">
-import VunePagingButtons from './vune/MkPagingButtons.vune';
+import VunePagingButtonsView from './vune/MkPagingButtons.vune';
 
 import { computed, toRefs } from 'vue';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VunePagingButtons = createVuneWebHost(VunePagingButtonsView);
 
 const min = 1;
 
@@ -34,32 +37,8 @@ const buttonRanges = computed(() => Array.from({ length: buttonCount.value }, (_
 const prevDotVisible = computed(() => (current.value - 1 > buttonCountHalf.value) && (max.value > buttonCount.value));
 const nextDotVisible = computed(() => (current.value < max.value - buttonCountHalf.value) && (max.value > buttonCount.value));
 
-if (_DEV_) {
-	console.log('[MkPagingButtons]', current.value, max.value, buttonCount.value, buttonCountHalf.value);
-	console.log('[MkPagingButtons]', current.value < max.value - buttonCountHalf.value);
-	console.log('[MkPagingButtons]', max.value > buttonCount.value);
-}
-
 function onNumberButtonClicked(pageNumber: number) {
 	emit('pageChanged', pageNumber);
-}
-
-function onToHeadButtonClicked() {
-	emit('pageChanged', min);
-}
-
-function onToPrevButtonClicked() {
-	const newPageNumber = current.value <= min ? min : current.value - 1;
-	emit('pageChanged', newPageNumber);
-}
-
-function onToNextButtonClicked() {
-	const newPageNumber = current.value >= max.value ? max.value : current.value + 1;
-	emit('pageChanged', newPageNumber);
-}
-
-function onToTailButtonClicked() {
-	emit('pageChanged', max.value);
 }
 </script>
 

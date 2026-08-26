@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
 import type * as Misskey from 'misskey-js';
-import MkMiniChart from '@/components/MkMiniChart.vue';
+import MkMiniChart from './MkMiniChart.vune';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase6-migration.scss';
 
 type Props = {
@@ -17,25 +17,64 @@ function getInstanceIcon(instance: Misskey.entities.FederationInstance): string 
 		?? '/client-assets/dummy.png';
 }
 
-export default createVuneComponent<Props>((props) => {
-	const instance = props.instance;
-	return Element('div', {
-		className: [
-			'mk-vune-instance-mini',
-			instance.isNotResponding ? 'mk-vune-instance-mini--yellow' : null,
-			instance.isBlocked ? 'mk-vune-instance-mini--red' : null,
-			instance.isSuspended ? 'mk-vune-instance-mini--gray' : null,
-			instance.isSilenced ? 'mk-vune-instance-mini--blue' : null,
-		],
-	},
-		Element('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
-		Element('div', { className: 'mk-vune-instance-mini__body' },
-			Element('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
-			Element('span', { className: 'mk-vune-instance-mini__sub _monospace' },
-				Element('b', {}, instance.host),
-				` / ${instance.softwareName || '?'} ${instance.softwareVersion}`,
-			),
-		),
-		props.chartValues ? VueComponent(MkMiniChart, { class: 'mk-vune-instance-mini__chart', src: props.chartValues }) : null,
+function miniChart(values: number[], instanceId: string) {
+	let viewBoxX = 50;
+	let viewBoxY = 50;
+	let stats = values.slice().reverse();
+	let peak = Math.max.apply(null, stats) || 1;
+	let step = stats.length > 1 ? viewBoxX / (stats.length - 1) : 0;
+	let points = stats.map((value, index) => [
+		index * step,
+		(1 - (value / peak)) * viewBoxY,
+	]);
+	let polylinePoints = points.map(xy => `${xy[0]},${xy[1]}`).join(' ');
+	let polygonPoints = `0,${viewBoxY} ${polylinePoints} ${viewBoxX},${viewBoxY}`;
+	let head = points.at(-1);
+	return MkMiniChart(
+		viewBoxX: viewBoxX,
+		viewBoxY: viewBoxY,
+		gradientId: `mk-vune-instance-chart-${instanceId}`,
+		color: 'var(--MI_THEME-accent)',
+		polygonPoints: polygonPoints,
+		polylinePoints: polylinePoints,
+		headX: head?.[0],
+		headY: head?.[1],
+		className: 'mk-vune-instance-mini__chart',
 	);
-});
+}
+
+export struct MkInstanceCardMini: View {
+	let instance: Misskey.entities.FederationInstance
+	let chartValues: number[] | null | undefined
+
+	init(_ instance: Misskey.entities.FederationInstance, _ chartValues: number[] | null | undefined = undefined) {
+		self.instance = instance
+		self.chartValues = chartValues
+	}
+
+	var body: some View {
+		nativeElement('div', { style: { display: 'contents' } },
+			nativeElement('div', {
+				className: [
+					'mk-vune-instance-mini',
+					instance.isNotResponding ? 'mk-vune-instance-mini--yellow' : null,
+					instance.isBlocked ? 'mk-vune-instance-mini--red' : null,
+					instance.isSuspended ? 'mk-vune-instance-mini--gray' : null,
+					instance.isSilenced ? 'mk-vune-instance-mini--blue' : null,
+				],
+			},
+				nativeElement('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
+				nativeElement('div', { className: 'mk-vune-instance-mini__body' },
+					nativeElement('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
+					nativeElement('span', { className: 'mk-vune-instance-mini__sub _monospace' },
+						nativeElement('b', {}, instance.host),
+						` / ${instance.softwareName || '?'} ${instance.softwareVersion}`,
+					),
+				),
+				chartValues && chartValues.length > 0 ? miniChart(chartValues, instance.id) : null,
+			),
+		)
+	}
+}
+
+export default MkInstanceCardMini

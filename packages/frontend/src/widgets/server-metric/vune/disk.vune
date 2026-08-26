@@ -1,18 +1,33 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import XPie from '@/widgets/server-metric/pie.vue';
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
+import Pie from './pie.vune';
 import bytes from '@/filters/bytes.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
-type Props = { usage: number; total: number; used: number; available: number };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: 'zbwaqsat' },
-		VueComponent(XPie, { class: 'pie', value: props.usage }),
-		Element('div', {},
-			Element('p', {}, Element('i', { className: 'ti ti-database' }), 'Disk'),
-			Element('p', {}, `Total: ${bytes(props.total, 1)}`),
-			Element('p', {}, `Free: ${bytes(props.available, 1)}`),
-			Element('p', {}, `Used: ${bytes(props.used, 1)}`),
-		),
-	)
-);
+export struct Disk: View {
+	let usage: number
+	let total: number
+	let used: number
+	let available: number
+
+	init(_ usage: number, _ total: number, _ used: number, _ available: number) {
+		self.usage = usage
+		self.total = total
+		self.used = used
+		self.available = available
+	}
+
+	var body: some View {
+		nativeElement('div', { className: 'zbwaqsat' },
+			Pie(usage).className('pie'),
+			nativeElement('div', {},
+				nativeElement('p', {}, nativeElement('i', { className: 'ti ti-database' }), 'Disk'),
+				nativeElement('p', {}, `Total: ${bytes(total, 1)}`),
+				nativeElement('p', {}, `Free: ${bytes(available, 1)}`),
+				nativeElement('p', {}, `Used: ${bytes(used, 1)}`),
+			),
+		)
+	}
+}
+
+export default Disk

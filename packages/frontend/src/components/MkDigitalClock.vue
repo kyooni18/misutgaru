@@ -4,20 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<span>
-	<span v-text="hh"></span>
-	<span :class="[$style.colon, { [$style.showColon]: showColon }]">:</span>
-	<span v-text="mm"></span>
-	<span v-if="showS" :class="[$style.colon, { [$style.showColon]: showColon }]">:</span>
-	<span v-if="showS" v-text="ss"></span>
-	<span v-if="showMs" :class="[$style.colon, { [$style.showColon]: showColon }]">:</span>
-	<span v-if="showMs" v-text="ms"></span>
-</span>
+<VuneDigitalClockHost :hh="hh" :mm="mm" :ss="ss" :ms="ms" :showS="showS" :showMs="showMs" :showColon="showColon" />
 </template>
 
 <script lang="ts" setup>
 import { onMounted, onUnmounted, ref, watch } from 'vue';
+import VuneDigitalClock from './vune/MkDigitalClock.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { defaultIdlingRenderScheduler } from '@/utility/idle-render.js';
+
+const VuneDigitalClockHost = createVuneWebHost(VuneDigitalClock);
 
 const props = withDefaults(defineProps<{
 	showS?: boolean;
@@ -67,15 +63,3 @@ onUnmounted(() => {
 	defaultIdlingRenderScheduler.delete(tick);
 });
 </script>
-
-<style lang="scss" module>
-.colon {
-	opacity: 0;
-	transition: opacity 1s ease;
-
-	&.showColon {
-		opacity: 1;
-		transition: opacity 0s;
-	}
-}
-</style>

@@ -49,10 +49,13 @@ export async function signout() {
 
 	//#region Remove service worker registration
 	try {
-		if (navigator.serviceWorker.controller) {
-			const registration = await navigator.serviceWorker.ready;
-			const push = await registration.pushManager.getSubscription();
-			if (push) {
+		const registrations = await navigator.serviceWorker.getRegistrations();
+		const subscriptions = (await Promise.all(registrations.map(registration =>
+			registration.pushManager.getSubscription().catch(() => null),
+		))).filter((push): push is PushSubscription => push != null);
+
+		for (const push of subscriptions) {
+			try {
 				await window.fetch(`${apiUrl}/sw/unregister`, {
 					method: 'POST',
 					body: JSON.stringify({
@@ -63,13 +66,14 @@ export async function signout() {
 						'Content-Type': 'application/json',
 					},
 				});
+			} finally {
+				// Remove the browser-side subscription as well. Otherwise the next
+				// account can inherit an endpoint that still belongs to this one.
+				await push.unsubscribe().catch(() => undefined);
 			}
 		}
 
-		await navigator.serviceWorker.getRegistrations()
-			.then(registrations => {
-				return Promise.all(registrations.map(registration => registration.unregister()));
-			});
+		await Promise.all(registrations.map(registration => registration.unregister()));
 	} catch {
 		// nothing
 	}

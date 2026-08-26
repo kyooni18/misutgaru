@@ -8,11 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneAuthForm from './vune/auth-form.vune';
+import AuthForm from './vune/auth-form.vune';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneAuthForm = createVuneWebHost(AuthForm);
 
 const props = defineProps<{
 	session: Misskey.entities.AuthSessionShowResponse;

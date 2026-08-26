@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Animation, Text } from 'vune-ui';
+import { nativeElement } from '@/vune/native.js';
+
+function colon(showColon: boolean) {
+	return Text(':')
+		.className('mk-vune-digital-clock__colon')
+		.style({ opacity: showColon ? 1 : 0 })
+		.animation(showColon ? Animation.linear(0) : Animation.easeInOut(1), value: showColon);
+}
+
+export struct MkDigitalClock: View {
+	let hh: string
+	let mm: string
+	let ss: string
+	let ms: string
+	let showS: boolean
+	let showMs: boolean
+	let showColon: boolean
+
+	init(
+		_ hh: string,
+		_ mm: string,
+		_ ss: string,
+		_ ms: string,
+		showS: boolean = true,
+		showMs: boolean = false,
+		showColon: boolean = false,
+	) {
+		self.hh = hh
+		self.mm = mm
+		self.ss = ss
+		self.ms = ms
+		self.showS = showS
+		self.showMs = showMs
+		self.showColon = showColon
+	}
+
+	var body: some View {
+		nativeElement('span', {},
+			Text(hh),
+			colon(showColon),
+			Text(mm),
+			showS ? colon(showColon) : null,
+			showS ? Text(ss) : null,
+			showMs ? colon(showColon) : null,
+			showMs ? Text(ms) : null,
+		)
+	}
+}
+
+export default MkDigitalClock

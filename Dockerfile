@@ -16,6 +16,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 WORKDIR /misskey
 
+COPY --link ["packages/modules/Vune/package.json", "./packages/modules/Vune/package.json"]
+COPY --link ["packages/modules/Vune/bin", "./packages/modules/Vune/bin"]
+COPY --link ["packages/modules/Vune/dist", "./packages/modules/Vune/dist"]
+COPY --link ["packages/modules/o0o0o/package.json", "packages/modules/o0o0o/index.d.ts", "./packages/modules/o0o0o/"]
+COPY --link ["packages/modules/o0o0o/src", "./packages/modules/o0o0o/src"]
+COPY --link ["packages/modules/o0o0o/wasm", "./packages/modules/o0o0o/wasm"]
 COPY --link ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "./"]
 COPY --link ["scripts", "./scripts"]
 COPY --link ["patches", "./patches"]
@@ -37,10 +43,11 @@ RUN node -e "console.log(JSON.parse(require('node:fs').readFileSync('./package.j
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 	pnpm i --frozen-lockfile --aggregate-output
+RUN ln -s /misskey/packages/frontend/node_modules /misskey/packages/modules/Vune/node_modules
 
 COPY --link . ./
 
-RUN pnpm build
+RUN PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm build
 RUN rm -rf .git/
 
 # build native dependencies for target platform
@@ -53,6 +60,12 @@ RUN apt-get update \
 
 WORKDIR /misskey
 
+COPY --link ["packages/modules/Vune/package.json", "./packages/modules/Vune/package.json"]
+COPY --link ["packages/modules/Vune/bin", "./packages/modules/Vune/bin"]
+COPY --link ["packages/modules/Vune/dist", "./packages/modules/Vune/dist"]
+COPY --link ["packages/modules/o0o0o/package.json", "packages/modules/o0o0o/index.d.ts", "./packages/modules/o0o0o/"]
+COPY --link ["packages/modules/o0o0o/src", "./packages/modules/o0o0o/src"]
+COPY --link ["packages/modules/o0o0o/wasm", "./packages/modules/o0o0o/wasm"]
 COPY --link ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "./"]
 COPY --link ["scripts", "./scripts"]
 COPY --link ["patches", "./patches"]
@@ -67,6 +80,7 @@ RUN node -e "console.log(JSON.parse(require('node:fs').readFileSync('./package.j
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 	pnpm i --frozen-lockfile --aggregate-output
+RUN ln -s /misskey/node_modules /misskey/packages/modules/Vune/node_modules
 
 FROM --platform=$TARGETPLATFORM node:${NODE_VERSION}-slim AS runner
 
@@ -98,6 +112,7 @@ COPY --chown=misskey:misskey --from=target-builder /misskey/packages/backend/nod
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-js/node_modules ./packages/misskey-js/node_modules
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-reversi/node_modules ./packages/misskey-reversi/node_modules
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-bubble-game/node_modules ./packages/misskey-bubble-game/node_modules
+COPY --chown=misskey:misskey --from=target-builder /misskey/packages/modules/Vune /misskey/packages/modules/Vune
 COPY --chown=misskey:misskey --from=native-builder /misskey/built ./built
 COPY --chown=misskey:misskey --from=native-builder /misskey/packages/misskey-js/built ./packages/misskey-js/built
 COPY --chown=misskey:misskey --from=native-builder /misskey/packages/misskey-reversi/built ./packages/misskey-reversi/built

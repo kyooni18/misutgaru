@@ -1,7 +1,10 @@
 {
 	"short_name": "Misskey",
 	"name": "Misskey",
+	"id": "/",
+	"scope": "/",
 	"start_url": "/",
+	"display_override": ["standalone", "minimal-ui", "browser"],
 	"display": "standalone",
 	"background_color": "#313a42",
 	"theme_color": "#86b300",

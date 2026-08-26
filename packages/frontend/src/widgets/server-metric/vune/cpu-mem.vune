@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import { createVuneComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
 
 type Props = {
 	viewBoxX: number;
@@ -33,28 +33,85 @@ function graph(
 	label: string,
 	percent: string,
 ) {
-	return Element('svg', {},
-		Element('defs', {},
-			Element('linearGradient', {},
-				Element('stop', {}).withProps({ offset: '0%', 'stop-color': 'hsl(180, 80%, 70%)' }),
-				Element('stop', {}).withProps({ offset: '100%', 'stop-color': 'hsl(0, 80%, 70%)' }),
+	return nativeElement('svg', {},
+		nativeElement('defs', {},
+			nativeElement('linearGradient', {},
+				nativeElement('stop', {}).withProps({ offset: '0%', 'stop-color': 'hsl(180, 80%, 70%)' }),
+				nativeElement('stop', {}).withProps({ offset: '100%', 'stop-color': 'hsl(0, 80%, 70%)' }),
 			).withProps({ id: gradientId, x1: '0', x2: '0', y1: '1', y2: '0' }),
-			Element('mask', {},
-				Element('polygon', {}).withProps({ points: polygonPoints, fill: '#fff', 'fill-opacity': '0.5' }),
-				Element('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: '#fff', 'stroke-width': '1' }),
-				Element('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: '#fff' }),
+			nativeElement('mask', {},
+				nativeElement('polygon', {}).withProps({ points: polygonPoints, fill: '#fff', 'fill-opacity': '0.5' }),
+				nativeElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: '#fff', 'stroke-width': '1' }),
+				nativeElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: '#fff' }),
 			).withProps({ id: maskId, x: '0', y: '0', width: viewBoxX, height: viewBoxY }),
 		),
-		Element('rect', { style: { stroke: 'none', fill: `url(#${gradientId})`, mask: `url(#${maskId})` } }).withProps({
+		nativeElement('rect', { style: { stroke: 'none', fill: `url(#${gradientId})`, mask: `url(#${maskId})` } }).withProps({
 			x: '-2', y: '-2', width: viewBoxX + 4, height: viewBoxY + 4,
 		}),
-		Element('text', {}, `${label} `, Element('tspan', {}, `${percent}%`)).withProps({ x: '1', y: '5' }),
+		nativeElement('text', {}, `${label} `, nativeElement('tspan', {}, `${percent}%`)).withProps({ x: '1', y: '5' }),
 	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
 }
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: 'lcfyofjk' },
-		graph(props.cpuGradientId, props.cpuMaskId, props.viewBoxX, props.viewBoxY, props.cpuPolygonPoints, props.cpuPolylinePoints, props.cpuHeadX, props.cpuHeadY, 'CPU', props.cpuP),
-		graph(props.memGradientId, props.memMaskId, props.viewBoxX, props.viewBoxY, props.memPolygonPoints, props.memPolylinePoints, props.memHeadX, props.memHeadY, 'MEM', props.memP),
-	)
-);
+export struct CpuMem: View {
+	let viewBoxX: number
+	let viewBoxY: number
+	let cpuGradientId: string
+	let cpuMaskId: string
+	let memGradientId: string
+	let memMaskId: string
+	let cpuPolylinePoints: string
+	let memPolylinePoints: string
+	let cpuPolygonPoints: string
+	let memPolygonPoints: string
+	let cpuP: string
+	let memP: string
+	let cpuHeadX: number | undefined
+	let cpuHeadY: number | undefined
+	let memHeadX: number | undefined
+	let memHeadY: number | undefined
+
+	init(
+		_ viewBoxX: number,
+		_ viewBoxY: number,
+		_ cpuGradientId: string,
+		_ cpuMaskId: string,
+		_ memGradientId: string,
+		_ memMaskId: string,
+		_ cpuPolylinePoints: string,
+		_ memPolylinePoints: string,
+		_ cpuPolygonPoints: string,
+		_ memPolygonPoints: string,
+		_ cpuP: string,
+		_ memP: string,
+		_ cpuHeadX: number | undefined = undefined,
+		_ cpuHeadY: number | undefined = undefined,
+		_ memHeadX: number | undefined = undefined,
+		_ memHeadY: number | undefined = undefined,
+	) {
+		self.viewBoxX = viewBoxX
+		self.viewBoxY = viewBoxY
+		self.cpuGradientId = cpuGradientId
+		self.cpuMaskId = cpuMaskId
+		self.memGradientId = memGradientId
+		self.memMaskId = memMaskId
+		self.cpuPolylinePoints = cpuPolylinePoints
+		self.memPolylinePoints = memPolylinePoints
+		self.cpuPolygonPoints = cpuPolygonPoints
+		self.memPolygonPoints = memPolygonPoints
+		self.cpuP = cpuP
+		self.memP = memP
+		self.cpuHeadX = cpuHeadX
+		self.cpuHeadY = cpuHeadY
+		self.memHeadX = memHeadX
+		self.memHeadY = memHeadY
+	}
+
+	var body: some View {
+		nativeElement('div', { className: 'lcfyofjk' },
+			graph(cpuGradientId, cpuMaskId, viewBoxX, viewBoxY, cpuPolygonPoints, cpuPolylinePoints, cpuHeadX, cpuHeadY, 'CPU', cpuP),
+			graph(memGradientId, memMaskId, viewBoxX, viewBoxY, memPolygonPoints, memPolylinePoints, memHeadX, memHeadY, 'MEM', memP),
+		)
+	}
+}
+
+export default CpuMem

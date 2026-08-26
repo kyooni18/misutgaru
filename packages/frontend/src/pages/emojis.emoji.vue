@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
-import VuneEmojiCard from './vune/emojis.emoji.vune';
+import EmojiCard from './vune/emojis.emoji.vune';
 import type { MenuItem } from '@/types/menu.js';
 import * as os from '@/os.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
@@ -17,12 +17,15 @@ import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { i18n } from '@/i18n.js';
 import MkCustomEmojiDetailedDialog from '@/components/MkCustomEmojiDetailedDialog.vue';
 import { $i } from '@/i.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneEmojiCard = createVuneWebHost(EmojiCard);
 
 const props = defineProps<{
 	emoji: Misskey.entities.EmojiSimple;
 }>();
 
-function menu(ev: PointerEvent) {
+function menu() {
 	const menuItems: MenuItem[] = [];
 	menuItems.push({
 		type: 'label',
@@ -64,7 +67,7 @@ function menu(ev: PointerEvent) {
 		});
 	}
 
-	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
+	os.popupMenu(menuItems, window.document.activeElement);
 }
 </script>
 

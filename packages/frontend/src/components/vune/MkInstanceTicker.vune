@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { HStack, Image, Text } from 'vune-ui';
+import { HStack, Image, Text, Spacer } from 'vune-ui';
 import { instanceName as localInstanceName } from '@@/js/config.js';
 import { instance as localInstance } from '@/instance.js';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
@@ -44,7 +44,7 @@ export struct MkInstanceTicker: View {
 			}
 			Text(tickerName(host, instance))
 				.className('mk-vune-instance-ticker__name')
-			
+			Spacer()
 		}
 			.className('mk-vune-instance-ticker')
 			.background(`linear-gradient(90deg, ${tickerThemeColor(host, instance)}, ${tickerThemeColor(host, instance)}00)`)

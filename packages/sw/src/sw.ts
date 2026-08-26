@@ -12,6 +12,13 @@ import type { Locale } from 'i18n';
 import { createEmptyNotification, createNotification } from '@/scripts/create-notification.js';
 import { swLang } from '@/scripts/lang.js';
 import * as swos from '@/scripts/operations.js';
+import { getPushSubscriptionKeys } from '@/scripts/push-subscription.js';
+
+type StoredAccount = Pick<Misskey.entities.SignupResponse, 'id' | 'token'>;
+type PushSubscriptionChangeEvent = ExtendableEvent & {
+	oldSubscription: PushSubscription | null;
+	newSubscription: PushSubscription | null;
+};
 
 async function respondToNavigation(request: Request): Promise<Response> {
 	const controller = new AbortController();
@@ -103,31 +110,86 @@ globalThis.addEventListener('fetch', ev => {
 });
 
 globalThis.addEventListener('push', ev => {
-	// クライアント取得
-	ev.waitUntil(globalThis.clients.matchAll({
-		includeUncontrolled: true,
-		type: 'window',
-	}).then(async () => {
-		const data: PushNotificationDataMap[keyof PushNotificationDataMap] = ev.data?.json();
+	ev.waitUntil((async () => {
+		let data: PushNotificationDataMap[keyof PushNotificationDataMap] | undefined;
+		try {
+			data = ev.data?.json();
+		} catch {
+			// A malformed payload still needs a user-visible response on browsers
+			// enforcing the userVisibleOnly contract.
+			await createEmptyNotification();
+			return;
+		}
+
+		if (!data || typeof data !== 'object' || typeof data.type !== 'string') {
+			await createEmptyNotification();
+			return;
+		}
 
 		switch (data.type) {
-			// case 'driveFileCreated':
 			case 'notification':
 			case 'unreadAntennaNote':
 			case 'newChatMessage':
-				// 1日以上経過している場合は無視
-				if (Date.now() - data.dateTime > 1000 * 60 * 60 * 24) break;
-
-				return createNotification(data);
+				// Ignore events that were queued for more than one day. A silent,
+				// short-lived fallback still satisfies userVisibleOnly on browsers
+				// that enforce the Web Push contract.
+				if (!Number.isFinite(data.dateTime) || Date.now() - data.dateTime > 1000 * 60 * 60 * 24) {
+					await createEmptyNotification();
+					return;
+				}
+				await createNotification(data);
+				return;
 			case 'readAllNotifications':
 				await globalThis.registration.getNotifications()
 					.then(notifications => notifications.forEach(n => n.tag !== 'read_notification' && n.close()));
-				break;
+				await createEmptyNotification();
+				return;
+			default:
+				await createEmptyNotification();
+		}
+	})());
+});
+
+globalThis.addEventListener('pushsubscriptionchange', ev => {
+	const event = ev as PushSubscriptionChangeEvent;
+	event.waitUntil((async () => {
+		const nextSubscription = event.newSubscription;
+		if (!nextSubscription) return;
+
+		const keys = getPushSubscriptionKeys(nextSubscription);
+		if (!keys) {
+			console.error('Push subscription changed without encryption keys');
+			return;
 		}
 
-		await createEmptyNotification();
-		return;
-	}));
+		const accounts = await get<StoredAccount[]>('accounts').catch(() => undefined);
+		if (!accounts || accounts.length === 0) return;
+
+		await Promise.allSettled(accounts.map(async account => {
+			const oldEndpoint = event.oldSubscription?.endpoint;
+			let sendReadMessage = false;
+
+			if (oldEndpoint) {
+				try {
+					const previous = await swos.api('sw/show-registration', account.id, { endpoint: oldEndpoint });
+					sendReadMessage = previous?.sendReadMessage ?? false;
+				} catch {
+					// The old registration may already have expired.
+				}
+
+				if (oldEndpoint !== nextSubscription.endpoint) {
+					await swos.api('sw/unregister', account.id, { endpoint: oldEndpoint }).catch(() => undefined);
+				}
+			}
+
+			await swos.api('sw/register', account.id, {
+				endpoint: nextSubscription.endpoint,
+				auth: keys.auth,
+				publickey: keys.publickey,
+				sendReadMessage,
+			});
+		}));
+	})());
 });
 
 globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEventMap['notificationclick']) => {
@@ -226,10 +288,10 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 });
 
 globalThis.addEventListener('notificationclose', (ev: ServiceWorkerGlobalScopeEventMap['notificationclose']) => {
-	const data: PushNotificationDataMap[keyof PushNotificationDataMap] = ev.notification.data;
+	const data = ev.notification.data as PushNotificationDataMap[keyof PushNotificationDataMap] | undefined;
 
 	ev.waitUntil((async (): Promise<void> => {
-		if (data.type === 'notification') {
+		if (data?.type === 'notification' && data.userId) {
 			await swos.sendMarkAllAsRead(data.userId);
 		}
 		return;

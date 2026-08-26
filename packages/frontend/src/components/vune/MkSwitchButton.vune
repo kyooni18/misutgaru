@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Button, Capsule, Circle, ZStack } from 'vune-ui';
+import { Binding, Switch } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import { ignoreSwitchToggle, type SwitchActions, type SwitchToggleAction } from './MkSwitchButton.types.js';
 import './misskey-vune.scss';
@@ -21,40 +21,22 @@ export struct MkSwitchButton: View {
 	}
 
 	var body: some View {
-		Button(action: {
-			if (!disabled) {
-				actions.toggle()
-			}
-		}, label: {
-			ZStack(alignment: 'leading') {
-				Capsule()
-					.className('mk-vune-switch-button__track')
-				Circle()
-					.className([
-						'mk-vune-switch-button__knob',
-						checked ? 'mk-vune-switch-button__knob--checked' : null,
-					])
-			}
-				.className('mk-vune-switch-button__visual')
-		})
+		Switch(Binding(
+			() => checked,
+			(_isOn: boolean) => {
+				if (!disabled) {
+					actions.toggle()
+				}
+			},
+		), { label: checked ? i18n.ts.itsOn : i18n.ts.itsOff })
 			.className([
 				'_button',
 				'mk-vune-switch-button',
 				checked ? 'mk-vune-switch-button--checked' : null,
 				disabled ? 'mk-vune-switch-button--disabled' : null,
 			])
-			.style({
-				// Keep the control measurable while it is mounted through the
-				// display: contents Vue compatibility host. The legacy stylesheet
-				// still owns the visual treatment; these are only intrinsic bounds.
-				flexShrink: 0,
-				width: 'calc(var(--height) * 1.6)',
-				height: 'calc(var(--height) + 2px)',
-			})
 			.withProps({
 				disabled,
-				role: 'switch',
-				'aria-checked': checked,
 				'title': checked ? i18n.ts.itsOn : i18n.ts.itsOff,
 				'data-testid': 'switch-toggle',
 			})

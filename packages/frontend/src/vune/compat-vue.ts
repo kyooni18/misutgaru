@@ -12,6 +12,7 @@ import {
 	onMounted,
 	onUpdated,
 	shallowRef,
+	unref,
 } from 'vue';
 import {
 	State,
@@ -109,7 +110,14 @@ function instantiateView(
 		const name = parameter.name ?? parameter.label;
 		if (!name) return undefined;
 		const legacyName = options.aliases?.[name] ?? name;
-		const raw = attrs[legacyName];
+		// `popup()` deliberately accepts Vue refs so the legacy component can
+		// update without being recreated.  Vue does not unwrap refs stored in a
+		// props object passed through a render function, though, so the host
+		// would otherwise hand RefImpl objects to the Vune initializer resolver
+		// (for example `MkWaitingDialog(object, object)`).  Unwrap only Vue refs
+		// at this boundary; Vune State/Binding refs are different objects and are
+		// left untouched by `unref`.
+		const raw = unref(attrs[legacyName] as any);
 		const custom = options.coerce?.[name];
 		const value = custom ? custom(raw) : coerceByParameter(parameter, raw);
 		return parameter.kind === 'action' && typeof value === 'function'
@@ -176,7 +184,7 @@ export function createVuneWebHost(
 					args => args.length === 0,
 					() => ({}),
 				)],
-				body: (): ViewGraphValue => decorateLegacyRoot(instantiateView(ViewType, state.value, options), state.value),
+			body: (): ViewGraphValue => decorateLegacyRoot(instantiateView(ViewType, state.value, options), state.value),
 			});
 
 			onMounted(() => {

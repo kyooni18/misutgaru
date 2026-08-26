@@ -4,13 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneDisk :usage="usage" :total="total" :used="used" :available="available"/>
+<VuneDiskHost :usage="usage" :total="total" :used="used" :available="available"/>
 </template>
 
 <script lang="ts" setup>
 import VuneDisk from './vune/disk.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
+
+const VuneDiskHost = createVuneWebHost(VuneDisk);
 
 const props = defineProps<{
 	meta: Misskey.entities.ServerInfoResponse;

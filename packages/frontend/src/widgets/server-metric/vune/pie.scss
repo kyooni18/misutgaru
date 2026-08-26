@@ -1,0 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+.mk-vune-pie {
+	display: block;
+	height: 100%;
+}
+
+.mk-vune-pie__circle {
+	transform-origin: center;
+	transform: rotate(-90deg);
+}
+
+.mk-vune-pie__text {
+	font-size: 0.15px;
+	fill: currentColor;
+}

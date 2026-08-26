@@ -4,14 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNet :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :inPolygonPoints="inPolygonPoints" :outPolygonPoints="outPolygonPoints" :inPolylinePoints="inPolylinePoints" :outPolylinePoints="outPolylinePoints" :inHeadX="inHeadX" :inHeadY="inHeadY" :outHeadX="outHeadX" :outHeadY="outHeadY" :inRecent="inRecent" :outRecent="outRecent"/>
+<VuneNetHost :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :inPolygonPoints="inPolygonPoints" :outPolygonPoints="outPolygonPoints" :inPolylinePoints="inPolylinePoints" :outPolylinePoints="outPolylinePoints" :inHeadX="inHeadX" :inHeadY="inHeadY" :outHeadX="outHeadX" :outHeadY="outHeadY" :inRecent="inRecent" :outRecent="outRecent"/>
 </template>
 
 <script lang="ts" setup>
 import VuneNet from './vune/net.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { genId } from '@/utility/id.js';
+
+const VuneNetHost = createVuneWebHost(VuneNet);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,

@@ -42,11 +42,15 @@ type AnimationTiming = {
 };
 
 type InterpolatedKeyframe = {
-	property: string;
 	cssProperty: string;
-	from: unknown;
-	to: unknown;
-	options: InterpolatorOptions;
+	first: unknown;
+	last: unknown;
+	segments: Array<{
+		from: unknown;
+		to: unknown;
+		options: InterpolatorOptions;
+		durationScale: number;
+	}>;
 };
 
 const keyframeMetadata = new Set([
@@ -132,23 +136,41 @@ function interpolationOptions(property: string, from: unknown, to: unknown): Int
 }
 
 function interpolatedKeyframes(keyframes: Keyframe[] | PropertyIndexedKeyframes): InterpolatedKeyframe[] | undefined {
-	if (!Array.isArray(keyframes) || keyframes.length !== 2) return undefined;
-	const [first, last] = keyframes;
-	if (!first || !last) return undefined;
+	if (!Array.isArray(keyframes) || keyframes.length < 2) return undefined;
+	const frames = keyframes as Keyframe[];
+	// Segment-specific easing and compositing cannot be represented by one
+	// o0o0o MotionSpec. Keep those keyframes on the browser compositor so the
+	// original WAAPI semantics remain intact.
+	if (frames.some(frame => frame.easing !== undefined && frame.easing !== null)
+		|| frames.some(frame => frame.composite !== undefined && frame.composite !== null && frame.composite !== 'replace')) {
+		return undefined;
+	}
 	const properties = new Set([
-		...Object.keys(first).filter(property => !keyframeMetadata.has(property)),
-		...Object.keys(last).filter(property => !keyframeMetadata.has(property)),
+		...frames.flatMap(frame => Object.keys(frame).filter(property => !keyframeMetadata.has(property))),
 	]);
 	if (properties.size === 0) return undefined;
 
+	const rawOffsets = frames.map(frame => frame.offset);
+	const hasOffsets = rawOffsets.some(offset => offset !== null && offset !== undefined);
+	if (hasOffsets && rawOffsets.some(offset => typeof offset !== 'number' || !Number.isFinite(offset))) return undefined;
+	const offsets = hasOffsets
+		? rawOffsets as number[]
+		: frames.map((_frame, index) => index / (frames.length - 1));
+	if (offsets.some((offset, index) => offset < 0 || offset > 1 || (index > 0 && offset < offsets[index - 1]))) return undefined;
+
 	const result: InterpolatedKeyframe[] = [];
 	for (const property of properties) {
-		const from = first[property as keyof Keyframe];
-		const to = last[property as keyof Keyframe];
-		if (from === undefined || from === null || to === undefined || to === null) return undefined;
-		const options = interpolationOptions(property, from, to);
-		if (!options) return undefined;
-		result.push({ property, cssProperty: cssPropertyName(property), from, to, options });
+		const values = frames.map(frame => (frame as Record<string, unknown>)[property]);
+		if (values.some(value => value === undefined || value === null)) return undefined;
+		const segments: InterpolatedKeyframe['segments'] = [];
+		for (let index = 0; index < values.length - 1; index++) {
+			const from = values[index];
+			const to = values[index + 1];
+			const options = interpolationOptions(property, from, to);
+			if (!options) return undefined;
+			segments.push({ from, to, options, durationScale: offsets[index + 1] - offsets[index] });
+		}
+		result.push({ cssProperty: cssPropertyName(property), first: values[0], last: values.at(-1), segments });
 	}
 	return result;
 }
@@ -228,12 +250,13 @@ function animationTiming(animation: VuneAnimation): AnimationTiming {
 	};
 }
 
-function motionSpecForAnimation(animation: VuneAnimation): MotionSpec {
+function motionSpecForAnimation(animation: VuneAnimation, durationScale = 1): MotionSpec {
 	const descriptor = animation.descriptor;
 	const speed = Number.isFinite(descriptor.speed) && descriptor.speed > 0 ? descriptor.speed : 1;
+	const scale = Number.isFinite(durationScale) && durationScale >= 0 ? durationScale : 1;
 	if (descriptor.kind === 'spring') {
 		return spring({
-			response: Math.max(0.001, (descriptor.response ?? descriptor.duration) / speed),
+			response: Math.max(0.001, (descriptor.response ?? descriptor.duration) * scale / speed),
 			dampingRatio: descriptor.dampingFraction ?? 0.825,
 		});
 	}
@@ -245,7 +268,7 @@ function motionSpecForAnimation(animation: VuneAnimation): MotionSpec {
 			: descriptor.kind === 'easeOut'
 				? curves.easeOut
 				: curves.easeInOut;
-	return timing({ duration: Math.max(0, descriptor.duration / speed), curve });
+	return timing({ duration: Math.max(0, descriptor.duration * scale / speed), curve });
 }
 
 function waapiEasing(animation: VuneAnimation): string {
@@ -437,7 +460,7 @@ export class VuneMotionEngine {
 
 		const restoreInitialValues = (): void => {
 			if (options.fill !== 'none' && options.fill !== 'backwards') return;
-			for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.from));
+			for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.first));
 		};
 
 		const finish = (status: MotionStatus): void => {
@@ -462,7 +485,7 @@ export class VuneMotionEngine {
 		if (reduced || durationMs === 0) {
 			const reverse = finalKeyframeIsReverse(repeatCount, autoreverses);
 			for (const entry of entries) {
-				style.setProperty(entry.cssProperty, String(reverse ? entry.from : entry.to));
+				style.setProperty(entry.cssProperty, String(reverse ? entry.first : entry.last));
 			}
 			finish('finished');
 			return { finished, cancel };
@@ -473,30 +496,35 @@ export class VuneMotionEngine {
 			played = true;
 			const reverse = autoreverses && cycle % 2 === 1;
 			const motionEngine = options.reducedMotion === 'ignore' ? unrestrictedMotionEngine : sharedMotionEngine;
-			const cycleControls: AnimationControls[] = [];
-			currentControls = cycleControls;
-			try {
-				for (const entry of entries) {
-					const from = reverse ? entry.to : entry.from;
-					const to = reverse ? entry.from : entry.to;
-					cycleControls.push(animateInterpolated(
+			currentControls = [];
+
+			const playEntry = async (entry: InterpolatedKeyframe): Promise<MotionStatus> => {
+				const segments = reverse ? [...entry.segments].reverse() : entry.segments;
+				for (const segment of segments) {
+					if (settled) return 'cancelled';
+					const from = reverse ? segment.to : segment.from;
+					const to = reverse ? segment.from : segment.to;
+					if (segment.durationScale === 0) {
+						style.setProperty(entry.cssProperty, String(to));
+						continue;
+					}
+					const control = animateInterpolated(
 						from,
 						to,
-						motionSpecForAnimation(animation),
+						motionSpecForAnimation(animation, segment.durationScale),
 						value => style.setProperty(entry.cssProperty, String(value)),
-						{ engine: motionEngine, ...entry.options },
-					));
+						{ engine: motionEngine, ...segment.options },
+					);
+					currentControls.push(control);
+					const result = await control.finished;
+					if (result.status !== 'finished') return 'cancelled';
 				}
-			} catch (error) {
-				reportMotionCallbackError('update', error);
-				for (const control of cycleControls) control.cancel();
-				finish('cancelled');
-				return;
-			}
+				return 'finished';
+			};
 
-			void Promise.all(cycleControls.map(control => control.finished)).then(results => {
+			void Promise.all(entries.map(entry => playEntry(entry))).then(results => {
 				if (settled) return;
-				if (results.some(result => result.status !== 'finished')) {
+				if (results.some(result => result !== 'finished')) {
 					finish('cancelled');
 					return;
 				}
@@ -514,7 +542,7 @@ export class VuneMotionEngine {
 
 		if (delayMs > 0) {
 			if (options.fill === 'both' || options.fill === 'backwards') {
-				for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.from));
+				for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.first));
 			}
 			timer = globalThis.setTimeout(startCycle, delayMs);
 		} else {
@@ -608,3 +636,24 @@ export class VuneMotionEngine {
 }
 
 export const vuneMotion = new VuneMotionEngine();
+
+/**
+ * Bridge a Vue JS transition hook to the shared Vune element animator.
+ *
+ * Vue removes an element only after the hook calls `done`; keeping that
+ * lifecycle edge here prevents individual components from reimplementing the
+ * promise/cancellation plumbing around `animateElement`.
+ */
+export function animateVuneTransition(
+	element: Element,
+	keyframes: Keyframe[],
+	animation: VuneAnimation,
+	done: () => void,
+): MotionHandle {
+	const handle = vuneMotion.animateElement(element, keyframes, {
+		animation,
+		fill: 'forwards',
+	});
+	void handle.finished.then(done, done);
+	return handle;
+}

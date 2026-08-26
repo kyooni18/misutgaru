@@ -1,19 +1,25 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Button, Element, Group, HStack, Text } from 'vune-ui';
-import MkA from '@/components/global/MkA.vue';
+/* @misutgaru-vune-native */
+import { Button, HStack, NavigationLink, Text } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import { themeManager } from '@/theme.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 import '@/vune/phase5-migration.scss';
 
-export default createVuneComponent(() =>
-	HStack(alignment: 'center', spacing: 0) {
-		Element('i', { className: 'ti ti-info-circle mk-vune-bar__icon' })
-		Text(i18n.ts.previewingTheme).className('mk-vune-bar__title')
-		HStack(alignment: 'center', spacing: 4) {
-			Button(i18n.ts.previewingThemeRestore) { themeManager.clearPreview() }.className(['_textButton','mk-vune-bar__button'])
-			Text('|')
-			VueComponent(MkA, { to: '/settings/theme', class: '_textButton mk-vune-bar__button' }, { default: () => Text(i18n.ts.settings) })
-		}.className('mk-vune-bar__body')
-	}.className(['mk-vune-bar','mk-vune-bar--accent'])
-);
+export struct ThemePreviewing: View {
+	init() {}
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 0) {
+			VuneIcon('ti ti-info-circle').className('mk-vune-bar__icon')
+			Text(i18n.ts.previewingTheme).className('mk-vune-bar__title')
+			HStack(alignment: 'center', spacing: 4) {
+				Button(i18n.ts.previewingThemeRestore) { themeManager.clearPreview() }.className(['_textButton', 'mk-vune-bar__button'])
+				Text('|')
+				NavigationLink('/settings/theme', i18n.ts.settings).className(['_textButton', 'mk-vune-bar__button'])
+			}.className('mk-vune-bar__body')
+		}.className(['mk-vune-bar', 'mk-vune-bar--accent'])
+	}
+}
+
+export default ThemePreviewing

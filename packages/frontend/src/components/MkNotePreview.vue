@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNotePreview :text="text" :files="files" :poll="poll" :useCw="useCw" :cw="cw" :user="user" :showContent="showContent" :classes="$style" :onShowContent="value => showContent = value"/>
+<VuneNotePreview :text="text" :files="files" :poll="poll" :useCw="useCw" :cw="cw" :user="user" :showContent="showContent" :classes="$style" :onShowContent="(value: boolean) => showContent = value"/>
 </template>
 
 <script lang="ts" setup>
@@ -37,7 +37,7 @@ const props = defineProps<{
 .avatar {
 	flex-shrink: 0 !important;
 	display: block !important;
-	margin: 0 10px 0 0 !important;
+	margin: 0 10px 0 10px !important;
 	width: 40px !important;
 	height: 40px !important;
 	border-radius: 8px !important;
@@ -67,7 +67,7 @@ const props = defineProps<{
 
 @container (min-width: 350px) {
 	.avatar {
-		margin: 0 10px 0 0 !important;
+		margin: 0 10px 0 10px !important;
 		width: 44px !important;
 		height: 44px !important;
 	}
@@ -75,7 +75,7 @@ const props = defineProps<{
 
 @container (min-width: 500px) {
 	.avatar {
-		margin: 0 12px 0 0 !important;
+		margin: 0 12px 0 12px !important;
 		width: 48px !important;
 		height: 48px !important;
 	}

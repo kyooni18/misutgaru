@@ -4,14 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneCpuMem :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :cpuGradientId="cpuGradientId" :cpuMaskId="cpuMaskId" :memGradientId="memGradientId" :memMaskId="memMaskId" :cpuPolylinePoints="cpuPolylinePoints" :memPolylinePoints="memPolylinePoints" :cpuPolygonPoints="cpuPolygonPoints" :memPolygonPoints="memPolygonPoints" :cpuHeadX="cpuHeadX" :cpuHeadY="cpuHeadY" :memHeadX="memHeadX" :memHeadY="memHeadY" :cpuP="cpuP" :memP="memP"/>
+<VuneCpuMemHost :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :cpuGradientId="cpuGradientId" :cpuMaskId="cpuMaskId" :memGradientId="memGradientId" :memMaskId="memMaskId" :cpuPolylinePoints="cpuPolylinePoints" :memPolylinePoints="memPolylinePoints" :cpuPolygonPoints="cpuPolygonPoints" :memPolygonPoints="memPolygonPoints" :cpuHeadX="cpuHeadX" :cpuHeadY="cpuHeadY" :memHeadX="memHeadX" :memHeadY="memHeadY" :cpuP="cpuP" :memP="memP"/>
 </template>
 
 <script lang="ts" setup>
 import VuneCpuMem from './vune/cpu-mem.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { genId } from '@/utility/id.js';
+
+const VuneCpuMemHost = createVuneWebHost(VuneCpuMem);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,

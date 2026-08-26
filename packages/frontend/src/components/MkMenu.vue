@@ -20,11 +20,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		v-hotkey="keymap"
 		tabindex="0"
 		class="_popup _shadow"
-		:class="$style.menu"
+		:class="[$style.menu, materialClass]"
 		:style="{
 			width: (width && !asDrawer) ? `${width}px` : '',
 			maxHeight: maxHeight ? `min(${maxHeight}px, calc(100dvh - 32px))` : 'calc(100dvh - 32px)',
 		}"
+		:data-vune-material="props.material ?? 'regular'"
 		@keydown.stop="() => {}"
 		@contextmenu.self.prevent="() => {}"
 		@mousemove.passive="onMouseMove"
@@ -224,6 +225,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:items="childMenu"
 		:anchorElement="childTarget!"
 		:rootElement="itemsEl!"
+		:material="props.material"
 		:debugDisablePredictionCone="props.debugDisablePredictionCone"
 		:debugShowPredictionCone="props.debugShowPredictionCone"
 		@actioned="childActioned"
@@ -242,6 +244,7 @@ import { i18n } from '@/i18n.js';
 import { isTouchUsing } from '@/utility/touch.js';
 import { isFocusable } from '@/utility/focus.js';
 import { getNodeOrNull } from '@/utility/get-dom-node-or-null.js';
+import type { MaterialName } from '@/vune/material.js';
 
 const childrenCache = new WeakMap<MenuParent, MenuItem[]>();
 </script>
@@ -255,6 +258,7 @@ const props = defineProps<{
 	align?: 'center' | string;
 	width?: number;
 	maxHeight?: number;
+	material?: MaterialName;
 	debugDisablePredictionCone?: boolean;
 	debugShowPredictionCone?: boolean;
 }>();
@@ -265,6 +269,11 @@ const emit = defineEmits<{
 }>();
 
 const big = isTouchUsing;
+
+const materialClass = computed(() => [
+	'vune-material',
+	`vune-material--${props.material ?? 'regular'}`,
+]);
 
 const isNestingMenu = inject<boolean>('isNestingMenu', false);
 
@@ -599,6 +608,7 @@ function guardMouseMove(ev: MouseEvent) {
 			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px) 0;
 			width: 100%;
 			border-radius: 24px;
+			corner-shape: squircle;
 			border-bottom-right-radius: 0;
 			border-bottom-left-radius: 0;
 
@@ -609,6 +619,7 @@ function guardMouseMove(ev: MouseEvent) {
 				&::before {
 					width: calc(100% - 24px);
 					border-radius: 12px;
+					corner-shape: squircle;
 				}
 
 				> .icon {
@@ -629,6 +640,7 @@ function guardMouseMove(ev: MouseEvent) {
 	box-sizing: border-box;
 	max-width: 100vw;
 	min-width: 200px;
+	corner-shape: squircle;
 	overflow: auto;
 	overscroll-behavior: contain;
 
@@ -665,6 +677,7 @@ function guardMouseMove(ev: MouseEvent) {
 		width: calc(100% - 16px);
 		height: 100%;
 		border-radius: 6px;
+		corner-shape: squircle;
 	}
 
 	&:focus-visible {
@@ -815,6 +828,7 @@ function guardMouseMove(ev: MouseEvent) {
 	height: 1em;
 	vertical-align: -0.125em;
 	border-radius: 50%;
+	corner-shape: round;
 	border: solid 2px var(--MI_THEME-divider);
 	background-color: var(--MI_THEME-panel);
 
@@ -831,6 +845,7 @@ function guardMouseMove(ev: MouseEvent) {
 			width: 50%;
 			height: 50%;
 			border-radius: 50%;
+			corner-shape: round;
 			background-color: var(--MI_THEME-accent);
 		}
 	}

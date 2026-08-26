@@ -1,15 +1,24 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Button } from 'vune-ui';
 
-type Props = { label?: string; colored?: boolean; onRun?: () => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { 'data-testid': 'mkw-button', className: 'mkw-button' },
-		VueComponent(MkButton, {
-			primary: vuneBoolean(props.colored, true),
-			full: true,
-			onClick: () => props.onRun?.(),
-		}, { default: () => Text(props.label ?? '') }),
-	)
-);
+export struct WidgetButton: View {
+	let label: string
+	let colored: boolean
+	let onRun: () => void
+
+	init(_ label: string = '', colored: boolean = true, @Action onRun: () => void) {
+		self.label = label
+		self.colored = colored
+		self.onRun = onRun
+	}
+
+	var body: some View {
+		Button(label) { onRun() }
+			.className(['_button', colored ? '_buttonPrimary' : null, 'mkw-button__native'])
+			.withProps({ 'data-testid': 'mkw-button' })
+			.style({ width: '100%' })
+	}
+}
+
+export default WidgetButton

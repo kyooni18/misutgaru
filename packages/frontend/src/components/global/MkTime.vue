@@ -4,16 +4,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneTime :absolute="absolute" :relative="relative" :invalid="invalid" :mode="props.mode" :colored="props.colored" :ago="ago" :old1Class="$style.old1" :old2Class="$style.old2"/>
+<VuneTimeHost :absolute="absolute" :relative="relative" :invalid="invalid" :mode="props.mode" :colored="props.colored" :ago="ago" :old1Class="$style.old1" :old2Class="$style.old2"/>
 </template>
 
 <script lang="ts" setup>
 import VuneTime from './vune/MkTime.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import isChromatic from 'chromatic/isChromatic';
 import { computed } from 'vue';
 import { i18n } from '@/i18n.js';
 import { dateTimeFormat } from '@@/js/intl-const.js';
 import { useLowresTime } from '@/composables/use-lowres-time.js';
+
+const VuneTimeHost = createVuneWebHost(VuneTime);
 
 const props = withDefaults(defineProps<{
 	time: Date | string | number | null;

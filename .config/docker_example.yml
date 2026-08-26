@@ -47,7 +47,11 @@ db:
   user: example-misskey-user
   pass: example-misskey-pass
 
+<<<<<<< HEAD
+  # Whether disable Caching queries
+=======
   # Whether to disable database result caches used by endpoints
+>>>>>>> origin/main
   #disableCache: true
 
   # Extra Connection options

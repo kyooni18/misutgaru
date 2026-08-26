@@ -1,25 +1,84 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Button, ForEach, HStack, Text } from 'vune-ui';
+import { i18n } from '@/i18n.js';
+import '@/components/vune/misskey-vune-paging-buttons.scss';
 
-type Props = { min: number; current: number; max: number; buttonRanges: number[]; prevDotVisible?: boolean; nextDotVisible?: boolean; rootClass: string; buttonsClass: string; headTailClass: string; onPage?: (page: number) => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: props.rootClass },
-		VueComponent(MkButton, { primary: true, disabled: props.min === props.current, onClick: () => props.onPage?.(Math.max(props.min, props.current - 1)) }, { default: () => Text('<') }),
-		Element('div', { className: props.buttonsClass },
-			vuneBoolean(props.prevDotVisible) ? Element('div', { className: props.headTailClass },
-				VueComponent(MkButton, { onClick: () => props.onPage?.(props.min) }, { default: () => Text(String(props.min)) }),
-				Element('span', { className: 'ti ti-dots' }),
-			) : null,
-			ForEach(props.buttonRanges, key: i => i) { i in
-				VueComponent(MkButton, { disabled: props.current === i, onClick: () => props.onPage?.(i) }, { default: () => Text(String(i)) })
-			},
-			vuneBoolean(props.nextDotVisible) ? Element('div', { className: props.headTailClass },
-				Element('span', { className: 'ti ti-dots' }),
-				VueComponent(MkButton, { onClick: () => props.onPage?.(props.max) }, { default: () => Text(String(props.max)) }),
-			) : null,
-		),
-		VueComponent(MkButton, { primary: true, disabled: props.max === props.current, onClick: () => props.onPage?.(Math.min(props.max, props.current + 1)) }, { default: () => Text('>') }),
-	)
-);
+type PageAction = (page: number) => void;
+function ignorePageAction(_page: number): void {}
+
+export struct MkPagingButtons: View {
+	let min: number
+	let current: number
+	let max: number
+	let buttonRanges: number[]
+	let prevDotVisible: boolean
+	let nextDotVisible: boolean
+	let rootClass: string
+	let buttonsClass: string
+	let headTailClass: string
+	let onPage: PageAction
+
+	init(
+		min: number,
+		current: number,
+		max: number,
+		buttonRanges: number[],
+		rootClass: string = '',
+		buttonsClass: string = '',
+		headTailClass: string = '',
+		prevDotVisible: boolean = false,
+		nextDotVisible: boolean = false,
+		@Action onPage: PageAction = ignorePageAction,
+	) {
+		self.min = min
+		self.current = current
+		self.max = max
+		self.buttonRanges = buttonRanges
+		self.prevDotVisible = prevDotVisible
+		self.nextDotVisible = nextDotVisible
+		self.rootClass = rootClass
+		self.buttonsClass = buttonsClass
+		self.headTailClass = headTailClass
+		self.onPage = onPage
+	}
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 24) {
+			Button('<') { onPage(Math.max(min, current - 1)) }
+				.className(['_button', '_buttonPrimary', 'mk-vune-paging-buttons__button'])
+				.disabled(min === current)
+				.withProps({ 'aria-label': i18n.ts.goBack })
+			HStack(alignment: 'center', spacing: 8) {
+				if (prevDotVisible) {
+					HStack(alignment: 'center', spacing: 8) {
+						Button(String(min)) { onPage(min) }.className(['_button', 'mk-vune-paging-buttons__button'])
+						Text('').className(['ti ti-dots', 'mk-vune-paging-buttons__dots']).withProps({ 'aria-hidden': true })
+					}
+						.className(['mk-vune-paging-buttons__head-tail', headTailClass])
+				}
+				ForEach(buttonRanges, key: page => page) { page in
+					Button(String(page)) { onPage(page) }
+						.className(['_button', 'mk-vune-paging-buttons__button'])
+						.disabled(current === page)
+						.withProps({ 'aria-current': current === page ? 'page' : undefined })
+				}
+				if (nextDotVisible) {
+					HStack(alignment: 'center', spacing: 8) {
+						Text('').className(['ti ti-dots', 'mk-vune-paging-buttons__dots']).withProps({ 'aria-hidden': true })
+						Button(String(max)) { onPage(max) }.className(['_button', 'mk-vune-paging-buttons__button'])
+					}
+						.className(['mk-vune-paging-buttons__head-tail', headTailClass])
+				}
+			}
+				.className(['mk-vune-paging-buttons__buttons', buttonsClass])
+			Button('>') { onPage(Math.min(max, current + 1)) }
+				.className(['_button', '_buttonPrimary', 'mk-vune-paging-buttons__button'])
+				.disabled(max === current)
+				.withProps({ 'aria-label': i18n.ts.next })
+		}
+			.className(['mk-vune-paging-buttons', rootClass])
+	}
+}
+
+export default MkPagingButtons

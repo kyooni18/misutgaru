@@ -1,5 +1,7 @@
 @charset "utf-8";
 
+@use './vune/material.scss';
+
 /*
  * SPDX-FileCopyrightText: syuilo and misskey-project
  *
@@ -31,6 +33,11 @@
 *::before,
 *::after {
 	box-sizing: border-box;
+	/*
+	 * Vune's rounded primitives use CSS corner-shape. Keep border-radius as
+	 * the fallback so unsupported browsers retain the existing geometry.
+	 */
+	corner-shape: squircle;
 }
 
 html {
@@ -249,6 +256,7 @@ rt {
 	width: 1em;
 	height: 1em;
 	border-radius: 100%;
+	corner-shape: round;
 	background: currentColor;
 }
 
@@ -428,7 +436,8 @@ rt {
 }
 
 ._popup {
-	background: var(--MI_THEME-popup);
+	@extend .vune-material;
+	--vune-material-surface: var(--MI_THEME-popup);
 	border-radius: var(--MI-radius);
 	contain: content;
 }

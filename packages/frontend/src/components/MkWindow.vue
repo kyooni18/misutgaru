@@ -5,11 +5,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
-	:enterActiveClass="prefer.s.animation ? $style.transition_window_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_window_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_window_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_window_leaveTo : ''"
 	appear
+	:css="false"
+	@enter="enter"
+	@leave="leave"
 	@afterLeave="emit('closed')"
 >
 	<div v-if="showing" ref="rootEl" :class="[$style.root, { [$style.maximized]: maximized }]">
@@ -59,6 +58,8 @@ import { elementContains } from '@/utility/element-contains.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
+import { Animation } from 'vune-ui';
+import { animateVuneTransition } from '@/vune/motion.js';
 
 type WindowButton = {
 	title: string;
@@ -69,6 +70,36 @@ type WindowButton = {
 
 const minHeight = 50;
 const minWidth = 250;
+
+function enter(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
+	animateVuneTransition(element, [
+		{ opacity: 0, transform: 'scale(0.9)' },
+		{ opacity: 1, transform: 'scale(1)' },
+	], Animation.easeOut(0.2), () => {
+		if (element instanceof HTMLElement) element.style.pointerEvents = '';
+		done();
+	});
+}
+
+function leave(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
+	animateVuneTransition(element, [
+		{ opacity: 1, transform: 'scale(1)' },
+		{ opacity: 0, transform: 'scale(0.9)' },
+	], Animation.easeIn(0.2), () => {
+		if (element instanceof HTMLElement) element.style.pointerEvents = '';
+		done();
+	});
+}
 
 function dragListen(fn: (ev: PointerEvent) => void) {
 	window.addEventListener('pointermove', fn);
@@ -524,17 +555,6 @@ defineExpose({
 </script>
 
 <style lang="scss" module>
-.transition_window_enterActive,
-.transition_window_leaveActive {
-	transition: opacity 0.2s, transform 0.2s !important;
-}
-.transition_window_enterFrom,
-.transition_window_leaveTo {
-	pointer-events: none;
-	opacity: 0;
-	transform: scale(0.9);
-}
-
 .root {
 	// universal.vueとかで直接--MI-stickyBottomが定義されていたりするのでリセット
 	--MI-stickyTop: 0;

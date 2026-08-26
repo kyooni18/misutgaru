@@ -23,11 +23,15 @@ const observer = new ResizeObserver((entries) => {
 		transform: string;
 	}[] = [];
 	for (const entry of entries) {
-		const content = ((entry.target as any)[contentSymbol] ? entry.target : entry.target.firstElementChild) as HTMLSpanElement;
-		const props: Required<Props> = (content as any)[contentSymbol];
-		const container = content.parentElement as HTMLSpanElement;
+		const target = entry.target as HTMLSpanElement;
+		const content = ((target as any)[contentSymbol] ? target : target.firstElementChild) as HTMLSpanElement | null;
+		if (content == null) continue;
+		const props: Required<Props> | undefined = (content as any)[contentSymbol];
+		const container = content.parentElement;
+		if (props == null || container == null) continue;
 		const contentWidth = content.getBoundingClientRect().width;
 		const containerWidth = container.getBoundingClientRect().width;
+		if (contentWidth <= 0 || !Number.isFinite(contentWidth) || !Number.isFinite(containerWidth)) continue;
 		results.push({ container, transform: `scaleX(${Math.max(props.minScale, Math.min(1, containerWidth / contentWidth))})` });
 	}
 	for (const result of results) {

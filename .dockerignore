@@ -26,6 +26,28 @@ fluent-emojis/
 
 .pnpm-store
 
+<<<<<<< HEAD
+# The local Vune and o0o0o links only need their published package surfaces
+# in Docker. Their standalone repositories and dependency trees stay out of
+# the application image context.
+packages/modules/Vune/*
+!packages/modules/Vune/package.json
+!packages/modules/Vune/bin/
+!packages/modules/Vune/bin/**
+!packages/modules/Vune/dist/
+!packages/modules/Vune/dist/**
+packages/modules/o0o0o/*
+!packages/modules/o0o0o/package.json
+!packages/modules/o0o0o/index.d.ts
+!packages/modules/o0o0o/src/
+!packages/modules/o0o0o/src/**
+!packages/modules/o0o0o/wasm/
+!packages/modules/o0o0o/wasm/**
+packages/modules/*/node_modules/
+packages/modules/*/.git/
+
+=======
+>>>>>>> origin/main
 .idea/
 packages/*/.vscode/
 packages/backend/test/compose.yml

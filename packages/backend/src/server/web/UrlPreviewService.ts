@@ -47,6 +47,11 @@ export class UrlPreviewService implements OnApplicationShutdown {
 			? `${this.config.mediaProxy}/preview.webp?${query({
 				url,
 				preview: '1',
+				// Preview thumbnails are optional decoration. Ask the media
+				// proxy for its placeholder when the remote image is gone or
+				// cannot be converted, so a stale/invalid preview URL does not
+				// become a 4xx/5xx browser resource error.
+				fallback: '1',
 			})}`
 			: null;
 	}

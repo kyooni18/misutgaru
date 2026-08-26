@@ -4,7 +4,173 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { MemoryKVCache, MemorySingleCache } from '@/misc/cache.js';
+import { MemoryKVCache, MemorySingleCache, RedisKVCache, RedisSingleCache } from '@/misc/cache.js';
+
+function redisStub() {
+	return {
+		get: vi.fn().mockResolvedValue(null),
+		set: vi.fn().mockResolvedValue('OK'),
+		del: vi.fn().mockResolvedValue(1),
+	};
+}
+
+describe('misc:RedisKVCache', () => {
+	test('coalesces concurrent Redis misses and backend fetches per key', async () => {
+		const redis = redisStub();
+		let resolveFetch!: (value: string) => void;
+		const fetcher = vi.fn(() => new Promise<string>(resolve => {
+			resolveFetch = resolve;
+		}));
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const first = cache.fetch('key');
+		const second = cache.fetch('key');
+		await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+
+		resolveFetch('fetched');
+		await expect(Promise.all([first, second])).resolves.toEqual(['fetched', 'fetched']);
+		expect(redis.get).toHaveBeenCalledOnce();
+		expect(redis.set).toHaveBeenCalledOnce();
+		cache.dispose();
+	});
+
+	test('keeps an explicit set authoritative over an in-flight cache fill', async () => {
+		const redis = redisStub();
+		let releaseStaleWrite!: () => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>(resolve => {
+				releaseStaleWrite = () => resolve('OK');
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('stale'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch('key');
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		const setting = cache.set('key', 'fresh');
+		expect(redis.set).toHaveBeenCalledOnce();
+
+		releaseStaleWrite();
+		await Promise.all([filling, setting]);
+		expect(redis.set).toHaveBeenLastCalledWith('kvcache:test:key', 'fresh', 'EX', 1);
+		await expect(cache.get('key')).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('does not make an explicit set wait for a fetcher that has not started writing', async () => {
+		const redis = redisStub();
+		let resolveFetch!: (value: string) => void;
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: () => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch('key');
+		await vi.waitFor(() => expect(resolveFetch).toBeTypeOf('function'));
+		await cache.set('key', 'fresh');
+		expect(redis.set).toHaveBeenCalledOnce();
+
+		resolveFetch('stale');
+		await expect(filling).resolves.toBe('stale');
+		await expect(cache.get('key')).resolves.toBe('fresh');
+		cache.dispose();
+	});
+});
+
+describe('misc:RedisSingleCache', () => {
+	test('coalesces concurrent Redis misses and backend fetches', async () => {
+		const redis = redisStub();
+		let resolveFetch!: (value: string) => void;
+		const fetcher = vi.fn(() => new Promise<string>(resolve => {
+			resolveFetch = resolve;
+		}));
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const first = cache.fetch();
+		const second = cache.fetch();
+		await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+
+		resolveFetch('fetched');
+		await expect(Promise.all([first, second])).resolves.toEqual(['fetched', 'fetched']);
+		expect(redis.get).toHaveBeenCalledOnce();
+		expect(redis.set).toHaveBeenCalledOnce();
+		cache.dispose();
+	});
+
+	test('keeps an explicit set authoritative over an in-flight cache fill', async () => {
+		const redis = redisStub();
+		let releaseStaleWrite!: () => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>(resolve => {
+				releaseStaleWrite = () => resolve('OK');
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('stale'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch();
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		const setting = cache.set('fresh');
+		expect(redis.set).toHaveBeenCalledOnce();
+
+		releaseStaleWrite();
+		await Promise.all([filling, setting]);
+		expect(redis.set).toHaveBeenLastCalledWith('singlecache:test', 'fresh', 'EX', 1);
+		await expect(cache.get()).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('does not make an explicit set wait for a fetcher that has not started writing', async () => {
+		const redis = redisStub();
+		let resolveFetch!: (value: string) => void;
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: () => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch();
+		await vi.waitFor(() => expect(resolveFetch).toBeTypeOf('function'));
+		await cache.set('fresh');
+		expect(redis.set).toHaveBeenCalledOnce();
+
+		resolveFetch('stale');
+		await expect(filling).resolves.toBe('stale');
+		await expect(cache.get()).resolves.toBe('fresh');
+		cache.dispose();
+	});
+});
 
 describe('misc:MemoryKVCache', () => {
 	beforeEach(() => {
@@ -38,14 +204,11 @@ describe('misc:MemoryKVCache', () => {
 		cache.dispose();
 	});
 
-	test('keeps current behavior when limit is omitted', () => {
+	test('does not evict live entries when limit is omitted', () => {
 		const cache = new MemoryKVCache<number>(1000 * 60);
-		cache.set('a', 1);
-		cache.set('b', 2);
-		cache.set('c', 3);
-		expect(cache.get('a')).toBe(1);
-		expect(cache.get('b')).toBe(2);
-		expect(cache.get('c')).toBe(3);
+		for (let i = 0; i < 4097; i++) cache.set(String(i), i);
+		expect(cache.get('0')).toBe(0);
+		expect(cache.get('4096')).toBe(4096);
 		cache.dispose();
 	});
 
@@ -182,6 +345,51 @@ describe('misc:MemoryKVCache', () => {
 			expect(result).toBe('fetched');
 			cache.dispose();
 		});
+
+		test('coalesces concurrent misses for the same key', async () => {
+			const cache = new MemoryKVCache<string>(1000);
+			let resolveFetch!: (value: string) => void;
+			const fetcher = vi.fn(() => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			const first = cache.fetch('key', fetcher);
+			const second = cache.fetch('key', fetcher);
+
+			expect(fetcher).toHaveBeenCalledOnce();
+			resolveFetch('fetched');
+			await expect(Promise.all([first, second])).resolves.toEqual(['fetched', 'fetched']);
+			expect(cache.get('key')).toBe('fetched');
+			cache.dispose();
+		});
+
+		test('does not repopulate an entry deleted during an in-flight fetch', async () => {
+			const cache = new MemoryKVCache<string>(1000);
+			let resolveFetch!: (value: string) => void;
+			const pending = cache.fetch('key', () => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			cache.delete('key');
+			resolveFetch('stale');
+			await expect(pending).resolves.toBe('stale');
+			expect(cache.get('key')).toBeUndefined();
+			cache.dispose();
+		});
+
+		test('keeps an explicit set authoritative over an in-flight fetch', async () => {
+			const cache = new MemoryKVCache<string>(1000);
+			let resolveFetch!: (value: string) => void;
+			const pending = cache.fetch('key', () => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			cache.set('key', 'fresh');
+			resolveFetch('stale');
+			await expect(pending).resolves.toBe('stale');
+			expect(cache.get('key')).toBe('fresh');
+			cache.dispose();
+		});
 	});
 
 	describe('fetchMaybe()', () => {
@@ -193,6 +401,22 @@ describe('misc:MemoryKVCache', () => {
 			// A second call should invoke the fetcher again because undefined was not cached
 			await cache.fetchMaybe('key', fetcher);
 			expect(fetcher).toHaveBeenCalledTimes(2);
+			cache.dispose();
+		});
+
+		test('coalesces concurrent misses for the same key', async () => {
+			const cache = new MemoryKVCache<string>(1000);
+			let resolveFetch!: (value: string | undefined) => void;
+			const fetcher = vi.fn(() => new Promise<string | undefined>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			const first = cache.fetchMaybe('key', fetcher);
+			const second = cache.fetchMaybe('key', fetcher);
+
+			expect(fetcher).toHaveBeenCalledOnce();
+			resolveFetch('fetched');
+			await expect(Promise.all([first, second])).resolves.toEqual(['fetched', 'fetched']);
 			cache.dispose();
 		});
 	});
@@ -252,6 +476,34 @@ describe('misc:MemorySingleCache', () => {
 			const result = await cache.fetch(fetcher, () => false);
 			expect(fetcher).toHaveBeenCalledOnce();
 			expect(result).toBe('fetched');
+		});
+
+		test('coalesces concurrent misses', async () => {
+			const cache = new MemorySingleCache<string>(1000);
+			let resolveFetch!: (value: string) => void;
+			const fetcher = vi.fn(() => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			const first = cache.fetch(fetcher);
+			const second = cache.fetch(fetcher);
+
+			expect(fetcher).toHaveBeenCalledOnce();
+			resolveFetch('fetched');
+			await expect(Promise.all([first, second])).resolves.toEqual(['fetched', 'fetched']);
+		});
+
+		test('keeps an explicit set authoritative over an in-flight fetch', async () => {
+			const cache = new MemorySingleCache<string>(1000);
+			let resolveFetch!: (value: string) => void;
+			const pending = cache.fetch(() => new Promise<string>(resolve => {
+				resolveFetch = resolve;
+			}));
+
+			cache.set('fresh');
+			resolveFetch('stale');
+			await expect(pending).resolves.toBe('stale');
+			expect(cache.get()).toBe('fresh');
 		});
 	});
 });

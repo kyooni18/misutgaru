@@ -1,26 +1,31 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { Button, Text, VStack } from 'vune-ui';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase6-migration.scss';
 
-type Props = {
-	fileName: string;
-	friendlyFileName: string;
-	onSelect?: (event: PointerEvent) => void;
-};
+type SelectAction = () => void;
+function ignoreSelect(): void {}
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', {},
-		VueComponent(MkButton, {
-			inline: true,
-			rounded: true,
-			primary: true,
-			onClick: (event: PointerEvent) => props.onSelect?.(event),
-		}, { default: () => Text(i18n.ts.selectFile) }),
-		Element('div', {
-			className: ['_nowrap', !props.fileName ? 'mk-vune-form-file__missing' : null],
-		}, props.friendlyFileName),
-	)
-);
+export struct MkFormFile: View {
+	let fileName: string
+	let friendlyFileName: string
+	let onSelect: SelectAction
+
+	init(_ fileName: string, friendlyFileName: string, @Action onSelect: SelectAction = ignoreSelect) {
+		self.fileName = fileName
+		self.friendlyFileName = friendlyFileName
+		self.onSelect = onSelect
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 8) {
+			Button(i18n.ts.selectFile) { onSelect() }
+				.className(['_button', '_buttonPrimary', 'mk-vune-form-file__select'])
+			Text(friendlyFileName)
+				.className(['_nowrap', !fileName ? 'mk-vune-form-file__missing' : null])
+		}
+	}
+}
+
+export default MkFormFile

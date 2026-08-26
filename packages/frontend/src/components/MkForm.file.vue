@@ -9,10 +9,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script setup lang="ts">
 import * as Misskey from 'misskey-js';
 import { computed, ref } from 'vue';
-import VuneFormFile from './vune/MkForm.file.vune';
+import MkFormFile from './vune/MkForm.file.vune';
 import { i18n } from '@/i18n.js';
 import { selectFile } from '@/utility/drive.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneFormFile = createVuneWebHost(MkFormFile);
 
 const props = defineProps<{
 	fileId?: string | null;
@@ -29,8 +32,8 @@ if (props.fileId) {
 	});
 }
 
-function selectButton(ev: PointerEvent) {
-	selectFile({ anchorElement: ev.currentTarget ?? ev.target, multiple: false }).then(async (file) => {
+function selectButton() {
+	selectFile({ anchorElement: window.document.activeElement, multiple: false }).then(async (file) => {
 		if (!file) return;
 		if (props.validate && !await props.validate(file)) return;
 		emit('update', file);

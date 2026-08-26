@@ -1,30 +1,44 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { Button, Group, HStack, Text, VStack } from 'vune-ui';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
-type Props = {
-	visible?: boolean;
-	zIndex: number;
-	rootClass: string;
-	commandClass: string;
-	onReset?: () => void;
-	onReload?: () => void;
-};
+export struct StreamIndicator: View {
+	let visible: boolean
+	let zIndex: number
+	let onReset: () => void
+	let onReload: () => void
 
-export default createVuneComponent<Props>((props) =>
-	props.visible
-		? Element('div', {
-			className: [props.rootClass, '_panel', '_shadow'],
-			style: { zIndex: props.zIndex },
-			onClick: () => props.onReset?.(),
-		},
-			Element('div', {}, Element('i', { className: 'ti ti-alert-triangle' }), ` ${i18n.ts.disconnectedFromServer}`),
-			Element('div', { className: [props.commandClass, '_buttons'] },
-				VueComponent(MkButton, { small: true, primary: true, onClick: () => props.onReload?.() }, { default: () => Text(i18n.ts.reload) }),
-				VueComponent(MkButton, { small: true }, { default: () => Text(i18n.ts.doNothing) }),
-			),
-		)
-		: Element('span', { style: { display: 'none' } })
-);
+	init(_ visible: boolean = false, zIndex: number, @Action onReset: () => void, @Action onReload: () => void) {
+		self.visible = visible
+		self.zIndex = zIndex
+		self.onReset = onReset
+		self.onReload = onReload
+	}
+
+	var body: some View {
+		Group() {
+			if (visible) {
+				VStack(alignment: 'leading', spacing: 0) {
+					HStack(alignment: 'center', spacing: 4) {
+						VuneIcon('ti ti-alert-triangle')
+						Text(i18n.ts.disconnectedFromServer)
+					}
+						.className('mk-vune-stream-indicator__message')
+					HStack(alignment: 'center', spacing: 8) {
+						Button(i18n.ts.reload) { onReload() }
+							.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--primary')
+						Button(i18n.ts.doNothing) { onReset() }
+							.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--secondary')
+					}
+						.className('mk-vune-stream-indicator__command _buttons')
+				}
+					.className('mk-vune-stream-indicator _panel _shadow')
+					.style({ zIndex })
+			}
+		}
+	}
+}
+
+export default StreamIndicator

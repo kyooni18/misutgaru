@@ -60,13 +60,15 @@ const url = computed(() => {
 
 	const proxied =
 		(rawUrl.value.startsWith('/emoji/') || (props.useOriginalSize && isLocal.value))
-			? rawUrl.value
-			: mediaProxy.getProxiedImageUrl(
-				rawUrl.value,
-				props.useOriginalSize ? undefined : 'emoji',
-				false,
-				true,
-			);
+				? (rawUrl.value.startsWith('/emoji/') && props.fallbackToImage
+					? `${rawUrl.value}?fallback=1`
+					: rawUrl.value)
+				: mediaProxy.getProxiedImageUrl(
+					rawUrl.value,
+					props.useOriginalSize ? undefined : 'emoji',
+					false,
+					true,
+				);
 	return proxied;
 });
 

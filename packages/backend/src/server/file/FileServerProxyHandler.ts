@@ -28,6 +28,7 @@ type ProxyQuery = {
 	preview?: string;
 	badge?: string;
 	origin?: string;
+	fallback?: string;
 	url?: string;
 };
 
@@ -59,14 +60,15 @@ export class FileServerProxyHandler {
 		// Create temp file
 		const file = await this.getStreamAndTypeFromUrl(url);
 		if (file.kind === 'not-found') {
-			reply.code(404);
 			reply.header('Cache-Control', 'max-age=86400');
+			if (!('fallback' in request.query)) reply.code(404);
 			return reply.sendFile('/dummy.png', this.assetsPath);
 		}
 
 		if (file.kind === 'unavailable') {
-			reply.code(204);
 			reply.header('Cache-Control', 'max-age=86400');
+			if ('fallback' in request.query) return reply.sendFile('/dummy.png', this.assetsPath);
+			reply.code(204);
 			return;
 		}
 

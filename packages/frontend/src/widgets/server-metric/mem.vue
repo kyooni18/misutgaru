@@ -4,13 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneMem :usage="usage" :total="total" :used="used" :free="free"/>
+<VuneMemHost :usage="usage" :total="total" :used="used" :free="free"/>
 </template>
 
 <script lang="ts" setup>
 import VuneMem from './vune/mem.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
+
+const VuneMemHost = createVuneWebHost(VuneMem);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,

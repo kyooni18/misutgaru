@@ -1,17 +1,28 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
 import type * as Misskey from 'misskey-js';
-import XPie from '@/widgets/server-metric/pie.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import Pie from './pie.vune';
 
-type Props = { usage: number; meta: Misskey.entities.ServerInfoResponse };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: 'vrvdvrys' },
-		VueComponent(XPie, { class: 'pie', value: props.usage }),
-		Element('div', {},
-			Element('p', {}, Element('i', { className: 'ti ti-cpu' }), 'CPU'),
-			Element('p', {}, `${props.meta.cpu.cores} Logical cores`),
-			Element('p', {}, props.meta.cpu.model),
-		),
-	)
-);
+export struct Cpu: View {
+	let usage: number
+	let meta: Misskey.entities.ServerInfoResponse
+
+	init(_ usage: number, _ meta: Misskey.entities.ServerInfoResponse) {
+		self.usage = usage
+		self.meta = meta
+	}
+
+	var body: some View {
+		nativeElement('div', { className: 'vrvdvrys' },
+			Pie(usage).className('pie'),
+			nativeElement('div', {},
+				nativeElement('p', {}, nativeElement('i', { className: 'ti ti-cpu' }), 'CPU'),
+				nativeElement('p', {}, `${meta.cpu.cores} Logical cores`),
+				nativeElement('p', {}, meta.cpu.model),
+			),
+		)
+	}
+}
+
+export default Cpu

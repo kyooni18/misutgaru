@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Group, HStack, Text, VStack } from 'vune-ui';
+import MkEllipsis from '@/components/vune/MkEllipsis.vune';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import VuneIcon from '@/vune/Icon.vune';
+
+type StyleClasses = Record<string, string>;
+
+export struct MkWaitingDialog: View {
+	let success: boolean
+	let text: string | null | undefined
+	let classes: StyleClasses
+
+	init(_ success: boolean, classes: StyleClasses, text: string | null | undefined = undefined) {
+		self.success = success
+		self.text = text
+		self.classes = classes
+	}
+
+	var body: some View {
+		VStack(alignment: 'center', spacing: 0) {
+			if (success) {
+				VuneIcon('ti ti-check')
+					.className([classes.icon, classes.success])
+			} else {
+				MkLoading(em: true)
+					.className([classes.icon, classes.waiting])
+			}
+			if (text && !success) {
+				HStack(alignment: 'center', spacing: 0) {
+					Text(text)
+					MkEllipsis()
+				}
+					.className(classes.text)
+			} else {
+				Group()
+			}
+		}
+			.className([
+				classes.root,
+				text == null || success ? classes.iconOnly : null,
+			])
+	}
+}
+
+export default MkWaitingDialog

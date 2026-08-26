@@ -55,8 +55,16 @@ const SlotOutlet = defineComponent({
 });
 
 /** Keep a Vue slot only at the migration boundary; the surrounding tree remains Vune. */
-export function VueSlot(slot: (() => VNode[]) | undefined): ViewGraphValue {
-	return VuneVueComponent(SlotOutlet, { render: slot });
+export function VueSlot(
+	slot: ((props?: Record<string, unknown>) => VNode[]) | undefined,
+	props?: Record<string, unknown>,
+): ViewGraphValue {
+	return VuneVueComponent(SlotOutlet, {
+		render: () => {
+			if (typeof slot !== 'function') return [];
+			return props === undefined ? slot() : slot(props);
+		},
+	});
 }
 
 function isAdaptedVueComponent(value: unknown): value is ViewConstructor {

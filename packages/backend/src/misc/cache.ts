@@ -6,9 +6,12 @@
 import * as Redis from 'ioredis';
 import { bindThis } from '@/decorators.js';
 
-const DEFAULT_MEMORY_KV_CACHE_LIMIT = 4096;
-
 type GcTarget = { gc(): void };
+type PendingRedisFetch<T> = {
+	promise: Promise<T>;
+	invalidated: boolean;
+	writeStarted: boolean;
+};
 const memoryKvCaches = new Set<GcTarget>();
 let memoryKvGcIntervalHandle: NodeJS.Timeout | null = null;
 
@@ -33,7 +36,7 @@ export class RedisKVCache<T> {
 	private readonly lifetime: number;
 	private readonly memoryCache: MemoryKVCache<T>;
 	private readonly fetcher: (key: string) => Promise<T>;
-	private readonly pendingFetches = new Map<string, { promise: Promise<T>; invalidated: boolean }>();
+	private readonly pendingFetches = new Map<string, PendingRedisFetch<T>>();
 	private readonly toRedisConverter: (value: T) => string;
 	private readonly fromRedisConverter: (value: string) => T | undefined;
 
@@ -57,6 +60,16 @@ export class RedisKVCache<T> {
 
 	@bindThis
 	public async set(key: string, value: T): Promise<void> {
+		const pending = this.pendingFetches.get(key);
+		if (pending) {
+			pending.invalidated = true;
+			this.pendingFetches.delete(key);
+			if (pending.writeStarted) await pending.promise.catch(() => undefined);
+		}
+		await this.write(key, value);
+	}
+
+	private async write(key: string, value: T): Promise<void> {
 		this.memoryCache.set(key, value);
 		if (this.lifetime === Infinity) {
 			await this.redisClient.set(
@@ -93,6 +106,7 @@ export class RedisKVCache<T> {
 		const pending = this.pendingFetches.get(key);
 		if (pending) pending.invalidated = true;
 		this.pendingFetches.delete(key);
+		if (pending?.writeStarted) await pending.promise.catch(() => undefined);
 		this.memoryCache.delete(key);
 		await this.redisClient.del(`kvcache:${this.name}:${key}`);
 	}
@@ -115,14 +129,21 @@ export class RedisKVCache<T> {
 		const pending = this.pendingFetches.get(key);
 		if (pending) return pending.promise;
 
-		const entry: { promise: Promise<T>; invalidated: boolean } = { promise: null as unknown as Promise<T>, invalidated: false };
+		const entry: PendingRedisFetch<T> = {
+			promise: null as unknown as Promise<T>,
+			invalidated: false,
+			writeStarted: false,
+		};
 		entry.promise = (async () => {
 			const cachedValue = await this.get(key);
 			if (entry.invalidated) this.memoryCache.delete(key);
 			if (cachedValue !== undefined) return cachedValue;
 
 			const value = await this.fetcher(key);
-			if (!entry.invalidated) await this.set(key, value);
+			if (!entry.invalidated) {
+				entry.writeStarted = true;
+				await this.write(key, value);
+			}
 			return value;
 		})().finally(() => {
 			if (this.pendingFetches.get(key) === entry) this.pendingFetches.delete(key);
@@ -157,7 +178,7 @@ export class RedisSingleCache<T> {
 	private readonly lifetime: number;
 	private readonly memoryCache: MemorySingleCache<T>;
 	private readonly fetcher: () => Promise<T>;
-	private pendingFetch: { promise: Promise<T>; invalidated: boolean } | null = null;
+	private pendingFetch: PendingRedisFetch<T> | null = null;
 	private readonly toRedisConverter: (value: T) => string;
 	private readonly fromRedisConverter: (value: string) => T | undefined;
 
@@ -181,6 +202,16 @@ export class RedisSingleCache<T> {
 
 	@bindThis
 	public async set(value: T): Promise<void> {
+		const pending = this.pendingFetch;
+		if (pending) {
+			pending.invalidated = true;
+			this.pendingFetch = null;
+			if (pending.writeStarted) await pending.promise.catch(() => undefined);
+		}
+		await this.write(value);
+	}
+
+	private async write(value: T): Promise<void> {
 		this.memoryCache.set(value);
 		if (this.lifetime === Infinity) {
 			await this.redisClient.set(
@@ -214,8 +245,10 @@ export class RedisSingleCache<T> {
 
 	@bindThis
 	public async delete(): Promise<void> {
-		if (this.pendingFetch) this.pendingFetch.invalidated = true;
+		const pending = this.pendingFetch;
+		if (pending) pending.invalidated = true;
 		this.pendingFetch = null;
+		if (pending?.writeStarted) await pending.promise.catch(() => undefined);
 		this.memoryCache.delete();
 		await this.redisClient.del(`singlecache:${this.name}`);
 	}
@@ -233,14 +266,21 @@ export class RedisSingleCache<T> {
 		if (memoryCached !== undefined) return memoryCached;
 		if (this.pendingFetch) return this.pendingFetch.promise;
 
-		const entry: { promise: Promise<T>; invalidated: boolean } = { promise: null as unknown as Promise<T>, invalidated: false };
+		const entry: PendingRedisFetch<T> = {
+			promise: null as unknown as Promise<T>,
+			invalidated: false,
+			writeStarted: false,
+		};
 		entry.promise = (async () => {
 			const cachedValue = await this.get();
 			if (entry.invalidated) this.memoryCache.delete();
 			if (cachedValue !== undefined) return cachedValue;
 
 			const value = await this.fetcher();
-			if (!entry.invalidated) await this.set(value);
+			if (!entry.invalidated) {
+				entry.writeStarted = true;
+				await this.write(value);
+			}
 			return value;
 		})().finally(() => {
 			if (this.pendingFetch === entry) this.pendingFetch = null;
@@ -257,6 +297,13 @@ export class RedisSingleCache<T> {
 
 		// TODO: イベント発行して他プロセスのメモリキャッシュも更新できるようにする
 	}
+
+	@bindThis
+	public dispose() {
+		if (this.pendingFetch) this.pendingFetch.invalidated = true;
+		this.pendingFetch = null;
+		this.memoryCache.dispose();
+	}
 }
 
 export class MemoryKVCache<T> {
@@ -266,7 +313,7 @@ export class MemoryKVCache<T> {
 
 	constructor(
 		private readonly lifetime: number,
-		private readonly limit: number = DEFAULT_MEMORY_KV_CACHE_LIMIT,
+		private readonly limit: number = Infinity,
 	) {
 		registerMemoryKvCache(this);
 	}
@@ -277,6 +324,13 @@ export class MemoryKVCache<T> {
 	 * @deprecated これを直接呼び出すべきではない。InternalEventなどで変更を全てのプロセス/マシンに通知するべき
 	 */
 	public set(key: string, value: T): void {
+		const pending = this.pendingFetches.get(key);
+		if (pending) pending.invalidated = true;
+		this.pendingFetches.delete(key);
+		const pendingMaybe = this.pendingMaybeFetches.get(key);
+		if (pendingMaybe) pendingMaybe.invalidated = true;
+		this.pendingMaybeFetches.delete(key);
+
 		if (this.limit <= 0) {
 			throw new Error('Limit must be greater than 0');
 		}
@@ -411,7 +465,7 @@ export class MemoryKVCache<T> {
 	}
 
 	public get entries() {
-		return this.cache.entries();
+		return [...this.cache.entries()].values();
 	}
 }
 
@@ -427,6 +481,10 @@ export class MemorySingleCache<T> {
 
 	@bindThis
 	public set(value: T): void {
+		if (this.pendingFetch) this.pendingFetch.invalidated = true;
+		if (this.pendingMaybeFetch) this.pendingMaybeFetch.invalidated = true;
+		this.pendingFetch = null;
+		this.pendingMaybeFetch = null;
 		this.cachedAt = Date.now();
 		this.value = value;
 	}
@@ -450,6 +508,11 @@ export class MemorySingleCache<T> {
 		this.pendingMaybeFetch = null;
 		this.value = undefined;
 		this.cachedAt = null;
+	}
+
+	@bindThis
+	public dispose() {
+		this.delete();
 	}
 
 	/**

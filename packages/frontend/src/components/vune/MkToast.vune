@@ -17,7 +17,7 @@ export struct MkToast: View {
 			Text(message).className('mk-vune-toast__message')
 		}
 			.className(['_acrylic', 'mk-vune-toast'])
-			.style({ zIndex })
+			.style({ zIndex, borderRadius: 'var(--MI-radius)' })
 	}
 }
 

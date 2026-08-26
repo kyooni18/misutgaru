@@ -1,51 +1,54 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import I18n from '@/components/global/I18n.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkLink from '@/components/MkLink.vue';
+/* @misutgaru-vune-native */
+import { Button, HStack, NavigationLink, Text, VStack } from 'vune-ui';
 import { host } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 import '@/vune/phase6-migration.scss';
 
-type Props = {
-	zIndex: number | string;
-	onClose?: () => void;
-	onNeverShow?: () => void;
-};
+export struct MkDonation: View {
+	let zIndex: number | string
+	let onClose: () => void
+	let onNeverShow: () => void
 
-function donationIcon() {
-	return Element('i', { className: 'ti ti-pig-money', style: { fontSize: '40px' } });
+	init(_ zIndex: number | string, @Action onClose: () => void, @Action onNeverShow: () => void) {
+		self.zIndex = zIndex
+		self.onClose = onClose
+		self.onNeverShow = onNeverShow
+	}
+
+	var body: some View {
+		HStack(alignment: 'stretch', spacing: 0) {
+			VuneIcon('ti ti-pig-money')
+				.className('mk-vune-bottom-prompt__icon')
+				.style({ fontSize: '40px' })
+			VStack(alignment: 'stretch', spacing: 0) {
+				Text(i18n.ts.didYouLikeMisskey)
+					.className('mk-vune-bottom-prompt__title')
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(i18n.tsx.pleaseDonate({ host: instance.name ?? host }))
+					NavigationLink('https://misskey-hub.net/docs/for-users/resources/donate/', i18n.ts.learnMore)
+						.className('_link mk-vune-bottom-prompt__link')
+						.withProps({ target: '_blank', rel: 'nofollow noopener' })
+				}
+					.className('mk-vune-bottom-prompt__text')
+				HStack(alignment: 'center', spacing: 8) {
+					Button(i18n.ts.remindMeLater) { onClose() }
+						.className('_button mk-vune-bottom-prompt__button')
+					Button(i18n.ts.neverShow) { onNeverShow() }
+						.className('_button mk-vune-bottom-prompt__button')
+				}
+					.className('_buttons mk-vune-bottom-prompt__actions')
+			}
+				.className('mk-vune-bottom-prompt__main')
+			Button('×') { onClose() }
+				.className('_button mk-vune-bottom-prompt__close')
+				.withProps({ 'aria-label': i18n.ts.close })
+		}
+			.className('_panel _shadow mk-vune-bottom-prompt')
+			.style({ zIndex })
+	}
 }
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', {
-		className: '_panel _shadow mk-vune-bottom-prompt',
-		style: { zIndex: String(props.zIndex) },
-	},
-		Element('div', { className: 'mk-vune-bottom-prompt__icon' }, donationIcon()),
-		Element('div', { className: 'mk-vune-bottom-prompt__main' },
-			Element('div', { className: 'mk-vune-bottom-prompt__title' }, i18n.ts.didYouLikeMisskey),
-			Element('div', { className: 'mk-vune-bottom-prompt__text' },
-				VueComponent(I18n, { src: i18n.ts.pleaseDonate, tag: 'span' }, {
-					host: () => Text(instance.name ?? host),
-				}),
-				Element('div', { style: { marginTop: '.2em' } },
-					VueComponent(MkLink, {
-						target: '_blank',
-						url: 'https://misskey-hub.net/docs/for-users/resources/donate/',
-					}, { default: () => Text(i18n.ts.learnMore) }),
-				),
-			),
-			Element('div', { className: '_buttons' },
-				VueComponent(MkButton, { onClick: () => props.onClose?.() }, { default: () => Text(i18n.ts.remindMeLater) }),
-				VueComponent(MkButton, { onClick: () => props.onNeverShow?.() }, { default: () => Text(i18n.ts.neverShow) }),
-			),
-		),
-		Element('button', {
-			className: '_button mk-vune-bottom-prompt__close',
-			onClick: () => props.onClose?.(),
-		}, Element('i', { className: 'ti ti-x' })),
-	)
-);
+export default MkDonation

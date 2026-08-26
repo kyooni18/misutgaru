@@ -611,6 +611,7 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	@bindThis
 	public dispose(): void {
 		this.emojisCache.dispose();
+		this.localEmojisCache.dispose();
 	}
 
 	@bindThis

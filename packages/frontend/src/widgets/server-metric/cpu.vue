@@ -4,13 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneCpu :usage="usage" :meta="meta"/>
+<VuneCpuHost :usage="usage" :meta="meta"/>
 </template>
 
 <script lang="ts" setup>
 import VuneCpu from './vune/cpu.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
+
+const VuneCpuHost = createVuneWebHost(VuneCpu);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+import { Animation, Element } from 'vune-ui';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
 type Props = { reaction: string; x: number; y: number; zIndex: number; up?: boolean; angle: string; rootClass: string; textClass: string; upClass: string };
@@ -7,6 +7,6 @@ export default createVuneComponent<Props>((props) =>
 	Element('div', { className: props.rootClass, style: { zIndex: props.zIndex, top: `${props.y - 64}px`, left: `${props.x - 64}px` } },
 		Element('span', { className: [props.textClass, vuneBoolean(props.up) ? props.upClass : null], style: vuneBoolean(props.up) ? { transform: `translateY(-50px) rotateZ(${props.angle})` } : undefined },
 			VueComponent(MkReactionIcon, { class: 'icon', reaction: props.reaction }),
-		),
+		).animation(Animation.easeInOut(1), value: vuneBoolean(props.up)),
 	)
 );

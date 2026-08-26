@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { nativeElement } from '@/vune/native.js';
 import bytes from '@/filters/bytes.js';
-import { createVuneComponent } from '@/vune/vue.js';
 
 type Props = {
 	viewBoxX: number;
@@ -29,17 +29,62 @@ function graph(
 	label: string,
 	recent: number,
 ) {
-	return Element('svg', {},
-		Element('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
-		Element('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
-		Element('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
-		Element('text', {}, `${label} `, Element('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
+	return nativeElement('svg', {},
+		nativeElement('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
+		nativeElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
+		nativeElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
+		nativeElement('text', {}, `${label} `, nativeElement('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
 	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
 }
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: 'oxxrhrto' },
-		graph(props.viewBoxX, props.viewBoxY, props.inPolygonPoints, props.inPolylinePoints, props.inHeadX, props.inHeadY, '#94a029', 'NET rx', props.inRecent),
-		graph(props.viewBoxX, props.viewBoxY, props.outPolygonPoints, props.outPolylinePoints, props.outHeadX, props.outHeadY, '#ff9156', 'NET tx', props.outRecent),
-	)
-);
+export struct Net: View {
+	let viewBoxX: number
+	let viewBoxY: number
+	let inPolygonPoints: string
+	let outPolygonPoints: string
+	let inPolylinePoints: string
+	let outPolylinePoints: string
+	let inRecent: number
+	let outRecent: number
+	let inHeadX: number | undefined
+	let inHeadY: number | undefined
+	let outHeadX: number | undefined
+	let outHeadY: number | undefined
+
+	init(
+		_ viewBoxX: number,
+		_ viewBoxY: number,
+		_ inPolygonPoints: string,
+		_ outPolygonPoints: string,
+		_ inPolylinePoints: string,
+		_ outPolylinePoints: string,
+		_ inRecent: number,
+		_ outRecent: number,
+		_ inHeadX: number | undefined = undefined,
+		_ inHeadY: number | undefined = undefined,
+		_ outHeadX: number | undefined = undefined,
+		_ outHeadY: number | undefined = undefined,
+	) {
+		self.viewBoxX = viewBoxX
+		self.viewBoxY = viewBoxY
+		self.inPolygonPoints = inPolygonPoints
+		self.outPolygonPoints = outPolygonPoints
+		self.inPolylinePoints = inPolylinePoints
+		self.outPolylinePoints = outPolylinePoints
+		self.inRecent = inRecent
+		self.outRecent = outRecent
+		self.inHeadX = inHeadX
+		self.inHeadY = inHeadY
+		self.outHeadX = outHeadX
+		self.outHeadY = outHeadY
+	}
+
+	var body: some View {
+		nativeElement('div', { className: 'oxxrhrto' },
+			graph(viewBoxX, viewBoxY, inPolygonPoints, inPolylinePoints, inHeadX, inHeadY, '#94a029', 'NET rx', inRecent),
+			graph(viewBoxX, viewBoxY, outPolygonPoints, outPolylinePoints, outHeadX, outHeadY, '#ff9156', 'NET tx', outRecent),
+		)
+	}
+}
+
+export default Net

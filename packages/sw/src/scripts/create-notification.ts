@@ -29,14 +29,19 @@ const iconUrl = (name: BadgeNames): string => `/static-assets/tabler-badges/${na
  */
 
 export async function createNotification<K extends keyof PushNotificationDataMap>(data: PushNotificationDataMap[K]): Promise<void> {
-	const n = await composeNotification(data);
+	try {
+		const n = await composeNotification(data);
 
-	if (n) {
-		return globalThis.registration.showNotification(...n);
-	} else {
+		if (n) return globalThis.registration.showNotification(...n);
 		console.error('Could not compose notification', data);
-		return createEmptyNotification();
+	} catch (error) {
+		// Push events are often handled while the app is suspended and the
+		// locale cache may be unavailable. Always show a user-visible fallback
+		// instead of letting the push event reject.
+		console.error('Could not render push notification', error);
 	}
+
+	return createEmptyNotification();
 }
 
 async function composeNotification(data: PushNotificationDataMap[keyof PushNotificationDataMap]): Promise<[string, NotificationOptions] | null> {
@@ -292,7 +297,13 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 }
 
 export async function createEmptyNotification(): Promise<void> {
-	const i18n = await (swLang.i18n ?? swLang.fetchLocale());
+	let i18n: { ts?: { markAllAsRead?: string; notificationSettings?: string } } = {};
+	try {
+		i18n = await (swLang.i18n ?? swLang.fetchLocale()) as typeof i18n;
+	} catch {
+		// Keep the fallback notification independent from the network.
+	}
+
 	await globalThis.registration.showNotification(
 		(new URL(origin)).host,
 		{
@@ -303,11 +314,11 @@ export async function createEmptyNotification(): Promise<void> {
 			actions: [
 				{
 					action: 'markAllAsRead',
-					title: i18n.ts.markAllAsRead,
+					title: i18n.ts?.markAllAsRead ?? 'Mark all as read',
 				},
 				{
 					action: 'settings',
-					title: i18n.ts.notificationSettings,
+					title: i18n.ts?.notificationSettings ?? 'Notification settings',
 				},
 			],
 			data: {},

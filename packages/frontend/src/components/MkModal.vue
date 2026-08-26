@@ -132,7 +132,7 @@ const transitionDuration = computed((() =>
 	transitionName.value === 'send'
 		? 400
 		: transitionName.value === 'modal-popup'
-			? 100
+			? 200
 			: transitionName.value === 'modal'
 				? 200
 				: transitionName.value === 'modal-drawer'
@@ -295,6 +295,7 @@ const onOpened = () => {
 
 		// モーダルコンテンツにマウスボタンが押され、コンテンツ外でマウスボタンが離されたときにモーダルバックグラウンドクリックと判定させないためにマウスイベントを監視しフラグ管理する
 		const el = content.value.children[0];
+		if (!(el instanceof HTMLElement)) return;
 		el.addEventListener('mousedown', ev => {
 			contentClicking = true;
 			window.addEventListener('mouseup', ev => {
@@ -408,12 +409,12 @@ defineExpose({
 .transition_modalPopup_enterActive,
 .transition_modalPopup_leaveActive {
 	> .bg {
-		transition: opacity 0.1s !important;
+		transition: opacity 0.2s !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1), transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
+		transition: opacity 0.2s cubic-bezier(0, 0, 0.2, 1), transform 0.2s cubic-bezier(0, 0, 0.2, 1) !important;
 	}
 }
 .transition_modalPopup_enterFrom,

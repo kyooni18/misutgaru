@@ -167,7 +167,11 @@ db:
   user: example-misskey-user
   pass: example-misskey-pass
 
+<<<<<<< HEAD
+  # Whether disable Caching queries
+=======
   # Whether to disable database result caches used by endpoints
+>>>>>>> origin/main
   #disableCache: true
 
   # Extra Connection options
@@ -348,10 +352,13 @@ id: 'aidx'
 # To configure them in reverse proxy instead, set this to false.
 #enableIpRateLimit: true
 
+<<<<<<< HEAD
+=======
 # Run the web server and queue processors in one process/application graph by default.
 # clusterLimit > 1 selects the existing multi-process path automatically unless this is set explicitly.
 #singleProcessMode: true
 
+>>>>>>> origin/main
 # Number of worker processes
 #clusterLimit: 1
 
@@ -362,9 +369,12 @@ id: 'aidx'
 #deliverJobConcurrency: 128
 #inboxJobConcurrency: 16
 #relationshipJobConcurrency: 16
+<<<<<<< HEAD
+=======
 #userWebhookJobConcurrency: 64
 #systemWebhookJobConcurrency: 16
 #objectStorageJobConcurrency: 16
+>>>>>>> origin/main
 # What's relationshipJob?:
 #  Follow, unfollow, block and unblock(ings) while following-imports, etc. or account migrations.
 
@@ -377,10 +387,13 @@ id: 'aidx'
 #deliverJobMaxAttempts: 12
 #inboxJobMaxAttempts: 8
 
+<<<<<<< HEAD
+=======
 # Outgoing HTTP connection pool limits
 #httpMaxSockets: 256
 #httpMaxFreeSockets: 256
 
+>>>>>>> origin/main
 # Local address used for outgoing requests
 #outgoingAddress: 127.0.0.1
 

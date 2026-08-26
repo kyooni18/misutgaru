@@ -8,9 +8,9 @@ export struct MaterialSurface: View {
 	let material: Material
 	let content: ViewGraphValue
 
-	init(_ material: Material = Material.regular, @ViewBuilder content: ViewGraphValue) {
+	init(_ material: Material = Material.regular, @ViewBuilder content: () => ViewGraphValue) {
 		self.material = material
-		self.content = content
+		self.content = content()
 	}
 
 	var body: some View {

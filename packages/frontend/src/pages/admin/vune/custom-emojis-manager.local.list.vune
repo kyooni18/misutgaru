@@ -5,7 +5,7 @@ import MkStickyContainer from '@/components/global/MkStickyContainer.vue';
 import MkPageHeader from '@/components/global/MkPageHeader.vue';
 import MkGrid from '@/components/grid/MkGrid.vue';
 import MkButton from '@/components/MkButton.vue';
-import MkPagingButtons from '@/components/MkPagingButtons.vue';
+import MkPagingButtons from '@/components/vune/MkPagingButtons.vune';
 import { i18n } from '@/i18n.js';
 import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
 
@@ -28,6 +28,36 @@ type Props = {
 	onUpdate?: () => void;
 	onReset?: () => void;
 };
+
+const minPage = 1;
+
+function clamp(value: number, lower: number, upper: number): number {
+	return Math.min(upper, Math.max(lower, value));
+}
+
+function buttonRangeStart(currentPage: number, allPages: number, buttonCount: number): number {
+	const visibleCount = Math.min(allPages, buttonCount);
+	const half = Math.floor(visibleCount / 2);
+	return clamp(currentPage - half, minPage, allPages - visibleCount + 1);
+}
+
+function buttonRange(currentPage: number, allPages: number, buttonCount: number): number[] {
+	const visibleCount = Math.min(allPages, buttonCount);
+	const start = buttonRangeStart(currentPage, allPages, buttonCount);
+	return Array.from({ length: visibleCount }, (_, index) => start + index);
+}
+
+function showPrevDots(currentPage: number, allPages: number, buttonCount: number): boolean {
+	const visibleCount = Math.min(allPages, buttonCount);
+	const half = Math.floor(visibleCount / 2);
+	return currentPage - 1 > half && allPages > visibleCount;
+}
+
+function showNextDots(currentPage: number, allPages: number, buttonCount: number): boolean {
+	const visibleCount = Math.min(allPages, buttonCount);
+	const half = Math.floor(visibleCount / 2);
+	return currentPage < allPages - half && allPages > visibleCount;
+}
 
 export default createVuneComponent<Props>((props) =>
 	VueComponent(MkStickyContainer, {}, {
@@ -55,12 +85,18 @@ export default createVuneComponent<Props>((props) =>
 				}),
 			),
 			Element('div', { className: props.classes.center },
-				VueComponent(MkPagingButtons, {
-					current: props.currentPage,
-					max: props.allPages,
-					buttonCount: 5,
-					onPageChanged: (page: number) => props.onPageChanged?.(page),
-				}),
+				MkPagingButtons(
+					minPage,
+					props.currentPage,
+					props.allPages,
+					buttonRange(props.currentPage, props.allPages, 5),
+					'',
+					'',
+					'',
+					showPrevDots(props.currentPage, props.allPages, 5),
+					showNextDots(props.currentPage, props.allPages, 5),
+					onPage: page => props.onPageChanged?.(page),
+				),
 			),
 			Element('div', { className: props.classes.right },
 				VueComponent(MkButton, { primary: true, disabled: vuneBoolean(props.updateButtonDisabled), onClick: () => props.onUpdate?.() }, {

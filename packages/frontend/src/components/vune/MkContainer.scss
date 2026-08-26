@@ -1,0 +1,137 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+.mk-vune-container__body {
+	overflow-y: clip;
+}
+
+.mk-vune-container {
+	position: relative;
+	overflow: clip;
+	contain: content;
+
+	&.mk-vune-container--naked {
+		background: transparent !important;
+		box-shadow: none !important;
+
+		> .mk-vune-container__body > .mk-vune-container__content {
+			background: transparent !important;
+		}
+	}
+
+	&.mk-vune-container--scrollable {
+		display: flex;
+		flex-direction: column;
+
+		> .mk-vune-container__body {
+			min-height: 0;
+			flex: 1 1 auto;
+		}
+
+		> .mk-vune-container__body > .mk-vune-container__content {
+			height: 100%;
+			overflow: auto;
+		}
+	}
+
+	&.mk-vune-container--thin {
+		> .mk-vune-container__header > .mk-vune-container__title {
+			padding: 8px 10px;
+			font-size: 0.9em;
+		}
+	}
+}
+
+.mk-vune-container__header {
+	position: sticky;
+	top: var(--MI-stickyTop, 0px);
+	left: 0;
+	color: var(--MI_THEME-panelHeaderFg);
+	background: var(--MI_THEME-panelHeaderBg);
+	z-index: 2;
+	line-height: 1.4em;
+}
+
+@container style(--MI_THEME-panelHeaderBg: var(--MI_THEME-panel)) {
+	.mk-vune-container__header {
+		box-shadow: 0 0.5px 0 0 light-dark(#0002, #fff2);
+	}
+}
+
+.mk-vune-container__title {
+	margin: 0;
+	padding: 12px 16px;
+
+	&:empty {
+		display: none;
+	}
+}
+
+.mk-vune-container__title-icon {
+	display: inline-block;
+	margin-right: 6px;
+}
+
+.mk-vune-container__header-sub {
+	position: absolute;
+	z-index: 2;
+	top: 0;
+	right: 0;
+	height: 100%;
+}
+
+.mk-vune-container__header-button {
+	width: 42px;
+	height: 100%;
+}
+
+.mk-vune-container__content {
+	--MI-stickyTop: 0px;
+
+	/*
+	 * Keep a concrete background on scroll containers so browsers can keep
+	 * scrolling off the main thread instead of repainting the transparent
+	 * surface behind every frame.
+	 */
+	background: var(--MI_THEME-panel);
+
+	&.mk-vune-container__content--omitted {
+		position: relative;
+		overflow: hidden;
+
+		> .mk-vune-container__fade {
+			display: block;
+			position: absolute;
+			z-index: 10;
+			bottom: 0;
+			left: 0;
+			width: 100%;
+			height: 64px;
+			background: linear-gradient(0deg, var(--MI_THEME-panel), color(from var(--MI_THEME-panel) srgb r g b / 0));
+
+			> .mk-vune-container__fade-label {
+				display: inline-block;
+				background: var(--MI_THEME-panel);
+				padding: 6px 10px;
+				font-size: 0.8em;
+				border-radius: 999px;
+				box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+			}
+
+			&:hover {
+				> .mk-vune-container__fade-label {
+					background: var(--MI_THEME-panelHighlight);
+				}
+			}
+		}
+	}
+}
+
+@container (max-width: 380px) {
+	.mk-vune-container__title {
+		padding: 8px 10px;
+		font-size: 0.9em;
+	}
+}

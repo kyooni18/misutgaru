@@ -368,7 +368,7 @@ function menuEdit() {
 
 	&:hover {
 		color: var(--MI_THEME-fgHighlighted);
-
+		padding: 5%;
 		.subButtonIcon {
 			opacity: 1;
 		}
@@ -616,6 +616,7 @@ function menuEdit() {
 	.itemText {
 		position: relative;
 		font-size: 0.9em;
+		padding-inline: 4px;
 	}
 
 	.subButtons {

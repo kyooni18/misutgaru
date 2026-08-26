@@ -1,0 +1,65 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Animation, Element, Group } from 'vune-ui';
+import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+import './MkFoldableSection.scss';
+
+type Props = {
+	showBody: boolean;
+	parentBg: string | null;
+	contentHeight: number;
+	headerHeight: number;
+	animated: boolean;
+	onToggle?: () => void;
+	class?: string;
+};
+
+function contentView(props: Props, content: ReturnType<typeof VueSlot>) {
+	let body = Element('div', {
+		className: 'mk-vune-foldable-section__body',
+		'data-vune-foldable-body': true,
+		'aria-hidden': !props.showBody,
+		style: {
+			height: props.showBody ? `${Math.max(0, props.contentHeight)}px` : '0px',
+			opacity: props.showBody ? 1 : 0,
+			overflowY: 'clip',
+		},
+	}, Element('div', {
+		'data-vune-foldable-content': true,
+		style: { minHeight: '0' },
+	}, content));
+
+	if (props.animated) {
+		body = body.animation(Animation.easeInOut(0.5), value: `${props.showBody}:${props.contentHeight}`);
+	}
+
+	return body;
+}
+
+export default createVuneComponent<Props>((props, slots) =>
+	Group() {
+		Element('div', {
+			className: ['mk-vune-foldable-section', props.class],
+			style: {
+				'--mk-vune-parent-bg': props.parentBg ?? 'var(--bg)',
+				minHeight: props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
+			},
+		},
+			Element('header', {
+			className: ['mk-vune-foldable-section__header', '_button'],
+			'data-vune-foldable-header': true,
+			onClick: () => props.onToggle?.(),
+		},
+			Element('div', { className: 'mk-vune-foldable-section__title' },
+				Element('div', {}, VueSlot(slots.header)),
+			),
+			Element('div', { className: 'mk-vune-foldable-section__divider' }),
+			Element('button', {
+				className: ['_button', 'mk-vune-foldable-section__button'],
+				type: 'button',
+				'aria-expanded': props.showBody,
+			}, Element('i', { className: props.showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down' })),
+		),
+		contentView(props, VueSlot(slots.default)),
+		)
+	}
+);

@@ -1,17 +1,36 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import { createVuneComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Animation } from 'vune-ui';
+import { nativeElement } from '@/vune/native.js';
+import './pie.scss';
 
-type Props = { value: number; classes: Record<string, string> };
-const r = 0.45;
+let r = 0.45;
 
-export default createVuneComponent<Props>((props) => {
-	const color = `hsl(${180 - (props.value * 180)}, 80%, 70%)`;
-	const circumference = Math.PI * (r * 2);
-	const offset = (1 - props.value) * circumference;
-	return Element('svg', { className: props.classes.root },
-		Element('circle', { className: props.classes.circle }).withProps({ r, cx: '50%', cy: '50%', fill: 'none', 'stroke-width': '0.1', stroke: 'rgba(0, 0, 0, 0.05)' }),
-		Element('circle', { className: props.classes.circle }).withProps({ r, cx: '50%', cy: '50%', 'stroke-dasharray': circumference, 'stroke-dashoffset': offset, fill: 'none', 'stroke-width': '0.1', stroke: color }),
-		Element('text', { className: props.classes.text }, `${(props.value * 100).toFixed(0)}%`).withProps({ x: '50%', y: '50%', dy: '0.05', 'text-anchor': 'middle' }),
+function pieView(value: number) {
+	let color = `hsl(${180 - (value * 180)}, 80%, 70%)`;
+	let circumference = Math.PI * (r * 2);
+	let offset = (1 - value) * circumference;
+	return nativeElement('svg', { className: 'mk-vune-pie' },
+		nativeElement('circle', { className: 'mk-vune-pie__circle' }).withProps({ r, cx: '50%', cy: '50%', fill: 'none', 'stroke-width': '0.1', stroke: 'rgba(0, 0, 0, 0.05)' }),
+		nativeElement('circle', {
+			className: 'mk-vune-pie__circle',
+			style: { strokeDasharray: circumference, strokeDashoffset: offset },
+		}).withProps({ r, cx: '50%', cy: '50%', fill: 'none', 'stroke-width': '0.1', stroke: color })
+			.animation(Animation.easeInOut(0.5), value: value),
+		nativeElement('text', { className: 'mk-vune-pie__text' }, `${(value * 100).toFixed(0)}%`).withProps({ x: '50%', y: '50%', dy: '0.05', 'text-anchor': 'middle' }),
 	).withProps({ viewBox: '0 0 1 1', preserveAspectRatio: 'none' });
-});
+}
+
+export struct Pie: View {
+	let value: number
+
+	init(_ value: number) {
+		self.value = value
+	}
+
+	var body: some View {
+		return pieView(value);
+	}
+}
+
+export default Pie

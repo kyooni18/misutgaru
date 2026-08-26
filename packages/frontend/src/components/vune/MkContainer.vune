@@ -1,0 +1,99 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+import { Animation, Element, Text } from 'vune-ui';
+import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+import { i18n } from '@/i18n.js';
+import './MkContainer.scss';
+
+type Props = {
+	showHeader: boolean;
+	thin: boolean;
+	naked: boolean;
+	foldable: boolean;
+	scrollable: boolean;
+	showBody: boolean;
+	omitted: boolean;
+	maxHeight: number | null;
+	contentHeight: number | null;
+	headerHeight: number;
+	animated: boolean;
+	class?: string;
+	style?: string | Record<string, unknown>;
+	testId?: string;
+	dataTransparent?: unknown;
+	onToggle?: () => void;
+	onShowMore?: () => void;
+};
+
+function contentHeight(props: Props): number | null {
+	if (!props.showBody) return 0;
+	if (props.contentHeight == null) return null;
+	const height = Math.max(0, props.contentHeight);
+	return props.omitted ? Math.min(height, props.maxHeight ?? Infinity) : height;
+}
+
+function contentView(props: Props, content: ReturnType<typeof VueSlot>) {
+	const height = contentHeight(props);
+	let body = Element('div', {
+		class: 'mk-vune-container__body',
+		'aria-hidden': !props.showBody,
+		'data-vune-container-body': true,
+		style: {
+			height: height == null ? undefined : `${height}px`,
+			opacity: props.showBody ? 1 : 0,
+			overflowY: 'clip',
+		},
+	}, Element('div', {
+		class: `mk-vune-container__content${props.omitted ? ' mk-vune-container__content--omitted' : ''}`,
+		'data-vune-container-content': true,
+		style: {
+			'--mk-vune-container-max-height': props.maxHeight == null ? undefined : `${props.maxHeight}px`,
+			maxHeight: props.omitted && props.maxHeight != null ? `${props.maxHeight}px` : undefined,
+			overflow: props.scrollable ? 'auto' : undefined,
+		},
+	}, content,
+	props.omitted ? Element('button', {
+		class: '_button mk-vune-container__fade',
+		onClick: () => props.onShowMore?.(),
+	}, Element('span', { class: 'mk-vune-container__fade-label' }, Text(i18n.ts.showMore))) : null));
+
+	if (props.animated) {
+		body = body.animation(Animation.easeInOut(0.5), value: `${props.showBody}:${height ?? 'auto'}:${props.omitted}`);
+	}
+	return body;
+}
+
+export default createVuneComponent<Props>((props, slots) => {
+	const rootClass = [
+		'_panel',
+		'mk-vune-container',
+		props.class,
+		props.naked ? 'mk-vune-container--naked' : null,
+		props.thin ? 'mk-vune-container--thin' : null,
+		props.scrollable ? 'mk-vune-container--scrollable' : null,
+	];
+	const root = Element('div', {
+		class: rootClass.filter(Boolean).join(' '),
+		style: props.style,
+		'data-testid': props.testId,
+		'data-transparent': props.dataTransparent ?? undefined,
+	}, props.showHeader ? Element('header', {
+		class: 'mk-vune-container__header',
+		'data-vune-container-header': true,
+	}, Element('div', { class: 'mk-vune-container__title' },
+		Element('span', { class: 'mk-vune-container__title-icon' }, VueSlot(slots.icon)),
+		VueSlot(slots.header),
+	), Element('div', { class: 'mk-vune-container__header-sub' },
+		slots.func ? VueSlot(slots.func, { buttonStyleClass: 'mk-vune-container__header-button' }) : null,
+		props.foldable ? Element('button', {
+			class: '_button mk-vune-container__header-button',
+			type: 'button',
+			'aria-expanded': props.showBody,
+			onClick: () => props.onToggle?.(),
+		}, Element('i', { class: props.showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down' })) : null,
+	)) : null, contentView(props, VueSlot(slots.default)));
+
+	return root.style({
+		minHeight: props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
+		flexBasis: props.showBody ? 'auto' : props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
+	});
+});

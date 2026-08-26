@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Box, Text } from 'vune-ui';
+import { Animation, Box, Text } from 'vune-ui';
 
 export struct MkPlusOneEffect: View {
 	let x: number
@@ -34,6 +34,7 @@ export struct MkPlusOneEffect: View {
 			Text(`+${value}`)
 				.className(['text', up ? 'up' : null])
 				.style(up ? { transform: `translateY(-50px) rotateZ(${angle})` } : {})
+				.animation(Animation.easeInOut(1), value: up)
 		}
 			.className(rootClass)
 			.style({ zIndex, top: `${y - 64}px`, left: `${x - 64}px` })

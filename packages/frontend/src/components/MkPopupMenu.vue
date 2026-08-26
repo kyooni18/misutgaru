@@ -99,6 +99,7 @@ function close() {
 <style lang="scss" module>
 .drawer {
 	border-radius: 24px;
+	corner-shape: squircle;
 	border-bottom-right-radius: 0;
 	border-bottom-left-radius: 0;
 }

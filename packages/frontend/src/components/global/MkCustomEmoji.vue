@@ -89,13 +89,15 @@ const url = computed(() => {
 
 	const proxied =
 		(rawUrl.value.startsWith('/emoji/') || (props.useOriginalSize && isLocal.value))
-			? rawUrl.value
-			: getProxiedImageUrl(
-				rawUrl.value,
-				props.useOriginalSize ? undefined : 'emoji',
-				false,
-				true,
-			);
+				? (rawUrl.value.startsWith('/emoji/') && props.fallbackToImage
+					? `${rawUrl.value}?fallback=1`
+					: rawUrl.value)
+				: getProxiedImageUrl(
+					rawUrl.value,
+					props.useOriginalSize ? undefined : 'emoji',
+					false,
+					true,
+				);
 	return prefer.s.disableShowingAnimatedImages
 		? getStaticImageUrl(proxied)
 		: proxied;

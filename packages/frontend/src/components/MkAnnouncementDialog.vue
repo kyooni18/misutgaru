@@ -39,6 +39,9 @@ import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
+import { prefer } from '@/preferences.js';
+import { Animation } from 'vune-ui';
+import { vuneMotion } from '@/vune/motion.js';
 
 const props = defineProps<{
 	announcement: Misskey.entities.Announcement;
@@ -70,7 +73,8 @@ async function ok() {
 }
 
 function onBgClick() {
-	rootEl.value?.animate([{
+	if (!prefer.s.animation || !rootEl.value) return;
+	vuneMotion.animateElement(rootEl.value, [{
 		offset: 0,
 		transform: 'scale(1)',
 	}, {
@@ -80,7 +84,8 @@ function onBgClick() {
 		offset: 1,
 		transform: 'scale(1)',
 	}], {
-		duration: 100,
+		animation: Animation.linear(0.1),
+		fill: 'none',
 	});
 }
 

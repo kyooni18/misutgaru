@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:align="align"
 		:width="width"
 		:asDrawer="false"
+		:material="material"
 		:debugDisablePredictionCone="debugDisablePredictionCone"
 		:debugShowPredictionCone="debugShowPredictionCone"
 		@close="onChildClosed"
@@ -21,12 +22,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { nextTick, onMounted, onUnmounted, provide, useTemplateRef, watch } from 'vue';
 import MkMenu from './MkMenu.vue';
 import type { MenuItem } from '@/types/menu.js';
+import type { MaterialName } from '@/vune/material.js';
 
 const props = defineProps<{
 	items: MenuItem[];
 	anchorElement: HTMLElement;
 	rootElement: HTMLElement;
 	width?: number;
+	material?: MaterialName;
 	debugDisablePredictionCone?: boolean;
 	debugShowPredictionCone?: boolean;
 }>();

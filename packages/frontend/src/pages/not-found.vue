@@ -8,11 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
-import VuneNotFound from './vune/not-found.vune';
+import NotFoundPage from './vune/not-found.vune';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { pleaseLogin } from '@/utility/please-login.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneNotFound = createVuneWebHost(NotFoundPage);
 
 const props = defineProps<{
 	showLoginPopup?: boolean;
@@ -21,10 +23,6 @@ const props = defineProps<{
 if (props.showLoginPopup) {
 	pleaseLogin({ path: '/' });
 }
-
-const headerActions = computed(() => []);
-
-const headerTabs = computed(() => []);
 
 definePage(() => ({
 	title: i18n.ts.notFound,

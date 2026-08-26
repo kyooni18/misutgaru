@@ -8,10 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneAccountMoved from './vune/MkAccountMoved.vune';
-import { misskeyApi } from '@/utility/misskey-api.js';
+import AccountMoved from './vune/MkAccountMoved.vune';
+import { fetchMovedUser } from './MkAccountMoved.data.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneAccountMoved = createVuneWebHost(AccountMoved);
 
 const user = ref<Misskey.entities.UserLite>();
 
@@ -19,7 +22,18 @@ const props = defineProps<{
 	movedTo: string; // user id
 }>();
 
-misskeyApi('users/show', { userId: props.movedTo }).then(u => user.value = u);
+let requestGeneration = 0;
+watch(() => props.movedTo, userId => {
+	const generation = ++requestGeneration;
+	user.value = undefined;
+	void fetchMovedUser(userId).then(result => {
+		if (generation === requestGeneration) user.value = result;
+	}).catch(() => {});
+}, { immediate: true });
+
+onBeforeUnmount(() => {
+	requestGeneration++;
+});
 </script>
 
 <style lang="scss" module>

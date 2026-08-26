@@ -50,6 +50,13 @@ import { apiWithDialog, promiseDialog, alert } from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { getAccounts } from '@/accounts.js';
+import {
+	detectPushSupport,
+	getPushSubscriptionKeys,
+	getOrCreatePushSubscription,
+	pushSubscriptionUsesVapidKey,
+	waitForPushServiceWorker,
+} from '@/utility/push-notifications.js';
 
 defineProps<{
 	primary?: boolean;
@@ -93,33 +100,36 @@ async function subscribe() {
 		}
 	}
 
-	// SEE: https://developer.mozilla.org/en-US/docs/Web/API/PushManager/subscribe#Parameters
-	await promiseDialog(registration.value.pushManager.subscribe({
-		userVisibleOnly: true,
-		applicationServerKey: urlBase64ToUint8Array(instance.swPublickey),
-	})
-		.then(async subscription => {
-			pushSubscription.value = subscription;
+	try {
+		// SEE: https://developer.mozilla.org/en-US/docs/Web/API/PushManager/subscribe#Parameters
+		// Reuse an existing subscription unless the instance rotated its VAPID key.
+		const subscription = await getOrCreatePushSubscription(registration.value, instance.swPublickey);
+		pushSubscription.value = subscription;
+		const keys = getPushSubscriptionKeys(subscription);
+		if (!keys) {
+			await subscription.unsubscribe().catch(() => undefined);
+			pushSubscription.value = null;
+			throw new Error('The push service did not provide encryption keys.');
+		}
 
-			// Register
-			pushRegistrationInServer.value = await misskeyApi('sw/register', {
-				endpoint: subscription.endpoint,
-				auth: encode(subscription.getKey('auth')),
-				publickey: encode(subscription.getKey('p256dh')),
-			});
-		}, async err => { // When subscribe failed
-			// 通知が許可されていなかったとき
-			if (err?.name === 'NotAllowedError') {
-				console.info('User denied the notification permission request.');
-				return;
-			}
+		// Register the browser endpoint only after PushManager has accepted it.
+		pushRegistrationInServer.value = await misskeyApi('sw/register', {
+			endpoint: subscription.endpoint,
+			auth: keys.auth,
+			publickey: keys.publickey,
+		});
+	} catch (err: any) {
+		if (err?.name === 'NotAllowedError') {
+			console.info('User denied the notification permission request.');
+			return;
+		}
 
-			// 違うapplicationServerKey (または gcm_sender_id)のサブスクリプションが
-			// 既に存在していることが原因でエラーになった可能性があるので、
-			// そのサブスクリプションを解除しておく
-			// （これは実行されなさそうだけど、おまじない的に古い実装から残してある）
-			await unsubscribe();
-		}), null, null);
+		alert({
+			type: 'error',
+			title: i18n.ts.somethingHappened,
+			text: i18n.ts.pushNotificationNotSupported,
+		});
+	}
 }
 
 async function unsubscribe() {
@@ -131,64 +141,57 @@ async function unsubscribe() {
 	pushRegistrationInServer.value = undefined;
 
 	if ($i && accounts.length >= 2) {
-		apiWithDialog('sw/unregister', {
+		await apiWithDialog('sw/unregister', {
 			endpoint,
 		}, $i.token);
+		// Keep the browser subscription for other accounts, but let this
+		// component expose the subscribe action for the current account again.
+		pushSubscription.value = null;
 	} else {
-		pushSubscription.value.unsubscribe();
-		apiWithDialog('sw/unregister', {
+		await pushSubscription.value.unsubscribe();
+		await apiWithDialog('sw/unregister', {
 			endpoint,
 		}, null);
 		pushSubscription.value = null;
 	}
 }
 
-function encode(buffer: ArrayBuffer | null) {
-	return btoa(String.fromCharCode(...(buffer != null ? new Uint8Array(buffer) : [])));
-}
+async function initializePushState() {
+	const support = detectPushSupport(instance);
+	if (!support.supported || !$i?.token || !instance.swPublickey) return;
 
-/**
- * Convert the URL safe base64 string to a Uint8Array
- * @param base64String base64 string
- */
-function urlBase64ToUint8Array(base64String: string): BufferSource {
-	const padding = '='.repeat((4 - base64String.length % 4) % 4);
-	const base64 = (base64String + padding)
-		.replace(/-/g, '+')
-		.replace(/_/g, '/');
-
-	const rawData = window.atob(base64);
-	const outputArray = new Uint8Array(rawData.length);
-
-	for (let i = 0; i < rawData.length; ++i) {
-		outputArray[i] = rawData.charCodeAt(i);
-	}
-	return outputArray;
-}
-
-if (navigator.serviceWorker == null) {
-	// TODO: よしなに？
-} else {
-	navigator.serviceWorker.ready.then(async swr => {
+	try {
+		const swr = await waitForPushServiceWorker();
 		registration.value = swr;
+		pushSubscription.value = await swr.pushManager.getSubscription();
 
-		pushSubscription.value = await registration.value.pushManager.getSubscription();
-
-		if (instance.swPublickey && ('PushManager' in window) && $i && $i.token) {
-			supported.value = true;
-
-			if (pushSubscription.value) {
-				const res = await misskeyApi('sw/show-registration', {
-					endpoint: pushSubscription.value.endpoint,
-				});
-
-				if (res) {
-					pushRegistrationInServer.value = res;
-				}
-			}
+		// A VAPID rotation invalidates subscriptions created with the old public
+		// key. Remove that local/server registration now so the subscribe action
+		// remains available instead of being hidden by show-registration.
+		if (pushSubscription.value && !pushSubscriptionUsesVapidKey(pushSubscription.value, instance.swPublickey)) {
+			const staleEndpoint = pushSubscription.value.endpoint;
+			pushRegistrationInServer.value = undefined;
+			await misskeyApi('sw/unregister', { endpoint: staleEndpoint }).catch(() => undefined);
+			await pushSubscription.value.unsubscribe().catch(() => undefined);
+			pushSubscription.value = null;
 		}
-	});
+
+		supported.value = true;
+
+		if (pushSubscription.value) {
+			const res = await misskeyApi('sw/show-registration', {
+				endpoint: pushSubscription.value.endpoint,
+			});
+			if (res) pushRegistrationInServer.value = res;
+		}
+	} catch {
+		// A worker can still be installing after the app first opens. The button
+		// remains disabled until the next mount rather than showing a false
+		// subscription state.
+	}
 }
+
+void initializePushState();
 
 defineExpose({
 	pushRegistrationInServer: pushRegistrationInServer,
