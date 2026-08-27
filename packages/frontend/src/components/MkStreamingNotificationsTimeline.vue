@@ -108,11 +108,14 @@ function releaseQueue() {
 }
 
 let scrollContainer: HTMLElement | null = null;
+let scrollCheckRaf: number | null = null;
 
 function onScrollContainerScroll() {
-	if (isTop()) {
-		paginator.releaseQueue();
-	}
+	if (paginator.queuedAheadItemsCount.value === 0 || scrollCheckRaf != null) return;
+	scrollCheckRaf = window.requestAnimationFrame(() => {
+		scrollCheckRaf = null;
+		if (paginator.queuedAheadItemsCount.value > 0 && isTop()) paginator.releaseQueue();
+	});
 }
 
 watch(rootEl, (el) => {
@@ -177,6 +180,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+	if (scrollCheckRaf != null) window.cancelAnimationFrame(scrollCheckRaf);
 	if (connection) connection.dispose();
 	if (scrollContainer != null) {
 		scrollContainer.removeEventListener('scroll', onScrollContainerScroll);

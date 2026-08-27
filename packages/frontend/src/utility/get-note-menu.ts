@@ -308,8 +308,9 @@ export function getNoteMenu(props: {
 		if (appearNote.cw != null) {
 			text = `${appearNote.cw}\n-----\n${text}`;
 		}
+		const hasImageAttachments = appearNote.files?.some(file => file.type.startsWith('image/')) ?? false;
 
-		if (prefer.s['experimental.enableWebTranslatorApi'] && isInBrowserTranslationAvailable && text.trim() !== '') {
+		if (prefer.s['experimental.enableWebTranslatorApi'] && isInBrowserTranslationAvailable && !hasImageAttachments && text.trim() !== '') {
 			props.translating.value = true;
 			try {
 				// @ts-expect-error 実験的なAPIなので型定義がない
@@ -344,12 +345,19 @@ export function getNoteMenu(props: {
 			}
 		} else if ($i?.policies.canUseTranslator && instance.translatorAvailable) {
 			props.translating.value = true;
-			const res = await misskeyApi('notes/translate', {
-				noteId: appearNote.id,
-				targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
-			});
-			props.translating.value = false;
-			props.translation.value = res;
+			try {
+				props.translation.value = await misskeyApi('notes/translate', {
+					noteId: appearNote.id,
+					targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
+				});
+			} catch (err) {
+				const message = typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string'
+					? err.message
+					: i18n.ts.error;
+				os.alert({ type: 'error', title: i18n.ts.error, text: message });
+			} finally {
+				props.translating.value = false;
+			}
 		}
 	}
 

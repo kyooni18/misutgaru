@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Circle, HStack, Text, VStack, ZStack } from 'vune-ui';
+import { HStack, RoundedRectangle, Text, VStack } from 'vune-ui';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import number from '@/filters/number.js';
@@ -37,15 +37,9 @@ export struct MkPostFormTextCounter: View {
 		VStack(alignment: 'leading', spacing: 4) {
 			Text(i18n.ts.textCount).className('mk-vune-text-counter__label')
 			HStack(alignment: 'center', spacing: 'var(--MI-marginHalf)') {
-				ZStack(alignment: 'center') {
-					Circle()
+				RoundedRectangle({ radius: 12})
 						.frame({ width: 24, height: 24 })
 						.style({ gridArea: '1 / 1', backgroundImage: counterGradient(textLength) })
-					Circle()
-						.frame({ width: 16, height: 16 })
-						.style({ gridArea: '1 / 1', background: 'var(--MI_THEME-popup)' })
-				}
-					.frame({ width: 24, height: 24 })
 				HStack(alignment: 'center', spacing: 4) {
 					Text(number(textLength)).className('mk-vune-text-counter__current')
 					Text('/')

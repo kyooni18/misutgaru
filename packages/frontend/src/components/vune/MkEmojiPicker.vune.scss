@@ -1,0 +1,301 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+
+.mk-vune-emoji-picker {
+	--emoji-item-size: 48px;
+	--emoji-columns: 7;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 80%, transparent);
+	border-radius: 22px;
+	corner-shape: round;
+	background: color-mix(in srgb, var(--MI_THEME-panel) 94%, transparent);
+	color: var(--MI_THEME-fg);
+	box-shadow: 0 18px 48px color-mix(in srgb, var(--MI_THEME-shadow) 24%, transparent);
+	font-size: 14px;
+
+	&--drawer {
+		width: 100% !important;
+		max-width: 600px;
+		border-radius: 24px 24px 0 0;
+		corner-shape: round;
+	}
+
+	&--window {
+		width: 100% !important;
+		height: 100% !important;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	&__top {
+		flex: 0 0 auto;
+		padding: 14px 14px 10px;
+		background: linear-gradient(180deg, color-mix(in srgb, var(--MI_THEME-accentedBg) 42%, transparent), transparent);
+	}
+
+	&__heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 10px;
+	}
+
+	&__title {
+		font-size: 15px;
+		font-weight: 700;
+		letter-spacing: -0.01em;
+	}
+
+	&__subtitle {
+		margin-top: 2px;
+		color: color-mix(in srgb, var(--MI_THEME-fg) 58%, transparent);
+		font-size: 11px;
+	}
+
+	&__settings,
+	&__close {
+		width: 32px;
+		height: 32px;
+		border-radius: 10px;
+		color: color-mix(in srgb, var(--MI_THEME-fg) 62%, transparent);
+		font-size: 16px;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--MI_THEME-accentedBg);
+			color: var(--MI_THEME-accent);
+		}
+	}
+
+	&__search {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 42px;
+		padding: 0 13px;
+		border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 85%, transparent);
+		border-radius: 13px;
+		corner-shape: round;
+		background: color-mix(in srgb, var(--MI_THEME-bg) 72%, transparent);
+		color: var(--MI_THEME-fg);
+		font: inherit;
+		outline: none;
+
+		&:focus {
+			border-color: var(--MI_THEME-accent);
+			box-shadow: 0 0 0 3px color-mix(in srgb, var(--MI_THEME-accent) 18%, transparent);
+		}
+	}
+
+	&__content {
+		flex: 1 1 auto;
+		min-height: 0;
+		padding: 0 12px 14px;
+		overflow: auto;
+		scrollbar-width: thin;
+		overscroll-behavior: contain;
+		background: radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--MI_THEME-accent) 8%, transparent), transparent 38%),
+			linear-gradient(180deg, color-mix(in srgb, var(--MI_THEME-bg) 42%, transparent), transparent 180px);
+	}
+
+	&__quick {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 8px;
+		padding: 12px 2px 8px;
+	}
+
+	&__quick-block {
+		padding: 10px;
+		border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 70%, transparent);
+		border-radius: 16px;
+		corner-shape: round;
+		background: color-mix(in srgb, var(--MI_THEME-bg) 48%, transparent);
+	}
+
+	&__section {
+		margin-top: 8px;
+		border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 70%, transparent);
+		border-radius: 15px;
+		corner-shape: round;
+		overflow: hidden;
+		background: color-mix(in srgb, var(--MI_THEME-bg) 35%, transparent);
+	}
+
+	&__group {
+		margin-top: 10px;
+		padding: 12px;
+		border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 68%, transparent);
+		border-radius: 18px;
+		corner-shape: round;
+		background: color-mix(in srgb, var(--MI_THEME-panel) 72%, transparent);
+		box-shadow: 0 8px 24px color-mix(in srgb, var(--MI_THEME-shadow) 10%, transparent);
+	}
+
+	&__group-heading {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 0 2px 4px;
+		color: var(--MI_THEME-fgHighlighted);
+	}
+
+	&__group-icon {
+		color: var(--MI_THEME-accent);
+		font-size: 17px;
+	}
+
+	&__group-title {
+		font-size: 13px;
+		font-weight: 750;
+		letter-spacing: -0.01em;
+	}
+
+	&__section-header {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		min-height: 38px;
+		padding: 0 11px;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--MI_THEME-accentedBg);
+			color: var(--MI_THEME-accent);
+		}
+	}
+
+	&__section-icon {
+		width: 18px;
+		margin-right: 7px;
+		color: color-mix(in srgb, var(--MI_THEME-fg) 56%, transparent);
+		text-align: center;
+	}
+
+	&__section-title {
+		flex: 1 1 auto;
+		font-size: 12px;
+		font-weight: 650;
+	}
+
+	&__section-count {
+		margin-right: 7px;
+		color: color-mix(in srgb, var(--MI_THEME-fg) 52%, transparent);
+		font-size: 11px;
+	}
+
+	&__grid {
+		display: grid;
+		grid-template-columns: repeat(var(--emoji-columns), minmax(0, 1fr));
+		gap: 4px;
+		padding: 7px;
+	}
+
+	&__emoji {
+		position: relative;
+		aspect-ratio: 1;
+		min-width: 0;
+		padding: 4px;
+		border: 0;
+		border-radius: 11px;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 25px;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--MI_THEME-accentedBg);
+			outline: none;
+			transform: translateY(-1px);
+		}
+
+		&:active {
+			background: var(--MI_THEME-accent);
+			transform: scale(0.94);
+		}
+
+		&[disabled] {
+			cursor: not-allowed;
+			opacity: 0.38;
+			filter: grayscale(0.85);
+		}
+
+		> .emoji {
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			pointer-events: none;
+		}
+	}
+
+	&__empty {
+		padding: 28px 14px;
+		color: color-mix(in srgb, var(--MI_THEME-fg) 56%, transparent);
+		font-size: 12px;
+		text-align: center;
+	}
+
+	&__footer {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 14px max(8px, env(safe-area-inset-bottom, 0px));
+		border-top: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 72%, transparent);
+		color: color-mix(in srgb, var(--MI_THEME-fg) 52%, transparent);
+		font-size: 11px;
+	}
+
+	&__hint {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	&__key {
+		padding: 2px 6px;
+		border: 1px solid color-mix(in srgb, var(--MI_THEME-divider) 80%, transparent);
+		border-radius: 5px;
+		background: color-mix(in srgb, var(--MI_THEME-bg) 60%, transparent);
+		font-size: 10px;
+	}
+}
+
+@media (max-width: 520px) {
+	.mk-vune-emoji-picker {
+		--emoji-columns: 6;
+		border-radius: 18px 18px 0 0;
+
+		&__top {
+			padding: 12px 12px 8px;
+		}
+
+		&__quick,
+		&__group {
+			margin-right: 0;
+			margin-left: 0;
+		}
+
+		&__section {
+			margin-top: 7px;
+		}
+
+		&__content {
+			padding-right: 10px;
+			padding-left: 10px;
+		}
+	}
+}

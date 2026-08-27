@@ -410,6 +410,13 @@ proxyBypassHosts:
   - hcaptcha.com
   - challenges.cloudflare.com
 
+# Optional OpenAI-backed note translation (the API key can also be supplied as OPENAI_API_KEY).
+#openaiTranslation:
+#  enabled: true
+#  apiKey: sk-...
+#  baseUrl: https://api.openai.com/v1
+#  model: gpt-4o-mini
+
 # Proxy for SMTP/SMTPS
 #proxySmtp: http://127.0.0.1:3128   # use HTTP/1.1 CONNECT
 #proxySmtp: socks4://127.0.0.1:1080 # use SOCKS4

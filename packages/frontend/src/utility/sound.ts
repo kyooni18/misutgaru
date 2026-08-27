@@ -230,20 +230,23 @@ export function createSourceNode(buffer: AudioBuffer, opts: {
  */
 export async function getSoundDuration(file: string): Promise<number> {
 	const audioEl = window.document.createElement('audio');
+	audioEl.preload = 'metadata';
 	audioEl.src = file;
+
 	return new Promise((resolve) => {
-		const si = window.setInterval(() => {
-			if (audioEl.readyState > 0) {
-				resolve(audioEl.duration * 1000);
-				window.clearInterval(si);
-				audioEl.remove();
-			}
-		}, 100);
-		audioEl.addEventListener('error', () => {
-			resolve(0);
-			window.clearInterval(si);
+		const finish = (duration: number) => {
+			audioEl.removeEventListener('loadedmetadata', onLoadedMetadata);
+			audioEl.removeEventListener('error', onError);
 			audioEl.remove();
-		}, { once: true });
+			resolve(duration);
+		};
+		const onLoadedMetadata = () => {
+			finish(Number.isFinite(audioEl.duration) ? audioEl.duration * 1000 : 0);
+		};
+		const onError = () => finish(0);
+
+		audioEl.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+		audioEl.addEventListener('error', onError, { once: true });
 	});
 }
 

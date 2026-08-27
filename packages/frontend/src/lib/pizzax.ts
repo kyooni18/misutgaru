@@ -270,22 +270,41 @@ export class Pizzax<T extends StateDef> {
 
 	// localStorage => indexedDBのマイグレーション
 	private async migrate() {
-		const deviceState = localStorage.getItem(this.deviceStateKeyName);
-		if (deviceState) {
-			await set(this.deviceStateKeyName, JSON.parse(deviceState));
-			localStorage.removeItem(this.deviceStateKeyName);
-		}
+		const migrateKey = async (key: string) => {
+			let raw: string | null;
+			try {
+				raw = localStorage.getItem(key);
+			} catch (error) {
+				console.warn(`[Pizzax] Unable to read legacy localStorage key: ${key}`, error);
+				return;
+			}
+			if (!raw) return;
 
-		const deviceAccountState = $i && localStorage.getItem(this.deviceAccountStateKeyName);
-		if ($i && deviceAccountState) {
-			await set(this.deviceAccountStateKeyName, JSON.parse(deviceAccountState));
-			localStorage.removeItem(this.deviceAccountStateKeyName);
-		}
+			let value: unknown;
+			try {
+				value = JSON.parse(raw) as unknown;
+			} catch (error) {
+				console.warn(`[Pizzax] Removing invalid legacy localStorage key: ${key}`, error);
+				try {
+					localStorage.removeItem(key);
+				} catch {
+					// Storage may be unavailable in restricted browsing contexts.
+				}
+				return;
+			}
 
-		const registryCache = $i && localStorage.getItem(this.registryCacheKeyName);
-		if ($i && registryCache) {
-			await set(this.registryCacheKeyName, JSON.parse(registryCache));
-			localStorage.removeItem(this.registryCacheKeyName);
+			await set(key, value);
+			try {
+				localStorage.removeItem(key);
+			} catch (error) {
+				console.warn(`[Pizzax] Migrated but could not remove legacy localStorage key: ${key}`, error);
+			}
+		};
+
+		await migrateKey(this.deviceStateKeyName);
+		if ($i) {
+			await migrateKey(this.deviceAccountStateKeyName);
+			await migrateKey(this.registryCacheKeyName);
 		}
 	}
 }

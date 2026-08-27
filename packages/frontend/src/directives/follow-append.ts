@@ -9,6 +9,7 @@ import { getScrollContainer, getScrollPosition } from '@@/js/scroll.js';
 const states = new WeakMap<HTMLElement, {
 	observer: ResizeObserver;
 	abortController: AbortController;
+	frame: number | null;
 }>();
 
 export const followAppendDirective = {
@@ -20,33 +21,39 @@ export const followAppendDirective = {
 		let isBottom = true;
 
 		const container = getScrollContainer(src)!;
-		container.addEventListener('scroll', () => {
-			const pos = getScrollPosition(container);
-			const viewHeight = container.clientHeight;
-			const height = container.scrollHeight;
-			isBottom = (pos + viewHeight > height - 32);
-		}, { passive: true, signal: abortController.signal });
-		container.scrollTop = container.scrollHeight;
-
 		const ro = new ResizeObserver(() => {
 			if (isBottom) {
 				const height = container.scrollHeight;
 				container.scrollTop = height;
 			}
 		});
-
-		ro.observe(src);
-
-		states.set(src, {
+		const state = {
 			observer: ro,
 			abortController,
-		});
+			frame: null as number | null,
+		};
+
+		container.addEventListener('scroll', () => {
+			if (state.frame != null) return;
+			state.frame = window.requestAnimationFrame(() => {
+				state.frame = null;
+				const pos = getScrollPosition(container);
+				const viewHeight = container.clientHeight;
+				const height = container.scrollHeight;
+				isBottom = (pos + viewHeight > height - 32);
+			});
+		}, { passive: true, signal: abortController.signal });
+		container.scrollTop = container.scrollHeight;
+
+		ro.observe(src);
+		states.set(src, state);
 	},
 
 	beforeUnmount(src) {
 		const state = states.get(src);
 		if (!state) return;
 
+		if (state.frame != null) window.cancelAnimationFrame(state.frame);
 		state.observer.disconnect();
 		state.abortController.abort();
 		states.delete(src);

@@ -781,7 +781,7 @@ onBeforeUnmount(() => {
 .transition_files_move,
 .transition_files_enterActive,
 .transition_files_leaveActive {
-	transition: all 0.2s ease;
+	transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .transition_files_enterFrom,
 .transition_files_leaveTo {

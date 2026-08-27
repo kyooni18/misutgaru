@@ -393,6 +393,14 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	}
 
 	/**
+	 * 絵文字を登録・更新した直後に、存在しない絵文字の負のキャッシュを置き換えます。
+	 */
+	@bindThis
+	public cacheEmoji(emoji: MiEmoji): void {
+		this.emojisCache.set(`${emoji.name} ${emoji.host}`, emoji);
+	}
+
+	/**
 	 * 複数の添付用(リモート)カスタム絵文字URLを解決する (キャシュ付き, 存在しないものは結果から除外される)
 	 */
 	@bindThis

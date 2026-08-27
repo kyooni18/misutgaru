@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
+<MkPostFormSurface>
 <div
 	:class="[$style.root]"
 	@dragover.stop="onDragover"
@@ -111,12 +112,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"></option>
 	</datalist>
 </div>
+</MkPostFormSurface>
 </template>
 
 <script lang="ts" setup>
 import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, useTemplateRef, onUnmounted, onBeforeUnmount } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
+import MkPostFormSurface from './vune/MkPostFormSurface.vune';
 import insertTextAtCursor from 'insert-text-at-cursor';
 import { toASCII } from 'punycode.js';
 import { host, url } from '@@/js/config.js';
@@ -215,7 +218,19 @@ const scheduledAt = ref<number | null>(null);
 const draghover = ref(false);
 const quoteId = ref<string | null>(null);
 const hasNotSpecifiedMentions = ref(false);
-const recentHashtags = ref(JSON.parse(miLocalStorage.getItem('hashtags') ?? '[]'));
+function readRecentHashtags(): string[] {
+	try {
+		const raw = miLocalStorage.getItem('hashtags');
+		if (!raw) return [];
+		const parsed = JSON.parse(raw) as unknown;
+		return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
+	} catch (error) {
+		console.warn('[MkPostForm] Ignoring invalid hashtag history', error);
+		return [];
+	}
+}
+
+const recentHashtags = ref(readRecentHashtags());
 const imeText = ref('');
 const showingOptions = ref(false);
 const textAreaReadOnly = ref(false);
@@ -336,19 +351,18 @@ const canSaveAsServerDraft = computed((): boolean => {
 const withHashtags = store.model('postFormWithHashtags');
 const hashtags = store.model('postFormHashtags');
 
-watch(text, () => {
-	checkMissingMention();
-}, { immediate: true });
+let missingMentionCheckTimer: number | null = null;
 
-watch(visibility, () => {
-	checkMissingMention();
-}, { immediate: true });
+function scheduleMissingMentionCheck() {
+	if (missingMentionCheckTimer != null) window.clearTimeout(missingMentionCheckTimer);
+	missingMentionCheckTimer = window.setTimeout(() => {
+		missingMentionCheckTimer = null;
+		checkMissingMention();
+	}, 120);
+}
 
-watch(visibleUsers, () => {
-	checkMissingMention();
-}, {
-	deep: true,
-});
+watch([text, visibility], scheduleMissingMentionCheck, { immediate: true });
+watch(visibleUsers, scheduleMissingMentionCheck, { deep: true });
 
 if (props.mention) {
 	text.value = props.mention.host ? `@${props.mention.username}@${toASCII(props.mention.host)}` : `@${props.mention.username}`;
@@ -428,16 +442,17 @@ if (prefer.s.keepCw && replyTargetNote.value && replyTargetNote.value.cw) {
 }
 
 function watchForDraft() {
-	watch(text, () => saveDraft());
-	watch(useCw, () => saveDraft());
-	watch(cw, () => saveDraft());
-	watch(poll, () => saveDraft());
-	watch(files, () => saveDraft(), { deep: true });
-	watch(visibility, () => saveDraft());
-	watch(localOnly, () => saveDraft());
-	watch(quoteId, () => saveDraft());
-	watch(reactionAcceptance, () => saveDraft());
-	watch(scheduledAt, () => saveDraft());
+	watch([
+		text,
+		useCw,
+		cw,
+		visibility,
+		localOnly,
+		quoteId,
+		reactionAcceptance,
+		scheduledAt,
+	], scheduleDraftSave);
+	watch([poll, files, visibleUsers], scheduleDraftSave, { deep: true });
 }
 
 function checkMissingMention() {
@@ -880,10 +895,43 @@ type StoredDrafts = {
 	};
 };
 
+let draftSaveTimer: number | null = null;
+
+function readStoredDrafts(): StoredDrafts {
+	try {
+		const raw = miLocalStorage.getItem('drafts');
+		if (!raw) return {};
+		const parsed = JSON.parse(raw) as unknown;
+		return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
+			? parsed as StoredDrafts
+			: {};
+	} catch (error) {
+		console.warn('[MkPostForm] Ignoring invalid local draft storage', error);
+		return {};
+	}
+}
+
+function writeStoredDrafts(draftsData: StoredDrafts) {
+	try {
+		miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	} catch (error) {
+		console.warn('[MkPostForm] Failed to save local draft', error);
+	}
+}
+
+function scheduleDraftSave() {
+	if (props.instant || props.mock) return;
+	if (draftSaveTimer != null) window.clearTimeout(draftSaveTimer);
+	draftSaveTimer = window.setTimeout(() => {
+		draftSaveTimer = null;
+		saveDraft();
+	}, 400);
+}
+
 function saveDraft() {
 	if (props.instant || props.mock) return;
 
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
+	const draftsData = readStoredDrafts();
 
 	draftsData[draftKey.value] = {
 		updatedAt: new Date().toISOString(),
@@ -902,15 +950,19 @@ function saveDraft() {
 		},
 	};
 
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	writeStoredDrafts(draftsData);
 }
 
 function deleteDraft() {
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
+	if (draftSaveTimer != null) {
+		window.clearTimeout(draftSaveTimer);
+		draftSaveTimer = null;
+	}
+	const draftsData = readStoredDrafts();
 
 	delete draftsData[draftKey.value];
 
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	writeStoredDrafts(draftsData);
 }
 
 async function saveServerDraft(options: {
@@ -1091,7 +1143,7 @@ async function post(ev?: PointerEvent) {
 			emit('posted');
 			if (postData.text && postData.text !== '') {
 				const hashtags_ = mfm.parse(postData.text).map(x => x.type === 'hashtag' && x.props.hashtag).filter(x => x) as string[];
-				const history = JSON.parse(miLocalStorage.getItem('hashtags') ?? '[]') as string[];
+				const history = readRecentHashtags();
 				miLocalStorage.setItem('hashtags', JSON.stringify(unique(hashtags_.concat(history))));
 			}
 			posting.value = false;
@@ -1420,7 +1472,7 @@ onMounted(() => {
 	nextTick(() => {
 		// 書きかけの投稿を復元
 		if (!props.instant && !props.mention && !props.specified && !props.mock) {
-			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
+			const draft = readStoredDrafts()[draftKey.value];
 			if (draft != null) {
 				text.value = draft.data.text;
 				useCw.value = draft.data.useCw;
@@ -1473,6 +1525,12 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+	if (missingMentionCheckTimer != null) window.clearTimeout(missingMentionCheckTimer);
+	if (draftSaveTimer != null) {
+		window.clearTimeout(draftSaveTimer);
+		draftSaveTimer = null;
+		saveDraft();
+	}
 	uploader.abortAll();
 	if (textAutocomplete) {
 		textAutocomplete.detach();

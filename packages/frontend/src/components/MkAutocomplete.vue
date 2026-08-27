@@ -6,8 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div ref="rootEl" :class="$style.root" class="_popup _shadow" :style="{ zIndex }" @contextmenu.prevent="() => {}">
 	<ol v-if="type === 'user'" ref="suggests" :class="$style.list">
-		<li v-for="user in users" tabindex="-1" :class="$style.item" @click="complete(type, user)" @keydown="onKeydown">
-			<img :class="$style.avatar" :src="user.avatarUrl"/>
+		<li v-for="user in users" :key="user.id" tabindex="-1" :class="$style.item" @click="complete(type, user)" @keydown="onKeydown">
+			<img :class="$style.avatar" :src="user.avatarUrl" decoding="async"/>
 			<span :class="$style.userName">
 				<MkUserName :key="user.id" :user="user"/>
 			</span>
@@ -16,11 +16,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<li tabindex="-1" :class="$style.item" @click="chooseUser()" @keydown="onKeydown">{{ i18n.ts.selectUser }}</li>
 	</ol>
 	<ol v-else-if="type === 'hashtag' && hashtags.length > 0" ref="suggests" :class="$style.list">
-		<li v-for="hashtag in hashtags" tabindex="-1" :class="$style.item" @click="complete(type, hashtag)" @keydown="onKeydown">
+		<li v-for="hashtag in hashtags" :key="hashtag" tabindex="-1" :class="$style.item" @click="complete(type, hashtag)" @keydown="onKeydown">
 			<span class="name">{{ hashtag }}</span>
 		</li>
 	</ol>
-	<ol v-else-if="type === 'emoji' || type === 'emojiComplete' && emojis.length > 0" ref="suggests" :class="$style.list">
+	<ol v-else-if="(type === 'emoji' || type === 'emojiComplete') && emojis.length > 0" ref="suggests" :class="$style.list">
 		<li v-for="emoji in emojis" :key="emoji.emoji" :class="$style.item" tabindex="-1" @click="complete(type, emoji.emoji)" @keydown="onKeydown">
 			<MkCustomEmoji v-if="'isCustomEmoji' in emoji && emoji.isCustomEmoji" :name="emoji.emoji" :class="$style.emoji" :fallbackToImage="true"/>
 			<MkEmoji v-else :emoji="emoji.emoji" :class="$style.emoji"/>
@@ -31,12 +31,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</li>
 	</ol>
 	<ol v-else-if="type === 'mfmTag' && mfmTags.length > 0" ref="suggests" :class="$style.list">
-		<li v-for="tag in mfmTags" tabindex="-1" :class="$style.item" @click="complete(type, tag)" @keydown="onKeydown">
+		<li v-for="tag in mfmTags" :key="tag" tabindex="-1" :class="$style.item" @click="complete(type, tag)" @keydown="onKeydown">
 			<span>{{ tag }}</span>
 		</li>
 	</ol>
 	<ol v-else-if="type === 'mfmParam' && mfmParams.length > 0" ref="suggests" :class="$style.list">
-		<li v-for="param in mfmParams" tabindex="-1" :class="$style.item" @click="completeMfmParam(param)" @keydown="onKeydown">
+		<li v-for="param in mfmParams" :key="param" tabindex="-1" :class="$style.item" @click="completeMfmParam(param)" @keydown="onKeydown">
 			<span>{{ param }}</span>
 		</li>
 	</ol>
@@ -57,7 +57,6 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { i18n } from '@/i18n.js';
-import { miLocalStorage } from '@/local-storage.js';
 import { customEmojis } from '@/custom-emojis.js';
 import { searchEmoji, searchEmojiExact } from '@/utility/search-emoji.js';
 import { prefer } from '@/preferences.js';
@@ -185,7 +184,6 @@ const emit = defineEmits<{
 const suggests = ref<Element>();
 const rootEl = useTemplateRef('rootEl');
 
-const fetching = ref(true);
 const users = ref<Misskey.entities.User[]>([]);
 const hashtags = ref<string[]>([]);
 const emojis = ref<EmojiDef[]>([]);
@@ -194,6 +192,33 @@ const mfmTags = ref<string[]>([]);
 const mfmParams = ref<string[]>([]);
 const select = ref(-1);
 const zIndex = os.claimZIndex('high');
+let execGeneration = 0;
+
+function readCachedArray<T>(storage: Storage, key: string): T[] | null {
+	try {
+		const raw = storage.getItem(key);
+		if (raw == null) return null;
+		const parsed = JSON.parse(raw) as unknown;
+		if (Array.isArray(parsed)) return parsed as T[];
+		storage.removeItem(key);
+	} catch (error) {
+		console.warn(`[MkAutocomplete] Ignoring invalid cache: ${key}`, error);
+		try {
+			storage.removeItem(key);
+		} catch {
+			// Storage can be unavailable in restricted browsing contexts.
+		}
+	}
+	return null;
+}
+
+function writeCache(storage: Storage, key: string, value: unknown) {
+	try {
+		storage.setItem(key, JSON.stringify(value));
+	} catch (error) {
+		console.warn(`[MkAutocomplete] Failed to persist cache: ${key}`, error);
+	}
+}
 
 function completeMfmParam(param: string) {
 	if (props.type !== 'mfmParam') throw new Error('Invalid type');
@@ -213,21 +238,23 @@ function complete<T extends keyof CompleteInfo>(type: T, value: CompleteInfo[T][
 
 function setPosition() {
 	if (!rootEl.value) return;
-	if (props.x + rootEl.value.offsetWidth > window.innerWidth) {
-		rootEl.value.style.left = (window.innerWidth - rootEl.value.offsetWidth) + 'px';
-	} else {
-		rootEl.value.style.left = `${props.x}px`;
-	}
-	if (props.y + rootEl.value.offsetHeight > window.innerHeight) {
-		rootEl.value.style.top = (props.y - rootEl.value.offsetHeight) + 'px';
+	const margin = 8;
+	const width = rootEl.value.offsetWidth;
+	const height = rootEl.value.offsetHeight;
+	const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+	rootEl.value.style.left = `${Math.min(Math.max(margin, props.x), maxLeft)}px`;
+
+	if (props.y + height + margin > window.innerHeight) {
+		rootEl.value.style.top = `${Math.max(margin, props.y - height)}px`;
 		rootEl.value.style.marginTop = '0';
 	} else {
-		rootEl.value.style.top = props.y + 'px';
+		rootEl.value.style.top = `${Math.max(margin, props.y)}px`;
 		rootEl.value.style.marginTop = 'calc(1em + 8px)';
 	}
 }
 
 function exec() {
+	const generation = ++execGeneration;
 	select.value = -1;
 	if (suggests.value) {
 		for (const el of Array.from(items.value)) {
@@ -237,16 +264,14 @@ function exec() {
 	if (props.type === 'user') {
 		if (!props.q) {
 			users.value = [];
-			fetching.value = false;
 			return;
 		}
 
 		const cacheKey = `autocomplete:user:${props.q}`;
-		const cache = sessionStorage.getItem(cacheKey);
+		const cache = readCachedArray<Misskey.entities.User>(sessionStorage, cacheKey);
 
 		if (cache) {
-			users.value = JSON.parse(cache);
-			fetching.value = false;
+			users.value = cache;
 		} else {
 			const [username, host] = props.q.toString().split('@');
 			misskeyApi('users/search-by-username-and-host', {
@@ -255,32 +280,36 @@ function exec() {
 				limit: 10,
 				detail: false,
 			}).then(searchedUsers => {
+				if (generation !== execGeneration) return;
 				users.value = searchedUsers;
-				fetching.value = false;
-				// キャッシュ
-				sessionStorage.setItem(cacheKey, JSON.stringify(searchedUsers));
+				writeCache(sessionStorage, cacheKey, searchedUsers);
+			}).catch(error => {
+				if (generation !== execGeneration) return;
+				console.warn('[MkAutocomplete] User lookup failed', error);
+				users.value = [];
 			});
 		}
 	} else if (props.type === 'hashtag') {
 		if (!props.q || props.q === '') {
-			hashtags.value = JSON.parse(miLocalStorage.getItem('hashtags') ?? '[]');
-			fetching.value = false;
+			hashtags.value = (readCachedArray<unknown>(localStorage, 'hashtags') ?? [])
+				.filter((value): value is string => typeof value === 'string');
 		} else {
 			const cacheKey = `autocomplete:hashtag:${props.q}`;
-			const cache = sessionStorage.getItem(cacheKey);
+			const cache = readCachedArray<string>(sessionStorage, cacheKey);
 			if (cache) {
-				const hashtags = JSON.parse(cache);
-				hashtags.value = hashtags;
-				fetching.value = false;
+				hashtags.value = cache.filter(value => typeof value === 'string');
 			} else {
 				misskeyApi('hashtags/search', {
 					query: props.q,
 					limit: 30,
 				}).then(searchedHashtags => {
+					if (generation !== execGeneration) return;
 					hashtags.value = searchedHashtags;
-					fetching.value = false;
-					// キャッシュ
-					sessionStorage.setItem(cacheKey, JSON.stringify(searchedHashtags));
+					writeCache(sessionStorage, cacheKey, searchedHashtags);
+				}).catch(error => {
+					if (generation !== execGeneration) return;
+					console.warn('[MkAutocomplete] Hashtag lookup failed', error);
+					hashtags.value = [];
 				});
 			}
 		}
@@ -307,7 +336,7 @@ function exec() {
 			return;
 		}
 
-		mfmParams.value = MFM_PARAMS[props.q.tag].filter(param => param.startsWith(props.q.params.at(-1) ?? ''));
+		mfmParams.value = (MFM_PARAMS[props.q.tag] ?? []).filter(param => param.startsWith(props.q.params.at(-1) ?? ''));
 	}
 }
 
@@ -405,6 +434,10 @@ onUpdated(() => {
 	items.value = suggests.value?.children ?? [];
 });
 
+watch(() => props.q, () => {
+	nextTick(exec);
+});
+
 onMounted(() => {
 	setPosition();
 
@@ -412,18 +445,11 @@ onMounted(() => {
 
 	window.document.body.addEventListener('mousedown', onMousedown);
 
-	nextTick(() => {
-		exec();
-
-		watch(() => props.q, () => {
-			nextTick(() => {
-				exec();
-			});
-		});
-	});
+	nextTick(exec);
 });
 
 onBeforeUnmount(() => {
+	execGeneration++;
 	props.textarea.removeEventListener('keydown', onKeydown);
 
 	window.document.body.removeEventListener('mousedown', onMousedown);

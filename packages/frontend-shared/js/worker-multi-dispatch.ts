@@ -9,31 +9,43 @@ function defaultUseWorkerNumber(prev: number) {
 
 type WorkerNumberGetter = (prev: number, totalWorkers: number) => number;
 
+const workerFinalizationRegistry = typeof FinalizationRegistry === 'undefined'
+	? null
+	: new FinalizationRegistry<Worker[]>(workers => {
+		for (const worker of workers) worker.terminate();
+	});
+
 export class WorkerMultiDispatch<POST = unknown, RETURN = unknown> {
 	private symbol = Symbol('WorkerMultiDispatch');
 	private workers: Worker[] = [];
 	private terminated = false;
-	private prevWorkerNumber = 0;
+	private prevWorkerNumber = -1;
 	private getUseWorkerNumber: WorkerNumberGetter;
-	private finalizationRegistry: FinalizationRegistry<symbol>;
+	private readonly finalizationToken = {};
 
 	constructor(workerConstructor: () => Worker, concurrency: number, getUseWorkerNumber = defaultUseWorkerNumber) {
 		this.getUseWorkerNumber = getUseWorkerNumber;
-		for (let i = 0; i < concurrency; i++) {
+		const normalizedConcurrency = Number.isFinite(concurrency)
+			? Math.max(1, Math.floor(concurrency))
+			: 1;
+		for (let i = 0; i < normalizedConcurrency; i++) {
 			this.workers.push(workerConstructor());
 		}
 
-		this.finalizationRegistry = new FinalizationRegistry(() => {
-			this.terminate();
-		});
-		this.finalizationRegistry.register(this, this.symbol);
+		workerFinalizationRegistry?.register(this, this.workers, this.finalizationToken);
 
 		if (_DEV_) console.log('WorkerMultiDispatch: Created', this);
 	}
 
 	public postMessage(message: POST, options?: Transferable[] | StructuredSerializeOptions, useWorkerNumber: WorkerNumberGetter = this.getUseWorkerNumber) {
-		let workerNumber = useWorkerNumber(this.prevWorkerNumber, this.workers.length);
-		workerNumber = Math.abs(Math.round(workerNumber)) % this.workers.length;
+		if (this.terminated || this.workers.length === 0) {
+			throw new Error('WorkerMultiDispatch has already been terminated');
+		}
+
+		const requestedWorkerNumber = useWorkerNumber(this.prevWorkerNumber, this.workers.length);
+		const workerNumber = Number.isFinite(requestedWorkerNumber)
+			? Math.abs(Math.round(requestedWorkerNumber)) % this.workers.length
+			: (this.prevWorkerNumber + 1) % this.workers.length;
 		// if (_DEV_) console.log('WorkerMultiDispatch: Posting message to worker', workerNumber, useWorkerNumber);
 		this.prevWorkerNumber = workerNumber;
 
@@ -63,13 +75,14 @@ export class WorkerMultiDispatch<POST = unknown, RETURN = unknown> {
 	}
 
 	public terminate() {
+		if (this.terminated) return;
 		this.terminated = true;
 		if (_DEV_) console.log('WorkerMultiDispatch: Terminating', this);
 		this.workers.forEach(worker => {
 			worker.terminate();
 		});
 		this.workers = [];
-		this.finalizationRegistry.unregister(this);
+		workerFinalizationRegistry?.unregister(this.finalizationToken);
 	}
 
 	public isTerminated() {

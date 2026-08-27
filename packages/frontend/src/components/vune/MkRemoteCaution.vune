@@ -15,7 +15,7 @@ export struct MkRemoteCaution: View {
 	}
 
 	var body: some View {
-		MaterialSurface(Material.regular) {
+		MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
 			HStack(alignment: 'center', spacing: 0) {
 				VuneIcon('ti ti-alert-triangle').className('mk-vune-remote-caution__icon')
 				Text(i18n.ts.remoteUserCaution)

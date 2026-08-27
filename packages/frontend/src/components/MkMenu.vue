@@ -15,17 +15,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 	}"
 	@focusin.passive.stop="() => {}"
 >
+	<NativeMkMenuHost
+		:model="nativeModel"
+	/>
+	<!--
+	<div
+		v-if="false"
+		class="_popup _shadow"
+		:class="[$style.surface, materialClass]"
+		:data-vune-material="props.material ?? 'regular'"
+	>
 	<div
 		ref="itemsEl"
 		v-hotkey="keymap"
 		tabindex="0"
-		class="_popup _shadow"
-		:class="[$style.menu, materialClass]"
+		:class="$style.menu"
 		:style="{
 			width: (width && !asDrawer) ? `${width}px` : '',
 			maxHeight: maxHeight ? `min(${maxHeight}px, calc(100dvh - 32px))` : 'calc(100dvh - 32px)',
 		}"
-		:data-vune-material="props.material ?? 'regular'"
 		@keydown.stop="() => {}"
 		@contextmenu.self.prevent="() => {}"
 		@mousemove.passive="onMouseMove"
@@ -218,6 +226,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			@mousemove="guardMouseMove"
 		></div>
 	</div>
+	</div>
+	-->
 
 	<XChild
 		v-if="childMenu" :key="childMenuKey"
@@ -235,22 +245,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts">
-import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, unref, watch, shallowRef, reactive, isRef } from 'vue';
+import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, useCssModule, useTemplateRef, unref, watch, shallowRef, reactive, isRef } from 'vue';
 import type { MenuItem, InnerMenuItem, MenuPending, MenuAction, MenuSwitch, MenuRadio, MenuRadioOption, MenuParent } from '@/types/menu.js';
-import type { Keymap } from '@/utility/hotkey.js';
-import MkSwitchButton from '@/components/MkSwitch.button.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { isTouchUsing } from '@/utility/touch.js';
 import { isFocusable } from '@/utility/focus.js';
 import { getNodeOrNull } from '@/utility/get-dom-node-or-null.js';
+import { Material } from '@/vune/material.js';
 import type { MaterialName } from '@/vune/material.js';
+import { createVuneComponent } from '@/vune/vue.js';
+import { VueComponent } from '@/vune/vue.js';
+import type { NativeMenuModel, NativeMenuRow } from './vune/MkMenu.types.js';
+import NativeMkMenuView from './vune/MkMenu.vune';
 
 const childrenCache = new WeakMap<MenuParent, MenuItem[]>();
 </script>
 
 <script lang="ts" setup>
 const XChild = defineAsyncComponent(() => import('./MkMenu.child.vue'));
+const NativeMkMenuHost = createVuneComponent(({ model }: { model: NativeMenuModel }) => NativeMkMenuView(model));
+const $style = useCssModule();
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -259,6 +276,7 @@ const props = defineProps<{
 	width?: number;
 	maxHeight?: number;
 	material?: MaterialName;
+	animated?: boolean;
 	debugDisablePredictionCone?: boolean;
 	debugShowPredictionCone?: boolean;
 }>();
@@ -270,33 +288,30 @@ const emit = defineEmits<{
 
 const big = isTouchUsing;
 
-const materialClass = computed(() => [
-	'vune-material',
-	`vune-material--${props.material ?? 'regular'}`,
-]);
-
 const isNestingMenu = inject<boolean>('isNestingMenu', false);
 
-const itemsEl = useTemplateRef('itemsEl');
+const itemsEl = shallowRef<HTMLElement | null>(null);
 
 const items2 = ref<InnerMenuItem[]>();
 
 const child = useTemplateRef('child');
 
-const keymap = {
-	'up|k|shift+tab': {
-		allowRepeat: true,
-		callback: () => focusUp(),
-	},
-	'down|j|tab': {
-		allowRepeat: true,
-		callback: () => focusDown(),
-	},
-	'esc': {
-		allowRepeat: true,
-		callback: () => close(false),
-	},
-} as const satisfies Keymap;
+function setItemsEl(element: HTMLElement | null) {
+	itemsEl.value = element;
+}
+
+function onMenuKeydown(event: KeyboardEvent) {
+	if (event.key === 'Escape') {
+		event.preventDefault();
+		close(false);
+	} else if (event.key === 'ArrowUp' || event.key === 'k' || (event.key === 'Tab' && event.shiftKey)) {
+		event.preventDefault();
+		focusUp();
+	} else if (event.key === 'ArrowDown' || event.key === 'j' || event.key === 'Tab') {
+		event.preventDefault();
+		focusDown();
+	}
+}
 
 const childShowingItem = ref<MenuItem | null>();
 
@@ -325,7 +340,14 @@ const childMenu = ref<MenuItem[] | null>();
 const childMenuKey = ref(0);
 const childTarget = shallowRef<HTMLElement>();
 
+function clearChildCloseTimer() {
+	if (childCloseTimer === null) return;
+	window.clearTimeout(childCloseTimer);
+	childCloseTimer = null;
+}
+
 function closeChild() {
+	clearChildCloseTimer();
 	childMenu.value = null;
 	childShowingItem.value = null;
 }
@@ -338,16 +360,22 @@ function childActioned() {
 let childCloseTimer: null | number = null;
 
 function onItemMouseEnter() {
+	clearChildCloseTimer();
 	childCloseTimer = window.setTimeout(() => {
+		childCloseTimer = null;
 		closeChild();
 	}, 300);
 }
 
 function onItemMouseLeave() {
-	if (childCloseTimer) window.clearTimeout(childCloseTimer);
+	clearChildCloseTimer();
 }
 
 async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent | KeyboardEvent) {
+	// `currentTarget` is cleared by the browser once the event handler yields.
+	// Capture the anchor before opening the async child menu so positioning does
+	// not fall back to a nested icon/text node (or `null`).
+	const anchorElement = (ev.currentTarget ?? ev.target) as HTMLElement;
 	const children: MenuItem[] = item.options.map<MenuRadioOption>(def => {
 		return {
 			type: 'radioOption',
@@ -371,12 +399,12 @@ async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent |
 	});
 
 	if (props.asDrawer) {
-		os.popupMenu(children, ev.currentTarget ?? ev.target).finally(() => {
+		os.popupMenu(children, anchorElement).finally(() => {
 			close(false);
 		});
 		emit('hide');
 	} else {
-		childTarget.value = (ev.currentTarget ?? ev.target) as HTMLElement;
+		childTarget.value = anchorElement;
 		childMenu.value = children;
 		childMenuKey.value++;
 		childShowingItem.value = item;
@@ -384,6 +412,10 @@ async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent |
 }
 
 async function showChildren(item: MenuParent, ev: MouseEvent | PointerEvent | KeyboardEvent) {
+	// Keep the actual parent row. Native event `currentTarget` becomes `null`
+	// after the async handler yields, which otherwise makes the submenu anchor
+	// depend on whichever child element was under the pointer.
+	const anchorElement = (ev.currentTarget ?? ev.target) as HTMLElement;
 	ev.stopPropagation();
 
 	const children: MenuItem[] = await (async () => {
@@ -401,12 +433,12 @@ async function showChildren(item: MenuParent, ev: MouseEvent | PointerEvent | Ke
 	childrenCache.set(item, children);
 
 	if (props.asDrawer) {
-		os.popupMenu(children, ev.currentTarget ?? ev.target).finally(() => {
+		os.popupMenu(children, anchorElement).finally(() => {
 			close(false);
 		});
 		emit('hide');
 	} else {
-		childTarget.value = (ev.currentTarget ?? ev.target) as HTMLElement;
+		childTarget.value = anchorElement;
 		// これでもリアクティビティは保たれる
 		childMenu.value = children;
 		childMenuKey.value++;
@@ -507,6 +539,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+	clearChildCloseTimer();
 	disposeHandlers();
 });
 
@@ -570,10 +603,178 @@ function onMouseMove() {
 function guardMouseMove(ev: MouseEvent) {
 	ev.stopPropagation();
 }
+
+const materials: Record<MaterialName, Material> = {
+	ultraThin: Material.ultraThin,
+	thin: Material.thin,
+	regular: Material.regular,
+	thick: Material.thick,
+	ultraThick: Material.ultraThick,
+	bar: Material.bar,
+};
+
+function menuText(value: unknown): string {
+	return String(unref(value as string) ?? '');
+}
+
+function nativeRow(item: InnerMenuItem, index: number): NativeMenuRow {
+	const key = `${index}:${item.type ?? 'button'}`;
+	const base = {
+		key,
+		text: 'text' in item ? menuText(item.text) : undefined,
+		caption: 'caption' in item ? menuText(item.caption) : undefined,
+		icon: 'icon' in item ? item.icon : undefined,
+		iconClass: $style.icon,
+		contentClass: $style.item_content,
+		textClass: [$style.item_content_text],
+		titleClass: $style.item_content_text_title,
+		captionClass: $style.item_content_text_caption,
+		caretClass: $style.caret,
+		indicatorClass: $style.indicator,
+		switchClass: [$style.switchButton, item.type === 'switch' && item.icon ? $style.caret : ''],
+		onLeave: onItemMouseLeave,
+	} satisfies Partial<NativeMenuRow>;
+
+	if (item.type === 'divider') return { key, kind: 'divider', className: [$style.divider] };
+	if (item.type === 'label') return { ...base, kind: 'label', className: [$style.label] };
+	if (item.type === 'pending') return { key, kind: 'pending', className: [$style.pending, $style.item] };
+	if (item.type === 'component') {
+		return {
+			key,
+			kind: 'component',
+			content: VueComponent(item.component, unref(item.props) ?? {}),
+		};
+	}
+
+	const hover = { onHover: onItemMouseEnter, onLeave: onItemMouseLeave };
+	if (item.type === 'link') {
+		return {
+			...base,
+			...hover,
+			kind: 'link',
+			href: item.to,
+			className: ['_button', $style.item],
+			indicate: item.indicate,
+			leading: item.avatar ? VueComponent(MkAvatar, { user: item.avatar, class: 'mk-vune-menu__avatar' }) : undefined,
+			onActivate: () => close(true),
+		};
+	}
+	if (item.type === 'a') {
+		return {
+			...base,
+			...hover,
+			kind: 'external',
+			href: item.href,
+			target: item.target,
+			download: item.download,
+			className: ['_button', $style.item],
+			indicate: item.indicate,
+			onActivate: () => close(true),
+		};
+	}
+	if (item.type === 'user') {
+		return {
+			...base,
+			...hover,
+			kind: 'button',
+			text: '',
+			active: item.active,
+			className: ['_button', $style.item, item.active ? $style.active : ''],
+			leading: VueComponent(MkAvatar, { user: item.user, class: 'mk-vune-menu__avatar' }),
+			content: VueComponent(MkUserName, { user: item.user }),
+			indicate: item.indicate,
+			onActivate: event => item.active ? close(false) : clicked(item.action, event),
+		};
+	}
+	if (item.type === 'switch') {
+		const disabled = unref(item.disabled) ?? false;
+		return {
+			...base,
+			...hover,
+			kind: 'switch',
+			className: ['_button', $style.item],
+			disabled,
+			checked: unref(item.ref),
+			onToggle: () => switchItem(item),
+			onActivate: () => switchItem(item),
+		};
+	}
+	if (item.type === 'radio' || item.type === 'parent') {
+		const show = item.type === 'radio' ? showRadioOptions : showChildren;
+		return {
+			...base,
+			kind: 'parent',
+			active: childShowingItem.value === item,
+			className: ['_button', $style.item, $style.parent, childShowingItem.value === item ? $style.active : ''],
+			disabled: item.type === 'radio' ? (unref(item.disabled) ?? false) : false,
+			onHover: event => { if (!preferClick) void show(item as never, event); },
+			onMove: parentMouseMove,
+			// Opening a parent by click is important on pointer devices too: the
+			// native menu row is a real button, and relying on hover alone makes
+			// the submenu unreachable for trackpads, keyboard users, and touch
+			// emulation. `showChildren`/`showRadioOptions` still route drawers to
+			// the regular popup path.
+			onActivate: event => { void show(item as never, event); },
+		};
+	}
+	if (item.type === 'radioOption') {
+		const active = unref(item.active) ?? false;
+		return {
+			...base,
+			...hover,
+			kind: 'radio',
+			className: ['_button', $style.item, $style.radio, active ? $style.active : ''],
+			checked: active,
+			radioIconClass: [$style.radioIcon, active ? $style.radioChecked : ''],
+			onActivate: event => { if (!active) clicked(item.action, event, false); },
+		};
+	}
+
+	const active = unref(item.active) ?? false;
+	return {
+		...base,
+		...hover,
+		kind: 'button',
+		danger: item.danger,
+		className: ['_button', $style.item, item.danger ? $style.danger : '', active ? $style.active : ''],
+		active,
+		indicate: item.indicate,
+		leading: item.avatar ? VueComponent(MkAvatar, { user: item.avatar, class: 'mk-vune-menu__avatar' }) : undefined,
+		onActivate: event => active ? close(false) : clicked(item.action, event),
+	};
+}
+
+const nativeModel = computed<NativeMenuModel>(() => ({
+	rows: (items2.value ?? []).map(nativeRow),
+	material: materials[props.material ?? 'regular'],
+	animated: props.animated ?? true,
+	menuClass: $style.menu,
+	surfaceClass: $style.surface,
+	itemClass: [$style.none, $style.item].join(' '),
+	noneLabel: i18n.ts.none,
+	width: props.width && !props.asDrawer ? props.width : undefined,
+	maxHeight: props.maxHeight,
+	asDrawer: Boolean(props.asDrawer),
+	big: Boolean(big),
+	center: props.align === 'center',
+	guardClass: [$style.guard, props.debugShowPredictionCone ? $style.showGuard : ''],
+	guardClipPath: guardPolygon.value,
+	guardTop: guard.top,
+	onItemsRef: setItemsEl,
+	onKeydown: onMenuKeydown,
+	onMouseMove,
+	onMouseLeave,
+	onGuardMouseMove: guardMouseMove,
+}));
 </script>
 
 <style lang="scss" module>
 .root {
+	// Submenus are positioned relative to their owning menu. The native Vune
+	// surface no longer provides the old Vue menu's containing block, so keep
+	// the menu root as the explicit anchor for nested menus.
+	position: relative;
+
 	&.center {
 		> .menu {
 			> .item {
@@ -608,7 +809,7 @@ function guardMouseMove(ev: MouseEvent) {
 			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px) 0;
 			width: 100%;
 			border-radius: 24px;
-			corner-shape: squircle;
+			corner-shape: round;
 			border-bottom-right-radius: 0;
 			border-bottom-left-radius: 0;
 
@@ -619,7 +820,7 @@ function guardMouseMove(ev: MouseEvent) {
 				&::before {
 					width: calc(100% - 24px);
 					border-radius: 12px;
-					corner-shape: squircle;
+					corner-shape: round;
 				}
 
 				> .icon {
@@ -640,13 +841,18 @@ function guardMouseMove(ev: MouseEvent) {
 	box-sizing: border-box;
 	max-width: 100vw;
 	min-width: 200px;
-	corner-shape: squircle;
+	corner-shape: round;
 	overflow: auto;
 	overscroll-behavior: contain;
 
 	&:focus-visible {
 		outline: none;
 	}
+}
+
+.surface {
+	max-width: 100vw;
+	overflow: hidden;
 }
 
 .item {
@@ -677,7 +883,7 @@ function guardMouseMove(ev: MouseEvent) {
 		width: calc(100% - 16px);
 		height: 100%;
 		border-radius: 6px;
-		corner-shape: squircle;
+		corner-shape: round;
 	}
 
 	&:focus-visible {

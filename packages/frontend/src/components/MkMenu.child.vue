@@ -4,18 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div ref="el" :class="$style.root">
-	<MkMenu
-		:items="items"
-		:align="align"
-		:width="width"
-		:asDrawer="false"
-		:material="material"
-		:debugDisablePredictionCone="debugDisablePredictionCone"
-		:debugShowPredictionCone="debugShowPredictionCone"
-		@close="onChildClosed"
-	/>
-</div>
+<Transition appear :css="false" @enter="enter" @leave="leave">
+	<div ref="el" :class="$style.root">
+		<MkMenu
+			:items="items"
+			:align="align"
+			:width="width"
+			:asDrawer="false"
+			:material="material"
+			:animated="true"
+			:debugDisablePredictionCone="debugDisablePredictionCone"
+			:debugShowPredictionCone="debugShowPredictionCone"
+			@close="onChildClosed"
+		/>
+	</div>
+</Transition>
 </template>
 
 <script lang="ts" setup>
@@ -23,6 +26,8 @@ import { nextTick, onMounted, onUnmounted, provide, useTemplateRef, watch } from
 import MkMenu from './MkMenu.vue';
 import type { MenuItem } from '@/types/menu.js';
 import type { MaterialName } from '@/vune/material.js';
+import { prefer } from '@/preferences.js';
+import { animateContextMenuTransition } from './MkContextMenu.motion.js';
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -45,6 +50,22 @@ const el = useTemplateRef('el');
 const align = 'left';
 
 const SCROLLBAR_THICKNESS = 16;
+
+function enter(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateContextMenuTransition(element, 'enter', done);
+}
+
+function leave(element: Element, done: () => void) {
+	if (!prefer.s.animation) {
+		done();
+		return;
+	}
+	animateContextMenuTransition(element, 'leave', done);
+}
 
 function setPosition() {
 	if (el.value == null) return;
@@ -102,6 +123,9 @@ defineExpose({
 
 <style lang="scss" module>
 .root {
+	--mk-context-menu-scale: 1;
 	position: absolute;
+	transform: scale(var(--mk-context-menu-scale));
+	transform-origin: left top;
 }
 </style>

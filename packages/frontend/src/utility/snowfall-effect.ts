@@ -48,6 +48,7 @@ export class SnowfallEffect {
 		previous: 0,
 	};
 	private raf = 0;
+	private resizeRaf = 0;
 
 	private density: number = 1 / 90;
 	private depth = 100;
@@ -139,8 +140,32 @@ export class SnowfallEffect {
 		this.resize = this.resize.bind(this);
 		this.update = this.update.bind(this);
 
-		window.addEventListener('resize', () => this.resize());
+		window.addEventListener('resize', this.onResize, { passive: true });
+		document.addEventListener('visibilitychange', this.onVisibilityChange);
 	}
+
+	private readonly onResize = (): void => {
+		if (this.resizeRaf !== 0) return;
+		this.resizeRaf = window.requestAnimationFrame(() => {
+			this.resizeRaf = 0;
+			this.resize();
+		});
+	};
+
+	private readonly onVisibilityChange = (): void => {
+		if (document.hidden) {
+			if (this.raf !== 0) window.cancelAnimationFrame(this.raf);
+			this.raf = 0;
+			return;
+		}
+
+		if (this.raf === 0) {
+			const now = window.performance.now();
+			this.time.start = now;
+			this.time.previous = now;
+			this.raf = window.requestAnimationFrame(this.update);
+		}
+	};
 
 	private initCanvas(): HTMLCanvasElement {
 		const canvas = window.document.createElement('canvas');
@@ -387,7 +412,7 @@ export class SnowfallEffect {
 		};
 
 		if (this.raf) window.cancelAnimationFrame(this.raf);
-		this.raf = window.requestAnimationFrame(this.update);
+		this.raf = document.hidden ? 0 : window.requestAnimationFrame(this.update);
 
 		return this;
 	}
@@ -438,6 +463,6 @@ export class SnowfallEffect {
 
 		this.time.previous = timestamp;
 
-		this.raf = window.requestAnimationFrame(this.update);
+		this.raf = document.hidden ? 0 : window.requestAnimationFrame(this.update);
 	}
 }

@@ -4,7 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="omfetrab" :class="['s' + size, 'w' + width, 'h' + height, { asDrawer, asWindow }]" :style="{ maxHeight: maxHeight ? maxHeight + 'px' : undefined }">
+<NativeMkEmojiPicker ref="pickerRoot" :model="nativeModel" :class="$attrs.class" :style="$attrs.style"/>
+<!--
 	<input
 		ref="searchEl"
 		:value="q"
@@ -18,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		@paste.stop="paste"
 		@keydown="onKeydown"
 	>
-	<!-- FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744 -->
+	FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744
 	<div ref="emojisEl" class="emojis" tabindex="-1">
 		<section class="result">
 			<div v-if="searchResultCustom.length > 0" class="body">
@@ -113,6 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<button class="_button tab" :class="{ active: tab === 'tags' }" @click="tab = 'tags'"><i class="ti ti-hash ti-fw"></i></button>
 	</div>
 </div>
+-->
 </template>
 
 <script lang="ts" setup>
@@ -125,12 +127,10 @@ import {
 	getEmojiName,
 	getUnicodeEmoji,
 } from '@@/js/emojilist.js';
-import type {
-	UnicodeEmojiDef,
-	CustomEmojiFolderTree,
-} from '@@/js/emojilist.js';
-import XSection from '@/components/MkEmojiPicker.section.vue';
+import type { UnicodeEmojiDef } from '@@/js/emojilist.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
+import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
+import MkEmoji from '@/components/global/MkEmoji.vue';
 import * as os from '@/os.js';
 import { isTouchUsing } from '@/utility/touch.js';
 import { deviceKind } from '@/utility/device-kind.js';
@@ -142,6 +142,9 @@ import { checkReactionPermissions } from '@/utility/check-reaction-permissions.j
 import { prefer } from '@/preferences.js';
 import { useRouter } from '@/router.js';
 import { haptic } from '@/utility/haptic.js';
+import { VueComponent } from '@/vune/vue.js';
+import NativeMkEmojiPicker from '@/components/vune/MkEmojiPicker.vune';
+import type { NativeEmojiPickerGroup, NativeEmojiPickerItem, NativeEmojiPickerModel, NativeEmojiPickerSection } from '@/components/vune/MkEmojiPicker.types.js';
 
 const router = useRouter();
 
@@ -162,8 +165,7 @@ const emit = defineEmits<{
 	(ev: 'esc'): void;
 }>();
 
-const searchEl = useTemplateRef('searchEl');
-const emojisEl = useTemplateRef('emojisEl');
+const pickerRoot = useTemplateRef('pickerRoot');
 
 const {
 	emojiPickerScale,
@@ -181,46 +183,13 @@ const pinnedEmojisDef = computed(() => {
 });
 
 const pinned = computed(() => props.pinnedEmojis);
-const size = computed(() => emojiPickerScale.value);
-const width = computed(() => emojiPickerWidth.value);
-const height = computed(() => emojiPickerHeight.value);
 const q = ref<string>('');
 const searchResultCustom = ref<Misskey.entities.EmojiSimple[]>([]);
 const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
-const tab = ref<'index' | 'custom' | 'unicode' | 'tags'>('index');
 
-const customEmojiFolderRoot: CustomEmojiFolderTree = { value: '', category: '', children: [] };
-
-function parseAndMergeCategories(input: string, root: CustomEmojiFolderTree): CustomEmojiFolderTree {
-	const parts = input.split('/').map(p => p.trim());
-	let currentNode: CustomEmojiFolderTree = root;
-
-	for (const part of parts) {
-		let existingNode = currentNode.children.find((node) => node.value === part);
-
-		if (!existingNode) {
-			const newNode: CustomEmojiFolderTree = { value: part, category: input, children: [] };
-			currentNode.children.push(newNode);
-			existingNode = newNode;
-		}
-
-		currentNode = existingNode;
-	}
-
-	return currentNode;
-}
-
-customEmojiCategories.value.forEach(ec => {
-	if (ec !== null) {
-		parseAndMergeCategories(ec, customEmojiFolderRoot);
-	}
-});
-
-parseAndMergeCategories('', customEmojiFolderRoot);
+const expandedSections = new Map<string, boolean>();
 
 watch(q, () => {
-	if (emojisEl.value) emojisEl.value.scrollTop = 0;
-
 	if (q.value === '') {
 		searchResultCustom.value = [];
 		searchResultUnicode.value = [];
@@ -385,14 +354,12 @@ function filterCategory(emoji: Misskey.entities.EmojiSimple, category: string): 
 
 function focus() {
 	if (!['smartphone', 'tablet'].includes(deviceKind) && !isTouchUsing) {
-		searchEl.value?.focus({
-			preventScroll: true,
-		});
+		const root = (pickerRoot.value as unknown as { $el?: HTMLElement } | null)?.$el;
+		root?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
 	}
 }
 
 function reset() {
-	if (emojisEl.value) emojisEl.value.scrollTop = 0;
 	q.value = '';
 }
 
@@ -409,13 +376,6 @@ function getDef(emoji: string): string | Misskey.entities.EmojiSimple | UnicodeE
 	} else {
 		return getUnicodeEmoji(emoji);
 	}
-}
-
-/** @see MkEmojiPicker.section.vue */
-function computeButtonTitle(ev: PointerEvent): void {
-	const elm = ev.target as HTMLElement;
-	const emoji = elm.dataset.emoji as string;
-	elm.title = getEmojiName(emoji);
 }
 
 function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, ev?: PointerEvent) {
@@ -440,34 +400,6 @@ function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, 
 		recents = recents.filter((emoji) => emoji !== key);
 		recents.unshift(key);
 		store.set('recentlyUsedEmojis', recents.splice(0, 32));
-	}
-}
-
-function input(): void {
-	// Using custom input event instead of v-model to respond immediately on
-	// Android, where composition happens on all languages
-	// (v-model does not update during composition)
-	q.value = searchEl.value?.value.trim() ?? '';
-}
-
-function paste(event: ClipboardEvent): void {
-	const pasted = event.clipboardData?.getData('text') ?? '';
-	if (done(pasted)) {
-		event.preventDefault();
-	}
-}
-
-function onKeydown(ev: KeyboardEvent) {
-	if (ev.isComposing || ev.key === 'Process' || ev.keyCode === 229) return;
-	if (ev.key === 'Enter') {
-		ev.preventDefault();
-		ev.stopPropagation();
-		done();
-	}
-	if (ev.key === 'Escape') {
-		ev.preventDefault();
-		ev.stopPropagation();
-		emit('esc');
 	}
 }
 
@@ -500,6 +432,81 @@ function settings() {
 	emit('esc');
 	router.push('/settings/emoji-palette');
 }
+
+function pickerItem(value: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef): NativeEmojiPickerItem {
+	const key = getKey(value);
+	const custom = key.startsWith(':');
+	return {
+		key,
+		disabled: !canReact(value),
+		title: getEmojiName(key),
+		view: custom
+			? VueComponent(MkCustomEmoji, { name: key, normal: true, fallbackToImage: true, class: 'emoji' })
+			: VueComponent(MkEmoji, { emoji: key, normal: true, class: 'emoji' }),
+	};
+}
+
+function sectionItems(values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerItem[] {
+	return values.map(pickerItem);
+}
+
+function toggleSection(key: string): void {
+	expandedSections.set(key, !(expandedSections.get(key) ?? false));
+	nativeModel.value = buildNativeModel();
+}
+
+function makeSection(key: string, title: string, values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerSection {
+	return {
+		key,
+		title,
+		count: values.length,
+		emojis: sectionItems(values),
+		expanded: expandedSections.get(key) ?? false,
+		onToggle: () => toggleSection(key),
+	};
+}
+
+function buildNativeModel(): NativeEmojiPickerModel {
+	const columnsByWidth = [0, 5, 6, 7, 8, 9];
+	const sizeByScale = [0, 40, 45, 50, 55, 60];
+	const columns = columnsByWidth[emojiPickerWidth.value] ?? 7;
+	const itemSize = sizeByScale[emojiPickerScale.value] ?? 50;
+	const customCategories = ['', ...customEmojiCategories.value.filter((category): category is string => category !== null && category !== '')];
+	const customSections = customCategories.map(category => makeSection(`custom:${category}`, category || i18n.ts.other, customEmojis.value.filter(emoji => filterCategory(emoji, category))));
+	const unicodeSections = categories.map(category => makeSection(`unicode:${category}`, category, (emojiCharByCategory.get(category) ?? []).map(char => getUnicodeEmoji(char)).filter((emoji): emoji is UnicodeEmojiDef => emoji != null)));
+	const groups: NativeEmojiPickerGroup[] = [
+		{ key: 'custom', title: i18n.ts.customEmojis, icon: 'ti ti-icons', sections: customSections },
+		{ key: 'unicode', title: i18n.ts.emoji, icon: 'ti ti-mood-happy', sections: unicodeSections },
+	];
+	const results = [...searchResultCustom.value, ...searchResultUnicode.value].map(pickerItem);
+	return {
+		query: q.value,
+		placeholder: i18n.ts.search,
+		width: columns * itemSize + 28,
+		height: (emojiPickerHeight.value === 1 ? 4 : emojiPickerHeight.value === 2 ? 6 : emojiPickerHeight.value === 3 ? 8 : 10) * itemSize + 28,
+		columns,
+		itemSize,
+		maxHeight: props.maxHeight,
+		asDrawer: props.asDrawer ?? false,
+		asWindow: props.asWindow ?? false,
+		pinned: props.showPinned ? sectionItems(pinnedEmojisDef.value ?? []) : [],
+		recent: sectionItems(recentlyUsedEmojisDef.value),
+		results,
+		resultLabel: `${i18n.ts.search} · ${results.length}`,
+		groups,
+		onQuery: (value: string) => { q.value = value.trim(); },
+		onPaste: (value: string) => done(value) === true,
+		onSubmit: () => { done(); },
+		onChoose: (key: string) => chosen(getDef(key)),
+		onSettings: settings,
+		onEscape: () => emit('esc'),
+	};
+}
+
+const nativeModel = ref<NativeEmojiPickerModel>(buildNativeModel());
+watch([q, recentlyUsedEmojis, customEmojis, emojiPickerScale, emojiPickerWidth, emojiPickerHeight], () => {
+	nativeModel.value = buildNativeModel();
+}, { deep: true });
 
 onMounted(() => {
 	focus();

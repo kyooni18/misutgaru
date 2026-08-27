@@ -5,14 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.disabled]: disabled }]">
-	<input
-		ref="input"
-		type="checkbox"
-		:disabled="disabled"
-		:class="$style.input"
-		@click="toggle"
-	>
-	<XButton :class="$style.toggle" :checked="checked" :disabled="disabled" @toggle="toggle"/>
+	<NativeMkSwitch :class="$style.toggle" :checked="checked" :disabled="disabled" :onToggle="toggle"/>
 	<span v-if="!noBody" :class="$style.body">
 		<!-- TODO: 無名slotの方は廃止 -->
 		<span :class="$style.label">
@@ -27,10 +20,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { toRefs } from 'vue';
+import { computed, unref } from 'vue';
 import type { Ref } from 'vue';
-import XButton from '@/components/MkSwitch.button.vue';
 import { haptic } from '@/utility/haptic.js';
+import VuneMkSwitchButton from '@/components/vune/MkSwitchButton.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const NativeMkSwitch = createVuneWebHost(VuneMkSwitchButton);
 
 const props = defineProps<{
 	modelValue: boolean | Ref<boolean>;
@@ -44,7 +40,7 @@ const emit = defineEmits<{
 	(ev: 'change', v: boolean): void;
 }>();
 
-const checked = toRefs(props).modelValue;
+const checked = computed(() => unref(props.modelValue));
 const toggle = () => {
 	if (props.disabled) return;
 	emit('update:modelValue', !checked.value);
@@ -58,31 +54,12 @@ const toggle = () => {
 .root {
 	position: relative;
 	display: flex;
-	transition: all 0.2s ease;
+	transition: opacity 0.2s ease;
 	user-select: none;
-
-	&:hover {
-		> .button {
-			border-color: var(--MI_THEME-inputBorderHover) !important;
-		}
-	}
 
 	&.disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-	}
-}
-
-.input {
-	position: absolute;
-	width: 0;
-	height: 0;
-	opacity: 0;
-	margin: 0;
-
-	&:focus-visible ~ .toggle {
-		outline: 2px solid var(--MI_THEME-focus);
-		outline-offset: 2px;
 	}
 }
 

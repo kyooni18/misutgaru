@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onMounted, provide, ref, computed } from 'vue';
+import { provide, ref, computed } from 'vue';
 import { instanceName } from '@@/js/config.js';
 import XCommon from './_common_/common.vue';
 import type { PageMetadata } from '@/page.js';
@@ -41,10 +41,9 @@ import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
 import { mainRouter } from '@/router.js';
 import { DI } from '@/di.js';
 import MkButton from '@/components/MkButton.vue';
+import { useMediaQuery } from '@/composables/use-media-query.js';
 
 const isRoot = computed(() => mainRouter.currentRoute.value.name === 'index');
-
-const DESKTOP_THRESHOLD = 1100;
 
 const pageMetadata = ref<null | PageMetadata>(null);
 
@@ -62,20 +61,12 @@ provideMetadataReceiver((metadataGetter) => {
 });
 provideReactiveMetadata(pageMetadata);
 
-const isDesktop = ref(window.innerWidth >= DESKTOP_THRESHOLD);
-const narrow = ref(window.innerWidth < 1280);
+const narrow = useMediaQuery('(max-width: 1279px)');
 
 function goHome() {
 	mainRouter.push('/');
 }
 
-onMounted(() => {
-	if (!isDesktop.value) {
-		window.addEventListener('resize', () => {
-			if (window.innerWidth >= DESKTOP_THRESHOLD) isDesktop.value = true;
-		}, { passive: true });
-	}
-});
 </script>
 
 <style>

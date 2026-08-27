@@ -52,6 +52,7 @@
 		"clean": "node scripts/clean.mjs",
 		"clean-all": "node scripts/clean-all.mjs",
 		"cleanall": "pnpm clean-all",
+		"export:source": "sh scripts/export-source.sh",
 		"vune:report": "node scripts/vune-migration-report.mjs",
 		"vune:check": "node scripts/check-vune.mjs packages/frontend/src && node scripts/check-vune-native.mjs packages/frontend/src"
 	},

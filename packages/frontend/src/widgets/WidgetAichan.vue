@@ -43,24 +43,46 @@ const touched = () => {
 	//if (this.live2d) this.live2d.changeExpression('gurugurume');
 };
 
-const onMousemove = (ev: MouseEvent) => {
-	if (!live2d.value || !live2d.value.contentWindow) return;
+let cursorRaf: number | null = null;
+let cursorX = 0;
+let cursorY = 0;
+let widgetVisible = true;
+let visibilityObserver: IntersectionObserver | null = null;
 
-	const iframeRect = live2d.value.getBoundingClientRect();
-	live2d.value.contentWindow.postMessage({
-		type: 'moveCursor',
-		body: {
-			x: ev.clientX - iframeRect.left,
-			y: ev.clientY - iframeRect.top,
-		},
-	}, '*');
+const onMousemove = (ev: MouseEvent) => {
+	if (!widgetVisible || document.visibilityState !== 'visible') return;
+	cursorX = ev.clientX;
+	cursorY = ev.clientY;
+	if (cursorRaf != null) return;
+	cursorRaf = window.requestAnimationFrame(() => {
+		cursorRaf = null;
+		const frame = live2d.value;
+		if (!frame?.contentWindow) return;
+		const iframeRect = frame.getBoundingClientRect();
+		frame.contentWindow.postMessage({
+			type: 'moveCursor',
+			body: {
+				x: cursorX - iframeRect.left,
+				y: cursorY - iframeRect.top,
+			},
+		}, '*');
+	});
 };
 
 onMounted(() => {
+	if (typeof IntersectionObserver !== 'undefined' && live2d.value) {
+		visibilityObserver = new IntersectionObserver(entries => {
+			widgetVisible = entries.some(entry => entry.isIntersecting);
+		}, { rootMargin: '96px' });
+		visibilityObserver.observe(live2d.value);
+	}
 	window.addEventListener('mousemove', onMousemove, { passive: true });
 });
 
 onUnmounted(() => {
+	if (cursorRaf != null) window.cancelAnimationFrame(cursorRaf);
+	visibilityObserver?.disconnect();
+	visibilityObserver = null;
 	window.removeEventListener('mousemove', onMousemove);
 });
 

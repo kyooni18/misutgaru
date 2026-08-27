@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:src="post.files?.[0]?.thumbnailUrl"
 				:hash="post.files?.[0]?.blurhash"
 				:forceBlurhash="!show"
+				loading="lazy"
 			/>
 		</Transition>
 	</div>

@@ -223,7 +223,7 @@ async function later(later: boolean) {
 .progressBarValue {
 	height: 100%;
 	background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
-	transition: all 0.5s cubic-bezier(0,.5,.5,1);
+	transition: width 0.5s cubic-bezier(0,.5,.5,1);
 }
 
 .centerPage {

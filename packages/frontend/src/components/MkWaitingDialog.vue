@@ -5,17 +5,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <MkModal ref="modal" :preferType="'dialog'" :zPriority="'high'" @click="success ? done() : () => {}" @closed="emit('closed')">
-	<VuneWaitingDialogHost :success="success" :text="text" :classes="$style"/>
+	<div :class="[$style.root, { [$style.iconOnly]: (text == null) || success }]">
+		<i v-if="success" :class="[$style.icon, $style.success]" class="ti ti-check"></i>
+		<MkLoading v-else :class="[$style.icon, $style.waiting]" :em="true"/>
+		<div v-if="text && !success" :class="$style.text">{{ text }}<MkEllipsis/></div>
+	</div>
 </MkModal>
 </template>
 
 <script lang="ts" setup>
 import { watch, useTemplateRef } from 'vue';
-import VuneWaitingDialog from './vune/MkWaitingDialog.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import MkModal from '@/components/MkModal.vue';
-
-const VuneWaitingDialogHost = createVuneWebHost(VuneWaitingDialog);
+import MkLoading from '@/components/global/MkLoading.vue';
+import MkEllipsis from '@/components/global/MkEllipsis.vue';
 
 const modal = useTemplateRef('modal');
 

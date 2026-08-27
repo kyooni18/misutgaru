@@ -79,7 +79,7 @@ describe('VuneMotionEngine', () => {
 		});
 
 		assert.strictEqual(await handle.finished, 'finished');
-		assert.strictEqual(element.style.opacity, '0');
+		assert.strictEqual(element.style.opacity, '');
 	});
 
 	test('reduced motion applies the final native keyframe when interpolation falls back to WAAPI', async () => {
@@ -99,7 +99,39 @@ describe('VuneMotionEngine', () => {
 		assert.strictEqual((element.animate as unknown as ReturnType<typeof vi.fn>).mock.calls.length, 0);
 	});
 
-	test('a new animation cancels only the previous animation for the same property', () => {
+	test('reduced motion respects non-persistent fill modes', async () => {
+		vi.stubGlobal('matchMedia', () => ({ matches: true }));
+		const element = document.createElement('div');
+		element.style.setProperty('opacity', '0.25', 'important');
+		const engine = new VuneMotionEngine();
+
+		const handle = engine.animateElement(element, [
+			{ opacity: 0 },
+			{ opacity: 1 },
+		], { animation: Animation.linear(0.5), fill: 'none' });
+
+		assert.strictEqual(await handle.finished, 'finished');
+		assert.strictEqual(element.style.opacity, '0.25');
+		assert.strictEqual(element.style.getPropertyPriority('opacity'), 'important');
+	});
+
+	test('cancelling interpolated motion restores the original inline style', async () => {
+		const element = document.createElement('div');
+		element.style.setProperty('opacity', '0.25', 'important');
+		const engine = new VuneMotionEngine();
+
+		const handle = engine.animateElement(element, [
+			{ opacity: 0 },
+			{ opacity: 1 },
+		], { animation: Animation.linear(1), fill: 'forwards' });
+		handle.cancel();
+
+		assert.strictEqual(await handle.finished, 'cancelled');
+		assert.strictEqual(element.style.opacity, '0.25');
+		assert.strictEqual(element.style.getPropertyPriority('opacity'), 'important');
+	});
+
+	test('overlapping one property does not cancel sibling tracks from the same request', () => {
 		const element = document.createElement('div');
 		const engine = new VuneMotionEngine();
 		const animations: Array<{ cancel: ReturnType<typeof vi.fn> }> = [];
@@ -113,22 +145,17 @@ describe('VuneMotionEngine', () => {
 		});
 
 		engine.animateElement(element, [
-			{ opacity: 0, display: 'block' },
-			{ opacity: 0.5, display: 'block' },
-			{ opacity: 1, display: 'block' },
+			{ opacity: 0, transform: 'translateX(0px)', easing: 'linear' },
+			{ opacity: 1, transform: 'translateX(10px)', easing: 'linear' },
 		], { animation: Animation.linear(0.5) });
-		engine.animateElement(element, [
-			{ transform: 'translateX(0px)', visibility: 'visible' },
-			{ transform: 'translateX(5px)', visibility: 'visible' },
-			{ transform: 'translateX(10px)', visibility: 'visible' },
-		], { animation: Animation.linear(0.5) });
-		assert.strictEqual(animations[0].cancel.mock.calls.length, 0);
+		assert.strictEqual(animations.length, 2);
 
 		engine.animateElement(element, [
-			{ opacity: 1, display: 'block' },
-			{ opacity: 0.5, display: 'block' },
-			{ opacity: 0, display: 'block' },
+			{ opacity: 1, easing: 'linear' },
+			{ opacity: 0, easing: 'linear' },
 		], { animation: Animation.linear(0.5) });
+
+		assert.strictEqual(animations.length, 3);
 		assert.strictEqual(animations[0].cancel.mock.calls.length, 1);
 		assert.strictEqual(animations[1].cancel.mock.calls.length, 0);
 	});

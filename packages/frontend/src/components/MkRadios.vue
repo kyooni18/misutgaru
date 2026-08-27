@@ -135,7 +135,7 @@ function toggle(o: MkRadiosOption): void {
 	border: solid 1px var(--MI_THEME-panel);
 	border-radius: 6px;
 	font-size: 90%;
-	transition: all 0.2s;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
 	user-select: none;
 
 	&.disabled {
@@ -203,7 +203,7 @@ function toggle(o: MkRadiosOption): void {
 		border-radius: 100%;
 		opacity: 0;
 		transform: scale(0);
-		transition: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+		transition: background-color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 	}
 }
 
@@ -218,7 +218,7 @@ function toggle(o: MkRadiosOption): void {
 	font-size: 0.85em;
 	padding: 2px 0 0 0;
 	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
-	transition: all 0.2s;
+	transition: color 0.2s;
 }
 
 .optionIcon {

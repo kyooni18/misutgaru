@@ -13,13 +13,40 @@ import { miLocalStorage } from '@/local-storage.js';
 //#region loader
 const providedMetaEl = window.document.getElementById('misskey_meta');
 
-let cachedMeta = miLocalStorage.getItem('instance') ? JSON.parse(miLocalStorage.getItem('instance')!) : null;
-let cachedAt = miLocalStorage.getItem('instanceCachedAt') ? parseInt(miLocalStorage.getItem('instanceCachedAt')!) : 0;
-const providedMeta = providedMetaEl && providedMetaEl.textContent ? JSON.parse(providedMetaEl.textContent) : null;
-const providedAt = providedMetaEl && providedMetaEl.dataset.generatedAt ? parseInt(providedMetaEl.dataset.generatedAt) : 0;
-if (providedAt > cachedAt) {
-	miLocalStorage.setItem('instance', JSON.stringify(providedMeta));
-	miLocalStorage.setItem('instanceCachedAt', providedAt.toString());
+function parseMeta(raw: string | null, source: string): Misskey.entities.MetaDetailed | null {
+	if (!raw) return null;
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+		return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
+			? parsed as Misskey.entities.MetaDetailed
+			: null;
+	} catch (error) {
+		console.warn(`[instance] Ignoring invalid ${source} metadata`, error);
+		return null;
+	}
+}
+
+function parseTimestamp(raw: string | undefined | null): number {
+	if (!raw) return 0;
+	const value = Number.parseInt(raw, 10);
+	return Number.isFinite(value) ? value : 0;
+}
+
+function cacheMeta(meta: Misskey.entities.MetaDetailed, at: number) {
+	try {
+		miLocalStorage.setItem('instance', JSON.stringify(meta));
+		miLocalStorage.setItem('instanceCachedAt', at.toString());
+	} catch (error) {
+		console.warn('[instance] Failed to persist instance metadata', error);
+	}
+}
+
+let cachedMeta = parseMeta(miLocalStorage.getItem('instance'), 'cached');
+let cachedAt = parseTimestamp(miLocalStorage.getItem('instanceCachedAt'));
+const providedMeta = parseMeta(providedMetaEl?.textContent ?? null, 'provided');
+const providedAt = parseTimestamp(providedMetaEl?.dataset.generatedAt);
+if (providedMeta != null && providedAt > cachedAt) {
+	cacheMeta(providedMeta, providedAt);
 	cachedMeta = providedMeta;
 	cachedAt = providedAt;
 }
@@ -31,7 +58,7 @@ export const instance: Misskey.entities.MetaDetailed = reactive(cachedMeta ?? {}
 
 export async function fetchInstance(force = false): Promise<Misskey.entities.MetaDetailed> {
 	if (!force) {
-		const cachedAt = miLocalStorage.getItem('instanceCachedAt') ? parseInt(miLocalStorage.getItem('instanceCachedAt')!) : 0;
+		const cachedAt = parseTimestamp(miLocalStorage.getItem('instanceCachedAt'));
 
 		if (Date.now() - cachedAt < 1000 * 60 * 60) {
 			return instance;
@@ -46,8 +73,7 @@ export async function fetchInstance(force = false): Promise<Misskey.entities.Met
 		(instance[k as keyof typeof meta] as any) = v;
 	}
 
-	miLocalStorage.setItem('instance', JSON.stringify(instance));
-	miLocalStorage.setItem('instanceCachedAt', Date.now().toString());
+	cacheMeta(instance, Date.now());
 
 	return instance;
 }

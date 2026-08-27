@@ -44,18 +44,42 @@ export type Keys = (
 	`idbfallback::${string}`
 );
 
-// セッション毎に廃棄されるLocalStorage代替（セーフモードなどで使用できそう）
-//const safeSessionStorage = new Map<Keys, string>();
+// localStorage が利用できない環境でも、少なくとも現在のタブは動作を継続できるようにする。
+const safeSessionStorage = new Map<Keys, string>();
+let storageWarningShown = false;
+
+function warnStorageUnavailable(error: unknown) {
+	if (storageWarningShown) return;
+	storageWarningShown = true;
+	console.warn('[localStorage] Persistent storage is unavailable; falling back to in-memory storage for this tab', error);
+}
 
 export const miLocalStorage = {
 	getItem: (key: Keys): string | null => {
-		return window.localStorage.getItem(key);
+		if (safeSessionStorage.has(key)) return safeSessionStorage.get(key) ?? null;
+		try {
+			return window.localStorage.getItem(key);
+		} catch (error) {
+			warnStorageUnavailable(error);
+			return null;
+		}
 	},
 	setItem: (key: Keys, value: string): void => {
-		window.localStorage.setItem(key, value);
+		try {
+			window.localStorage.setItem(key, value);
+			safeSessionStorage.delete(key);
+		} catch (error) {
+			warnStorageUnavailable(error);
+			safeSessionStorage.set(key, value);
+		}
 	},
 	removeItem: (key: Keys): void => {
-		window.localStorage.removeItem(key);
+		safeSessionStorage.delete(key);
+		try {
+			window.localStorage.removeItem(key);
+		} catch (error) {
+			warnStorageUnavailable(error);
+		}
 	},
 	getItemAsJson: (key: Keys): any | undefined => {
 		const item = miLocalStorage.getItem(key);
