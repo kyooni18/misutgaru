@@ -69,8 +69,19 @@ export class UserPreview {
 	}
 
 	private close() {
+		if (this.showTimer != null) {
+			window.clearTimeout(this.showTimer);
+			this.showTimer = null;
+		}
+		if (this.hideTimer != null) {
+			window.clearTimeout(this.hideTimer);
+			this.hideTimer = null;
+		}
+		if (this.checkTimer != null) {
+			window.clearInterval(this.checkTimer);
+			this.checkTimer = null;
+		}
 		if (this.promise) {
-			if (this.checkTimer) window.clearInterval(this.checkTimer);
 			this.promise.cancel();
 			this.promise = null;
 		}
@@ -100,6 +111,7 @@ export class UserPreview {
 	}
 
 	public detach() {
+		this.close();
 		this.el.removeEventListener('mouseover', this.onMouseover);
 		this.el.removeEventListener('mouseleave', this.onMouseleave);
 		this.el.removeEventListener('click', this.onClick);

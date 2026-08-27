@@ -12,9 +12,20 @@ import { miLocalStorage } from '@/local-storage.js';
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
 const accountData = miLocalStorage.getItem('account');
+let parsedAccount: AccountWithToken | null = null;
+if (accountData) {
+	try {
+		const parsed = JSON.parse(accountData) as unknown;
+		if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			parsedAccount = parsed as AccountWithToken;
+		}
+	} catch (error) {
+		console.warn('[account] Ignoring invalid cached account data', error);
+	}
+}
 
 // TODO: 外部からはreadonlyに
-export const $i = accountData ? reactive(JSON.parse(accountData) as AccountWithToken) : null;
+export const $i = parsedAccount ? reactive(parsedAccount) : null;
 
 export const iAmModerator = $i != null && ($i.isAdmin === true || $i.isModerator === true);
 export const iAmAdmin = $i != null && $i.isAdmin;

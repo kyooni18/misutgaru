@@ -6,40 +6,59 @@
 import { computed } from 'vue';
 import type { Ref, ShallowRef } from 'vue';
 
+const DATE_CACHE_LIMIT = 4096;
+const dateCache = new Map<string, {
+	date: Date;
+	dayKey: string;
+	text: string;
+}>();
+
 export function getDateText(dateInstance: Date) {
 	const date = dateInstance.getDate();
 	const month = dateInstance.getMonth() + 1;
 	return `${month.toString()}/${date.toString()}`;
 }
 
-// TODO: いちいちDateインスタンス作成するのは無駄感あるから文字列のまま解析したい
+function getCachedDateInfo(value: string) {
+	const cached = dateCache.get(value);
+	if (cached) return cached;
+
+	const date = new Date(value);
+	const info = {
+		date,
+		dayKey: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
+		text: getDateText(date),
+	};
+
+	dateCache.set(value, info);
+	if (dateCache.size > DATE_CACHE_LIMIT) {
+		const oldestKey = dateCache.keys().next().value;
+		if (oldestKey !== undefined) dateCache.delete(oldestKey);
+	}
+
+	return info;
+}
+
 export function isSeparatorNeeded(
 	prev: string | null,
 	next: string | null,
 ) {
 	if (prev == null || next == null) return false;
-	const prevDate = new Date(prev);
-	const nextDate = new Date(next);
-	return (
-		prevDate.getFullYear() !== nextDate.getFullYear() ||
-		prevDate.getMonth() !== nextDate.getMonth() ||
-		prevDate.getDate() !== nextDate.getDate()
-	);
+	return getCachedDateInfo(prev).dayKey !== getCachedDateInfo(next).dayKey;
 }
 
-// TODO: いちいちDateインスタンス作成するのは無駄感あるから文字列のまま解析したい
 export function getSeparatorInfo(
 	prev: string | null,
 	next: string | null,
 ) {
 	if (prev == null || next == null) return null;
-	const prevDate = new Date(prev);
-	const nextDate = new Date(next);
+	const prevInfo = getCachedDateInfo(prev);
+	const nextInfo = getCachedDateInfo(next);
 	return {
-		prevDate,
-		prevText: getDateText(prevDate),
-		nextDate,
-		nextText: getDateText(nextDate),
+		prevDate: prevInfo.date,
+		prevText: prevInfo.text,
+		nextDate: nextInfo.date,
+		nextText: nextInfo.text,
 	};
 }
 
@@ -62,8 +81,8 @@ export function makeDateSeparatedTimelineComputedRef<T extends { id: string; cre
 		for (let i = 0; i < items.value.length; i++) {
 			const item = items.value[i];
 
-			const date = new Date(item.createdAt);
-			const nextDate = items.value[i + 1] ? new Date(items.value[i + 1].createdAt) : null;
+			const dateInfo = getCachedDateInfo(item.createdAt);
+			const nextDateInfo = items.value[i + 1] ? getCachedDateInfo(items.value[i + 1].createdAt) : null;
 
 			tl.push({
 				id: item.id,
@@ -73,19 +92,16 @@ export function makeDateSeparatedTimelineComputedRef<T extends { id: string; cre
 
 			if (
 				i !== items.value.length - 1 &&
-					nextDate != null && (
-					date.getFullYear() !== nextDate.getFullYear() ||
-						date.getMonth() !== nextDate.getMonth() ||
-						date.getDate() !== nextDate.getDate()
-				)
+					nextDateInfo != null &&
+					dateInfo.dayKey !== nextDateInfo.dayKey
 			) {
 				tl.push({
 					id: `date-${item.id}`,
 					type: 'date',
-					prev: date,
-					prevText: getDateText(date),
-					next: nextDate,
-					nextText: getDateText(nextDate),
+					prev: dateInfo.date,
+					prevText: dateInfo.text,
+					next: nextDateInfo.date,
+					nextText: nextDateInfo.text,
 				});
 			}
 		}
@@ -101,23 +117,21 @@ export type DateGroupedTimelineItem<T> = {
 export function makeDateGroupedTimelineComputedRef<T extends { id: string; createdAt: string; }>(items: Ref<T[]> | ShallowRef<T[]>, span: 'day' | 'month' = 'day') {
 	return computed<DateGroupedTimelineItem<T>[]>(() => {
 		const tl: DateGroupedTimelineItem<T>[] = [];
+		let lastGroupKey: string | null = null;
 		for (let i = 0; i < items.value.length; i++) {
 			const item = items.value[i];
-			const date = new Date(item.createdAt);
-			const _nextDate = items.value[i + 1] ? new Date(items.value[i + 1].createdAt) : null;
+			const dateInfo = getCachedDateInfo(item.createdAt);
+			const date = dateInfo.date;
+			const groupKey = span === 'day'
+				? dateInfo.dayKey
+				: `${date.getFullYear()}-${date.getMonth()}`;
 
-			if (tl.length === 0 || (
-				span === 'day' && tl[tl.length - 1].date.getTime() !== date.getTime()
-			) || (
-				span === 'month' && (
-					tl[tl.length - 1].date.getFullYear() !== date.getFullYear() ||
-					tl[tl.length - 1].date.getMonth() !== date.getMonth()
-				)
-			)) {
+			if (groupKey !== lastGroupKey) {
 				tl.push({
 					date,
 					items: [],
 				});
+				lastGroupKey = groupKey;
 			}
 			tl[tl.length - 1].items.push(item);
 		}

@@ -25,31 +25,59 @@ import { WorkerMultiDispatch } from '@@/js/worker-multi-dispatch.js';
 // @ts-expect-error
 const isTest = (import.meta.env.MODE === 'test' || window.isPlaywright);
 
+function createFallbackCanvas() {
+	const canvas = window.document.createElement('canvas');
+	canvas.width = 64;
+	canvas.height = 64;
+	return canvas;
+}
+
 const canvasPromise = new Promise<WorkerMultiDispatch | HTMLCanvasElement>(resolve => {
 	if (isTest) {
-		const canvas = window.document.createElement('canvas');
-		canvas.width = 64;
-		canvas.height = 64;
-		resolve(canvas);
+		resolve(createFallbackCanvas());
 		return;
 	}
 
-	const testWorker = new TestWebGL2();
-	testWorker.addEventListener('message', event => {
-		if (event.data.result) {
-			const workers = new WorkerMultiDispatch(
-				() => new DrawBlurhash(),
-				Math.min(navigator.hardwareConcurrency - 1, 4),
-			);
-			resolve(workers);
-		} else {
-			const canvas = window.document.createElement('canvas');
-			canvas.width = 64;
-			canvas.height = 64;
-			resolve(canvas);
+	let testWorker: Worker;
+	try {
+		testWorker = new TestWebGL2();
+	} catch (error) {
+		console.warn('[MkBlurhash] Worker initialization failed, using canvas fallback', error);
+		resolve(createFallbackCanvas());
+		return;
+	}
+
+	let settled = false;
+	const finish = (work: WorkerMultiDispatch | HTMLCanvasElement) => {
+		if (settled) {
+			if (work instanceof WorkerMultiDispatch) work.terminate();
+			return;
 		}
+		settled = true;
 		testWorker.terminate();
-	});
+		resolve(work);
+	};
+
+	testWorker.addEventListener('message', event => {
+		if (!event.data.result) {
+			finish(createFallbackCanvas());
+			return;
+		}
+
+		try {
+			finish(new WorkerMultiDispatch(
+				() => new DrawBlurhash(),
+				Math.min((navigator.hardwareConcurrency || 2) - 1, 4),
+			));
+		} catch (error) {
+			console.warn('[MkBlurhash] Draw worker initialization failed, using canvas fallback', error);
+			finish(createFallbackCanvas());
+		}
+	}, { once: true });
+	testWorker.addEventListener('error', event => {
+		console.warn('[MkBlurhash] WebGL capability worker failed, using canvas fallback', event);
+		finish(createFallbackCanvas());
+	}, { once: true });
 });
 
 </script>
@@ -78,6 +106,7 @@ const canvasWidth = ref(64);
 const canvasHeight = ref(64);
 const viewId = genId();
 const bitmapTmp = shallowRef<CanvasImageSource | undefined>();
+let drawRequest = 0;
 
 watch([() => props.width, () => props.height, canvas], () => {
 	const ratio = props.width / props.height;
@@ -99,18 +128,29 @@ watch(() => props.blurhash, () => {
 	draw();
 });
 
+function closeBitmap(bitmap: CanvasImageSource | undefined) {
+	const closable = bitmap as CanvasImageSource & { close?: () => void } | undefined;
+	closable?.close?.();
+}
+
 function drawImage(bitmap: CanvasImageSource) {
 	// canvasがない（mountedされていない）場合はTmpに保存しておく
 	if (!canvas.value) {
+		if (bitmapTmp.value !== bitmap) closeBitmap(bitmapTmp.value);
 		bitmapTmp.value = bitmap;
 		return;
 	}
 
 	// canvasがあれば描画する
+	if (bitmapTmp.value !== bitmap) closeBitmap(bitmapTmp.value);
 	bitmapTmp.value = undefined;
 	const ctx = canvas.value.getContext('2d');
-	if (!ctx) return;
+	if (!ctx) {
+		closeBitmap(bitmap);
+		return;
+	}
 	ctx.drawImage(bitmap, 0, 0, canvasWidth.value, canvasHeight.value);
+	closeBitmap(bitmap);
 }
 
 function drawAvg() {
@@ -128,27 +168,31 @@ function drawAvg() {
 }
 
 async function draw() {
+	const request = ++drawRequest;
 	if (isTest && props.blurhash == null) return;
 
 	drawAvg();
 
-	if (props.blurhash == null) return;
-
-	if (props.onlyAvgColor) return;
+	const hash = props.blurhash;
+	if (hash == null || props.onlyAvgColor) return;
 
 	const work = await canvasPromise;
+	if (request !== drawRequest) return;
 	if (work instanceof WorkerMultiDispatch) {
 		work.postMessage(
 			{
 				id: viewId,
-				hash: props.blurhash,
+				request,
+				hash,
 			},
 			undefined,
 		);
 	} else {
 		try {
 			const { render } = await import('buraha');
-			render(props.blurhash, work);
+			if (request !== drawRequest) return;
+			render(hash, work);
+			if (request !== drawRequest) return;
 			drawImage(work);
 		} catch (error) {
 			console.error('Error occurred during drawing blurhash', error);
@@ -158,7 +202,12 @@ async function draw() {
 
 function workerOnMessage(event: MessageEvent) {
 	if (event.data.id !== viewId) return;
-	drawImage(event.data.bitmap as ImageBitmap);
+	const bitmap = event.data.bitmap as ImageBitmap;
+	if (event.data.request !== drawRequest) {
+		bitmap.close();
+		return;
+	}
+	drawImage(bitmap);
 }
 
 canvasPromise.then(work => {
@@ -173,10 +222,16 @@ onMounted(() => {
 	// drawImageがmountedより先に呼ばれている場合はここで描画する
 	if (bitmapTmp.value) {
 		drawImage(bitmapTmp.value);
+	} else {
+		// onlyAvgColor の場合でも、worker 初期化が mount より先に終わることがある。
+		drawAvg();
 	}
 });
 
 onUnmounted(() => {
+	drawRequest++;
+	closeBitmap(bitmapTmp.value);
+	bitmapTmp.value = undefined;
 	canvasPromise.then(work => {
 		if (work instanceof WorkerMultiDispatch) {
 			work.removeListener(workerOnMessage);

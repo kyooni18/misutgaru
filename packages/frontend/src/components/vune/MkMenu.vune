@@ -1,0 +1,186 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Divider, Element, ForEach, Group, HStack, NavigationLink, ScrollView, Text, VStack, type ViewGraphValue } from 'vune-ui';
+import MkEllipsis from './MkEllipsis.vune';
+import MkSwitchButton from './MkSwitchButton.vune';
+import VuneIcon from '@/vune/Icon.vune';
+import MaterialSurface from '@/vune/MaterialSurface.vune';
+import type { NativeMenuModel, NativeMenuRow } from './MkMenu.types.js';
+import './MkMenu.vune.scss';
+
+function ignorePointer(_event: PointerEvent): void {}
+function ignoreAction(): void {}
+function viewValue(value: ViewGraphValue | undefined): ViewGraphValue {
+	return value ?? null;
+}
+
+function menuSwitch(row: NativeMenuRow): ViewGraphValue {
+	return MkSwitchButton(row.checked ?? false, disabled: row.disabled ?? false, onToggle: row.onToggle ?? ignoreAction)
+		.className(['mk-vune-menu__switch', row.switchClass])
+}
+
+function itemClasses(row: NativeMenuRow): string[] {
+	return [
+		'_button',
+		'mk-vune-menu__item',
+		row.active ? 'mk-vune-menu__item--active' : '',
+		row.danger ? 'mk-vune-menu__item--danger' : '',
+		row.disabled ? 'mk-vune-menu__item--disabled' : '',
+		row.kind === 'parent' ? 'mk-vune-menu__item--parent' : '',
+		row.kind === 'radio' ? 'mk-vune-menu__item--radio' : '',
+		row.kind === 'switch' ? 'mk-vune-menu__item--switch' : '',
+	]
+}
+
+function activateMenuButton(row: NativeMenuRow, event: PointerEvent): void {
+	// SwitchButton renders its own native button inside the menu row. The
+	// switch handler already toggles the Vue ref; letting the parent row handle
+	// the bubbled click would toggle it a second time and leave it unchanged.
+	if (row.kind === 'switch') {
+		const target = event.target as { closest?: (selector: string) => unknown } | null
+		if (target?.closest?.('[data-vune="Switch"]')) return
+	}
+	row.onActivate?.(event)
+}
+
+struct MkMenuLabel: View {
+	let row: NativeMenuRow
+
+	init(_ row: NativeMenuRow) {
+		self.row = row
+	}
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 0) {
+			if (row.leading) { viewValue(row.leading) }
+			if (row.icon) { VuneIcon(row.icon).className(['mk-vune-menu__icon', 'ti-fw']) }
+			if (row.kind === 'radio') {
+				Text('').className(['mk-vune-menu__radio-icon', row.checked ? 'mk-vune-menu__radio-icon--checked' : ''])
+			}
+			HStack(alignment: 'center', spacing: 8) {
+				VStack(alignment: 'leading', spacing: 0) {
+					Text(String(row.text ?? '')).className('mk-vune-menu__title')
+					if (row.caption) { Text(String(row.caption)).className('mk-vune-menu__caption') }
+				}.className('mk-vune-menu__text')
+				if (row.indicate) {
+					Text('').className(['mk-vune-menu__indicator', '_blink', '_indicatorCircle'])
+				}
+				if (row.kind === 'switch') {
+					menuSwitch(row)
+				}
+				if (row.kind === 'parent') {
+					VuneIcon('ti ti-chevron-right').className('mk-vune-menu__caret')
+				}
+			}.className('mk-vune-menu__content')
+			if (row.content) { Group() { viewValue(row.content) }.className('mk-vune-menu__trailing') }
+		}.className('mk-vune-menu__label').style({ justifyContent: 'flex-start' })
+	}
+}
+
+function menuNavigationRow(row: NativeMenuRow): ViewGraphValue {
+	return NavigationLink(row.href ?? '#', label: {
+		MkMenuLabel(row)
+	})
+		.className(itemClasses(row))
+		.withProps({
+			target: row.target,
+			rel: row.target === '_blank' ? 'noopener noreferrer' : undefined,
+			download: row.download,
+			onClick: row.onActivate ?? ignorePointer,
+			onMouseEnter: row.onHover,
+			onMouseMove: row.onMove,
+			onMouseLeave: row.onLeave,
+		})
+}
+
+function menuButtonRow(row: NativeMenuRow): ViewGraphValue {
+	return Element('button', {
+		type: 'button',
+		// Raw Element props only accept a string className. Passing the array
+		// directly is discarded while Vune snapshots native HTML attributes,
+		// which leaves the browser's default button styling in the menu.
+		className: itemClasses(row).join(' '),
+		role: row.kind === 'switch' ? 'menuitemcheckbox' : row.kind === 'radio' ? 'menuitemradio' : 'menuitem',
+		tabIndex: 0,
+		disabled: row.disabled,
+		'aria-checked': row.kind === 'switch' || row.kind === 'radio' ? row.checked : undefined,
+		onClick: event => activateMenuButton(row, event),
+		onMouseEnter: row.onHover,
+		onMouseMove: row.onMove,
+		onMouseLeave: row.onLeave,
+	}, MkMenuLabel(row))
+}
+
+struct MkMenuRow: View {
+	let row: NativeMenuRow
+
+	init(_ row: NativeMenuRow) {
+		self.row = row
+	}
+
+	var body: some View {
+		Group() {
+			if (row.kind === 'divider') {
+				Divider().className('mk-vune-menu__divider')
+			} else if (row.kind === 'label') {
+				Text(row.text ?? '').className('mk-vune-menu__label-row').withProps({ role: 'menuitem', tabIndex: -1 })
+			} else if (row.kind === 'pending') {
+				HStack(alignment: 'center', spacing: 0) {
+					MkEllipsis()
+				}.className(['mk-vune-menu__item', 'mk-vune-menu__pending']).withProps({ role: 'menuitem', tabIndex: 0 })
+			} else if (row.kind === 'component') {
+				Group() { viewValue(row.content) }.className('mk-vune-menu__component').withProps({ role: 'menuitem', tabIndex: -1 })
+			} else if (row.kind === 'link' || row.kind === 'external') {
+				menuNavigationRow(row)
+			} else {
+				menuButtonRow(row)
+			}
+		}
+	}
+}
+
+export struct MkMenu: View {
+	let model: NativeMenuModel
+
+	init(_ model: NativeMenuModel) {
+		self.model = model
+	}
+
+	var body: some View {
+		MaterialSurface(model.material, opaqueBackground: 'var(--MI_THEME-bg)', animated: model.animated) {
+			ScrollView('vertical') {
+				VStack(alignment: 'leading', spacing: 0) {
+					ForEach(model.rows, key: row => row.key) { row in
+						MkMenuRow(row)
+					}
+					if (model.rows.length === 0) {
+						Text(model.noneLabel).className(['mk-vune-menu__item', 'mk-vune-menu__item--none']).withProps({ tabIndex: -1 })
+					}
+					Group() {}
+						.className(['mk-vune-menu__guard', model.guardClass])
+						.style({ clipPath: model.guardClipPath, top: `${model.guardTop}px` })
+						.withProps({ onMouseMove: model.onGuardMouseMove })
+				}
+			}
+				.className(['mk-vune-menu', model.asDrawer ? 'mk-vune-menu--drawer' : '', model.big ? 'mk-vune-menu--big' : '', model.center ? 'mk-vune-menu--center' : ''])
+				.style({
+					width: model.width == null ? '' : `${model.width}px`,
+					maxHeight: model.maxHeight == null ? 'calc(100dvh - 32px)' : `min(${model.maxHeight}px, calc(100dvh - 32px))`,
+				})
+				.withProps({
+					ref: model.onItemsRef,
+					role: 'menu',
+					tabIndex: 0,
+					onKeyDown: model.onKeydown,
+					onMouseMove: model.onMouseMove,
+					onMouseLeave: model.onMouseLeave,
+				})
+		}
+			.className(['mk-vune-menu-surface', '_popup', '_shadow', model.asDrawer ? 'mk-vune-menu-surface--drawer' : ''])
+			// MaterialSurface's ZStack defaults to width: 100%; menus need an
+			// intrinsic width so the parent row and submenu share the same edge.
+			.style({ width: model.asDrawer ? '100%' : 'max-content' })
+	}
+}
+
+export default MkMenu

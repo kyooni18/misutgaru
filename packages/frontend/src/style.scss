@@ -9,9 +9,13 @@
  */
 
 :root {
-	--MI-radius: 12px;
+	--MI-radius: 16px;
 	--MI-marginFull: 16px;
 	--MI-marginHalf: 10px;
+	// Modal backdrops keep the existing blur preference, but no longer add a
+	// dark scrim. The value is updated by boot/common.ts when the preference
+	// changes and is also the target used by the drawer transitions.
+	--MI-modalBgBlurTarget: 1px;
 
 	--MI-margin: var(--MI-marginFull);
 
@@ -34,10 +38,10 @@
 *::after {
 	box-sizing: border-box;
 	/*
-	 * Vune's rounded primitives use CSS corner-shape. Keep border-radius as
-	 * the fallback so unsupported browsers retain the existing geometry.
+	 * Keep the corner shape explicit so engines with partial corner-shape
+	 * support render the same geometry as engines that use border-radius alone.
 	 */
-	corner-shape: squircle;
+	corner-shape: round;
 }
 
 html {
@@ -302,9 +306,10 @@ rt {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: var(--MI_THEME-modalBg);
-	-webkit-backdrop-filter: var(--MI-modalBgFilter);
-	backdrop-filter: var(--MI-modalBgFilter);
+	background: transparent;
+	--MI-modalBgBlur: var(--MI-modalBgBlurTarget, 1px);
+	-webkit-backdrop-filter: blur(var(--MI-modalBgBlur));
+	backdrop-filter: blur(var(--MI-modalBgBlur));
 }
 
 ._shadow {
@@ -443,9 +448,10 @@ rt {
 }
 
 ._acrylic {
-	background: color(from var(--MI_THEME-panel) srgb r g b / 0.5);
-	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
-	backdrop-filter: var(--MI-blur, blur(15px));
+	@extend .vune-material;
+	--vune-material-surface: var(--MI_THEME-panel);
+	--vune-material-opacity: 50%;
+	--vune-material-blur-target: 15px;
 }
 
 ._formLinksGrid {

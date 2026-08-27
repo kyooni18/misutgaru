@@ -47,6 +47,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</MkFolder>
 				</SearchMarker>
+
+				<SearchMarker v-slot="slotProps">
+					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
+						<template #label><SearchLabel>OpenAI Translation</SearchLabel></template>
+
+						<div class="_gaps_m">
+							<MkSwitch :modelValue="instance.openaiTranslationAvailable" disabled>
+								<template #label><SearchLabel>{{ i18n.ts.enable }}</SearchLabel></template>
+							</MkSwitch>
+							<MkInfo>Configure <code>OPENAI_API_KEY</code>, <code>OPENAI_BASE_URL</code>, and <code>OPENAI_TRANSLATION_MODEL</code> in the server environment, then restart the backend.</MkInfo>
+						</div>
+					</MkFolder>
+				</SearchMarker>
 			</div>
 		</SearchMarker>
 	</div>
@@ -60,10 +73,11 @@ import MkButton from '@/components/MkButton.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { fetchInstance } from '@/instance.js';
+import { fetchInstance, instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkFolder from '@/components/MkFolder.vue';
+import MkInfo from '@/components/MkInfo.vue';
 
 const meta = await misskeyApi('admin/meta');
 

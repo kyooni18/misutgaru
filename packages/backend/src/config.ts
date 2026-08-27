@@ -67,6 +67,12 @@ type Source = {
 	fulltextSearch?: {
 		provider?: FulltextSearchProvider;
 	};
+	openaiTranslation?: {
+		enabled?: boolean;
+		apiKey?: string;
+		baseUrl?: string;
+		model?: string;
+	};
 	meilisearch?: {
 		host: string;
 		port: string;
@@ -166,6 +172,12 @@ export type Config = {
 	}[] | undefined;
 	fulltextSearch?: {
 		provider?: FulltextSearchProvider;
+	};
+	openaiTranslation: {
+		enabled: boolean;
+		apiKey: string;
+		baseUrl: string;
+		model: string;
 	};
 	meilisearch: {
 		host: string;
@@ -311,6 +323,8 @@ export function loadConfig(): Config {
 		: null;
 	const internalMediaProxy = `${scheme}://${host}/proxy`;
 	const redis = convertRedisOptions(config.redis, host);
+	const openaiTranslationApiKey = config.openaiTranslation?.apiKey ?? process.env.OPENAI_API_KEY ?? '';
+	const openaiTranslationEnabled = config.openaiTranslation?.enabled ?? (process.env.OPENAI_TRANSLATION_ENABLED == null ? openaiTranslationApiKey.trim() !== '' : process.env.OPENAI_TRANSLATION_ENABLED === 'true');
 
 	return {
 		version,
@@ -342,6 +356,12 @@ export function loadConfig(): Config {
 		dbReplications: config.dbReplications,
 		dbSlaves: config.dbSlaves,
 		fulltextSearch: config.fulltextSearch,
+		openaiTranslation: {
+			enabled: openaiTranslationEnabled,
+			apiKey: openaiTranslationApiKey,
+			baseUrl: (config.openaiTranslation?.baseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, ''),
+			model: config.openaiTranslation?.model ?? process.env.OPENAI_TRANSLATION_MODEL ?? 'gpt-4o-mini',
+		},
 		meilisearch: config.meilisearch,
 		redis,
 		redisForPubsub: config.redisForPubsub ? convertRedisOptions(config.redisForPubsub, host) : redis,

@@ -101,18 +101,21 @@ function leave(element: Element, done: () => void) {
 	});
 }
 
+const pointerCleanups = new Set<() => void>();
+
 function dragListen(fn: (ev: PointerEvent) => void) {
-	window.addEventListener('pointermove', fn);
 	const clear = () => {
-		dragClear(fn);
+		window.removeEventListener('pointermove', fn);
+		window.removeEventListener('pointerup', clear);
+		window.removeEventListener('pointercancel', clear);
+		window.removeEventListener('blur', clear);
+		pointerCleanups.delete(clear);
 	};
+	pointerCleanups.add(clear);
+	window.addEventListener('pointermove', fn, { passive: true });
 	window.addEventListener('pointerup', clear, { once: true });
 	window.addEventListener('pointercancel', clear, { once: true });
 	window.addEventListener('blur', clear, { once: true });
-}
-
-function dragClear(fn: (ev: PointerEvent) => void) {
-	window.removeEventListener('pointermove', fn);
 }
 
 function capturePointer(evt: PointerEvent) {
@@ -127,11 +130,15 @@ function capturePointer(evt: PointerEvent) {
 	}
 
 	const release = () => {
+		window.removeEventListener('pointerup', release);
+		window.removeEventListener('pointercancel', release);
+		pointerCleanups.delete(release);
 		if (target.hasPointerCapture(evt.pointerId)) {
 			target.releasePointerCapture(evt.pointerId);
 		}
 	};
 
+	pointerCleanups.add(release);
 	window.addEventListener('pointerup', release, { once: true });
 	window.addEventListener('pointercancel', release, { once: true });
 }
@@ -546,6 +553,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+	for (const cleanup of [...pointerCleanups]) cleanup();
 	window.removeEventListener('resize', onBrowserResize);
 });
 

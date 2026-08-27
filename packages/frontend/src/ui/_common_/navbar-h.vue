@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -58,6 +58,7 @@ import { prefer } from '@/preferences.js';
 import { getAccountMenu } from '@/accounts.js';
 import { $i } from '@/i.js';
 import { getHTMLElementOrNull } from '@/utility/get-dom-node-or-null.js';
+import { useMediaQuery } from '@/composables/use-media-query.js';
 
 const WINDOW_THRESHOLD = 1400;
 
@@ -65,7 +66,7 @@ const props = defineProps<{
 	acrylic?: boolean;
 }>();
 
-const settingsWindowed = ref(window.innerWidth > WINDOW_THRESHOLD);
+const settingsWindowed = useMediaQuery(`(min-width: ${WINDOW_THRESHOLD}px)`);
 const menu = ref(prefer.s.menu);
 // const menuDisplay = store.model('menuDisplay');
 const otherNavItemIndicated = computed<boolean>(() => {
@@ -95,12 +96,6 @@ async function openAccountMenu(ev: PointerEvent) {
 
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
 }
-
-onMounted(() => {
-	window.addEventListener('resize', () => {
-		settingsWindowed.value = (window.innerWidth >= WINDOW_THRESHOLD);
-	}, { passive: true });
-});
 
 </script>
 

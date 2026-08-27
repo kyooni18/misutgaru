@@ -176,11 +176,14 @@ if ($i) {
 .transition_menuDrawerBg_enterActive,
 .transition_menuDrawerBg_leaveActive {
 	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
+		-webkit-backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1),
+		backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .transition_menuDrawerBg_enterFrom,
 .transition_menuDrawerBg_leaveTo {
 	opacity: 0;
+	--MI-modalBgBlur: 0px;
 }
 
 .transition_menuDrawer_enterActive,
@@ -198,11 +201,14 @@ if ($i) {
 .transition_widgetsDrawerBg_enterActive,
 .transition_widgetsDrawerBg_leaveActive {
 	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
+		-webkit-backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1),
+		backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .transition_widgetsDrawerBg_enterFrom,
 .transition_widgetsDrawerBg_leaveTo {
 	opacity: 0;
+	--MI-modalBgBlur: 0px;
 }
 
 .transition_widgetsDrawer_enterActive,

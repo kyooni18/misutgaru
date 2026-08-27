@@ -156,7 +156,7 @@ function onEmptyDrop(ev: DragEvent) {
 .transition_items_move,
 .transition_items_enterActive,
 .transition_items_leaveActive {
-	transition: all 0.15s ease;
+	transition: opacity 0.15s ease, transform 0.15s ease;
 }
 .transition_items_enterFrom,
 .transition_items_leaveTo {

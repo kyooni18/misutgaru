@@ -18,7 +18,7 @@ export function useTooltip(
 	// TODO: 一度でもタップすると二度とマウスでツールチップ出せなくなるのをどうにかする 定期的にfalseに戻すとか...？
 	let shouldIgnoreMouseover = false;
 
-	let timeoutId: number;
+	let timeoutId: number | null = null;
 
 	let changeShowingState: (() => void) | null;
 
@@ -41,14 +41,20 @@ export function useTooltip(
 			if (elRef.value == null || !window.document.body.contains(elRef.value instanceof Element ? elRef.value : elRef.value.$el)) {
 				if (!isHovering) return;
 				isHovering = false;
-				window.clearTimeout(timeoutId);
 				close();
-				if (autoHidingTimer != null) window.clearInterval(autoHidingTimer);
 			}
 		}, 1000);
 	};
 
 	const close = () => {
+		if (timeoutId != null) {
+			window.clearTimeout(timeoutId);
+			timeoutId = null;
+		}
+		if (autoHidingTimer != null) {
+			window.clearInterval(autoHidingTimer);
+			autoHidingTimer = null;
+		}
 		if (changeShowingState != null) {
 			changeShowingState();
 			changeShowingState = null;
@@ -65,8 +71,6 @@ export function useTooltip(
 	const onMouseleave = () => {
 		if (!isHovering) return;
 		isHovering = false;
-		window.clearTimeout(timeoutId);
-		if (autoHidingTimer != null) window.clearInterval(autoHidingTimer);
 		close();
 	};
 
@@ -80,35 +84,30 @@ export function useTooltip(
 	const onTouchend = () => {
 		if (!isHovering) return;
 		isHovering = false;
-		window.clearTimeout(timeoutId);
-		if (autoHidingTimer != null) window.clearInterval(autoHidingTimer);
 		close();
 	};
 
-	const stop = watch(elRef, () => {
-		if (elRef.value) {
-			stop();
-			const el = elRef.value instanceof Element ? elRef.value : elRef.value.$el;
-			el.addEventListener('mouseover', onMouseover, { passive: true });
-			el.addEventListener('mouseleave', onMouseleave, { passive: true });
-			el.addEventListener('touchstart', onTouchstart, { passive: true });
-			el.addEventListener('touchend', onTouchend, { passive: true });
-			el.addEventListener('click', close, { passive: true });
-		}
-	}, {
-		immediate: true,
-		flush: 'post',
-	});
+	watch(elRef, (value, _previousValue, onCleanup) => {
+		if (!value) return;
+		const el = value instanceof Element ? value : value.$el;
+		el.addEventListener('mouseover', onMouseover, { passive: true });
+		el.addEventListener('mouseleave', onMouseleave, { passive: true });
+		el.addEventListener('touchstart', onTouchstart, { passive: true });
+		el.addEventListener('touchend', onTouchend, { passive: true });
+		el.addEventListener('click', close, { passive: true });
 
-	onBeforeUnmount(() => {
-		close();
-		if (elRef.value) {
-			const el = elRef.value instanceof Element ? elRef.value : elRef.value.$el;
+		onCleanup(() => {
 			el.removeEventListener('mouseover', onMouseover);
 			el.removeEventListener('mouseleave', onMouseleave);
 			el.removeEventListener('touchstart', onTouchstart);
 			el.removeEventListener('touchend', onTouchend);
 			el.removeEventListener('click', close);
-		}
+			close();
+		});
+	}, {
+		immediate: true,
+		flush: 'post',
 	});
+
+	onBeforeUnmount(close);
 }

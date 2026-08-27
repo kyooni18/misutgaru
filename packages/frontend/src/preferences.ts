@@ -20,15 +20,23 @@ const syncGroup = 'default';
 const io: StorageProvider = {
 	load: () => {
 		const savedProfileRaw = miLocalStorage.getItem('preferences');
-		if (savedProfileRaw == null) {
+		if (savedProfileRaw == null) return null;
+
+		try {
+			const parsed = JSON.parse(savedProfileRaw) as unknown;
+			return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+		} catch (error) {
+			console.warn('[preferences] Ignoring invalid cached preferences', error);
 			return null;
-		} else {
-			return JSON.parse(savedProfileRaw);
 		}
 	},
 
 	save: (ctx) => {
-		miLocalStorage.setItem('preferences', JSON.stringify(ctx.profile));
+		try {
+			miLocalStorage.setItem('preferences', JSON.stringify(ctx.profile));
+		} catch (error) {
+			console.warn('[preferences] Failed to persist preferences', error);
+		}
 	},
 
 	cloudGet: async (ctx) => {

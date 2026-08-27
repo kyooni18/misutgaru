@@ -11,13 +11,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="$style.root"
 	tabindex="0"
 >
-	<div v-if="appearNote.reply && appearNote.reply.replyId">
+	<div v-if="!props.threadContext && appearNote.replyId && (props.autoLoadThread || (appearNote.reply && appearNote.reply.replyId))">
 		<div v-if="!conversationLoaded" style="padding: 16px">
-			<MkButton style="margin: 0 auto;" primary rounded @click="loadConversation">{{ i18n.ts.loadConversation }}</MkButton>
+			<MkLoading v-if="conversationLoading" mini/>
+			<MkButton v-else style="margin: 0 auto;" primary rounded @click="loadConversation">{{ i18n.ts.loadConversation }}</MkButton>
 		</div>
-		<MkNoteSub v-for="note in conversation" :key="note.id" :class="$style.replyToMore" :note="note"/>
+		<MkNoteDetailed v-for="note in conversation" :key="note.id" :note="note" :threadContext="true"/>
 	</div>
-	<MkNoteSub v-if="appearNote.replyId" :note="appearNote?.reply ?? null" :class="$style.replyTo"/>
+	<MkNoteDetailed
+		v-if="!props.threadContext && props.autoLoadThread && appearNote.replyId && appearNote.reply"
+		:note="appearNote.reply"
+		:threadContext="true"
+	/>
+	<MkNoteSub v-else-if="!props.threadContext && appearNote.replyId && appearNote.reply" :note="appearNote.reply" :class="$style.replyTo"/>
 	<div v-if="isRenote" :class="$style.renote">
 		<MkAvatar :class="$style.renoteAvatar" :user="note.user" link preview/>
 		<i class="ti ti-repeat" style="margin-right: 4px;"></i>
@@ -108,6 +114,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div v-else-if="translation">
 							<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
 							<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+							<template v-for="(image, index) in translation.images" :key="`${image.fileId}-${index}`">
+								<div v-if="image.kind !== 'skip' && image.text" :class="$style.imageTranslation">
+									<b>{{ image.kind === 'translation' ? i18n.ts.translate : i18n.ts.details }} #{{ index + 1 }}: </b>
+									<Mfm :text="image.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+								</div>
+							</template>
 						</div>
 					</div>
 					<div v-if="appearNote.files && appearNote.files.length > 0">
@@ -185,45 +197,46 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</footer>
 		</article>
 		<div :class="$style.tabs">
-			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
-			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
-			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
-		</div>
-		<div>
-			<div v-if="tab === 'replies'">
-				<div v-if="!repliesLoaded" style="padding: 16px">
-					<MkButton style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
+				<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
+				<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
+				<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
+			</div>
+			<div>
+				<div v-if="tab === 'replies'">
+					<div v-if="!repliesLoaded" style="padding: 16px">
+						<MkLoading v-if="repliesLoading" mini/>
+						<MkButton v-else style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
+					</div>
+					<MkNoteSub v-for="note in replies" :key="note.id" :note="note" :class="$style.reply" :detail="true"/>
 				</div>
-				<MkNoteSub v-for="note in replies" :key="note.id" :note="note" :class="$style.reply" :detail="true"/>
-			</div>
-			<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
-				<MkPagination :paginator="renotesPaginator" :forceDisableInfiniteScroll="true">
-					<template #default="{ items }">
-						<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
-							<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
-								<MkUserCardMini :user="item.user" :withChart="false"/>
-							</MkA>
-						</div>
-					</template>
-				</MkPagination>
-			</div>
-			<div v-else-if="tab === 'reactions'" :class="$style.tab_reactions">
-				<div :class="$style.reactionTabs">
-					<button v-for="reaction in Object.keys($appearNote.reactions)" :key="reaction" :class="[$style.reactionTab, { [$style.reactionTabActive]: reactionTabType === reaction }]" class="_button" @click="reactionTabType = reaction">
-						<MkReactionIcon :reaction="reaction"/>
-						<span style="margin-left: 4px;">{{ $appearNote.reactions[reaction] }}</span>
-					</button>
+				<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
+					<MkPagination :paginator="renotesPaginator" :forceDisableInfiniteScroll="true">
+						<template #default="{ items }">
+							<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
+								<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
+									<MkUserCardMini :user="item.user" :withChart="false"/>
+								</MkA>
+							</div>
+						</template>
+					</MkPagination>
 				</div>
-				<MkPagination v-if="reactionTabType" :key="reactionTabType" :paginator="reactionsPaginator" :forceDisableInfiniteScroll="true">
-					<template #default="{ items }">
-						<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
-							<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
-								<MkUserCardMini :user="item.user" :withChart="false"/>
-							</MkA>
-						</div>
-					</template>
-				</MkPagination>
-			</div>
+				<div v-else-if="tab === 'reactions'" :class="$style.tab_reactions">
+					<div :class="$style.reactionTabs">
+						<button v-for="reaction in Object.keys($appearNote.reactions)" :key="reaction" :class="[$style.reactionTab, { [$style.reactionTabActive]: reactionTabType === reaction }]" class="_button" @click="reactionTabType = reaction">
+							<MkReactionIcon :reaction="reaction"/>
+							<span style="margin-left: 4px;">{{ $appearNote.reactions[reaction] }}</span>
+						</button>
+					</div>
+					<MkPagination v-if="reactionTabType" :key="reactionTabType" :paginator="reactionsPaginator" :forceDisableInfiniteScroll="true">
+						<template #default="{ items }">
+							<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
+								<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
+									<MkUserCardMini :user="item.user" :withChart="false"/>
+								</MkA>
+							</div>
+						</template>
+					</MkPagination>
+				</div>
 		</div>
 	</template>
 </div>
@@ -239,7 +252,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject, provide, ref, useTemplateRef, markRaw, computed } from 'vue';
+import { inject, provide, ref, useTemplateRef, markRaw, computed, onMounted } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
@@ -270,8 +283,12 @@ import MkButton from '@/components/MkButton.vue';
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
 	initialTab?: 'replies' | 'renotes' | 'reactions';
+	autoLoadThread?: boolean;
+	threadContext?: boolean;
 }>(), {
 	initialTab: 'replies',
+	autoLoadThread: false,
+	threadContext: false,
 });
 
 // 周辺コンテキストのインジェクト
@@ -350,29 +367,48 @@ const reactionsPaginator = markRaw(new Paginator('notes/reactions', {
 
 const replies = ref<Misskey.entities.Note[]>([]);
 const repliesLoaded = ref(false);
+const repliesLoading = ref(false);
 
 function loadReplies() {
-	repliesLoaded.value = true;
-	misskeyApi('notes/children', {
+	if (repliesLoaded.value || repliesLoading.value) return;
+	repliesLoading.value = true;
+	void misskeyApi('notes/children', {
 		noteId: appearNote.id,
 		limit: 30,
 	}).then(res => {
 		replies.value = res;
+		repliesLoaded.value = true;
+	}).finally(() => {
+		repliesLoading.value = false;
 	});
 }
 
 const conversation = ref<Misskey.entities.Note[]>([]);
 const conversationLoaded = ref(false);
+const conversationLoading = ref(false);
 
 function loadConversation() {
-	conversationLoaded.value = true;
-	if (appearNote.replyId == null) return;
-	misskeyApi('notes/conversation', {
+	if (conversationLoaded.value || conversationLoading.value) return;
+	if (appearNote.replyId == null) {
+		conversationLoaded.value = true;
+		return;
+	}
+	conversationLoading.value = true;
+	void misskeyApi('notes/conversation', {
 		noteId: appearNote.replyId,
 	}).then(res => {
 		conversation.value = res.reverse();
+		conversationLoaded.value = true;
+	}).finally(() => {
+		conversationLoading.value = false;
 	});
 }
+
+onMounted(() => {
+	if (!props.autoLoadThread) return;
+	loadConversation();
+	loadReplies();
+});
 
 // キーボードショートカットマップ
 const keymap = {
@@ -584,6 +620,10 @@ const keymap = {
 	border: solid 0.5px var(--MI_THEME-divider);
 	border-radius: var(--MI-radius);
 	padding: 12px;
+	margin-top: 8px;
+}
+
+.imageTranslation {
 	margin-top: 8px;
 }
 

@@ -67,11 +67,18 @@ const keyframeMetadata = new Set([
 // second engine because o0o0o's default engine enforces reduced motion itself.
 const sharedMotionEngine = defaultEngine;
 const unrestrictedMotionEngine = new MotionEngine({ respectReducedMotion: false });
+let reducedMotionQuery: MediaQueryList | null | undefined;
+let reducedMotionMatchMedia: typeof window.matchMedia | undefined;
 
 function reducedMotionRequested(): boolean {
-	return typeof window !== 'undefined'
-		&& typeof window.matchMedia === 'function'
-		&& window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const matchMedia = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+		? window.matchMedia
+		: undefined;
+	if (reducedMotionQuery === undefined || reducedMotionMatchMedia !== matchMedia) {
+		reducedMotionMatchMedia = matchMedia;
+		reducedMotionQuery = matchMedia ? matchMedia.call(window, '(prefers-reduced-motion: reduce)') : null;
+	}
+	return reducedMotionQuery?.matches ?? false;
 }
 
 function reportMotionCallbackError(kind: 'update' | 'complete', error: unknown): void {
@@ -85,6 +92,10 @@ function cssPropertyName(property: string): string {
 
 function styleOf(element: Element): CSSStyleDeclaration | undefined {
 	return (element as Element & { style?: CSSStyleDeclaration }).style;
+}
+
+function normalizedFill(fill: FillMode | undefined): FillMode {
+	return fill === 'auto' ? 'none' : (fill ?? 'both');
 }
 
 function isColorProperty(property: string): boolean {
@@ -182,6 +193,24 @@ function keyframeProperties(keyframes: Keyframe[] | PropertyIndexedKeyframes): s
 	return [...new Set(properties
 		.filter(property => !keyframeMetadata.has(property))
 		.map(cssPropertyName))];
+}
+
+function keyframesForProperty(
+	keyframes: Keyframe[] | PropertyIndexedKeyframes,
+	cssProperty: string,
+): Keyframe[] | PropertyIndexedKeyframes {
+	const shouldKeep = (property: string): boolean => keyframeMetadata.has(property)
+		|| cssPropertyName(property) === cssProperty;
+
+	if (Array.isArray(keyframes)) {
+		return keyframes.map(frame => Object.fromEntries(
+			Object.entries(frame).filter(([property]) => shouldKeep(property)),
+		) as Keyframe);
+	}
+
+	return Object.fromEntries(
+		Object.entries(keyframes).filter(([property]) => shouldKeep(property)),
+	) as PropertyIndexedKeyframes;
 }
 
 function finalKeyframeIsReverse(repeatCount: number, autoreverses: boolean): boolean {
@@ -449,6 +478,11 @@ export class VuneMotionEngine {
 		if (!entries || !style) return undefined;
 		if (options.composite !== undefined && options.composite !== 'replace') return undefined;
 
+		const fill = normalizedFill(options.fill);
+		const initialInlineStyles = new Map(entries.map(entry => [entry.cssProperty, {
+			value: style.getPropertyValue(entry.cssProperty),
+			priority: style.getPropertyPriority(entry.cssProperty),
+		}]));
 		const { durationMs, delayMs, repeatCount, autoreverses } = animationTiming(animation);
 		let resolveFinished!: (status: MotionStatus) => void;
 		const finished = new Promise<MotionStatus>(resolve => { resolveFinished = resolve; });
@@ -458,9 +492,15 @@ export class VuneMotionEngine {
 		let currentControls: AnimationControls[] = [];
 		let played = false;
 
-		const restoreInitialValues = (): void => {
-			if (options.fill !== 'none' && options.fill !== 'backwards') return;
-			for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.first));
+		const restoreInlineStyles = (): void => {
+			for (const entry of entries) {
+				const initial = initialInlineStyles.get(entry.cssProperty);
+				if (!initial || initial.value === '') {
+					style.removeProperty(entry.cssProperty);
+				} else {
+					style.setProperty(entry.cssProperty, initial.value, initial.priority);
+				}
+			}
 		};
 
 		const finish = (status: MotionStatus): void => {
@@ -468,7 +508,9 @@ export class VuneMotionEngine {
 			settled = true;
 			if (timer !== null) globalThis.clearTimeout(timer);
 			timer = null;
-			if (status === 'finished' && durationMs > 0 && played) restoreInitialValues();
+			if (status === 'cancelled' || (status === 'finished' && played && (fill === 'none' || fill === 'backwards'))) {
+				restoreInlineStyles();
+			}
 			this.elementCancels.delete(cancel);
 			resolveFinished(status);
 		};
@@ -483,9 +525,11 @@ export class VuneMotionEngine {
 		this.elementCancels.add(cancel);
 
 		if (reduced || durationMs === 0) {
-			const reverse = finalKeyframeIsReverse(repeatCount, autoreverses);
-			for (const entry of entries) {
-				style.setProperty(entry.cssProperty, String(reverse ? entry.first : entry.last));
+			if (fill === 'forwards' || fill === 'both') {
+				const reverse = finalKeyframeIsReverse(repeatCount, autoreverses);
+				for (const entry of entries) {
+					style.setProperty(entry.cssProperty, String(reverse ? entry.first : entry.last));
+				}
 			}
 			finish('finished');
 			return { finished, cancel };
@@ -540,8 +584,15 @@ export class VuneMotionEngine {
 			});
 		};
 
+		// Establish the first frame immediately for zero-delay animations. This
+		// matters for custom properties such as Material's opaque backing layer,
+		// which otherwise keep their stylesheet value until the first tick.
+		if (delayMs === 0) {
+			for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.first));
+		}
+
 		if (delayMs > 0) {
-			if (options.fill === 'both' || options.fill === 'backwards') {
+			if (fill === 'both' || fill === 'backwards') {
 				for (const entry of entries) style.setProperty(entry.cssProperty, String(entry.first));
 			}
 			timer = globalThis.setTimeout(startCycle, delayMs);
@@ -561,9 +612,27 @@ export class VuneMotionEngine {
 		keyframes: Keyframe[] | PropertyIndexedKeyframes,
 		options: ElementMotionOptions = {},
 	): MotionHandle {
+		const properties = keyframeProperties(keyframes);
+		if (properties.length > 1) {
+			const handles = properties.map(property => this.animateElement(
+				element,
+				keyframesForProperty(keyframes, property),
+				options,
+			));
+			const finished = Promise.all(handles.map(handle => handle.finished)).then(statuses => (
+				statuses.every(status => status === 'finished') ? 'finished' : 'cancelled'
+			) as MotionStatus);
+			return {
+				finished,
+				cancel: () => {
+					for (const handle of handles) handle.cancel();
+				},
+			};
+		}
+
 		const animation = options.animation ?? VuneAnimation.default;
 		const { durationMs, delayMs, repeatCount, autoreverses } = animationTiming(animation);
-		const properties = keyframeProperties(keyframes);
+		const fill = normalizedFill(options.fill);
 		this.cancelElementProperties(element, properties);
 		let resolveFinished!: (status: MotionStatus) => void;
 		const finished = new Promise<MotionStatus>(resolve => { resolveFinished = resolve; });
@@ -575,7 +644,9 @@ export class VuneMotionEngine {
 		}
 
 		if (reduced || typeof element.animate !== 'function' || durationMs === 0) {
-			applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			if (fill === 'forwards' || fill === 'both') {
+				applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			}
 			const handle = { finished, cancel() {} };
 			resolveFinished('finished');
 			this.trackElementProperties(element, properties, handle);
@@ -590,12 +661,14 @@ export class VuneMotionEngine {
 				iterations: repeatCount,
 				direction: autoreverses ? 'alternate' : 'normal',
 				easing: waapiEasing(animation),
-				fill: options.fill ?? 'both',
+				fill,
 				composite: options.composite ?? 'replace',
 			});
 		} catch (error) {
 			console.error('[VuneMotion] element animation failed', error);
-			applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			if (fill === 'forwards' || fill === 'both') {
+				applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			}
 			resolveFinished('cancelled');
 			const handle = { finished, cancel() {} };
 			this.trackElementProperties(element, properties, handle);

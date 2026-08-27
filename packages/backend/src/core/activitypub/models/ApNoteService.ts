@@ -16,6 +16,7 @@ import { toArray, toSingle, unique } from '@/misc/prelude/array.js';
 import type { MiEmoji } from '@/models/Emoji.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import type Logger from '@/logger.js';
 import { IdService } from '@/core/IdService.js';
 import { PollService } from '@/core/PollService.js';
@@ -75,6 +76,7 @@ export class ApNoteService {
 		private noteCreateService: NoteCreateService,
 		private apDbResolverService: ApDbResolverService,
 		private apLoggerService: ApLoggerService,
+		private customEmojiService: CustomEmojiService,
 	) {
 		this.logger = this.apLoggerService.logger;
 	}
@@ -419,15 +421,17 @@ export class ApNoteService {
 
 					const emoji = await this.emojisRepository.findOneBy({ host, name });
 					if (emoji == null) throw new Error('emoji update failed');
+					this.customEmojiService.cacheEmoji(emoji);
 					return emoji;
 				}
 
+				this.customEmojiService.cacheEmoji(exists);
 				return exists;
 			}
 
 			this.logger.info(`register emoji host=${host}, name=${name}`);
 
-			return await this.emojisRepository.insertOne({
+			const emoji = await this.emojisRepository.insertOne({
 				id: this.idService.gen(),
 				host,
 				name,
@@ -439,6 +443,8 @@ export class ApNoteService {
 				// _misskey_license が存在しなければ `null`
 				license: (tag._misskey_license?.freeText ?? null)
 			});
+			this.customEmojiService.cacheEmoji(emoji);
+			return emoji;
 		}));
 	}
 }

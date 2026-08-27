@@ -102,31 +102,22 @@ function calcCircleScale(boxW: number, boxH: number, circleCenterX: number, circ
 }
 
 function onMousedown(evt: MouseEvent): void {
-	const target = evt.target! as HTMLElement;
-	const rect = target.getBoundingClientRect();
+	if (evt.button !== 0 || props.disabled || props.wait) return;
+	const target = evt.currentTarget as HTMLElement | null;
+	if (target == null || ripples.value == null) return;
 
+	const rect = target.getBoundingClientRect();
 	const ripple = window.document.createElement('div');
-	ripple.classList.add(ripples.value!.dataset.childrenClass!);
+	ripple.classList.add(ripples.value.dataset.childrenClass!);
 	ripple.style.top = (evt.clientY - rect.top - 1).toString() + 'px';
 	ripple.style.left = (evt.clientX - rect.left - 1).toString() + 'px';
 
-	ripples.value!.appendChild(ripple);
-
 	const circleCenterX = evt.clientX - rect.left;
 	const circleCenterY = evt.clientY - rect.top;
-
 	const scale = calcCircleScale(target.clientWidth, target.clientHeight, circleCenterX, circleCenterY);
-
-	window.setTimeout(() => {
-		ripple.style.transform = 'scale(' + (scale / 2) + ')';
-	}, 1);
-	window.setTimeout(() => {
-		ripple.style.transition = 'all 1s ease';
-		ripple.style.opacity = '0';
-	}, 1000);
-	window.setTimeout(() => {
-		if (ripples.value) ripples.value.removeChild(ripple);
-	}, 2000);
+	ripple.style.setProperty('--ripple-scale', String(scale / 2));
+	ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+	ripples.value.appendChild(ripple);
 }
 </script>
 
@@ -310,9 +301,33 @@ function onMousedown(evt: MouseEvent): void {
 	height: 2px;
 	border-radius: 100%;
 	background: rgba(0, 0, 0, 0.1);
-	opacity: 1;
+	opacity: 0;
 	transform: scale(1);
-	transition: all 0.5s cubic-bezier(0,.5,0,1);
+	will-change: transform, opacity;
+	animation: ripple 1.2s cubic-bezier(0,.5,0,1) forwards;
+}
+
+@keyframes ripple {
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	42% {
+		opacity: 1;
+		transform: scale(var(--ripple-scale));
+	}
+
+	100% {
+		opacity: 0;
+		transform: scale(var(--ripple-scale));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ripple {
+		animation-duration: 0.01ms;
+	}
 }
 
 .content {

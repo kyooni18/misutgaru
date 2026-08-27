@@ -3,12 +3,66 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { dirname } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execa } from 'execa';
 
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = dirname(_filename);
+const projectRoot = resolve(_dirname, '..');
+
+// Keep `pnpm dev` isolated from the Docker/production configuration.
+// An explicit MISSKEY_CONFIG_YML still takes precedence for custom setups.
+process.env.MISSKEY_CONFIG_YML ??= 'dev.yml';
+
+const localFrontendPackages = [
+	['vune-ui', 'packages/modules/Vune'],
+	['@vune-ui/compiler', 'packages/modules/Vune/packages/compiler'],
+	['@vune-ui/core', 'packages/modules/Vune/packages/core'],
+	['@vune-ui/vite', 'packages/modules/Vune/packages/vite'],
+	['@vune-ui/vue', 'packages/modules/Vune/packages/vue'],
+	['@vune-ui/web', 'packages/modules/Vune/packages/web'],
+	['o0o0o', 'packages/modules/o0o0o'],
+];
+
+/**
+ * Link the frontend to the checked-out Vune/o0o0o packages instead of the
+ * published package copies installed by the root workspace.
+ */
+function linkLocalFrontendPackages() {
+	const nodeModulesDir = resolve(projectRoot, 'packages/frontend/node_modules');
+
+	for (const [packageName, relativeSource] of localFrontendPackages) {
+		const source = resolve(projectRoot, relativeSource);
+		const target = resolve(nodeModulesDir, packageName);
+		linkLocalPackage(source, target);
+	}
+}
+
+/**
+ * Create a local package link while refusing to remove a real directory.
+ *
+ * @param {string} source - Absolute package source path.
+ * @param {string} target - Absolute symlink path.
+ */
+function linkLocalPackage(source, target) {
+	if (!existsSync(source)) {
+		throw new Error(`Local package source does not exist: ${source}`);
+	}
+
+	mkdirSync(dirname(target), { recursive: true });
+	try {
+		if (!lstatSync(target).isSymbolicLink()) {
+			throw new Error(`Refusing to replace non-symlink dependency: ${target}`);
+		}
+		rmSync(target);
+	} catch (error) {
+		if (error?.code !== 'ENOENT') throw error;
+	}
+
+	symlinkSync(source, target, process.platform === 'win32' ? 'junction' : 'dir');
+}
 
 /** @type {Set<import('execa').ResultPromise>} */
 const childProcesses = new Set();
@@ -166,103 +220,133 @@ process.on('SIGTERM', () => {
 
 try {
 	await runChildProcess('pnpm', ['clean'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
+	// Build the checked-out motion runtime before the frontend starts. The
+	// frontend package.json intentionally keeps published versions for Docker,
+	// so development links are installed after the local packages are built.
+	await runChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/o0o0o'), 'run', 'build:wasm'], {
+		cwd: projectRoot,
+		stdout: process.stdout,
+		stderr: process.stderr,
+	});
+
+	// Match serve.sh exactly: link o0o0o into Vune's web package before Vune
+	// builds, so the checked-out motion runtime is included in its output.
+	linkLocalPackage(
+		resolve(projectRoot, 'packages/modules/o0o0o'),
+		resolve(projectRoot, 'packages/modules/Vune/packages/web/node_modules/o0o0o'),
+	);
+
+	await runChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/Vune'), 'run', 'build'], {
+		cwd: projectRoot,
+		stdout: process.stdout,
+		stderr: process.stderr,
+	});
+
+	linkLocalFrontendPackages();
+
 	// アセットのビルドで依存しているので一番最初に必要
 	await runChildProcess('pnpm', ['--filter', 'i18n', 'build'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	await Promise.all([
 		runChildProcess('pnpm', ['build-pre'], {
-			cwd: _dirname + '/../',
+			cwd: projectRoot,
 			stdout: process.stdout,
 			stderr: process.stderr,
 		}),
 		runChildProcess('pnpm', ['build-assets'], {
-			cwd: _dirname + '/../',
+			cwd: projectRoot,
 			stdout: process.stdout,
 			stderr: process.stderr,
 		}),
 		runChildProcess('pnpm', ['--filter', 'backend...', '--filter=!backend', 'build'], {
-			cwd: _dirname + '/../',
+			cwd: projectRoot,
 			stdout: process.stdout,
 			stderr: process.stderr,
 		}),
 		// icons-subsetterは開発段階では使用されないが、型エラーを抑制するためにはじめの一度だけビルドする
 		runChildProcess('pnpm', ['--filter', 'icons-subsetter', 'build'], {
-			cwd: _dirname + '/../',
+			cwd: projectRoot,
 			stdout: process.stdout,
 			stderr: process.stderr,
 		}),
 		runChildProcess('pnpm', ['--filter', 'misskey-js', 'build'], {
-			cwd: _dirname + '/../',
+			cwd: projectRoot,
 			stdout: process.stdout,
 			stderr: process.stderr,
 		}),
 	]);
 
 	startChildProcess('pnpm', ['build-pre', '--watch'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['build-assets', '--watch'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
+		stdout: process.stdout,
+		stderr: process.stderr,
+	});
+
+	startChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/Vune'), 'run', 'dev:watch', '--', '--no-build'], {
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'backend', 'dev'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'frontend', 'watch'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'frontend-embed', 'watch'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'sw', 'watch'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'misskey-js', 'watch', '--no-clean'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'i18n', 'watch', '--no-clean'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'misskey-reversi', 'watch', '--no-clean'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
 
 	startChildProcess('pnpm', ['--filter', 'misskey-bubble-game', 'watch', '--no-clean'], {
-		cwd: _dirname + '/../',
+		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});

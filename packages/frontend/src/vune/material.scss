@@ -1,69 +1,154 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+@property --vune-material-blur {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
+@property --MI-modalBgBlur {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
 .vune-material {
-	--vune-material-blur: 18px;
+	--vune-material-blur-target: 18px;
+	--vune-material-blur: var(--vune-material-blur-target);
 	--vune-material-opacity: 58%;
+	--vune-material-fallback-background: var(--vune-material-surface);
 	--vune-material-saturation: 1.35;
 	--vune-material-border-opacity: 13%;
 	--vune-material-surface: var(--MI_THEME-panel);
 	position: relative;
 	isolation: isolate;
-	/* Safe fallback first; newer engines override it with translucency. */
-	background: var(--vune-material-surface);
-	background: color-mix(in srgb, var(--vune-material-surface) var(--vune-material-opacity), transparent);
-	-webkit-backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
-	backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
 	border: 1px solid color-mix(in srgb, var(--MI_THEME-fg) var(--vune-material-border-opacity), transparent);
 	box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
 	contain: paint;
+
+	&::before {
+		content: '';
+		position: absolute;
+		z-index: 0;
+		inset: 0;
+		pointer-events: none;
+		background: color-mix(in srgb, var(--vune-material-surface) var(--vune-material-opacity), transparent);
+		-webkit-backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
+		backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
+	}
+
+	> * {
+		position: relative;
+		z-index: 2;
+	}
+}
+
+/* Legacy floating surfaces (_popup/_acrylic) already inherit the Material
+ * surface styles but do not have a Vune Rectangle for the first opaque frame.
+ * Give them the same backing layer without duplicating the native one. */
+.vune-material:not(.vune-material--native)::after {
+	content: '';
+	position: absolute;
+	z-index: 1;
+	inset: 0;
+	pointer-events: none;
+	background: var(--vune-material-fallback-background);
+	opacity: 0;
+	animation: vune-material-opaque-enter 0.3s ease 50ms both;
+}
+
+.vune-material__opaque {
+	position: absolute !important;
+	z-index: 1 !important;
+	inset: 0;
+	pointer-events: none;
+	background: var(--vune-material-opaque-background);
+	opacity: 1;
+}
+
+.vune-material--animated .vune-material__opaque {
+	/* Hold the theme-colored backing layer for the first rendered frames so
+	 * popup menus never flash transparent before the material backdrop settles. */
+	animation: vune-material-opaque-enter 0.3s ease 50ms both;
+}
+
+@keyframes vune-material-opaque-enter {
+	from { opacity: 1; }
+	to { opacity: 0; }
+}
+
+@keyframes vune-material-opaque-leave {
+	from { opacity: 0; }
+	to { opacity: 1; }
 }
 
 .vune-material--ultraThin {
-	--vune-material-blur: 8px;
+	--vune-material-blur-target: 8px;
 	--vune-material-opacity: 34%;
 	--vune-material-saturation: 1.18;
 }
 
 .vune-material--thin {
-	--vune-material-blur: 12px;
+	--vune-material-blur-target: 12px;
 	--vune-material-opacity: 46%;
 	--vune-material-saturation: 1.25;
 }
 
 .vune-material--regular {
-	--vune-material-blur: 18px;
+	--vune-material-blur-target: 18px;
 	--vune-material-opacity: 58%;
 }
 
 .vune-material--thick {
-	--vune-material-blur: 24px;
+	--vune-material-blur-target: 24px;
 	--vune-material-opacity: 70%;
 	--vune-material-saturation: 1.42;
 }
 
 .vune-material--ultraThick {
-	--vune-material-blur: 32px;
+	--vune-material-blur-target: 32px;
 	--vune-material-opacity: 82%;
 	--vune-material-saturation: 1.5;
 }
 
 .vune-material--bar {
-	--vune-material-blur: 20px;
+	--vune-material-blur-target: 20px;
 	--vune-material-opacity: 64%;
 	--vune-material-saturation: 1.4;
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-	.vune-material {
-		background: var(--MI_THEME-panel);
-		background: color-mix(in srgb, var(--vune-material-surface) 92%, var(--MI_THEME-bg));
+	.vune-material::before {
+		background: transparent;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.vune-material__opaque {
+		opacity: 1;
+		animation: none;
+	}
+
+	.vune-material:not(.vune-material--native)::after {
+		opacity: 1;
+		animation: none;
 	}
 }
 
 @media (prefers-reduced-transparency: reduce) {
-	.vune-material {
-		background: var(--vune-material-surface);
+	.vune-material::before {
+		background: transparent;
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
+	}
+
+	.vune-material__opaque {
+		opacity: 1;
+		animation: none;
+	}
+
+	.vune-material:not(.vune-material--native)::after {
+		opacity: 1;
+		animation: none;
 	}
 }
 

@@ -5530,6 +5530,7 @@ export type components = {
             enableEmail: boolean;
             enableServiceWorker: boolean;
             translatorAvailable: boolean;
+            openaiTranslationAvailable: boolean;
             sentryForFrontend: {
                 options: {
                     dsn: string;
@@ -31798,6 +31799,13 @@ export interface operations {
                     'application/json': {
                         sourceLang: string;
                         text: string;
+                        images?: {
+                            fileId: string;
+                            /** @enum {string} */
+                            kind: 'translation' | 'description' | 'skip';
+                            sourceLang: string;
+                            text: string;
+                        }[];
                     };
                 };
             };

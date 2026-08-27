@@ -30,11 +30,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		[$style.transition_modal_leaveTo]: transitionName === 'modal',
 		[$style.transition_send_leaveTo]: transitionName === 'send',
 	})"
-	:duration="transitionDuration" appear @afterLeave="onClosed" @enter="emit('opening')" @afterEnter="onOpened"
+	:duration="transitionDuration"
+	:css="!useMenuMotion"
+	appear
+	@afterLeave="onClosed"
+	@enter="enter"
+	@leave="leave"
+	@afterEnter="onOpened"
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
 		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent }]" :style="{ zIndex }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
-		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
+		<div ref="content" data-vune-popup-content :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
 		</div>
 	</div>
@@ -51,6 +57,9 @@ import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
+import { animateContextMenuTransition, contextMenuAnimation, contextMenuDrawerKeyframes, contextMenuRootKeyframes } from './MkContextMenu.motion.js';
+import type { ContextMenuMotionPhase } from './MkContextMenu.motion.js';
+import { animateVuneTransition } from '@/vune/motion.js';
 
 function getFixedContainer(el: Element | null): Element | null {
 	if (el == null || el.tagName === 'BODY') return null;
@@ -74,6 +83,7 @@ const props = withDefaults(defineProps<{
 	transparentBg?: boolean;
 	hasInteractionWithOtherFocusTrappedEls?: boolean;
 	returnFocusTo?: HTMLElement | null;
+	menuAnimation?: boolean;
 }>(), {
 	manualShowing: null,
 	anchorElement: null,
@@ -84,6 +94,7 @@ const props = withDefaults(defineProps<{
 	transparentBg: false,
 	hasInteractionWithOtherFocusTrappedEls: false,
 	returnFocusTo: null,
+	menuAnimation: false,
 });
 
 const emit = defineEmits<{
@@ -132,23 +143,90 @@ const transitionDuration = computed((() =>
 	transitionName.value === 'send'
 		? 400
 		: transitionName.value === 'modal-popup'
-			? 200
+			? 300
 			: transitionName.value === 'modal'
-				? 200
+				? 300
 				: transitionName.value === 'modal-drawer'
-					? 200
+					? 300
 					: 0
 ));
+const useMenuMotion = computed(() => props.menuAnimation && (type.value === 'popup' || type.value === 'drawer'));
+
+function enter(element: Element, done: () => void) {
+	emit('opening');
+	if (!useMenuMotion.value || !prefer.s.animation) {
+		done();
+		return;
+	}
+	animateMenuTransition(element, 'enter', done);
+}
+
+function leave(element: Element, done: () => void) {
+	if (!useMenuMotion.value || !prefer.s.animation) {
+		done();
+		return;
+	}
+	animateMenuTransition(element, 'leave', done);
+}
+
+function animateMenuTransition(
+	element: Element,
+	phase: ContextMenuMotionPhase,
+	done: () => void,
+) {
+	const contentElement = element.querySelector<HTMLElement>('[data-vune-popup-content]');
+	const keyframes = type.value === 'drawer'
+		? contextMenuDrawerKeyframes(phase)
+		: contextMenuRootKeyframes(phase);
+	const bgElement = element.querySelector<HTMLElement>('[data-testid="bg"]');
+	const blurTarget = bgElement == null
+		? '0px'
+		: window.getComputedStyle(bgElement).getPropertyValue('--MI-modalBgBlurTarget').trim() || '0px';
+	let pending = 1;
+	const finish = () => {
+		pending -= 1;
+		if (pending === 0) done();
+	};
+
+	// The custom menu transition disables Vue's CSS transition classes. Keep
+	// the backdrop on its own track so drawer blur enters and leaves with the
+	// same timing as the menu surface.
+	animateContextMenuTransition(element, phase, finish, contentElement ?? element, keyframes);
+	if (bgElement != null && blurTarget !== '0px') {
+		pending += 1;
+		const blurKeyframes = phase === 'enter'
+			? [{ '--MI-modalBgBlur': '0px' }, { '--MI-modalBgBlur': blurTarget }]
+			: [{ '--MI-modalBgBlur': blurTarget }, { '--MI-modalBgBlur': '0px' }];
+		void animateVuneTransition(bgElement, blurKeyframes, contextMenuAnimation, finish);
+	}
+}
 
 let releaseFocusTrap: (() => void) | null = null;
 let contentClicking = false;
+let disabledAnchor: { element: HTMLElement; pointerEvents: string } | null = null;
+
+function restoreAnchorPointerEvents() {
+	if (disabledAnchor == null) return;
+	disabledAnchor.element.style.pointerEvents = disabledAnchor.pointerEvents;
+	disabledAnchor = null;
+}
+
+function disableAnchorPointerEvents(anchorElement: HTMLElement | null | undefined) {
+	restoreAnchorPointerEvents();
+	if (anchorElement == null) return;
+	disabledAnchor = {
+		element: anchorElement,
+		pointerEvents: anchorElement.style.pointerEvents,
+	};
+	anchorElement.style.pointerEvents = 'none';
+}
 
 function close(opts: { useSendAnimation?: boolean } = {}) {
 	if (opts.useSendAnimation) {
 		useSendAnime.value = true;
 	}
 
-	if (props.anchorElement) props.anchorElement.style.pointerEvents = 'auto';
+	restoreAnchorPointerEvents();
 	showing.value = false;
 	emit('close');
 }
@@ -170,7 +248,6 @@ const keymap = {
 } as const satisfies Keymap;
 
 const MARGIN = 16;
-const SCROLLBAR_THICKNESS = 16;
 
 const align = () => {
 	if (props.anchorElement == null) return;
@@ -183,6 +260,8 @@ const align = () => {
 
 	const width = content.value!.offsetWidth;
 	const height = content.value!.offsetHeight;
+	const viewportWidth = window.document.documentElement.clientWidth;
+	const viewportHeight = window.document.documentElement.clientHeight;
 
 	let left = 0;
 	let top = 0;
@@ -208,15 +287,15 @@ const align = () => {
 
 	if (fixed.value) {
 		// 画面から横にはみ出る場合
-		if (left + width > (window.innerWidth - SCROLLBAR_THICKNESS)) {
-			left = (window.innerWidth - SCROLLBAR_THICKNESS) - width;
+		if (left + width > viewportWidth) {
+			left = viewportWidth - width;
 		}
 
-		const underSpace = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - top;
+		const underSpace = (viewportHeight - MARGIN) - top;
 		const upperSpace = (anchorRect.top - MARGIN);
 
 		// 画面から縦にはみ出る場合
-		if (top + height > ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN)) {
+		if (top + height > viewportHeight - MARGIN) {
 			if (props.noOverlap && props.anchor.x === 'center') {
 				if (underSpace >= (upperSpace / 3)) {
 					maxHeight.value = underSpace;
@@ -225,22 +304,22 @@ const align = () => {
 					top = (upperSpace + MARGIN) - height;
 				}
 			} else {
-				top = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - height;
+				top = (viewportHeight - MARGIN) - height;
 			}
 		} else {
 			maxHeight.value = underSpace;
 		}
 	} else {
 		// 画面から横にはみ出る場合
-		if (left + width - window.scrollX > (window.innerWidth - SCROLLBAR_THICKNESS)) {
-			left = (window.innerWidth - SCROLLBAR_THICKNESS) - width + window.scrollX - 1;
+		if (left + width - window.scrollX > viewportWidth) {
+			left = viewportWidth - width + window.scrollX - 1;
 		}
 
-		const underSpace = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - (top - window.scrollY);
+		const underSpace = (viewportHeight - MARGIN) - (top - window.scrollY);
 		const upperSpace = (anchorRect.top - MARGIN);
 
 		// 画面から縦にはみ出る場合
-		if (top + height - window.scrollY > ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN)) {
+		if (top + height - window.scrollY > viewportHeight - MARGIN) {
 			if (props.noOverlap && props.anchor.x === 'center') {
 				if (underSpace >= (upperSpace / 3)) {
 					maxHeight.value = underSpace;
@@ -249,20 +328,17 @@ const align = () => {
 					top = window.scrollY + ((upperSpace + MARGIN) - height);
 				}
 			} else {
-				top = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - height + window.scrollY - 1;
+				top = (viewportHeight - MARGIN) - height + window.scrollY - 1;
 			}
 		} else {
 			maxHeight.value = underSpace;
 		}
 	}
 
-	if (top < 0) {
-		top = MARGIN;
-	}
-
-	if (left < 0) {
-		left = 0;
-	}
+	const viewportLeft = fixed.value ? 0 : window.scrollX;
+	const viewportTop = fixed.value ? MARGIN : window.scrollY + MARGIN;
+	left = Math.max(viewportLeft, left);
+	top = Math.max(viewportTop, top);
 
 	let transformOriginX = 'center';
 	let transformOriginY = 'center';
@@ -285,6 +361,35 @@ const align = () => {
 	content.value.style.top = top + 'px';
 };
 
+let contentMouseDownTarget: HTMLElement | null = null;
+let contentClickResetTimer: number | null = null;
+
+const onContentMouseUp = () => {
+	if (contentClickResetTimer !== null) window.clearTimeout(contentClickResetTimer);
+	// click イベントより先に mouseup イベントが発生するかもしれないのでちょっと待つ
+	contentClickResetTimer = window.setTimeout(() => {
+		contentClicking = false;
+		contentClickResetTimer = null;
+	}, 100);
+};
+
+const onContentMouseDown = () => {
+	contentClicking = true;
+	window.removeEventListener('mouseup', onContentMouseUp);
+	window.addEventListener('mouseup', onContentMouseUp, { passive: true, once: true });
+};
+
+function detachContentClickGuard() {
+	contentMouseDownTarget?.removeEventListener('mousedown', onContentMouseDown);
+	contentMouseDownTarget = null;
+	window.removeEventListener('mouseup', onContentMouseUp);
+	if (contentClickResetTimer !== null) {
+		window.clearTimeout(contentClickResetTimer);
+		contentClickResetTimer = null;
+	}
+	contentClicking = false;
+}
+
 const onOpened = () => {
 	emit('opened');
 
@@ -296,15 +401,10 @@ const onOpened = () => {
 		// モーダルコンテンツにマウスボタンが押され、コンテンツ外でマウスボタンが離されたときにモーダルバックグラウンドクリックと判定させないためにマウスイベントを監視しフラグ管理する
 		const el = content.value.children[0];
 		if (!(el instanceof HTMLElement)) return;
-		el.addEventListener('mousedown', ev => {
-			contentClicking = true;
-			window.addEventListener('mouseup', ev => {
-				// click イベントより先に mouseup イベントが発生するかもしれないのでちょっと待つ
-				window.setTimeout(() => {
-					contentClicking = false;
-				}, 100);
-			}, { passive: true, once: true });
-		}, { passive: true });
+		if (contentMouseDownTarget === el) return;
+		detachContentClickGuard();
+		contentMouseDownTarget = el;
+		el.addEventListener('mousedown', onContentMouseDown, { passive: true });
 	});
 };
 
@@ -317,15 +417,20 @@ const alignObserver = new ResizeObserver((entries, observer) => {
 });
 
 onMounted(() => {
-	watch(() => props.anchorElement, async () => {
-		if (props.anchorElement) {
-			props.anchorElement.style.pointerEvents = 'none';
-		}
-		fixed.value = (type.value === 'drawer') || (getFixedContainer(props.anchorElement) != null);
+	watch(() => props.anchorElement, async (anchorElement) => {
+		fixed.value = (type.value === 'drawer') || (getFixedContainer(anchorElement) != null);
 
 		await nextTick();
 
 		align();
+	}, { immediate: true });
+
+	watch([() => props.anchorElement, showing, () => props.manualShowing], ([anchorElement, showing, manualShowing]) => {
+		if (manualShowing === true || (manualShowing == null && showing === true)) {
+			disableAnchorPointerEvents(anchorElement);
+		} else {
+			restoreAnchorPointerEvents();
+		}
 	}, { immediate: true });
 
 	watch([showing, () => props.manualShowing], ([showing, manualShowing]) => {
@@ -343,12 +448,15 @@ onMounted(() => {
 	}, { immediate: true });
 
 	nextTick(() => {
-		alignObserver.observe(content.value!);
+		if (content.value != null) alignObserver.observe(content.value);
 	});
 });
 
 onUnmounted(() => {
 	alignObserver.disconnect();
+	detachContentClickGuard();
+	releaseFocusTrap?.();
+	restoreAnchorPointerEvents();
 });
 
 defineExpose({
@@ -384,12 +492,12 @@ defineExpose({
 .transition_modal_enterActive,
 .transition_modal_leaveActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.3s !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.2s, transform 0.2s !important;
+		transition: opacity 0.3s, transform 0.3s !important;
 	}
 }
 .transition_modal_enterFrom,
@@ -406,15 +514,55 @@ defineExpose({
 	}
 }
 
+/* Keep the modal surface opaque for the first frame, then reveal its backdrop
+ * material without competing with the modal's position/size transition. */
+.transition_modal_enterActive,
+.transition_modal_leaveActive,
+.transition_modalPopup_enterActive,
+.transition_modalPopup_leaveActive,
+.transition_modalDrawer_enterActive,
+.transition_modalDrawer_leaveActive {
+		> .content :global(.vune-material__opaque) {
+		transition: opacity 0.3s ease;
+	}
+}
+
+.transition_modal_enterActive,
+.transition_modalPopup_enterActive,
+.transition_modalDrawer_enterActive {
+		> .content :global(.vune-material__opaque) {
+		animation: vune-material-opaque-enter 0.3s ease 50ms both;
+	}
+}
+
+.transition_modal_leaveActive,
+.transition_modalPopup_leaveActive,
+.transition_modalDrawer_leaveActive {
+		> .content :global(.vune-material__opaque) {
+		animation: vune-material-opaque-leave 0.3s ease 50ms both;
+	}
+}
+
+.transition_modal_enterFrom,
+.transition_modalPopup_enterFrom,
+.transition_modalDrawer_enterFrom,
+.transition_modal_leaveTo,
+.transition_modalPopup_leaveTo,
+.transition_modalDrawer_leaveTo {
+	> .content :global(.vune-material__opaque) {
+		opacity: 1;
+	}
+}
+
 .transition_modalPopup_enterActive,
 .transition_modalPopup_leaveActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.3s !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.2s cubic-bezier(0, 0, 0.2, 1), transform 0.2s cubic-bezier(0, 0, 0.2, 1) !important;
+		transition: opacity 0.3s cubic-bezier(0, 0, 0.2, 1), transform 0.3s cubic-bezier(0, 0, 0.2, 1) !important;
 	}
 }
 .transition_modalPopup_enterFrom,
@@ -433,20 +581,20 @@ defineExpose({
 
 .transition_modalDrawer_enterActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.3s !important;
 	}
 
 	> .content {
-		transition: transform 0.2s cubic-bezier(0,.5,0,1) !important;
+		transition: transform 0.3s cubic-bezier(0,.5,0,1) !important;
 	}
 }
 .transition_modalDrawer_leaveActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.3s !important;
 	}
 
 	> .content {
-		transition: transform 0.2s cubic-bezier(0,.5,0,1) !important;
+		transition: transform 0.3s cubic-bezier(0,.5,0,1) !important;
 	}
 }
 .transition_modalDrawer_enterFrom,
@@ -458,6 +606,35 @@ defineExpose({
 	> .content {
 		pointer-events: none;
 		transform: translateY(100%);
+	}
+}
+
+/* Keep the backdrop blur on the same lifecycle as the modal itself. The
+ * enter/leave-from track resets the local value to zero; once that class is
+ * removed, the target preference value is revealed and transitions in. */
+.transition_send_enterActive,
+.transition_send_leaveActive,
+.transition_modal_enterActive,
+.transition_modal_leaveActive,
+.transition_modalPopup_enterActive,
+.transition_modalPopup_leaveActive,
+.transition_modalDrawer_enterActive,
+.transition_modalDrawer_leaveActive {
+	> .bg {
+		transition: opacity 0.3s, -webkit-backdrop-filter 0.3s, backdrop-filter 0.3s !important;
+	}
+}
+
+.transition_send_enterFrom,
+.transition_send_leaveTo,
+.transition_modal_enterFrom,
+.transition_modal_leaveTo,
+.transition_modalPopup_enterFrom,
+.transition_modalPopup_leaveTo,
+.transition_modalDrawer_enterFrom,
+.transition_modalDrawer_leaveTo {
+	> .bg {
+		--MI-modalBgBlur: 0px;
 	}
 }
 
@@ -482,7 +659,10 @@ defineExpose({
 
 	&.popup {
 		> .content {
+			--mk-context-menu-scale: 1;
 			position: absolute;
+			transform: scale(var(--mk-context-menu-scale));
+			transform-origin: var(--transformOrigin);
 
 			&.fixed {
 				position: fixed;

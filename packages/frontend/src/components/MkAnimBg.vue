@@ -25,13 +25,16 @@ const props = withDefaults(defineProps<{
 });
 
 let handle: ReturnType<typeof window['requestAnimationFrame']> | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let visibilityObserver: IntersectionObserver | null = null;
+let disposeWebGl = () => {};
 
 onMounted(() => {
 	const canvas = canvasEl.value!;
-	let width = canvas.offsetWidth;
-	let height = canvas.offsetHeight;
-	canvas.width = width;
-	canvas.height = height;
+	const initialWidth = Math.max(1, Math.round(canvas.offsetWidth));
+	const initialHeight = Math.max(1, Math.round(canvas.offsetHeight));
+	canvas.width = initialWidth;
+	canvas.height = initialHeight;
 
 	const maybeGl = canvas.getContext('webgl2', { premultipliedAlpha: true });
 	if (maybeGl == null) return;
@@ -45,7 +48,11 @@ onMounted(() => {
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
 	const shaderProgram = initShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
-	if (shaderProgram == null) return;
+	if (shaderProgram == null) {
+		if (positionBuffer) gl.deleteBuffer(positionBuffer);
+		gl.getExtension('WEBGL_lose_context')?.loseContext();
+		return;
+	}
 
 	gl.useProgram(shaderProgram);
 	const u_resolution = gl.getUniformLocation(shaderProgram, 'u_resolution');
@@ -69,45 +76,75 @@ onMounted(() => {
 	gl.vertexAttribPointer(vertex, 2, gl.FLOAT, false, 0, 0);
 
 	const vertices = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+	const syncCanvasSize = () => {
+		const width = Math.max(1, Math.round(canvas.offsetWidth));
+		const height = Math.max(1, Math.round(canvas.offsetHeight));
+		if (canvas.width === width && canvas.height === height) return;
+		canvas.width = width;
+		canvas.height = height;
+		gl.uniform2fv(u_resolution, [width, height]);
+		gl.viewport(0, 0, width, height);
+	};
+
+	resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(syncCanvasSize);
+	resizeObserver?.observe(canvas);
 
 	if (isChromatic()) {
 		gl.uniform1f(u_time, 0);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	} else {
-		function render(timeStamp: number) {
-			let sizeChanged = false;
-			if (Math.abs(height - canvas.offsetHeight) > 2) {
-				height = canvas.offsetHeight;
-				canvas.height = height;
-				sizeChanged = true;
-			}
-			if (Math.abs(width - canvas.offsetWidth) > 2) {
-				width = canvas.offsetWidth;
-				canvas.width = width;
-				sizeChanged = true;
-			}
-			if (sizeChanged && gl) {
-				gl.uniform2fv(u_resolution, [width, height]);
-				gl.viewport(0, 0, width, height);
-			}
+		let visible = true;
 
+		const stop = () => {
+			if (handle === null) return;
+			window.cancelAnimationFrame(handle);
+			handle = null;
+		};
+		const render = (timeStamp: number) => {
+			if (!visible) {
+				handle = null;
+				return;
+			}
 			gl.uniform1f(u_time, timeStamp);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
 			handle = window.requestAnimationFrame(render);
-		}
+		};
+		const start = () => {
+			if (handle !== null || !visible) return;
+			handle = window.requestAnimationFrame(render);
+		};
 
-		handle = window.requestAnimationFrame(render);
+		if (typeof IntersectionObserver === 'undefined') {
+			start();
+		} else {
+			visibilityObserver = new IntersectionObserver(entries => {
+				visible = entries.some(entry => entry.isIntersecting);
+				if (visible) start();
+				else stop();
+			}, { rootMargin: '128px' });
+			visibilityObserver.observe(canvas);
+		}
 	}
+
+	disposeWebGl = () => {
+		if (positionBuffer) gl.deleteBuffer(positionBuffer);
+		gl.deleteProgram(shaderProgram);
+		gl.getExtension('WEBGL_lose_context')?.loseContext();
+	};
 });
 
 onUnmounted(() => {
-	if (handle) {
+	if (handle !== null) {
 		window.cancelAnimationFrame(handle);
+		handle = null;
 	}
-
-	// TODO: WebGLリソースの解放
+	resizeObserver?.disconnect();
+	resizeObserver = null;
+	visibilityObserver?.disconnect();
+	visibilityObserver = null;
+	disposeWebGl();
 });
 </script>
 

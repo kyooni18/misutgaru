@@ -4,13 +4,17 @@
  */
 
 import { URLSearchParams } from 'node:url';
+import sharp from 'sharp';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import { OpenAiTranslationError, OpenAiTranslationService, type OpenAiTranslationImageInput } from '@/core/OpenAiTranslationService.js';
+import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { MiMeta } from '@/models/_.js';
+import type { MiNote } from '@/models/Note.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
 
@@ -26,6 +30,20 @@ export const meta = {
 		properties: {
 			sourceLang: { type: 'string' },
 			text: { type: 'string' },
+			images: {
+				optional: true,
+				type: 'array',
+				items: {
+					type: 'object',
+					properties: {
+						fileId: { type: 'string' },
+						kind: { type: 'string', enum: ['translation', 'description', 'skip'] },
+						sourceLang: { type: 'string' },
+						text: { type: 'string' },
+					},
+					required: ['fileId', 'kind', 'sourceLang', 'text'],
+				},
+			},
 		},
 	},
 
@@ -59,6 +77,54 @@ export const paramDef = {
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
+	private async getThreadContext(note: MiNote, userId: string): Promise<string[]> {
+		const context: string[] = [];
+		let current = note;
+
+		for (let depth = 0; depth < 8 && current.replyId; depth++) {
+			const parent = await this.getterService.getNote(current.replyId).catch(() => null);
+			if (parent == null || !(await this.noteEntityService.isVisibleForMe(parent, userId))) break;
+
+			let parentText = parent.text ?? '';
+			if (parent.cw != null) parentText = `${parent.cw}\n-----\n${parentText}`;
+			if (parentText.trim() !== '') context.unshift(parentText.slice(0, 2000));
+			current = parent;
+		}
+
+		return context;
+	}
+
+	private async getImageContext(note: MiNote): Promise<OpenAiTranslationImageInput[]> {
+		const files = await this.driveFileEntityService.packManyByIds(note.fileIds);
+		const imageFiles = files.filter(file => file.type.startsWith('image/')).slice(0, 4);
+
+		return (await Promise.all(imageFiles.map(async file => {
+			try {
+				const imageUrl = file.thumbnailUrl ?? file.url;
+				const parsedUrl = new URL(imageUrl);
+				if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') return undefined;
+
+				const response = await this.httpRequestService.send(imageUrl, {
+					timeout: 15_000,
+					size: 8 * 1024 * 1024,
+				}, {
+					throwErrorWhenResponseNotOk: false,
+					validators: [],
+				});
+				if (!response.ok) return undefined;
+
+				const image = await sharp(await response.buffer(), { failOn: 'none' })
+					.rotate()
+					.resize(768, 768, { fit: 'inside', withoutEnlargement: true })
+					.jpeg({ quality: 55, progressive: true })
+					.toBuffer();
+				return { fileId: file.id, dataUrl: `data:image/jpeg;base64,${image.toString('base64')}` };
+			} catch {
+				return undefined;
+			}
+		}))).filter((image): image is OpenAiTranslationImageInput => image != null);
+	}
+
 	constructor(
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
@@ -67,6 +133,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private getterService: GetterService,
 		private httpRequestService: HttpRequestService,
 		private roleService: RoleService,
+		private openAiTranslationService: OpenAiTranslationService,
+		private driveFileEntityService: DriveFileEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const policies = await this.roleService.getUserPolicies(me.id);
@@ -88,9 +156,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				text = `${note.cw}\n-----\n${text}`;
 			}
 
-			if (text.trim() === '') {
-				return;
+			if (this.openAiTranslationService.isAvailable()) {
+				try {
+					const [context, images] = await Promise.all([
+						this.getThreadContext(note, me.id),
+						this.getImageContext(note),
+					]);
+					if (text.trim() === '' && images.length === 0) return;
+					return await this.openAiTranslationService.translate(text, ps.targetLang, context, images);
+				} catch (error) {
+					if (error instanceof OpenAiTranslationError) {
+						throw new ApiError(meta.errors.unavailable, {
+							...(error.providerStatus != null ? { providerStatus: error.providerStatus } : {}),
+							...(error.providerMessage ? { providerMessage: error.providerMessage } : {}),
+						});
+					}
+					throw error;
+				}
 			}
+
+			if (text.trim() === '') return;
 
 			if (this.serverSettings.deeplAuthKey == null) {
 				throw new ApiError(meta.errors.unavailable);
@@ -125,6 +210,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			return {
 				sourceLang: json.translations[0].detected_source_language,
 				text: json.translations[0].text,
+				images: [],
 			};
 		});
 	}

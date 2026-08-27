@@ -45,7 +45,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkAvatar :class="$style.collapsedRenoteTargetAvatar" :user="appearNote.user" link preview/>
 		<Mfm :text="getNoteSummary(appearNote)" :plain="true" :nowrap="true" :author="appearNote.user" :nyaize="'respect'" :class="$style.collapsedRenoteTargetText" @click="renoteCollapsed = false"/>
 	</div>
-	<article v-else :class="$style.article" @contextmenu.stop="onContextmenu">
+	<article
+		v-else
+		:class="$style.article"
+		@click="onPostClick"
+		@contextmenu.stop="onContextmenu"
+	>
 		<div v-if="appearNote.channel" :class="$style.colorBar" :style="{ background: appearNote.channel.color }"></div>
 		<MkAvatar :class="[$style.avatar, prefer.s.useStickyIcons ? $style.useSticky : null]" :user="appearNote.user" :link="!mock" :preview="!mock"/>
 		<div :class="$style.main">
@@ -83,6 +88,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div v-else-if="translation">
 								<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
 								<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+								<template v-for="(image, index) in translation.images" :key="`${image.fileId}-${index}`">
+									<div v-if="image.kind !== 'skip' && image.text" :class="$style.imageTranslation">
+										<b>{{ image.kind === 'translation' ? i18n.ts.translate : i18n.ts.details }} #{{ index + 1 }}: </b>
+										<Mfm :text="image.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+									</div>
+								</template>
 							</div>
 						</div>
 					</div>
@@ -127,6 +138,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkReactionsViewer>
 			<footer :class="$style.footer">
+				<button v-if="!mock" :class="$style.footerButton" class="_button" :aria-label="i18n.ts.details" @click.stop="openThread()">
+					<i class="ti ti-message-2"></i>
+				</button>
 				<button :class="$style.footerButton" class="_button" @click="reply()">
 					<i class="ti ti-arrow-back-up"></i>
 					<p v-if="appearNote.repliesCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.repliesCount) }}</p>
@@ -209,6 +223,7 @@ import { focusPrev, focusNext } from '@/utility/focus.js';
 import number from '@/filters/number.js';
 import { DI } from '@/di.js';
 import type { Keymap } from '@/utility/hotkey.js';
+import * as os from '@/os.js';
 
 // コンポーネント外部の依存関係
 import MkNoteSub from '@/components/MkNoteSub.vue';
@@ -303,6 +318,22 @@ provide(DI.mfmEmojiReactCallback, reactViaMfmEmoji);
 
 // MkNote固有
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
+
+function onPostClick(ev: MouseEvent) {
+	if (ev.defaultPrevented) return;
+	if (!(ev.target instanceof HTMLElement)) return;
+	const interactive = ev.target.closest('a, button, input, textarea, select, img, video, audio, canvas, [role="button"]');
+	if (interactive != null && interactive !== ev.currentTarget) return;
+	if (window.getSelection()?.toString()) return;
+
+	openThread();
+}
+
+function openThread() {
+	if (props.mock) return;
+
+	os.threadWindow(appearNote);
+}
 
 function handleToggleReact() {
 	toggleReact((reaction) => {
@@ -652,6 +683,10 @@ const keymap = {
 	border: solid 0.5px var(--MI_THEME-divider);
 	border-radius: var(--MI-radius);
 	padding: 12px;
+	margin-top: 8px;
+}
+
+.imageTranslation {
 	margin-top: 8px;
 }
 

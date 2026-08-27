@@ -53,11 +53,16 @@ const calc = () => {
 	}
 };
 
-const observer = new ResizeObserver(() => {
-	window.setTimeout(() => {
+let calcRaf = 0;
+const scheduleCalc = () => {
+	if (calcRaf !== 0) return;
+	calcRaf = window.requestAnimationFrame(() => {
+		calcRaf = 0;
 		calc();
-	}, 100);
-});
+	});
+};
+
+const observer = new ResizeObserver(scheduleCalc);
 
 onMounted(() => {
 	calc();
@@ -75,6 +80,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	observer.disconnect();
+	if (calcRaf !== 0) window.cancelAnimationFrame(calcRaf);
 });
 
 defineExpose({

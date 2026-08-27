@@ -267,6 +267,7 @@ onDeactivated(() => {
 });
 
 onUnmounted(() => {
+	window.removeEventListener('beforeunload', cancelMatching);
 	cancelMatching();
 });
 

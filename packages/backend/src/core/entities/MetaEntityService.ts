@@ -123,7 +123,8 @@ export class MetaEntityService {
 			enableEmail: instance.enableEmail,
 			enableServiceWorker: instance.enableServiceWorker,
 
-			translatorAvailable: instance.deeplAuthKey != null,
+			translatorAvailable: instance.deeplAuthKey != null || (this.config.openaiTranslation?.enabled === true && this.config.openaiTranslation.apiKey.trim() !== ''),
+			openaiTranslationAvailable: this.config.openaiTranslation?.enabled === true && this.config.openaiTranslation.apiKey.trim() !== '',
 
 			serverRules: instance.serverRules,
 
@@ -175,4 +176,3 @@ export class MetaEntityService {
 		return packDetailed;
 	}
 }
-

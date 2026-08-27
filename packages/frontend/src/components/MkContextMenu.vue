@@ -9,9 +9,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:css="false"
 	@enter="enter"
 	@leave="leave"
+	@afterLeave="onClosed"
 >
-	<div ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
-		<MkMenu :items="items" :align="'left'" material="thin" @close="emit('closed')"/>
+	<div v-if="showing" ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
+		<MkMenu :items="items" :align="'left'" material="thin" :animated="true" @close="close"/>
 	</div>
 </Transition>
 </template>
@@ -23,8 +24,7 @@ import type { MenuItem } from '@/types/menu.js';
 import { elementContains } from '@/utility/element-contains.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
+import { animateContextMenuTransition } from './MkContextMenu.motion.js';
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -36,20 +36,24 @@ const emit = defineEmits<{
 }>();
 
 const rootEl = useTemplateRef('rootEl');
+const showing = ref(true);
 
 const zIndex = ref<number>(os.claimZIndex('high'));
 
-const SCROLLBAR_THICKNESS = 16;
+function close() {
+	showing.value = false;
+}
+
+function onClosed() {
+	emit('closed');
+}
 
 function enter(element: Element, done: () => void) {
 	if (!prefer.s.animation) {
 		done();
 		return;
 	}
-	animateContextMenuTransition(element, [
-		{ opacity: 0, transform: 'scale(0.9)' },
-		{ opacity: 1, transform: 'scale(1)' },
-	], Animation.easeOut(0.2), done);
+	animateContextMenuTransition(element, 'enter', done);
 }
 
 function leave(element: Element, done: () => void) {
@@ -57,64 +61,42 @@ function leave(element: Element, done: () => void) {
 		done();
 		return;
 	}
-	animateContextMenuTransition(element, [
-		{ opacity: 1, transform: 'scale(1)' },
-		{ opacity: 0, transform: 'scale(0.9)' },
-	], Animation.easeIn(0.2), done);
-}
-
-function animateContextMenuTransition(
-	element: Element,
-	keyframes: Keyframe[],
-	animation: Animation,
-	done: () => void,
-) {
-	const materialElement = element.querySelector<HTMLElement>('[data-vune-material]');
-	const materialBlur = materialElement == null
-		? null
-		: window.getComputedStyle(materialElement).getPropertyValue('--vune-material-blur').trim() || '12px';
-	let pending = materialElement == null ? 1 : 2;
-	const finish = () => {
-		pending -= 1;
-		if (pending === 0) done();
-	};
-
-	animateVuneTransition(element, keyframes, animation, finish);
-	if (materialElement != null && materialBlur != null) {
-		animateVuneTransition(materialElement, [
-			{ '--vune-material-blur': keyframes[0].opacity === 0 ? '0px' : materialBlur },
-			{ '--vune-material-blur': keyframes[0].opacity === 0 ? materialBlur : '0px' },
-		], animation, finish);
-	}
+	animateContextMenuTransition(element, 'leave', done);
 }
 
 onMounted(() => {
+	const root = rootEl.value;
+	if (!root) return;
+
 	let left = props.ev.pageX + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
 	let top = props.ev.pageY + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
 
-	const width = rootEl.value!.offsetWidth;
-	const height = rootEl.value!.offsetHeight;
+	const width = root.offsetWidth;
+	const height = root.offsetHeight;
+	const viewportLeft = window.scrollX;
+	const viewportTop = window.scrollY;
+	// clientWidth/clientHeight already exclude classic scrollbars, unlike innerWidth.
+	const viewportRight = viewportLeft + window.document.documentElement.clientWidth;
+	const viewportBottom = viewportTop + window.document.documentElement.clientHeight;
+	let opensLeft = false;
+	let opensUp = false;
 
-	if (left + width - window.scrollX >= (window.innerWidth - SCROLLBAR_THICKNESS)) {
-		left = (window.innerWidth - SCROLLBAR_THICKNESS) - width + window.scrollX;
+	if (left + width > viewportRight) {
+		left = viewportRight - width;
+		opensLeft = true;
 	}
 
-	if (top + height - window.scrollY >= (window.innerHeight - SCROLLBAR_THICKNESS)) {
-		top = (window.innerHeight - SCROLLBAR_THICKNESS) - height + window.scrollY;
+	if (top + height > viewportBottom) {
+		top = viewportBottom - height;
+		opensUp = true;
 	}
 
-	if (top < 0) {
-		top = 0;
-	}
+	left = Math.max(viewportLeft, left);
+	top = Math.max(viewportTop, top);
 
-	if (left < 0) {
-		left = 0;
-	}
-
-	if (rootEl.value) {
-		rootEl.value.style.top = `${top}px`;
-		rootEl.value.style.left = `${left}px`;
-	}
+	root.style.top = `${top}px`;
+	root.style.left = `${left}px`;
+	root.style.transformOrigin = `${opensLeft ? 'right' : 'left'} ${opensUp ? 'bottom' : 'top'}`;
 
 	window.document.body.addEventListener('mousedown', onMousedown);
 });
@@ -124,13 +106,20 @@ onBeforeUnmount(() => {
 });
 
 function onMousedown(evt: MouseEvent) {
-	if (!elementContains(rootEl.value, evt.target as Element) && (rootEl.value !== evt.target)) emit('closed');
+	if (!elementContains(rootEl.value, evt.target as Element) && (rootEl.value !== evt.target)) close();
 }
 </script>
 
 <style lang="scss" module>
 .root {
+	--mk-context-menu-scale: 1;
+
 	position: absolute;
+	transform: scale(var(--mk-context-menu-scale));
 	transform-origin: left top;
+
+	:global(.vune-material--animated) {
+		animation: none;
+	}
 }
 </style>

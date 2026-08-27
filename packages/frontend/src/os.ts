@@ -25,6 +25,7 @@ import { i18n } from '@/i18n.js';
 import MkPostFormDialog from '@/components/MkPostFormDialog.vue';
 import MkWaitingDialog from '@/components/MkWaitingDialog.vue';
 import MkPageWindow from '@/components/MkPageWindow.vue';
+import MkThreadWindow from '@/components/MkThreadWindow.vue';
 import MkToast from '@/components/MkToast.vue';
 import MkDialog from '@/components/MkDialog.vue';
 import MkPopupMenu from '@/components/MkPopupMenu.vue';
@@ -246,6 +247,14 @@ export async function popupAsyncWithDialog<T extends Component>(
 export function pageWindow(path: string) {
 	const { dispose } = popup(MkPageWindow, {
 		initialPath: path,
+	}, {
+		closed: () => dispose(),
+	});
+}
+
+export function threadWindow(note: Misskey.entities.Note) {
+	const { dispose } = popup(MkThreadWindow, {
+		note,
 	}, {
 		closed: () => dispose(),
 	});

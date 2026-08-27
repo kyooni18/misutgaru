@@ -42,6 +42,8 @@ const isRefreshing = ref(false);
 const pullDistance = ref(0);
 
 let startScreenY: number | null = null;
+let transitionRaf = 0;
+let transitionResolve: (() => void) | null = null;
 
 const rootEl = useTemplateRef('rootEl');
 let scrollEl: HTMLElement | null = null;
@@ -98,10 +100,8 @@ function moveStartByMouse(event: MouseEvent) {
 	pullDistance.value = 0;
 
 	window.addEventListener('mousemove', moving, { passive: true });
-	window.addEventListener('mouseup', () => {
-		window.removeEventListener('mousemove', moving);
-		onPullRelease();
-	}, { passive: true, once: true });
+	window.removeEventListener('mouseup', mousePullRelease);
+	window.addEventListener('mouseup', mousePullRelease, { passive: true, once: true });
 }
 
 function moveStartByTouch(event: TouchEvent) {
@@ -120,33 +120,61 @@ function moveStartByTouch(event: TouchEvent) {
 	pullDistance.value = 0;
 
 	window.addEventListener('touchmove', moving, { passive: true });
-	window.addEventListener('touchend', () => {
-		window.removeEventListener('touchmove', moving);
-		onPullRelease();
-	}, { passive: true, once: true });
+	window.removeEventListener('touchend', touchPullRelease);
+	window.removeEventListener('touchcancel', touchPullRelease);
+	window.addEventListener('touchend', touchPullRelease, { passive: true, once: true });
+	window.addEventListener('touchcancel', touchPullRelease, { passive: true, once: true });
+}
+
+function mousePullRelease() {
+	window.removeEventListener('mousemove', moving);
+	onPullRelease();
+}
+
+function touchPullRelease() {
+	window.removeEventListener('touchmove', moving);
+	window.removeEventListener('touchend', touchPullRelease);
+	window.removeEventListener('touchcancel', touchPullRelease);
+	onPullRelease();
+}
+
+function stopSystemMove() {
+	if (transitionRaf !== 0) {
+		window.cancelAnimationFrame(transitionRaf);
+		transitionRaf = 0;
+	}
+	if (transitionResolve) {
+		const resolve = transitionResolve;
+		transitionResolve = null;
+		resolve();
+	}
 }
 
 function moveBySystem(to: number): Promise<void> {
-	return new Promise(r => {
+	stopSystemMove();
+	return new Promise(resolve => {
 		const startHeight = pullDistance.value;
-		const overHeight = pullDistance.value - to;
+		const overHeight = startHeight - to;
 		if (overHeight < 1) {
-			r();
+			pullDistance.value = to;
+			resolve();
 			return;
 		}
-		const startTime = Date.now();
-		let intervalId = window.setInterval(() => {
-			const time = Date.now() - startTime;
-			if (time > RELEASE_TRANSITION_DURATION) {
-				pullDistance.value = to;
-				window.clearInterval(intervalId);
-				r();
+
+		transitionResolve = resolve;
+		const startTime = window.performance.now();
+		const step = (now: number) => {
+			const progress = Math.min(1, (now - startTime) / RELEASE_TRANSITION_DURATION);
+			pullDistance.value = startHeight - (overHeight * progress);
+			if (progress < 1) {
+				transitionRaf = window.requestAnimationFrame(step);
 				return;
 			}
-			const nextHeight = startHeight - (overHeight / RELEASE_TRANSITION_DURATION) * time;
-			if (pullDistance.value < nextHeight) return;
-			pullDistance.value = nextHeight;
-		}, 1);
+			transitionRaf = 0;
+			transitionResolve = null;
+			resolve();
+		};
+		transitionRaf = window.requestAnimationFrame(step);
 	});
 }
 
@@ -203,9 +231,10 @@ function moving(event: MouseEvent | TouchEvent) {
 	const moveHeight = moveScreenY - startScreenY!;
 	pullDistance.value = Math.min(Math.max(moveHeight, 0), MAX_PULL_DISTANCE);
 
+	const wasPulledEnough = isPulledEnough.value;
 	isPulledEnough.value = pullDistance.value >= FIRE_THRESHOLD;
 
-	if (isPulledEnough.value) haptic();
+	if (!wasPulledEnough && isPulledEnough.value) haptic();
 }
 
 /**
@@ -230,6 +259,12 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+	stopSystemMove();
+	window.removeEventListener('mousemove', moving);
+	window.removeEventListener('mouseup', mousePullRelease);
+	window.removeEventListener('touchmove', moving);
+	window.removeEventListener('touchend', touchPullRelease);
+	window.removeEventListener('touchcancel', touchPullRelease);
 	unlockDownScroll();
 	if (rootEl.value) rootEl.value.removeEventListener('mousedown', moveStartByMouse);
 	if (rootEl.value) rootEl.value.removeEventListener('touchstart', moveStartByTouch);

@@ -25,7 +25,7 @@ export default createVuneComponent<Props>((props) =>
 			VueComponent(MkNotesTimeline, { paginator: props.paginator }),
 		),
 		footer: () => vuneBoolean(props.signedIn) ? Group() {
-			MaterialSurface(Material.bar) {
+			MaterialSurface(Material.bar, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
 				Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px', '--MI_SPACER-min': '16px', '--MI_SPACER-max': '16px' } },
 					VueComponent(MkButton, {
 						rounded: true,

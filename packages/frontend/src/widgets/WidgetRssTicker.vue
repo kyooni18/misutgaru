@@ -156,7 +156,7 @@ defineExpose<WidgetComponentExpose>({
 	&:global(-leave-active) {
 		position: absolute;
 		top: 0;
-		transition: all 1s ease;
+		transition: opacity 1s ease, transform 1s ease;
 	}
 	&:global(-enter-from) {
 		opacity: 0;

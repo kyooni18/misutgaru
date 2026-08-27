@@ -30,11 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:height="imgHeight ?? undefined"
 			:width="imgWidth ?? undefined"
 			:class="$style.img"
-			:src="src ?? undefined"
+			:src="effectiveSrc ?? undefined"
 			:title="title ?? undefined"
 			:alt="alt ?? undefined"
 			:data-marker="marker ?? undefined"
-			loading="eager"
+			:loading="loading"
 			decoding="async"
 			draggable="false"
 			tabindex="-1"
@@ -45,9 +45,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, useTemplateRef, watch, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch, ref } from 'vue';
 import { prefer } from '@/preferences.js';
 import MkBlurhash from '@/components/MkBlurhash.vue';
+
+const lazyLoadCallbacks = new WeakMap<Element, () => void>();
+const lazyLoadObserver = typeof IntersectionObserver === 'undefined'
+	? null
+	: new IntersectionObserver((entries) => {
+		for (const entry of entries) {
+			if (!entry.isIntersecting) continue;
+			lazyLoadCallbacks.get(entry.target)?.();
+			lazyLoadCallbacks.delete(entry.target);
+			lazyLoadObserver?.unobserve(entry.target);
+		}
+	}, {
+		rootMargin: '640px 0px',
+	});
 
 const props = withDefaults(defineProps<{
 	transition?: {
@@ -69,6 +83,7 @@ const props = withDefaults(defineProps<{
 	forceBlurhash?: boolean;
 	onlyAvgColor?: boolean; // 軽量化のためにBlurhashを使わずに平均色だけを描画
 	marker?: string;
+	loading?: 'eager' | 'lazy';
 }>(), {
 	transition: null,
 	src: null,
@@ -79,6 +94,7 @@ const props = withDefaults(defineProps<{
 	cover: true,
 	forceBlurhash: false,
 	onlyAvgColor: false,
+	loading: 'eager',
 });
 
 const root = useTemplateRef('root');
@@ -87,18 +103,45 @@ const loaded = ref(false);
 const imgWidth = ref(props.width);
 const imgHeight = ref(props.height);
 const hide = computed(() => !loaded.value || props.forceBlurhash);
+const shouldLoad = ref(props.loading === 'eager' || lazyLoadObserver == null);
+const effectiveSrc = computed(() => shouldLoad.value ? props.src : null);
+
+function armLazyLoad() {
+	const el = root.value;
+	if (!el) return;
+
+	lazyLoadObserver?.unobserve(el);
+	lazyLoadCallbacks.delete(el);
+
+	if (props.loading === 'eager' || lazyLoadObserver == null) {
+		shouldLoad.value = true;
+		return;
+	}
+
+	if (shouldLoad.value) return;
+	lazyLoadCallbacks.set(el, () => {
+		shouldLoad.value = true;
+	});
+	lazyLoadObserver.observe(el);
+}
+
+let decodeRequest = 0;
 
 function waitForDecode() {
-	if (props.src != null && props.src !== '') {
+	const request = ++decodeRequest;
+	const source = effectiveSrc.value;
+	loaded.value = false;
+
+	if (source != null && source !== '') {
 		nextTick()
 			.then(() => img.value?.decode())
 			.then(() => {
+				if (request !== decodeRequest || effectiveSrc.value !== source) return;
 				loaded.value = true;
 			}, error => {
+				if (request !== decodeRequest) return;
 				console.log('Error occurred during decoding image', img.value, error);
 			});
-	} else {
-		loaded.value = false;
 	}
 }
 
@@ -111,10 +154,24 @@ watch([() => props.width, () => props.height, root], () => {
 	immediate: true,
 });
 
-watch(() => props.src, () => {
+watch(effectiveSrc, () => {
 	waitForDecode();
 }, {
 	immediate: true,
+});
+
+watch(() => props.loading, () => {
+	if (props.loading === 'lazy') shouldLoad.value = false;
+	armLazyLoad();
+});
+
+onMounted(armLazyLoad);
+
+onBeforeUnmount(() => {
+	decodeRequest++;
+	if (!root.value) return;
+	lazyLoadObserver?.unobserve(root.value);
+	lazyLoadCallbacks.delete(root.value);
 });
 </script>
 

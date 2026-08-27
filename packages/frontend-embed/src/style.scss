@@ -7,11 +7,17 @@
  */
 
 :root {
-	--MI-radius: 12px;
+	--MI-radius: 16px;
 	--MI-marginFull: 14px;
 	--MI-marginHalf: 10px;
 
 	--MI-margin: var(--MI-marginFull);
+}
+
+*,
+*::before,
+*::after {
+	corner-shape: round;
 }
 
 html {

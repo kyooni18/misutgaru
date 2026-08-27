@@ -10,7 +10,7 @@ import '@/vune/phase5-migration.scss';
 type Props = { notification: Misskey.entities.Notification };
 export default createVuneComponent<Props>((props) =>
 	Group() {
-		MaterialSurface(Material.regular) {
+		MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
 			VueComponent(XNotification, {
 				notification: props.notification,
 				full: false,

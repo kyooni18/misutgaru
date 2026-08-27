@@ -68,7 +68,45 @@ function getDraftKey() {
 	return props.user ? 'user:' + props.user.id : 'room:' + props.room?.id;
 }
 
-watch([text, file], saveDraft);
+let draftSaveTimer: number | null = null;
+
+type ChatDrafts = Record<string, {
+	updatedAt: string | Date;
+	data: { text?: string; file?: Misskey.entities.DriveFile | null };
+}>;
+
+function readDrafts(): ChatDrafts {
+	try {
+		const raw = miLocalStorage.getItem('chatMessageDrafts');
+		if (!raw) return {};
+
+		const parsed = JSON.parse(raw) as unknown;
+		return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
+			? parsed as ChatDrafts
+			: {};
+	} catch (error) {
+		console.warn('[ChatForm] Ignoring invalid local draft storage', error);
+		return {};
+	}
+}
+
+function writeDrafts(drafts: ChatDrafts) {
+	try {
+		miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	} catch (error) {
+		console.warn('[ChatForm] Failed to save local draft', error);
+	}
+}
+
+function scheduleDraftSave() {
+	if (draftSaveTimer != null) window.clearTimeout(draftSaveTimer);
+	draftSaveTimer = window.setTimeout(() => {
+		draftSaveTimer = null;
+		saveDraft();
+	}, 400);
+}
+
+watch([text, file], scheduleDraftSave);
 
 async function onPaste(ev: ClipboardEvent) {
 	if (!ev.clipboardData) return;
@@ -227,25 +265,29 @@ function clear() {
 }
 
 function saveDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
+	const drafts = readDrafts();
 
 	drafts[getDraftKey()] = {
-		updatedAt: new Date(),
+		updatedAt: new Date().toISOString(),
 		data: {
 			text: text.value,
 			file: file.value,
 		},
 	};
 
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	writeDrafts(drafts);
 }
 
 function deleteDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
+	if (draftSaveTimer != null) {
+		window.clearTimeout(draftSaveTimer);
+		draftSaveTimer = null;
+	}
+	const drafts = readDrafts();
 
 	delete drafts[getDraftKey()];
 
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	writeDrafts(drafts);
 }
 
 async function insertEmoji(ev: MouseEvent) {
@@ -283,14 +325,19 @@ onMounted(() => {
 	}
 
 	// 書きかけの投稿を復元
-	const draft = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}')[getDraftKey()];
+	const draft = readDrafts()[getDraftKey()];
 	if (draft) {
-		text.value = draft.data.text;
-		file.value = draft.data.file;
+		text.value = draft.data.text ?? '';
+		file.value = draft.data.file ?? null;
 	}
 });
 
 onBeforeUnmount(() => {
+	if (draftSaveTimer != null) {
+		window.clearTimeout(draftSaveTimer);
+		draftSaveTimer = null;
+		saveDraft();
+	}
 	if (autocompleteInstance) {
 		autocompleteInstance.detach();
 		autocompleteInstance = null;
