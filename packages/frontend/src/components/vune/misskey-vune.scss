@@ -501,56 +501,42 @@
 .mk-vune-lightbox-fileinfo__value--pre { white-space: pre-wrap; }
 
 .mk-vune-switch-button {
-	--height: 22px;
-	--inset: 2px;
+	--vune-switch-on-bg: var(--MI_THEME-switchOnBg, var(--MI_THEME-accent, currentColor));
+	--vune-switch-off-bg: var(--MI_THEME-switchOffBg, color-mix(in srgb, currentColor 12%, transparent));
+	--vune-switch-on-fg: var(--MI_THEME-switchOnFg, var(--MI_THEME-fgOnAccent, currentColor));
+	--vune-switch-off-fg: var(--MI_THEME-switchOffFg, currentColor);
 	position: relative;
 	display: inline-flex;
 	flex-shrink: 0;
 	box-sizing: border-box;
-	width: calc(var(--height) * 1.8) !important;
-	height: var(--height) !important;
 	padding: 0;
 	border: 0 !important;
 	border-radius: 999px;
-	background: var(--MI_THEME-switchOffBg);
 	cursor: pointer;
-	box-shadow:
-		inset 0 1px 1px color-mix(in srgb, var(--MI_THEME-fg) 14%, transparent),
-		0 1px 2px color-mix(in srgb, var(--MI_THEME-fg) 12%, transparent);
-	transition: none;
+	corner-shape: squircle;
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--MI_THEME-fg) 12%, transparent);
+	transition: box-shadow 0.2s ease, transform 0.15s ease;
 	user-select: none;
 }
 
 .mk-vune-switch-button:hover:not([disabled]):not(.mk-vune-switch-button--display-only) {
-	box-shadow:
-		inset 0 1px 1px color-mix(in srgb, var(--MI_THEME-fg) 18%, transparent),
-		0 2px 4px color-mix(in srgb, var(--MI_THEME-fg) 16%, transparent);
+	box-shadow: 0 2px 3px color-mix(in srgb, var(--MI_THEME-fg) 15%, transparent);
 }
 
-.mk-vune-switch-button:active:not([disabled]):not(.mk-vune-switch-button--display-only) { transform: scale(0.96); }
+.mk-vune-switch-button:active:not([disabled]):not(.mk-vune-switch-button--display-only) { transform: scale(0.97); }
 .mk-vune-switch-button:focus-visible {
 	outline: 2px solid var(--MI_THEME-focus);
 	outline-offset: 2px;
 }
 .mk-vune-switch-button--disabled { cursor: not-allowed; opacity: 0.6; }
 
-.mk-vune-switch-button > [data-vune="SwitchTrack"] {
-	box-shadow:
-		inset 0 1px 1px color-mix(in srgb, var(--MI_THEME-fgOnAccent) 18%, transparent),
-		0 1px 2px color-mix(in srgb, var(--MI_THEME-accent) 30%, transparent);
+/* Dark themes use the same theme-aware colors without extra gloss or layered shadows. */
+html[data-color-scheme='dark'] .mk-vune-switch-button,
+html[data-color-scheme='dark'] .mk-vune-switch-button:hover:not([disabled]):not(.mk-vune-switch-button--display-only) {
+	box-shadow: none;
 }
-.mk-vune-switch-button > [data-vune="SwitchThumb"] {
-	position: absolute;
-	box-sizing: border-box;
-	inset-block-start: var(--inset);
-	width: calc(var(--height) - (var(--inset) * 2));
-	height: calc(var(--height) - (var(--inset) * 2));
-	border-radius: 999px;
-	background: var(--MI_THEME-bg) !important;
-	box-shadow:
-		0 1px 2px color-mix(in srgb, var(--MI_THEME-fg) 24%, transparent),
-		inset 0 1px 0 color-mix(in srgb, var(--MI_THEME-panel) 65%, transparent);
-	transition: none;
+html[data-color-scheme='dark'] .mk-vune-switch-button > [data-vune="SwitchThumb"] {
+	box-shadow: none;
 }
 
 

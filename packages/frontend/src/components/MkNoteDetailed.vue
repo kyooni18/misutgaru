@@ -21,6 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:key="note.id"
 			:note="note"
 			:threadContext="true"
+			:showControls="true"
 			:showReplyButton="false"
 			:allowReply="false"
 			:showAdditionalLayout="false"
@@ -30,6 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		v-if="!props.threadContext && props.autoLoadThread && appearNote.replyId && appearNote.reply"
 		:note="appearNote.reply"
 		:threadContext="true"
+		:showControls="true"
 		:showReplyButton="false"
 		:allowReply="false"
 		:showAdditionalLayout="false"
@@ -97,6 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:key="child.id"
 				:note="child"
 				:threadContext="true"
+				:showControls="true"
 				:showReplyButton="false"
 				:allowReply="false"
 				:showAdditionalLayout="false"
@@ -113,7 +116,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkLoading v-if="repliesLoading" mini/>
 					<MkButton v-else style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
 				</div>
-				<MkNoteSub v-for="note in replies" :key="note.id" :note="note" :class="$style.reply" :detail="true"/>
+				<div v-for="note in replies" :key="note.id" :class="$style.reply">
+					<MkNoteDetailed
+						:note="note"
+						:threadContext="true"
+						:showControls="true"
+						:showReplyButton="false"
+						:allowReply="false"
+						:showAdditionalLayout="false"
+					/>
+				</div>
 			</div>
 			<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
 				<MkPagination :paginator="renotesPaginator" :forceDisableInfiniteScroll="true">

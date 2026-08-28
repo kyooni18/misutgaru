@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.disabled]: disabled }]">
-	<NativeMkSwitch :class="$style.toggle" :checked="visualChecked" :disabled="disabled" :onToggle="toggle"/>
+	<NativeMkSwitch :checked="visualChecked" :disabled="disabled" :onToggle="toggle"/>
 	<span v-if="!noBody" :class="$style.body">
 		<!-- TODO: 無名slotの方は廃止 -->
 		<span :class="$style.label">

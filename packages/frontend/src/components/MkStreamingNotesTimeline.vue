@@ -221,7 +221,10 @@ if (props.src === 'antenna') {
 }
 
 const virtualRoot = ref<HTMLElement | null>(null);
-const timelineItems = computed(() => paginator.items.value);
+// Paginator intentionally keeps a shallowRef and mutates its array in place.
+// Expose a fresh snapshot so the virtual-list computed chain observes an older
+// page appended by fetchOlder instead of retaining the previous array identity.
+const timelineItems = computed(() => paginator.items.value.slice());
 const {
 	enabled: virtualizationEnabled,
 	entries: virtualEntries,
@@ -253,7 +256,7 @@ function setVirtualRow(el: Element | ComponentPublicInstance | null, entry: Vari
 	observeVirtualRow(element, entry);
 }
 
-watch(() => paginator.items.value, notes => {
+watch(timelineItems, notes => {
 	prefetchPreparedNotes(notes);
 }, { immediate: true, deep: false });
 
