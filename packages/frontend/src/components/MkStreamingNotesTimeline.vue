@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<div v-if="virtualizationEnabled && afterSize > 0" key="_virtual_after_" aria-hidden="true" :class="$style.virtualSpacer" :style="{ height: `${afterSize}px` }"></div>
 		</component>
-		<button v-show="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.s.enableInfiniteScroll ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
+		<button v-if="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.r.enableInfiniteScroll.value ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
 			<div v-if="!paginator.fetchingOlder.value">{{ i18n.ts.loadMore }}</div>
 			<MkLoading v-else :inline="true"/>
 		</button>

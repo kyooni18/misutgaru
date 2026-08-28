@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-compat */
-import { Binding, Button, Element, ForEach, Group, ScrollView, Text, TextField, VStack, type ViewGraphValue } from 'vune-ui';
-import { VueComponent, createVuneComponent } from '@/vune/vue.js';
-import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
-import MkEmoji from '@/components/global/MkEmoji.vue';
+import { Binding, Button, Element, ForEach, ScrollView, Text, TextField, VStack, type ViewGraphValue } from 'vune-ui';
+import { createVuneComponent } from '@/vune/vue.js';
 import { i18n } from '@/i18n.js';
 import VuneIcon from '@/vune/Icon.vune';
-import type { NativeEmojiPickerItem, NativeEmojiPickerModel, NativeEmojiPickerSection } from './MkEmojiPicker.types.js';
+import type { NativeEmojiPickerGroup, NativeEmojiPickerItem, NativeEmojiPickerModel, NativeEmojiPickerSection } from './MkEmojiPicker.types.js';
 import './MkEmojiPicker.vune.scss';
 
 type Props = {
@@ -41,47 +39,88 @@ function handlePaste(model: NativeEmojiPickerModel, event: ClipboardEvent): void
 	if (model.onPaste(pasted)) event.preventDefault();
 }
 
+function emojiButton(item: NativeEmojiPickerItem, choose: (key: string) => void, compact = false): ViewGraphValue {
+	return Element('button', {
+		type: 'button',
+		className: ['_button', 'mk-vune-emoji-picker__emoji', compact ? 'mk-vune-emoji-picker__emoji--quick' : ''],
+		title: item.title,
+		'aria-label': item.title,
+		'data-emoji': item.key,
+		disabled: item.disabled,
+		onClick: () => {
+			if (!item.disabled) choose(item.key);
+		},
+	}, item.view);
+}
+
 function emojiGrid(items: NativeEmojiPickerItem[], choose: (key: string) => void): ViewGraphValue {
-	return Group() {
+	return Element('div', { className: 'mk-vune-emoji-picker__grid' },
 		ForEach(items, key: item => item.key) { item in
-			Element('button', {
-				className: ['_button', 'mk-vune-emoji-picker__emoji'],
-				title: item.title,
-				'aria-label': item.title,
-				'data-emoji': item.key,
-				disabled: item.disabled,
-				onClick: () => {
-					if (!item.disabled) choose(item.key)
-				},
-			}, item.view)
+			emojiButton(item, choose)
+		}
+	);
+}
+
+function emojiStrip(items: NativeEmojiPickerItem[], choose: (key: string) => void): ViewGraphValue {
+	return ScrollView('horizontal') {
+		ForEach(items, key: item => item.key) { item in
+			emojiButton(item, choose, true)
 		}
 	}
-		.className('mk-vune-emoji-picker__grid');
+		.className('mk-vune-emoji-picker__strip');
+}
+
+function categoryRailItems(groups: NativeEmojiPickerGroup[]): NativeEmojiPickerSection[] {
+	return groups.flatMap(group => group.sections);
+}
+
+function categoryRail(sections: NativeEmojiPickerSection[]): ViewGraphValue {
+	return ScrollView('horizontal') {
+		ForEach(sections, key: section => section.key) { section in
+			Button(action: section.onToggle, label: {
+				VuneIcon(section.icon).className('mk-vune-emoji-picker__category-chip-icon')
+				Text(section.title).className('mk-vune-emoji-picker__category-chip-title')
+				Text(String(section.count)).className('mk-vune-emoji-picker__category-chip-count')
+			})
+				.className(['_button', 'mk-vune-emoji-picker__category-chip', section.expanded ? 'mk-vune-emoji-picker__category-chip--active' : ''])
+				.withProps({ 'aria-label': section.title, 'aria-expanded': section.expanded })
+		}
+	}
+		.className('mk-vune-emoji-picker__category-rail');
 }
 
 function pickerSection(section: NativeEmojiPickerSection, choose: (key: string) => void): ViewGraphValue {
-	return Group() {
+	return Element('section', { className: ['mk-vune-emoji-picker__section', section.expanded ? 'mk-vune-emoji-picker__section--expanded' : ''] },
 		Button(action: section.onToggle, label: {
-			VuneIcon(section.expanded ? 'ti ti-chevron-down' : 'ti ti-chevron-right').className('mk-vune-emoji-picker__section-icon')
+			VuneIcon(section.icon).className('mk-vune-emoji-picker__section-category-icon')
 			Text(section.title).className('mk-vune-emoji-picker__section-title')
 			Text(String(section.count)).className('mk-vune-emoji-picker__section-count')
+			VuneIcon(section.expanded ? 'ti ti-chevron-down' : 'ti ti-chevron-right').className('mk-vune-emoji-picker__section-chevron')
 		})
 			.className(['_button', 'mk-vune-emoji-picker__section-header'])
-			.withProps({ 'aria-expanded': section.expanded })
-		if (section.expanded) { emojiGrid(section.emojis, choose) }
-	}
-		.className('mk-vune-emoji-picker__section');
+			.withProps({ 'aria-expanded': section.expanded }),
+		section.expanded ? emojiGrid(section.emojis, choose) : null,
+	);
 }
 
-function quickBlock(title: string, items: NativeEmojiPickerItem[], choose: (key: string) => void): ViewGraphValue {
-	return Element('div', { className: 'mk-vune-emoji-picker__quick-block' },
-		Text(title).className('mk-vune-emoji-picker__section-title'),
-		emojiGrid(items, choose),
+function quickRow(icon: string, title: string, items: NativeEmojiPickerItem[], choose: (key: string) => void): ViewGraphValue {
+	return Element('div', { className: 'mk-vune-emoji-picker__quick-row' },
+		VuneIcon(icon).className('mk-vune-emoji-picker__quick-icon'),
+		Text(title).className('mk-vune-emoji-picker__quick-title'),
+		emojiStrip(items, choose),
+	);
+}
+
+function keyboardHint(key: string, label: string): ViewGraphValue {
+	return Element('div', { className: 'mk-vune-emoji-picker__hint' },
+		Text(key).className('mk-vune-emoji-picker__key'),
+		Text(label).className('mk-vune-emoji-picker__hint-label'),
 	);
 }
 
 export default createVuneComponent<Props>((props) => {
 	const model = props.model;
+	const categorySections = categoryRailItems(model.groups);
 	const rootClasses = [
 		'mk-vune-emoji-picker',
 		model.asDrawer ? 'mk-vune-emoji-picker--drawer' : '',
@@ -89,59 +128,64 @@ export default createVuneComponent<Props>((props) => {
 		props.class ?? '',
 	];
 
-	return VStack(alignment: 'stretch', spacing: 0) {
-		Group() {
-			Group() {
-				Group() {
-					Text(i18n.ts.emojiPalette).className('mk-vune-emoji-picker__title')
-					Text(i18n.ts.search).className('mk-vune-emoji-picker__subtitle')
-				}
-					.className('mk-vune-emoji-picker__heading-copy')
-			Button(action: model.onSettings, label: { VuneIcon('ti ti-settings') })
-				.className(['_button', 'mk-vune-emoji-picker__settings'])
-				.withProps({ 'aria-label': i18n.ts.settings })
-			}
-				.className('mk-vune-emoji-picker__heading')
-			TextField(Binding(() => model.query, (value: string) => model.onQuery(value)), model.placeholder)
-				.className('mk-vune-emoji-picker__search')
-				.withProps({ type: 'search', 'aria-label': model.placeholder, onKeyDown: (event: KeyboardEvent) => handleSearchKeydown(model, event), onPaste: (event: ClipboardEvent) => handlePaste(model, event) })
-		}
-			.className('mk-vune-emoji-picker__top')
+	return VStack(alignment: 'leading', spacing: 0) {
+		Element('header', { className: 'mk-vune-emoji-picker__top' },
+			Element('div', { className: 'mk-vune-emoji-picker__heading' },
+				Text(i18n.ts.emojiPalette).className('mk-vune-emoji-picker__title'),
+				Button(action: model.onSettings, label: { VuneIcon('ti ti-settings') })
+					.className(['_button', 'mk-vune-emoji-picker__settings'])
+					.withProps({ 'aria-label': i18n.ts.settings })
+			),
+			Element('div', { className: 'mk-vune-emoji-picker__search-shell' },
+				VuneIcon('ti ti-search').className('mk-vune-emoji-picker__search-icon'),
+				TextField(Binding(() => model.query, (value: string) => model.onQuery(value)), model.placeholder)
+					.className('mk-vune-emoji-picker__search')
+					.withProps({ type: 'search', 'aria-label': model.placeholder, autocapitalize: 'off', onKeyDown: (event: KeyboardEvent) => handleSearchKeydown(model, event), onPaste: (event: ClipboardEvent) => handlePaste(model, event) })
+				model.query !== ''
+					? Button(action: { model.onQuery('') }, label: { VuneIcon('ti ti-x') })
+						.className(['_button', 'mk-vune-emoji-picker__search-clear'])
+						.withProps({ 'aria-label': i18n.ts.clear })
+					: null,
+			),
+		)
 		ScrollView('vertical') {
 			if (model.query !== '') {
-				Group() {
-					Text(model.resultLabel).className('mk-vune-emoji-picker__section-title')
-					if (model.results.length > 0) { emojiGrid(model.results, model.onChoose) } else { Text(i18n.ts.none).className('mk-vune-emoji-picker__empty') }
-				}
-					.className('mk-vune-emoji-picker__quick')
+				Element('div', { className: 'mk-vune-emoji-picker__results' },
+					Element('div', { className: 'mk-vune-emoji-picker__result-heading' },
+						VuneIcon('ti ti-search').className('mk-vune-emoji-picker__result-icon'),
+						Text(model.resultLabel).className('mk-vune-emoji-picker__result-title'),
+					),
+					model.results.length > 0 ? emojiGrid(model.results, model.onChoose) : Text(i18n.ts.none).className('mk-vune-emoji-picker__empty'),
+				)
 			} else {
-				Group() {
-					if (model.pinned.length > 0) { quickBlock(i18n.ts.pinned, model.pinned, model.onChoose) }
-					if (model.recent.length > 0) { quickBlock(i18n.ts.recentUsed, model.recent, model.onChoose) }
+				if (model.pinned.length > 0 || model.recent.length > 0) {
+					Element('div', { className: 'mk-vune-emoji-picker__quick' },
+						if (model.pinned.length > 0) { quickRow('ti ti-pin', i18n.ts.pinned, model.pinned, model.onChoose) }
+						if (model.recent.length > 0) { quickRow('ti ti-clock', i18n.ts.recentUsed, model.recent, model.onChoose) }
+					)
 				}
-					.className('mk-vune-emoji-picker__quick')
+				if (categorySections.length > 0) { categoryRail(categorySections) }
 			}
 			ForEach(model.groups, key: group => group.key) { group in
-				Group() {
-					Group() {
-						VuneIcon(group.icon).className('mk-vune-emoji-picker__group-icon')
-						Text(group.title).className('mk-vune-emoji-picker__group-title')
-					}
-						.className('mk-vune-emoji-picker__group-heading')
-					ForEach(group.sections, key: section => section.key) { section in pickerSection(section, model.onChoose) }
-				}
-					.className('mk-vune-emoji-picker__group')
+				Element('section', { className: 'mk-vune-emoji-picker__group' },
+					Element('div', { className: 'mk-vune-emoji-picker__group-heading' },
+						VuneIcon(group.icon).className('mk-vune-emoji-picker__group-icon'),
+						Text(group.title).className('mk-vune-emoji-picker__group-title'),
+						Text(String(group.count)).className('mk-vune-emoji-picker__group-count'),
+					),
+					Element('div', { className: 'mk-vune-emoji-picker__section-list' },
+						ForEach(group.sections, key: section => section.key) { section in pickerSection(section, model.onChoose) }
+					),
+				)
 			}
 		}
 			.className('mk-vune-emoji-picker__content')
 			.style({ '--emoji-columns': model.columns, '--emoji-item-size': `${model.itemSize}px` })
 			.withProps({ onKeyDown: (event: KeyboardEvent) => handleEscape(model, event) })
-		Group() {
-			Text('Enter').className('mk-vune-emoji-picker__key')
-			Text(i18n.ts.search)
-			Text(String(model.pinned.length + model.recent.length)).className('mk-vune-emoji-picker__subtitle')
-		}
-			.className('mk-vune-emoji-picker__footer')
+		Element('footer', { className: 'mk-vune-emoji-picker__footer' },
+			keyboardHint('Enter', i18n.ts.done),
+			keyboardHint('Esc', i18n.ts.close),
+		)
 	}
 		.className(rootClasses)
 		.style({

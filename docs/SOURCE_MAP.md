@@ -23,8 +23,14 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 | `packages/modules/Vune/packages/web/src/devtools.ts` | optional boundary profiling store |
 | `packages/modules/Vune/packages/web/src/focus.ts` | focus-scope DOM behavior |
 | `packages/modules/Vune/packages/web/src/motion.ts` | Vune web motion and layout FLIP integration |
+| `packages/modules/Vune/packages/web/src/element-motion.ts` | shared imperative/keyframe motion bridge with per-property ownership for Vune and compatibility Vue surfaces |
 | `packages/frontend/src/vune/compat-vue.ts` | transitional Vue placement host consuming compiler plans |
+| `packages/frontend/src/vune/motion.ts` | thin compatibility re-export of the shared Vune Web element-motion engine |
 | `packages/frontend/src/vune/devtools-overlay.ts` | development-only in-app Vune profiler panel |
+| `packages/frontend/src/components/MkNoteDetailed.vue` | note detail layout, thread context and optional additional sections |
+| `packages/frontend/src/components/MkNoteDetailedContent.vue` | reusable detailed note avatar, author metadata and content renderer |
+| `packages/frontend/src/components/MkNoteDetailedControls.vue` | reusable detailed note timestamp, reactions and action controls |
+| `packages/frontend/src/components/MkThreadWindow.vue` | thread popup composition with ancestor and continuation notes |
 
 ## Fork package
 

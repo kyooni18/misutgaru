@@ -189,6 +189,18 @@ const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
 
 const expandedSections = new Map<string, boolean>();
 
+const unicodeCategoryMeta: Record<UnicodeEmojiDef['category'], { title: string; icon: string }> = {
+	face: { title: 'Face', icon: 'ti ti-mood-smile' },
+	people: { title: 'People', icon: 'ti ti-users' },
+	animals_and_nature: { title: 'Animals & nature', icon: 'ti ti-leaf' },
+	food_and_drink: { title: 'Food & drink', icon: 'ti ti-tools-kitchen-2' },
+	activity: { title: 'Activity', icon: 'ti ti-ball-football' },
+	travel_and_places: { title: 'Travel & places', icon: 'ti ti-plane' },
+	objects: { title: 'Objects', icon: 'ti ti-bulb' },
+	symbols: { title: 'Symbols', icon: 'ti ti-hash' },
+	flags: { title: 'Flags', icon: 'ti ti-flag' },
+};
+
 watch(q, () => {
 	if (q.value === '') {
 		searchResultCustom.value = [];
@@ -439,7 +451,7 @@ function pickerItem(value: string | Misskey.entities.EmojiSimple | UnicodeEmojiD
 	return {
 		key,
 		disabled: !canReact(value),
-		title: getEmojiName(key),
+		title: custom ? key.slice(1, -1) : getEmojiName(key),
 		view: custom
 			? VueComponent(MkCustomEmoji, { name: key, normal: true, fallbackToImage: true, class: 'emoji' })
 			: VueComponent(MkEmoji, { emoji: key, normal: true, class: 'emoji' }),
@@ -455,10 +467,11 @@ function toggleSection(key: string): void {
 	nativeModel.value = buildNativeModel();
 }
 
-function makeSection(key: string, title: string, values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerSection {
+function makeSection(key: string, title: string, icon: string, values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerSection {
 	return {
 		key,
 		title,
+		icon,
 		count: values.length,
 		emojis: sectionItems(values),
 		expanded: expandedSections.get(key) ?? false,
@@ -466,23 +479,40 @@ function makeSection(key: string, title: string, values: Array<string | Misskey.
 	};
 }
 
+function groupCount(sections: NativeEmojiPickerSection[]): number {
+	return sections.reduce((total, section) => total + section.count, 0);
+}
+
 function buildNativeModel(): NativeEmojiPickerModel {
 	const columnsByWidth = [0, 5, 6, 7, 8, 9];
-	const sizeByScale = [0, 40, 45, 50, 55, 60];
+	const sizeByScale = [0, 38, 42, 46, 50, 54];
 	const columns = columnsByWidth[emojiPickerWidth.value] ?? 7;
-	const itemSize = sizeByScale[emojiPickerScale.value] ?? 50;
+	const itemSize = sizeByScale[emojiPickerScale.value] ?? 46;
 	const customCategories = ['', ...customEmojiCategories.value.filter((category): category is string => category !== null && category !== '')];
-	const customSections = customCategories.map(category => makeSection(`custom:${category}`, category || i18n.ts.other, customEmojis.value.filter(emoji => filterCategory(emoji, category))));
-	const unicodeSections = categories.map(category => makeSection(`unicode:${category}`, category, (emojiCharByCategory.get(category) ?? []).map(char => getUnicodeEmoji(char)).filter((emoji): emoji is UnicodeEmojiDef => emoji != null)));
+	const customSections = customCategories.map(category => makeSection(
+		`custom:${category}`,
+		category || i18n.ts.other,
+		category === '' ? 'ti ti-sparkles' : 'ti ti-folder',
+		customEmojis.value.filter(emoji => filterCategory(emoji, category)),
+	)).filter(section => section.count > 0);
+	const unicodeSections = categories.map(category => {
+		const meta = unicodeCategoryMeta[category];
+		return makeSection(
+			`unicode:${category}`,
+			meta.title,
+			meta.icon,
+			(emojiCharByCategory.get(category) ?? []).map(char => getUnicodeEmoji(char)).filter((emoji): emoji is UnicodeEmojiDef => typeof emoji !== 'string'),
+		);
+	});
 	const groups: NativeEmojiPickerGroup[] = [
-		{ key: 'custom', title: i18n.ts.customEmojis, icon: 'ti ti-icons', sections: customSections },
-		{ key: 'unicode', title: i18n.ts.emoji, icon: 'ti ti-mood-happy', sections: unicodeSections },
-	];
+		{ key: 'custom', title: i18n.ts.customEmojis, icon: 'ti ti-icons', count: groupCount(customSections), sections: customSections },
+		{ key: 'unicode', title: i18n.ts.emoji, icon: 'ti ti-mood-happy', count: groupCount(unicodeSections), sections: unicodeSections },
+	].filter(group => group.count > 0);
 	const results = [...searchResultCustom.value, ...searchResultUnicode.value].map(pickerItem);
 	return {
 		query: q.value,
 		placeholder: i18n.ts.search,
-		width: columns * itemSize + 28,
+		width: columns * itemSize + 24,
 		height: (emojiPickerHeight.value === 1 ? 4 : emojiPickerHeight.value === 2 ? 6 : emojiPickerHeight.value === 3 ? 8 : 10) * itemSize + 28,
 		columns,
 		itemSize,

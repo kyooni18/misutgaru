@@ -695,7 +695,6 @@ function nativeRow(item: InnerMenuItem, index: number): NativeMenuRow {
 			className: ['_button', $style.item],
 			disabled,
 			checked: unref(item.ref),
-			onToggle: () => switchItem(item),
 			onActivate: () => switchItem(item),
 		};
 	}

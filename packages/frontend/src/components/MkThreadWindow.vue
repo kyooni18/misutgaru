@@ -17,7 +17,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</template>
 
 	<div :class="$style.root">
-		<MkNoteDetailed :note="note" :autoLoadThread="true" />
+		<MkNoteDetailed
+			:note="note"
+			:autoLoadThread="true"
+			:showReplyButton="false"
+			:allowReply="false"
+		/>
 	</div>
 </MkWindow>
 </template>
