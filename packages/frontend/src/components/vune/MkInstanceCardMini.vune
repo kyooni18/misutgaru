@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement } from '@/vune/native.js';
 import type * as Misskey from 'misskey-js';
 import MkMiniChart from './MkMiniChart.vune';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
@@ -53,8 +53,8 @@ export struct MkInstanceCardMini: View {
 	}
 
 	var body: some View {
-		nativeElement('div', { style: { display: 'contents' } },
-			nativeElement('div', {
+		htmlElement('div', { style: { display: 'contents' } },
+			htmlElement('div', {
 				className: [
 					'mk-vune-instance-mini',
 					instance.isNotResponding ? 'mk-vune-instance-mini--yellow' : null,
@@ -63,11 +63,11 @@ export struct MkInstanceCardMini: View {
 					instance.isSilenced ? 'mk-vune-instance-mini--blue' : null,
 				],
 			},
-				nativeElement('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
-				nativeElement('div', { className: 'mk-vune-instance-mini__body' },
-					nativeElement('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
-					nativeElement('span', { className: 'mk-vune-instance-mini__sub _monospace' },
-						nativeElement('b', {}, instance.host),
+				htmlElement('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
+				htmlElement('div', { className: 'mk-vune-instance-mini__body' },
+					htmlElement('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
+					htmlElement('span', { className: 'mk-vune-instance-mini__sub _monospace' },
+						htmlElement('b', {}, instance.host),
 						` / ${instance.softwareName || '?'} ${instance.softwareVersion}`,
 					),
 				),

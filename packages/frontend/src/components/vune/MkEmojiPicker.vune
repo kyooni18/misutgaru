@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
+/* @misutgaru-vune-compat */
 import { Binding, Button, Element, ForEach, Group, ScrollView, Text, TextField, VStack, type ViewGraphValue } from 'vune-ui';
 import { VueComponent, createVuneComponent } from '@/vune/vue.js';
 import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';

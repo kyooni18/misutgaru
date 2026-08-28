@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
 import { Animation, Text } from 'vune-ui';
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement } from '@/vune/native.js';
 
 function colon(showColon: boolean) {
 	return Text(':')
@@ -38,7 +38,7 @@ export struct MkDigitalClock: View {
 	}
 
 	var body: some View {
-		nativeElement('span', {},
+		htmlElement('span', {},
 			Text(hh),
 			colon(showColon),
 			Text(mm),

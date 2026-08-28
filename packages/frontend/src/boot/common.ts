@@ -31,6 +31,7 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
+import { installMaterialPerformancePolicy } from '@/vune/material-performance.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
@@ -61,6 +62,11 @@ export async function common(createVue: () => Promise<App<Element>>) {
 			});
 			*/
 		});
+	}
+
+	if (_DEV_) {
+		const { installVuneDevtools } = await import('@/vune/devtools-overlay.js');
+		installVuneDevtools();
 	}
 
 	let isClientUpdated = false;
@@ -98,6 +104,7 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 	// タッチデバイスでCSSの:hoverを機能させる
 	window.document.addEventListener('touchend', () => {}, { passive: true });
+	installMaterialPerformancePolicy();
 
 	// URLに#pswpを含む場合は取り除く
 	if (window.location.hash === '#pswp') {

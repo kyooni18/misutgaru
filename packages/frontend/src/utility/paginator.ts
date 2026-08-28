@@ -107,6 +107,8 @@ export class Paginator<
 	private canFetchDetection: 'safe' | 'limit' | null = null;
 	private aheadQueue: T[] = [];
 	private useShallowRef: SRef;
+	private maxItems: number;
+	private normalizeItem: (item: T) => T;
 
 	// 配列内の要素をどのような順序で並べるか
 	// newest: 新しいものが先頭 (default)
@@ -116,6 +118,7 @@ export class Paginator<
 
 	constructor(endpoint: Endpoint, props: {
 		limit?: number;
+		maxItems?: number;
 		params?: E['req'] | (() => E['req']);
 		computedParams?: ComputedRef<E['req'] | null | undefined>;
 
@@ -140,6 +143,7 @@ export class Paginator<
 
 		canSearch?: boolean;
 		searchParamName?: keyof E['req'];
+		normalizeItem?: (item: T) => T;
 	}) {
 		this.endpoint = endpoint;
 		this.useShallowRef = (props.useShallowRef ?? false) as SRef;
@@ -150,6 +154,7 @@ export class Paginator<
 		}
 
 		this.limit = props.limit ?? FIRST_FETCH_LIMIT;
+		this.maxItems = Math.max(1, props.maxItems ?? MAX_ITEMS);
 		this.params = props.params ?? {};
 		this.computedParams = props.computedParams ?? null;
 		this.order = ref(props.order ?? 'newest');
@@ -161,6 +166,7 @@ export class Paginator<
 		this.offsetMode = props.offsetMode ?? false;
 		this.canSearch = props.canSearch ?? false;
 		this.searchParamName = props.searchParamName ?? 'search';
+		this.normalizeItem = props.normalizeItem ?? (item => item);
 
 		this.getNewestId = this.getNewestId.bind(this);
 		this.getOldestId = this.getOldestId.bind(this);
@@ -363,26 +369,44 @@ export class Paginator<
 		// 余計な re-render を防ぐために上部で処理している。そのため、ここでは何もしない
 	}
 
+	private normalizeUniqueItems(newItems: T[]): T[] {
+		const seen = new Set(this.items.value.map(item => item.id));
+		const result: T[] = [];
+		for (const raw of newItems) {
+			const item = this.normalizeItem(raw);
+			if (seen.has(item.id)) continue;
+			seen.add(item.id);
+			result.push(item);
+		}
+		return result;
+	}
+
 	public trim(trigger = true): void {
-		if (this.items.value.length >= MAX_ITEMS) this.canFetchOlder.value = true;
-		this.items.value = this.items.value.slice(0, MAX_ITEMS);
+		if (this.items.value.length <= this.maxItems) return;
+		this.canFetchOlder.value = true;
+		this.items.value = this.items.value.slice(0, this.maxItems);
 		if (this.useShallowRef && trigger) triggerRef(this.items);
 	}
 
 	public unshiftItems(newItems: T[], trim = true): void {
 		if (newItems.length === 0) return; // これやらないと余計なre-renderが走る
-		this.items.value.unshift(...newItems.filter(x => !this.items.value.some(y => y.id === x.id))); // ストリーミングやポーリングのタイミングによっては重複することがあるため
-		if (trim) this.trim(true);
+		const normalized = this.normalizeUniqueItems(newItems);
+		if (normalized.length === 0) return;
+		this.items.value.unshift(...normalized); // streaming/polling overlap can return the same ID more than once
+		if (trim) this.trim(false);
 		if (this.useShallowRef) triggerRef(this.items);
 	}
 
 	public pushItems(oldItems: T[]): void {
 		if (oldItems.length === 0) return; // これやらないと余計なre-renderが走る
-		this.items.value.push(...oldItems);
+		const normalized = this.normalizeUniqueItems(oldItems);
+		if (normalized.length === 0) return;
+		this.items.value.push(...normalized);
 		if (this.useShallowRef) triggerRef(this.items);
 	}
 
 	public prepend(item: T): void {
+		item = this.normalizeItem(item);
 		if (this.items.value.some(x => x.id === item.id)) return;
 		this.items.value.unshift(item);
 		this.trim(false);
@@ -390,7 +414,7 @@ export class Paginator<
 	}
 
 	public enqueue(item: T): void {
-		this.aheadQueue.unshift(item);
+		this.aheadQueue.unshift(this.normalizeItem(item));
 		if (this.aheadQueue.length > MAX_QUEUE_ITEMS) {
 			this.aheadQueue.pop();
 		}
@@ -420,7 +444,7 @@ export class Paginator<
 		const index = this.items.value.findIndex(x => x.id === id);
 		if (index !== -1) {
 			const item = this.items.value[index]!;
-			this.items.value[index] = updater(item);
+			this.items.value[index] = this.normalizeItem(updater(item));
 			if (this.useShallowRef) triggerRef(this.items);
 		}
 	}

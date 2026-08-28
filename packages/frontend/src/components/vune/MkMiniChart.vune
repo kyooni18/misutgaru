@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { svgElement } from '@/vune/native.js';
 
 export struct MkMiniChart: View {
 	let viewBoxX: number
@@ -36,8 +36,7 @@ export struct MkMiniChart: View {
 	}
 
 	var body: some View {
-		nativeElement(
-			'svg',
+		svgElement('svg',
 			{
 				className,
 				// A viewBox-only SVG has an auto-sized intrinsic box. Keep the
@@ -46,19 +45,17 @@ export struct MkMiniChart: View {
 				style: { height: '30px', overflow: 'visible' },
 				viewBox: `0 0 ${viewBoxX} ${viewBoxY}`,
 			},
-			nativeElement(
-				'defs',
+			svgElement('defs',
 				null,
-				nativeElement(
-					'linearGradient',
+				svgElement('linearGradient',
 					{ id: gradientId, x1: '0', x2: '0', y1: '1', y2: '0' },
-					nativeElement('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0' }),
-					nativeElement('stop', { offset: '100%', 'stop-color': color, 'stop-opacity': '0.65' }),
+					svgElement('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0' }),
+					svgElement('stop', { offset: '100%', 'stop-color': color, 'stop-opacity': '0.65' }),
 				),
 			),
-			nativeElement('polygon', { points: polygonPoints, style: `stroke: none; fill: url(#${gradientId});` }),
-			nativeElement('polyline', { points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '2' }),
-			nativeElement('circle', { cx: headX ?? undefined, cy: headY ?? undefined, r: '3', fill: color }),
+			svgElement('polygon', { points: polygonPoints, style: `stroke: none; fill: url(#${gradientId});` }),
+			svgElement('polyline', { points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '2' }),
+			svgElement('circle', { cx: headX ?? undefined, cy: headY ?? undefined, r: '3', fill: color }),
 		)
 	}
 }

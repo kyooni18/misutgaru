@@ -9,6 +9,7 @@ import * as nodeCrypto from 'crypto';
 import type { MiUser } from '@/models/User.js';
 import type { UserKeypairsRepository } from '@/models/_.js';
 import { RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import type { MiUserKeypair } from '@/models/UserKeypair.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
@@ -23,6 +24,7 @@ export class UserKeypairService implements OnApplicationShutdown {
 
 		@Inject(DI.userKeypairsRepository)
 		private userKeypairsRepository: UserKeypairsRepository,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.cache = new RedisKVCache<MiUserKeypair>(this.redisClient, 'userKeypair:v2', {
 			lifetime: 1000 * 60 * 60 * 24, // 24h
@@ -30,6 +32,7 @@ export class UserKeypairService implements OnApplicationShutdown {
 			fetcher: (key) => this.fetcher(key),
 			toRedisConverter: (value) => JSON.stringify(value),
 			fromRedisConverter: (value) => JSON.parse(value),
+			invalidationBus: this.cacheInvalidationService,
 		});
 	}
 

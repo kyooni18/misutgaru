@@ -1,45 +1,72 @@
-# Architecture
+# Misutgaru architecture
 
-## Frontend
+Misutgaru retains the Misskey protocol, database lineage, API surface, and package layout where practical. The fork concentrates its divergence in the UI framework boundary, runtime efficiency, and a small set of user-facing extensions.
 
-Misutgaru is currently a hybrid Vue and Vune frontend.
+## Frontend path
 
-A typical migrated path is:
+```text
+Vue application/state while migration is incomplete
+  -> typed placement host
+  -> compiled Vune View boundary
+  -> fine-grained State dependency scheduler
+  -> @vune-ui/web DOM renderer
+  -> o0o0o motion ownership/scheduler
+```
 
-`Vue application/state → compatibility or placement host → Vune compiled view → Vune web renderer`
+`packages/frontend/src/vune/compat-vue.ts` is intentionally transitional. Authored Vune Views now carry compiler-emitted legacy-host parameter plans, so primitive coercion and initializer mapping are mostly decided at compile time. `@vune-ui/compiler` exports `generateVueHostModule`, and its Vite plugin can materialize the matching pure-JS runtime placement module through a `.vune?vue-host` import. The physical generator retains consumer-visible `$props` typing; the query form deliberately emits no TypeScript-only syntax.
 
-Important boundaries live under `packages/frontend/src/vune`:
+Native Vune feature sources must not import Vue components or use raw host constructors. Browser-specific semantics should be expressed through Vune primitives first and the closed low-level Misutgaru native bridge only when the framework does not yet expose an equivalent.
 
-| File | Responsibility |
-| --- | --- |
-| `native.ts` | native Vune web primitives and low-level browser semantics |
-| `compat-vue.ts` | placement bridge used while Vue still owns surrounding lifecycle/state |
-| `vue.ts` | older Vue compatibility layer; migration debt, avoid expanding it |
-| `motion.ts` | shared motion adapter and animation ownership |
+## Fine-grained renderer
 
-Vite uses the Vune plugin before Vue compilation and the Vune pipeline uses Oxc for TypeScript transformation.
+The web renderer associates State reads with View boundaries. A State update schedules the smallest safe boundary rather than blindly rerendering the entire root. Dirty boundaries are collected into one microtask and processed parent-first so an ancestor update can absorb redundant descendant work.
 
-## Motion and Material
+Compiled templates retain direct text/modifier patch paths where the compiler can prove them safe. Structural changes fall back to boundary reconciliation without losing State identity.
 
-The fork introduces a shared animation path so opacity, transform, size, color, and other animated properties can keep independent timing while composing on the same element. Migrated surfaces should use the common Material tiers instead of introducing one-off backdrop-filter rules.
+Development builds can enable the Vune DevTools overlay with `?vune-devtools=1` or Ctrl/Command + Shift + V. The instrumentation is disabled by default and records no boundary history while disabled.
 
-## Backend runtime
+## Timeline rendering path
 
-The backend adds a combined runtime path centered on a shared Nest graph. `singleProcessMode` can run server and queue roles in one application graph while explicit split-role and clustered deployments must remain supported.
+Long Note lists keep logical entities separate from mounted DOM. `Paginator` can retain a bounded streaming identity window plus older fetched history, normalized Note/User/DriveFile entities reuse canonical references, PreparedNote prefetch shares MFM AST/URL work, and `useVariableVirtualList` mounts only a measured viewport window once the threshold is crossed. Row height measurements are keyed by Note identity rather than numeric position, so prepend/reorder and delayed ResizeObserver delivery cannot attach an old height to a different Note.
 
-Optimization work includes:
+## Native web semantics
 
-- shared Redis/BullMQ connections where sharing is safe;
-- CPU-aware concurrency and HTTP pool defaults;
-- cache miss coalescing and invalidation ordering;
-- batched entity packing and role/badge lookup;
-- buffered and vectorized file writes with common block sizes;
-- lazy server and queue statistics when no stream consumer is present.
+Vune core owns graph-first primitives for browser concepts that previously required raw host elements, including `TextEditor`, `FilePicker`, `ContentEditable`, `Canvas`, `Video`, `Audio`, `Svg`, `Path`, `FocusScope`, and `Popover`.
 
-## Fork-specific features
+The web package owns DOM-only behavior such as focus trapping/restoration. This keeps feature Views renderer-oriented instead of embedding DOM construction throughout Misutgaru.
 
-Thread windows open detailed note conversations in a resizable window rather than requiring only route navigation.
+## Motion and layout
 
-Translation can use an OpenAI-compatible provider before DeepL fallback, include bounded previous-thread context, and attach a limited set of downscaled images for image text translation or description.
+Misutgaru delegates per-element property ownership to o0o0o. Starting a new opacity animation only replaces the opacity owner; transform, size, color, and other property owners remain independent.
 
-Web Push includes VAPID-key rotation handling, `pushsubscriptionchange`, multi-account registration repair, and iOS installed-PWA checks.
+Vune intrinsic layout animation snapshots geometry before and after a structural update and applies FLIP projection. The layout channel uses CSS `translate` and `scale` when available, leaving the normal `transform` channel available for user rotation/transform animation. Unsupported environments retain a conservative fallback.
+
+## Fork package boundary
+
+`packages/misutgaru-core` is the first dedicated fork package. It currently owns provider-neutral translation contracts/helpers and thread-window defaults. New fork behavior that does not need to live inside a Misskey implementation class should move here or into a future sibling package rather than increasing upstream-file diff size.
+
+## Backend data path
+
+```text
+API / streaming / federation / queue
+  -> shared Nest runtime graph
+  -> services/entity packers
+  -> request-scoped BatchLoader identity graph
+  -> repository batches
+  -> Redis + process-local cache
+  -> CacheInvalidationService isolated pub/sub bus
+```
+
+Within an API request, `AsyncLocalStorage` gives the hot entity loaders one request-scoped `BatchLoader` instance. Note, draft, user, channel/poll and drive-file identity lookups can share this graph. The loader coalesces duplicate IDs even after a repository batch has started and memoizes settled values only until that request context is released. Process-long fallback loaders drop settled promises immediately, so request batching does not become a cross-request data cache.
+
+PostgreSQL schema ownership stays entirely with vanilla Misskey. Misutgaru may change query scheduling, batching, Redis caching, and non-schema DataSource runtime options, but migrations, TypeORM entity schema sources, schema-shaping ID helpers, the entity registry, and DataSource schema options are fingerprinted against the matching vanilla source. See [DB_COMPATIBILITY.md](DB_COMPATIBILITY.md).
+
+Redis cache writes are serialized per key. Each invalidation advances a generation, so an older Redis read cannot populate memory after a newer mutation. `CacheInvalidationService` publishes cache-name/key invalidations across backend processes after Redis becomes authoritative. It duplicates the existing subscriber connection instead of adding its channel to the shared Misskey stream subscriber, so unrelated stream listeners never see cache-control envelopes; remote cache listeners drop their memory tier and in-flight stale reads retry.
+
+## Runtime and I/O
+
+The existing Misutgaru runtime work remains in place: optional combined HTTP/queue Nest ownership, shared Redis/BullMQ connections where semantics permit it, CPU-aware concurrency defaults, cache-miss coalescing, batched entity packing, buffered/vector file writes, common block sizes, and demand-driven runtime statistics.
+
+## Browser performance guard
+
+`packages/frontend/test/e2e/performance.spec.ts` records DOM size, Long Task observations when supported, and navigation duration for an authenticated home flow. The thresholds are deliberately broad runaway guards rather than hardware-sensitive performance scores. Normal e2e execution includes the test; `pnpm --filter frontend test:e2e:performance` runs it directly.

@@ -4,10 +4,11 @@
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/misskey-dev/misskey.git"
+		"url": "https://github.com/kyooni18/misutgaru.git"
 	},
-	"packageManager": "pnpm@11.21.0",
+	"packageManager": "pnpm@11.22.0",
 	"workspaces": [
+		"packages/misutgaru-core",
 		"packages/backend",
 		"packages/frontend-shared",
 		"packages/frontend",
@@ -27,7 +28,7 @@
 		"compile-config": "cd packages/backend && pnpm compile-config",
 		"build-pre": "node scripts/build-pre.mjs",
 		"build-assets": "node ./scripts/build-assets.mjs",
-		"build": "pnpm build-pre && pnpm -r build && pnpm build-assets",
+		"build": "pnpm modules:build && pnpm build:app",
 		"build-storybook": "pnpm --filter frontend build-storybook",
 		"build-misskey-js-with-types": "pnpm build-pre && pnpm --filter backend... --filter=!misskey-js build && pnpm --filter backend generate-api-json --no-build && ncp packages/backend/built/api.json packages/misskey-js/generator/api.json && pnpm --filter misskey-js update-autogen-code && pnpm --filter misskey-js build && pnpm --filter misskey-js api",
 		"start": "cd packages/backend && pnpm compile-config && node ./built/entry.js",
@@ -54,7 +55,17 @@
 		"cleanall": "pnpm clean-all",
 		"export:source": "sh scripts/export-source.sh",
 		"vune:report": "node scripts/vune-migration-report.mjs",
-		"vune:check": "node scripts/check-vune.mjs packages/frontend/src && node scripts/check-vune-native.mjs packages/frontend/src"
+		"vune:check": "node scripts/check-vune.mjs packages/frontend/src && node scripts/check-vune-native.mjs packages/frontend/src",
+		"verify:integrity": "node scripts/check-repository-integrity.mjs",
+		"verify:modules": "pnpm --filter @misutgaru/core test && node --test packages/modules/o0o0o/test/*.test.mjs && pnpm modules:build && node --test packages/modules/Vune/tests/vue-host-codegen.test.mjs packages/modules/Vune/tests/devtools.test.mjs packages/modules/Vune/tests/web-primitives.test.mjs packages/modules/Vune/tests/motion-planner.test.mjs packages/modules/Vune/tests/lazy-index.test.mjs packages/modules/Vune/tests/transition-lifecycle.test.mjs packages/modules/Vune/tests/presentation-primitives.test.mjs && node scripts/check-vune-native.mjs packages/frontend/src",
+		"verify:repo": "pnpm verify:db-schema && pnpm verify:integrity && pnpm verify:modules && pnpm vune:check && pnpm --filter frontend typecheck && pnpm --filter backend typecheck",
+		"verify:full": "pnpm verify:repo && pnpm test && pnpm build:app",
+		"modules:build": "node scripts/build-local-modules.mjs",
+		"bench:regression": "node scripts/benchmark-regressions.mjs",
+		"upstream:delta": "node scripts/upstream-delta.mjs",
+		"build:app": "pnpm build-pre && pnpm -r build && pnpm build-assets",
+		"test:misutgaru-regressions": "pnpm --filter backend exec vitest --run --config vitest.config.unit.ts test/unit/misc/cache.ts test/unit/misc/loader.ts test/unit/misc/request-batch-context.ts test/unit/misc/runtime-diagnostics.ts test/unit/core/CacheInvalidationService.ts && pnpm --filter frontend exec vitest --run --config vitest.config.unit.ts test/unit/cache.test.ts test/unit/prepared-note.test.ts test/unit/normalized-entity-cache.test.ts test/unit/variable-virtual-list.test.ts test/unit/paginator.test.ts",
+		"verify:db-schema": "node scripts/check-db-schema-invariant.mjs"
 	},
 	"dependencies": {
 		"esbuild": "0.28.2",
@@ -66,7 +77,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "9.39.5",
-		"@vune-ui/compiler": "0.1.20",
+		"@vune-ui/compiler": "link:packages/modules/Vune/packages/compiler",
 		"@misskey-dev/eslint-plugin": "2.1.0",
 		"@types/node": "26.2.0",
 		"@typescript-eslint/eslint-plugin": "8.67.0",

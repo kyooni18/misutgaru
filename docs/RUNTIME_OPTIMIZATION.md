@@ -1,33 +1,45 @@
 # Runtime optimization
 
-The fork optimizes runtime ownership rather than changing the Misskey data model.
+Misutgaru optimizes runtime ownership and hot data paths without changing the Misskey persistence model.
 
-## Combined application graph
+## Process graph
 
-`singleProcessMode` can place server and queue roles in one Nest application graph so core services, repositories, DB pools, and Redis clients are not duplicated unnecessarily. Split-role and clustered deployment paths must continue to work.
+`RuntimeModule` can host normal server and queue responsibilities in one Nest graph when `singleProcessMode` is enabled. Explicit split-role/cluster deployments remain supported.
 
-## Redis and BullMQ
+## Redis-backed cache correctness
 
-Producer queues share a dedicated Redis connection where BullMQ semantics allow it. Worker-side command connections are also shared where safe, while subscriber-style connections remain separate when required.
+`RedisKVCache` and `RedisSingleCache` combine four protections:
 
-## Concurrency and HTTP pools
+1. concurrent misses for one key share an in-flight fetch;
+2. explicit writes are serialized so later writes remain authoritative;
+3. a generation counter invalidates already-started Redis reads and fills;
+4. `CacheInvalidationService` propagates key invalidation across backend processes through a dedicated Redis pub/sub channel on an isolated duplicate subscriber connection.
 
-Queue concurrency and HTTP socket defaults can be derived from available CPU count instead of relying only on fixed defaults, while explicit configuration remains authoritative.
+An explicit mutation drops the previous process-local memory snapshot before waiting on Redis. A remote invalidation that lands while a local write is awaiting advances the generation, preventing that write from resurrecting an already-invalidated memory value after it resumes.
 
-## Entity packing
+The pub/sub event carries only cache identity and key, not the cached value. After invalidation, the receiving process reloads from the authoritative Redis tier.
 
-Hot entity packers collect IDs first, fetch users/files/channels/polls/reactions/roles and related data in batches, then redistribute results through maps. Avoid regressions that restore one query per entity.
+## BatchLoader and entity packing
 
-## Cache
+`packages/backend/src/misc/loader.ts` now includes `BatchLoader<K,V>`. Distinct keys requested before a flush share one batch, duplicate keys share the same Promise even while the repository query is already in flight, and request-scoped instances can memoize settled results for the lifetime of one API call. Process-long fallback loaders deliberately drop settled values so they do not become a stale application cache.
 
-Concurrent misses for the same key can share one in-flight promise. Invalidation ordering prevents a stale fetch that started earlier from repopulating a key after a newer invalidation.
+`ApiCallService` establishes an `AsyncLocalStorage` request batch context. `NoteEntityService`, `NoteDraftEntityService`, `UserEntityService`, and `DriveFileEntityService` use request-scoped loaders to collapse concurrent ID lookups into TypeORM `find`/`findBy` calls with `In(...)`. Existing pack-many paths remain responsible for larger users/files/reactions/channels/roles graphs. Batch size and duration are exposed through process-local runtime diagnostics.
+
+## Redis/BullMQ and HTTP ownership
+
+Producer/worker connections are shared where library semantics allow it; subscription roles remain isolated where required. HTTP pool/concurrency defaults remain CPU-aware while explicit config values win.
 
 ## Block I/O
 
-The fork centralizes block sizes for sequential reads, writes, and hash-like workloads. `FileWriterStream` and `BufferedTextFileWriter` reduce syscall count by batching small fragments and using vector writes where appropriate.
+The shared block-I/O policy and buffered/vector writers remain the preferred path for sequential exports and hashing/image workloads. Avoid replacing them with repeated tiny writes in hot paths.
 
-## Statistics
+## Regression philosophy
 
-Server and queue statistics should avoid continuous expensive sampling when there are no streaming consumers.
+CI should gate deterministic behavior such as query/fetch counts, cache ownership, property ownership, and committed work rather than noisy wall-clock timings. `scripts/benchmark-regressions.mjs` follows that rule for the motion/DOM path and reports time only for observation.
 
-Benchmark or test ownership, shutdown, query count, and output correctness when touching these paths; simpler code that recreates per-item queries or per-queue connections is a regression.
+
+## Runtime diagnostics
+
+The admin runtime diagnostics endpoint is process-local and does not create persistence. It records bounded counters/distributions/traces for API latency, BatchLoader behavior, Redis cache tiers, stale retries and cache invalidation subscription health. Event-loop delay sampling starts lazily when diagnostics are first requested, then reports p50/p95/p99/max without imposing the histogram cost on processes that never use the page.
+
+The diagnostics frontend keeps the last good snapshot when a refresh fails and surfaces the refresh error instead of leaking an unhandled timer rejection.

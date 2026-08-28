@@ -4,6 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import { buildTranslationUserText, openAiChatCompletionsEndpoint, parseTranslationResponse, translationSystemPrompt } from '@misutgaru/core';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { HttpRequestService } from './HttpRequestService.js';
@@ -65,22 +66,14 @@ export class OpenAiTranslationService {
 			throw new OpenAiTranslationError('OpenAI translation is not configured.');
 		}
 
-		const baseUrl = (openaiTranslation.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
 		let endpoint: URL;
 		try {
-			endpoint = new URL(baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`);
+			endpoint = openAiChatCompletionsEndpoint(openaiTranslation.baseUrl);
 		} catch {
 			throw new OpenAiTranslationError('OpenAI translation URL is invalid.');
 		}
 
-		if (endpoint.protocol !== 'https:' && endpoint.protocol !== 'http:') {
-			throw new OpenAiTranslationError('OpenAI translation URL is invalid.');
-		}
-
-		const contextText = context.length > 0
-			? `\n\nThread context (reference only; do not translate this section):\n${context.map((item, index) => `[${index + 1}] ${item}`).join('\n')}`
-			: '';
-		const userText = `Target language: ${targetLang}${contextText}\n\nText to translate (translate only this section):\n---\n${text}\n---\n\nAttached images are numbered in order. For each image, decide whether it contains useful readable text. If so, return a translated version; otherwise return a short description of the meaningful visual content. Use \"skip\" only when neither translation nor description would help.`;
+		const userText = buildTranslationUserText(text, targetLang, context);
 		const userContent: string | ChatContent[] = images.length > 0
 			? [{ type: 'text', text: userText }, ...images.map(image => ({ type: 'image_url' as const, image_url: { url: image.dataUrl } }))]
 			: userText;
@@ -99,7 +92,7 @@ export class OpenAiTranslationService {
 					messages: [
 						{
 							role: 'system',
-							content: 'You are a precise translation engine. Translate only the text in the section marked "Text to translate" into the requested target language. Thread context and attached images are reference context and must not be included in the main text result. For each attached image, decide whether to translate readable text or provide a concise visual description. Return only JSON with string fields "sourceLang" and "text", plus an "images" array with one object per image containing "kind" ("translation", "description", or "skip"), "sourceLang", and "text".',
+							content: translationSystemPrompt,
 						},
 						{
 							role: 'user',
@@ -133,28 +126,8 @@ export class OpenAiTranslationService {
 				throw new Error('OpenAI response did not include translated text');
 			}
 
-			try {
-				const normalizedContent = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-				const parsed = JSON.parse(normalizedContent) as {
-					sourceLang?: unknown;
-					text?: unknown;
-					images?: Array<{ kind?: unknown; sourceLang?: unknown; text?: unknown }>;
-				};
-				if (typeof parsed.text === 'string') {
-					return {
-						sourceLang: typeof parsed.sourceLang === 'string' && parsed.sourceLang.trim() !== '' ? parsed.sourceLang : 'unknown',
-						text: parsed.text,
-						images: (parsed.images ?? []).map((image, index) => ({
-							fileId: images[index]?.fileId ?? '',
-							kind: image.kind === 'translation' || image.kind === 'description' || image.kind === 'skip' ? image.kind : 'skip',
-							sourceLang: typeof image.sourceLang === 'string' && image.sourceLang.trim() !== '' ? image.sourceLang : 'unknown',
-							text: typeof image.text === 'string' ? image.text : '',
-						})),
-					};
-				}
-			} catch {
-				// Some OpenAI-compatible providers return plain text instead of JSON.
-			}
+			const parsed = parseTranslationResponse(content, images.map(image => image.fileId));
+			if (parsed) return parsed;
 
 			return { sourceLang: 'unknown', text: content, images: [] };
 		} catch (error) {

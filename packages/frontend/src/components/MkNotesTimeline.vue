@@ -7,38 +7,49 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkPagination :paginator="paginator" :direction="direction" :autoLoad="autoLoad" :pullToRefresh="pullToRefresh" :withControl="withControl" :forceDisableInfiniteScroll="forceDisableInfiniteScroll">
 	<template #empty><MkResult type="empty" :text="i18n.ts.noNotes"/></template>
 
-	<template #default="{ items: notes }">
-		<div :class="[$style.root, { [$style.noGap]: noGap, '_gaps': !noGap }]">
-			<template v-for="(note, i) in notes" :key="note.id">
-				<div
-					v-if="i > 0 && isSeparatorNeeded(paginator.items.value[i - 1].createdAt, note.createdAt)"
-					:data-scroll-anchor="note.id"
-					:class="{ '_gaps': !noGap }"
-				>
-					<div :class="[$style.date, { [$style.noGap]: noGap }]">
-						<span><i class="ti ti-chevron-up"></i> {{ getSeparatorInfo(paginator.items.value[i - 1].createdAt, note.createdAt)?.prevText }}</span>
-						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
-						<span>{{ getSeparatorInfo(paginator.items.value[i - 1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
+	<template #default>
+		<div ref="virtualRoot" :class="[$style.root, { [$style.noGap]: noGap, '_gaps': !noGap }]">
+			<div v-if="virtualizationEnabled && beforeSize > 0" aria-hidden="true" :class="$style.virtualSpacer" :style="{ height: `${beforeSize}px` }"></div>
+			<div
+				v-for="entry in virtualEntries"
+				:key="entry.key"
+				:ref="el => setVirtualRow(el, entry)"
+				:data-virtual-index="entry.index"
+				:data-scroll-anchor="entry.item.id"
+				:class="$style.virtualRow"
+			>
+				<template v-if="entry.index > 0 && isSeparatorNeeded(timelineNotes[entry.index - 1].createdAt, entry.item.createdAt)">
+					<div :class="{ '_gaps': !noGap }">
+						<div :class="[$style.date, { [$style.noGap]: noGap }]">
+							<span><i class="ti ti-chevron-up"></i> {{ getSeparatorInfo(timelineNotes[entry.index - 1].createdAt, entry.item.createdAt)?.prevText }}</span>
+							<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
+							<span>{{ getSeparatorInfo(timelineNotes[entry.index - 1].createdAt, entry.item.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
+						</div>
+						<MkNote :class="$style.note" :note="entry.item" :withHardMute="true"/>
+						<div v-if="entry.item._shouldInsertAd_" :class="$style.ad">
+							<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
+						</div>
 					</div>
-					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
-					<div v-if="note._shouldInsertAd_" :class="$style.ad">
-						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
+				</template>
+				<template v-else-if="entry.item._shouldInsertAd_">
+					<div :class="{ '_gaps': !noGap }">
+						<MkNote :class="$style.note" :note="entry.item" :withHardMute="true"/>
+						<div :class="$style.ad">
+							<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
+						</div>
 					</div>
-				</div>
-				<div v-else-if="note._shouldInsertAd_" :class="{ '_gaps': !noGap }" :data-scroll-anchor="note.id">
-					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
-					<div :class="$style.ad">
-						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
-					</div>
-				</div>
-				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :data-scroll-anchor="note.id"/>
-			</template>
+				</template>
+				<MkNote v-else :class="$style.note" :note="entry.item" :withHardMute="true"/>
+			</div>
+			<div v-if="virtualizationEnabled && afterSize > 0" aria-hidden="true" :class="$style.virtualSpacer" :style="{ height: `${afterSize}px` }"></div>
 		</div>
 	</template>
 </MkPagination>
 </template>
 
 <script lang="ts" setup generic="T extends IPaginator<Misskey.entities.Note>">
+import { computed, ref, watch } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MkPaginationOptions } from '@/components/MkPagination.vue';
 import type { IPaginator } from '@/utility/paginator.js';
@@ -47,6 +58,10 @@ import MkPagination from '@/components/MkPagination.vue';
 import { i18n } from '@/i18n.js';
 import { useGlobalEvent } from '@/events.js';
 import { isSeparatorNeeded, getSeparatorInfo } from '@/utility/timeline-date-separate.js';
+import { clearPreparedNoteCache, prefetchPreparedNotes } from '@/utility/prepared-note.js';
+import { useVariableVirtualList } from '@/composables/use-variable-virtual-list.js';
+import type { VariableVirtualEntry } from '@/composables/use-variable-virtual-list.js';
+import { normalizeNoteEntity, evictNormalizedNote } from '@/utility/normalized-entity-cache.js';
 
 const props = withDefaults(defineProps<MkPaginationOptions & {
 	paginator: T;
@@ -58,10 +73,36 @@ const props = withDefaults(defineProps<MkPaginationOptions & {
 	withControl: true,
 	forceDisableInfiniteScroll: false,
 });
+const timelineNotes = computed(() => props.paginator.items.value.map(note => normalizeNoteEntity(note)));
+const virtualRoot = ref<HTMLElement | null>(null);
+const {
+	enabled: virtualizationEnabled,
+	entries: virtualEntries,
+	beforeSize,
+	afterSize,
+	observeRow: observeVirtualRow,
+} = useVariableVirtualList({
+	items: timelineNotes,
+	root: virtualRoot,
+	keyOf: note => note.id,
+	estimate: 220,
+	overscan: 5,
+	threshold: 72,
+});
+
+function setVirtualRow(el: Element | ComponentPublicInstance | null, entry: VariableVirtualEntry<Misskey.entities.Note>): void {
+	observeVirtualRow(typeof Element !== 'undefined' && el instanceof Element ? el : null, entry);
+}
 
 useGlobalEvent('noteDeleted', (noteId) => {
 	props.paginator.removeItem(noteId);
+	evictNormalizedNote(noteId);
+	clearPreparedNoteCache(noteId);
 });
+
+watch(timelineNotes, notes => {
+	prefetchPreparedNotes(notes);
+}, { immediate: true, deep: false });
 
 function reload() {
 	return props.paginator.reload();
@@ -99,6 +140,16 @@ defineExpose({
 			border-radius: var(--MI-radius);
 		}
 	}
+}
+
+.virtualRow {
+	min-width: 0;
+}
+
+.virtualSpacer {
+	flex: 0 0 auto;
+	width: 100%;
+	pointer-events: none;
 }
 
 .date {

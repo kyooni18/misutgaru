@@ -20,6 +20,11 @@ import type { MotionHandle } from '@/vune/motion.js';
 const props = defineProps<{ showing: boolean; url: string; anchorElement: HTMLElement }>();
 const emit = defineEmits<{ (ev: 'closed'): void }>();
 
+// The popup can be mounted after the hover state has already ended. Signal
+// closure immediately so the owner can dispose it instead of leaving a
+// permanently mounted hidden preview behind.
+if (!props.showing) emit('closed');
+
 const zIndex = os.claimZIndex('middle');
 const top = ref(0);
 const left = ref(0);

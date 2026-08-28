@@ -14,6 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
 import type { MiLocalUser } from '@/models/User.js';
 import { RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 
@@ -32,6 +33,7 @@ export class ChannelFollowingService implements OnModuleInit {
 		private channelFollowingsRepository: ChannelFollowingsRepository,
 		private idService: IdService,
 		private globalEventService: GlobalEventService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.userFollowingChannelsCache = new RedisKVCache<Set<string>>(this.redisClient, 'userFollowingChannels', {
 			lifetime: 1000 * 60 * 30, // 30m
@@ -42,6 +44,7 @@ export class ChannelFollowingService implements OnModuleInit {
 			}).then(xs => new Set(xs.map(x => x.followeeId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.redisForSub.on('message', this.onMessage);

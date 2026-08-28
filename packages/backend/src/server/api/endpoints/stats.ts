@@ -10,6 +10,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { RedisSingleCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import NotesChart from '@/core/chart/charts/notes.js';
 import UsersChart from '@/core/chart/charts/users.js';
 
@@ -85,6 +86,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private notesChart: NotesChart,
 		private usersChart: UsersChart,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		const reactionsCountCache = new RedisSingleCache<number>(redisClient, 'stats:reactionsCount', {
 			lifetime: 1000 * 60 * 60,
@@ -95,6 +97,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const parsed = Number(value);
 				return Number.isFinite(parsed) ? parsed : undefined;
 			},
+			invalidationBus: this.cacheInvalidationService,
 		});
 		const instancesCountCache = new RedisSingleCache<number>(redisClient, 'stats:instancesCount', {
 			lifetime: 1000 * 60 * 60,
@@ -105,6 +108,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const parsed = Number(value);
 				return Number.isFinite(parsed) ? parsed : undefined;
 			},
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		super(meta, paramDef, async () => {

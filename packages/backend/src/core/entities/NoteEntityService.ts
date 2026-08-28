@@ -13,7 +13,8 @@ import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
 import type { UsersRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta, MiChannel, MiPoll, MiPollVote } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
-import { DebounceLoader } from '@/misc/loader.js';
+import { BatchLoader } from '@/misc/loader.js';
+import { requestBatchContext } from '@/misc/request-batch-context.js';
 import { IdService } from '@/core/IdService.js';
 import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
@@ -47,7 +48,6 @@ function getAppearNoteIds(notes: MiNote[]): Set<string> {
 	}
 	return appearNoteIds;
 }
-
 
 function sumReactionCounts(reactions: MiNote['reactions']): number {
 	let total = 0;
@@ -90,7 +90,42 @@ export class NoteEntityService implements OnModuleInit {
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
 	private cacheService: CacheService;
-	private noteLoader = new DebounceLoader(this.findNoteOrFail);
+	private noteLoader = new BatchLoader<string, MiNote>(this.findNotesBatch, id => new EntityNotFoundError('Note', { id }), 'note.entity');
+	private channelLoader = new BatchLoader<string, MiChannel | null>(this.findChannelsBatch, () => null, 'note.channel');
+	private pollLoader = new BatchLoader<string, MiPoll>(this.findPollsBatch, noteId => new EntityNotFoundError('Poll', { noteId }), 'note.poll');
+	private pollVoteLoader = new BatchLoader<string, MiPollVote[]>(this.findPollVotesBatch, () => [], 'note.pollVote');
+
+	private get noteLoaderForRequest(): BatchLoader<string, MiNote> {
+		return requestBatchContext.getOrCreate(
+			'NoteEntityService.noteLoader',
+			() => new BatchLoader<string, MiNote>(this.findNotesBatch, id => new EntityNotFoundError('Note', { id }), 'note.entity', true),
+			this.noteLoader,
+		);
+	}
+
+	private get channelLoaderForRequest(): BatchLoader<string, MiChannel | null> {
+		return requestBatchContext.getOrCreate(
+			'NoteEntityService.channelLoader',
+			() => new BatchLoader<string, MiChannel | null>(this.findChannelsBatch, () => null, 'note.channel', true),
+			this.channelLoader,
+		);
+	}
+
+	private get pollLoaderForRequest(): BatchLoader<string, MiPoll> {
+		return requestBatchContext.getOrCreate(
+			'NoteEntityService.pollLoader',
+			() => new BatchLoader<string, MiPoll>(this.findPollsBatch, noteId => new EntityNotFoundError('Poll', { noteId }), 'note.poll', true),
+			this.pollLoader,
+		);
+	}
+
+	private get pollVoteLoaderForRequest(): BatchLoader<string, MiPollVote[]> {
+		return requestBatchContext.getOrCreate(
+			'NoteEntityService.pollVoteLoader',
+			() => new BatchLoader<string, MiPollVote[]>(this.findPollVotesBatch, () => [], 'note.pollVote', true),
+			this.pollVoteLoader,
+		);
+	}
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -217,7 +252,7 @@ export class NoteEntityService implements OnModuleInit {
 		poll?: MiPoll;
 		votes?: MiPollVote[];
 	}) {
-		const poll: MiPoll = hint?.poll ?? await this.pollsRepository.findOneByOrFail({ noteId: note.id });
+		const poll: MiPoll = hint?.poll ?? await this.pollLoaderForRequest.load(note.id);
 		const choices = poll.choices.map((c, index) => ({
 			text: c,
 			votes: poll.votes[index],
@@ -226,10 +261,7 @@ export class NoteEntityService implements OnModuleInit {
 
 		if (meId) {
 			if (poll.multiple) {
-				const votes: MiPollVote[] = hint?.votes ?? await this.pollVotesRepository.findBy({
-					userId: meId,
-					noteId: note.id,
-				});
+				const votes: MiPollVote[] = hint?.votes ?? await this.pollVoteLoaderForRequest.load(this.pollVoteBatchKey(meId, note.id));
 
 				const myChoices = votes.map(v => v.choice);
 				for (const myChoice of myChoices) {
@@ -238,10 +270,7 @@ export class NoteEntityService implements OnModuleInit {
 			} else {
 				const vote = hint?.votes !== undefined
 					? (hint.votes[0] ?? null)
-					: await this.pollVotesRepository.findOneBy({
-						userId: meId,
-						noteId: note.id,
-					});
+					: ((await this.pollVoteLoaderForRequest.load(this.pollVoteBatchKey(meId, note.id)))[0] ?? null);
 
 				if (vote) {
 					choices[vote.choice].isVoted = true;
@@ -392,7 +421,7 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
-		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
+		const note = typeof src === 'object' ? src : await this.noteLoaderForRequest.load(src);
 		const host = note.userHost;
 
 		const bufferedReactions = opts._hint_?.bufferedReactions != null
@@ -421,7 +450,7 @@ export class NoteEntityService implements OnModuleInit {
 			const hintedChannels = opts._hint_?.channels;
 			channel = hintedChannels?.has(note.channelId)
 				? (hintedChannels.get(note.channelId) ?? null)
-				: await this.channelsRepository.findOneBy({ id: note.channelId });
+				: await this.channelLoaderForRequest.load(note.channelId);
 		}
 
 		const reactionEmojiNames: string[] = [];
@@ -642,7 +671,6 @@ export class NoteEntityService implements OnModuleInit {
 				pollVotes: pollVotesMap,
 			},
 		})));
-
 	}
 
 	@bindThis
@@ -671,16 +699,58 @@ export class NoteEntityService implements OnModuleInit {
 		return emojis;
 	}
 
+	private pollVoteBatchKey(userId: MiUser['id'], noteId: MiNote['id']): string {
+		return `${userId}\u0000${noteId}`;
+	}
+
+	private parsePollVoteBatchKey(key: string): { userId: MiUser['id']; noteId: MiNote['id'] } {
+		const split = key.indexOf('\u0000');
+		if (split < 0) throw new TypeError('Invalid poll vote batch key');
+		return { userId: key.slice(0, split), noteId: key.slice(split + 1) };
+	}
+
 	@bindThis
-	private findNoteOrFail(id: string): Promise<MiNote> {
-		return this.notesRepository.findOneOrFail({
-			where: { id },
+	private async findChannelsBatch(ids: readonly string[]): Promise<ReadonlyMap<string, MiChannel | null>> {
+		const rows = ids.length > 0 ? await this.channelsRepository.findBy({ id: In([...ids]) }) : [];
+		const result = new Map<string, MiChannel | null>(ids.map(id => [id, null]));
+		for (const row of rows) result.set(row.id, row);
+		return result;
+	}
+
+	@bindThis
+	private async findPollsBatch(noteIds: readonly string[]): Promise<ReadonlyMap<string, MiPoll>> {
+		const rows = noteIds.length > 0 ? await this.pollsRepository.findBy({ noteId: In([...noteIds]) }) : [];
+		return new Map(rows.map(row => [row.noteId, row]));
+	}
+
+	@bindThis
+	private async findPollVotesBatch(keys: readonly string[]): Promise<ReadonlyMap<string, MiPollVote[]>> {
+		const pairs = keys.map(key => ({ key, ...this.parsePollVoteBatchKey(key) }));
+		const grouped = new Map<MiUser['id'], MiNote['id'][]>();
+		for (const pair of pairs) {
+			const noteIds = grouped.get(pair.userId) ?? [];
+			noteIds.push(pair.noteId);
+			grouped.set(pair.userId, noteIds);
+		}
+		const rows = grouped.size > 0 ? await this.pollVotesRepository.find({
+			where: [...grouped].map(([userId, noteIds]) => ({ userId, noteId: In(noteIds) })),
+		}) : [];
+		const result = new Map<string, MiPollVote[]>(keys.map(key => [key, []]));
+		for (const row of rows) result.get(this.pollVoteBatchKey(row.userId, row.noteId))?.push(row);
+		return result;
+	}
+
+	@bindThis
+	private async findNotesBatch(ids: readonly string[]): Promise<ReadonlyMap<string, MiNote>> {
+		const notes = await this.notesRepository.find({
+			where: { id: In([...ids]) },
 			relations: {
 				user: true,
 				renote: true,
 				reply: true,
 			},
 		});
+		return new Map(notes.map(note => [note.id, note]));
 	}
 
 	@bindThis

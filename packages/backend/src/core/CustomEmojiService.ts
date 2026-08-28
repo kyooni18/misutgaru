@@ -14,6 +14,7 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import { MemoryKVCache, RedisSingleCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import type { EmojisRepository, MiRole, MiUser } from '@/models/_.js';
 import type { MiEmoji } from '@/models/Emoji.js';
@@ -72,6 +73,7 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		private emojiEntityService: EmojiEntityService,
 		private moderationLogService: ModerationLogService,
 		private globalEventService: GlobalEventService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.emojisCache = new MemoryKVCache<MiEmoji | null>(1000 * 60 * 60 * 12); // 12h
 
@@ -86,6 +88,7 @@ export class CustomEmojiService implements OnApplicationShutdown {
 					updatedAt: x.updatedAt ? new Date(x.updatedAt) : null,
 				}]));
 			},
+			invalidationBus: this.cacheInvalidationService,
 		});
 	}
 

@@ -5,8 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <MkWindow
-	:initialWidth="640"
-	:initialHeight="760"
+	:initialWidth="threadWindowDefaults.width"
+	:initialHeight="threadWindowDefaults.height"
 	:canResize="true"
 	:closeButton="true"
 	@closed="emit('closed')"
@@ -23,6 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { threadWindowDefaults } from '@misutgaru/core';
 import * as Misskey from 'misskey-js';
 import MkWindow from '@/components/MkWindow.vue';
 import MkNoteDetailed from '@/components/MkNoteDetailed.vue';

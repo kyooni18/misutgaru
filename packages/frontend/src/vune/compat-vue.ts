@@ -24,6 +24,7 @@ import {
 } from 'vune-ui';
 import type {
 	InitializerParameter,
+	LegacyHostCoercion,
 	ModifiableViewNode,
 	ViewConstructor,
 	ViewGraphValue,
@@ -86,70 +87,96 @@ function legacyBoolean(value: unknown, defaultValue = false): boolean {
 	return true;
 }
 
-function coerceByParameter(parameter: InitializerParameter, value: unknown): unknown {
-	if (value === undefined) return undefined;
+type CompiledLegacyParameter = {
+	parameter: InitializerParameter;
+	legacyName: string | null;
+	coerce: (value: unknown) => unknown;
+};
+
+function coercionFromType(parameter: InitializerParameter): LegacyHostCoercion {
 	const type = parameter.type?.replace(/\s+/g, '') ?? '';
-	if (/(?:^|\|)boolean(?:\||$)/.test(type)) return legacyBoolean(value);
-	if (/(?:^|\|)number(?:\||$)/.test(type)) {
-		const number = Number(value);
-		return Number.isFinite(number) ? number : value;
-	}
-	return value;
+	if (/(?:^|\|)boolean(?:\||$)/.test(type)) return 'boolean';
+	if (/(?:^|\|)number(?:\||$)/.test(type)) return 'number';
+	return 'identity';
 }
 
-function instantiateView(
-	ViewType: ViewConstructor,
-	attrs: LegacyAttrs,
-	options: LegacyVuneHostOptions,
-): ModifiableViewNode {
-	const initializers = initializersOf(ViewType);
-	const initializer = initializers[options.initializerIndex ?? 0];
-	if (!initializer) return ViewType();
-	const parameters = initializer.parameters ?? [];
-	const values = parameters.map(parameter => {
-		const name = parameter.name ?? parameter.label;
-		if (!name) return undefined;
-		const legacyName = options.aliases?.[name] ?? name;
-		// `popup()` deliberately accepts Vue refs so the legacy component can
-		// update without being recreated.  Vue does not unwrap refs stored in a
-		// props object passed through a render function, though, so the host
-		// would otherwise hand RefImpl objects to the Vune initializer resolver
-		// (for example `MkWaitingDialog(object, object)`).  Unwrap only Vue refs
-		// at this boundary; Vune State/Binding refs are different objects and are
-		// left untouched by `unref`.
-		const raw = unref(attrs[legacyName] as any);
-		const custom = options.coerce?.[name];
-		const value = custom ? custom(raw) : coerceByParameter(parameter, raw);
-		return parameter.kind === 'action' && typeof value === 'function'
-			? actionClosure(value as (...args: any[]) => any)
-			: value;
-	});
-	// Vue attrs are sparse. Passing positional `undefined` placeholders makes
-	// optional Vune initializers ambiguous (for example `MkLoading(undefined,
-	// true)`), because the runtime resolver deliberately treats omitted values
-	// differently from explicit positional gaps. Preserve the required
-	// positional prefix and carry labeled values through Vune's named-argument
-	// adapter instead.
-	const positional: unknown[] = [];
-	const labeled: Record<string, unknown> = {};
-	let sawLabel = false;
-	for (const [index, value] of values.entries()) {
-		if (value === undefined) continue;
-		const parameter = parameters[index];
-		if (parameter?.label) {
-			sawLabel = true;
-			labeled[parameter.label] = value;
-		} else if (!sawLabel) {
-			positional.push(value);
-		} else {
-			// A later unlabeled parameter cannot be represented after a named
-			// carrier. Keep the old positional shape for this uncommon legacy
-			// initializer rather than silently shifting its arguments.
-			return ViewType(...values);
-		}
+function compileParameterCoercion(
+	coercion: LegacyHostCoercion,
+	custom?: (value: unknown) => unknown,
+): (value: unknown) => unknown {
+	if (custom) return custom;
+	if (coercion === 'boolean') return value => value === undefined ? undefined : legacyBoolean(value);
+	if (coercion === 'number') {
+		return value => {
+			if (value === undefined) return undefined;
+			const number = Number(value);
+			return Number.isFinite(number) ? number : value;
+		};
 	}
-	if (Object.keys(labeled).length > 0) positional.push(namedArguments(labeled));
-	return ViewType(...positional);
+	return value => value;
+}
+
+/**
+ * Compile Vune initializer metadata once when the Vue placement host is
+ * created. The legacy host still accepts sparse Vue attrs, but hot re-renders
+ * no longer repeat initializer lookup, alias resolution, or type-string
+ * parsing for every body evaluation.
+ */
+function compileLegacyViewAdapter(
+	ViewType: ViewConstructor,
+	options: LegacyVuneHostOptions,
+): (attrs: LegacyAttrs) => ModifiableViewNode {
+	const initializers = initializersOf(ViewType);
+	const selected = initializers[options.initializerIndex ?? 0];
+	if (!selected) return () => ViewType();
+
+	const parameters = selected.parameters ?? [];
+	const generated = ViewType.viewType.legacyHost?.initializers.find(plan => plan.index === (options.initializerIndex ?? 0));
+	const bindings: CompiledLegacyParameter[] = parameters.map((parameter, index) => {
+		const planned = generated?.parameters[index];
+		const name = planned?.name ?? parameter.name ?? parameter.label;
+		return {
+			parameter,
+			legacyName: name ? (options.aliases?.[name] ?? name) : null,
+			coerce: compileParameterCoercion(planned?.coercion ?? coercionFromType(parameter), name ? options.coerce?.[name] : undefined),
+		};
+	});
+
+	return attrs => {
+		const values = bindings.map(binding => {
+			if (!binding.legacyName) return undefined;
+			// Vue refs are unwrapped only at this compatibility boundary. Vune
+			// State/Binding values are different objects and pass through unref.
+			const raw = unref(attrs[binding.legacyName] as any);
+			const value = binding.coerce(raw);
+			return binding.parameter.kind === 'action' && typeof value === 'function'
+				? actionClosure(value as (...args: any[]) => any)
+				: value;
+		});
+
+		// Vue attrs are sparse. Keep the required positional prefix, then carry
+		// labeled values through Vune's named-argument adapter so omitted optionals
+		// stay omitted instead of becoming ambiguous positional undefined values.
+		const positional: unknown[] = [];
+		const labeled: Record<string, unknown> = {};
+		let sawLabel = false;
+		for (const [index, value] of values.entries()) {
+			if (value === undefined) continue;
+			const parameter = bindings[index]?.parameter;
+			if (parameter?.label) {
+				sawLabel = true;
+				labeled[parameter.label] = value;
+			} else if (!sawLabel) {
+				positional.push(value);
+			} else {
+				// A later unlabeled parameter cannot be represented after a named
+				// carrier. Preserve the old positional shape for this uncommon case.
+				return ViewType(...values);
+			}
+		}
+		if (Object.keys(labeled).length > 0) positional.push(namedArguments(labeled));
+		return ViewType(...positional);
+	};
 }
 
 function decorateLegacyRoot(view: ModifiableViewNode, attrs: LegacyAttrs): ModifiableViewNode {
@@ -169,6 +196,7 @@ export function createVuneWebHost(
 	ViewType: ViewConstructor,
 	options: LegacyVuneHostOptions = {},
 ) {
+	const instantiate = compileLegacyViewAdapter(ViewType, options);
 	return defineComponent({
 		name: 'MisutgaruNativeVuneHost',
 		inheritAttrs: false,
@@ -184,7 +212,7 @@ export function createVuneWebHost(
 					args => args.length === 0,
 					() => ({}),
 				)],
-			body: (): ViewGraphValue => decorateLegacyRoot(instantiateView(ViewType, state.value, options), state.value),
+				body: (): ViewGraphValue => decorateLegacyRoot(instantiate(state.value), state.value),
 			});
 
 			onMounted(() => {

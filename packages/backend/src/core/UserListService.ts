@@ -19,6 +19,7 @@ import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
 import { QueueService } from '@/core/QueueService.js';
 import { RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 
@@ -46,6 +47,7 @@ export class UserListService implements OnApplicationShutdown, OnModuleInit {
 		private globalEventService: GlobalEventService,
 		private queueService: QueueService,
 		private systemAccountService: SystemAccountService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.membersCache = new RedisKVCache<Set<string>>(this.redisClient, 'userListMembers', {
 			lifetime: 1000 * 60 * 30, // 30m
@@ -56,6 +58,7 @@ export class UserListService implements OnApplicationShutdown, OnModuleInit {
 			}).then(xs => new Set(xs.map(x => x.userId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.redisForSub.on('message', this.onMessage);

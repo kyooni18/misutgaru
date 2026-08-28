@@ -1,0 +1,56 @@
+name: Misutgaru upstream compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1,4'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Misutgaru
+        uses: actions/checkout@v7.0.0
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify pinned same-version PostgreSQL invariant
+        run: node scripts/check-db-schema-invariant.mjs
+
+      - name: Fetch vanilla Misskey develop
+        run: |
+          git remote add misskey-upstream https://github.com/misskey-dev/misskey.git
+          git fetch --no-tags misskey-upstream develop
+          git worktree add --detach /tmp/vanilla-misskey misskey-upstream/develop
+
+      - name: Compare DB sources when live upstream is the same version
+        shell: bash
+        run: |
+          base_version=$(node -p "require('./UPSTREAM_BASE.json').version")
+          upstream_version=$(node -p "require('/tmp/vanilla-misskey/package.json').version")
+          if [ "$base_version" = "$upstream_version" ]; then
+            node scripts/check-db-schema-invariant.mjs --against-upstream --upstream /tmp/vanilla-misskey
+          else
+            echo "Live upstream is $upstream_version while the pinned compatible base is $base_version."
+            echo "Skipping the schema equality assertion until Misutgaru intentionally rebases to that version."
+          fi
+
+      - name: Report current source delta
+        run: node scripts/upstream-delta.mjs --upstream /tmp/vanilla-misskey
+
+      - name: Detect merge conflicts before a real merge
+        shell: bash
+        run: |
+          set +e
+          git merge-tree --write-tree HEAD misskey-upstream/develop > /tmp/misutgaru-merge-tree.txt 2>&1
+          status=$?
+          cat /tmp/misutgaru-merge-tree.txt
+          if [ "$status" -ne 0 ]; then
+            echo "Vanilla develop currently needs manual conflict resolution." >&2
+            exit "$status"
+          fi

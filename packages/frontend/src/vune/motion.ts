@@ -11,6 +11,7 @@ import {
 	timing,
 } from 'o0o0o';
 import type { AnimationControls, InterpolatorOptions, MotionSpec } from 'o0o0o';
+import { ownStyleAnimation } from 'o0o0o/dom';
 
 export type MotionStatus = 'finished' | 'cancelled';
 export type MotionUpdate = (progress: number) => void;
@@ -323,38 +324,6 @@ export class VuneMotionEngine {
 	private readonly activeCancels = new Set<() => void>();
 	private readonly elementCancels = new Set<() => void>();
 	private readonly elementAnimations = new Set<Animation>();
-	private readonly elementPropertyCancels = new WeakMap<Element, Map<string, () => void>>();
-
-	private cancelElementProperties(element: Element, properties: string[]): void {
-		const cancels = this.elementPropertyCancels.get(element);
-		if (!cancels) return;
-		const pending = new Set<() => void>();
-		for (const property of properties) {
-			const cancel = cancels.get(property);
-			if (cancel) pending.add(cancel);
-		}
-		for (const cancel of pending) cancel();
-	}
-
-	private trackElementProperties(element: Element, properties: string[], handle: MotionHandle): void {
-		if (properties.length === 0) return;
-		let cancels = this.elementPropertyCancels.get(element);
-		if (!cancels) {
-			cancels = new Map();
-			this.elementPropertyCancels.set(element, cancels);
-		}
-		const cancel = (): void => handle.cancel();
-		for (const property of properties) cancels.set(property, cancel);
-		const cleanup = (): void => {
-			const current = this.elementPropertyCancels.get(element);
-			if (!current) return;
-			for (const property of properties) {
-				if (current.get(property) === cancel) current.delete(property);
-			}
-			if (current.size === 0) this.elementPropertyCancels.delete(element);
-		};
-		void handle.finished.then(cleanup, cleanup);
-	}
 
 	public animate(options: MotionOptions): MotionHandle {
 		const animation = options.animation ?? VuneAnimation.default;
@@ -633,13 +602,20 @@ export class VuneMotionEngine {
 		const animation = options.animation ?? VuneAnimation.default;
 		const { durationMs, delayMs, repeatCount, autoreverses } = animationTiming(animation);
 		const fill = normalizedFill(options.fill);
-		this.cancelElementProperties(element, properties);
 		let resolveFinished!: (status: MotionStatus) => void;
 		const finished = new Promise<MotionStatus>(resolve => { resolveFinished = resolve; });
 		const reduced = (options.reducedMotion ?? 'respect') === 'respect' && reducedMotionRequested();
-		const interpolated = this.animateInterpolatedElement(element, keyframes, animation, options, reduced);
+		// Browser-owned element motion must use the compositor when WAAPI is
+		// available. The renderer-independent interpolator remains the fallback
+		// for tests and non-browser hosts, but must not swallow a browser animation
+		// if its scheduler cannot produce a frame.
+		const hasBrowserAnimationApi = typeof element.animate === 'function'
+			&& !Object.prototype.hasOwnProperty.call(element, 'animate');
+		const interpolated = hasBrowserAnimationApi
+			? undefined
+			: this.animateInterpolatedElement(element, keyframes, animation, options, reduced);
 		if (interpolated) {
-			this.trackElementProperties(element, properties, interpolated);
+			ownStyleAnimation(element, properties, interpolated);
 			return interpolated;
 		}
 
@@ -649,7 +625,7 @@ export class VuneMotionEngine {
 			}
 			const handle = { finished, cancel() {} };
 			resolveFinished('finished');
-			this.trackElementProperties(element, properties, handle);
+			ownStyleAnimation(element, properties, handle);
 			return handle;
 		}
 
@@ -671,15 +647,24 @@ export class VuneMotionEngine {
 			}
 			resolveFinished('cancelled');
 			const handle = { finished, cancel() {} };
-			this.trackElementProperties(element, properties, handle);
+			ownStyleAnimation(element, properties, handle);
 			return handle;
 		}
 
 		this.elementAnimations.add(native);
 		let settled = false;
+		const watchdog = globalThis.setTimeout(() => {
+			if (settled) return;
+			native.cancel();
+			if (fill === 'forwards' || fill === 'both') {
+				applyFinalKeyframe(element, keyframes, finalKeyframeIsReverse(repeatCount, autoreverses));
+			}
+			settle('finished');
+		}, delayMs + (durationMs * repeatCount) + 100);
 		const settle = (status: MotionStatus): void => {
 			if (settled) return;
 			settled = true;
+			globalThis.clearTimeout(watchdog);
 			this.elementAnimations.delete(native);
 			this.elementCancels.delete(cancel);
 			resolveFinished(status);
@@ -696,7 +681,7 @@ export class VuneMotionEngine {
 			finished,
 			cancel,
 		};
-		this.trackElementProperties(element, properties, handle);
+		ownStyleAnimation(element, properties, handle);
 		return handle;
 	}
 

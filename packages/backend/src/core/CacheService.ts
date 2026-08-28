@@ -10,6 +10,7 @@ import { MemoryKVCache, RedisKVCache } from '@/misc/cache.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
 import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
@@ -55,6 +56,7 @@ export class CacheService implements OnApplicationShutdown {
 		private followingsRepository: FollowingsRepository,
 
 		private userEntityService: UserEntityService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		//this.onMessage = this.onMessage.bind(this);
 
@@ -69,6 +71,7 @@ export class CacheService implements OnApplicationShutdown {
 			fetcher: (key) => this.userProfilesRepository.findOneByOrFail({ userId: key }),
 			toRedisConverter: (value) => JSON.stringify(value),
 			fromRedisConverter: (value) => JSON.parse(value), // TODO: date型の考慮
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.userMutingsCache = new RedisKVCache<Set<string>>(this.redisClient, 'userMutings', {
@@ -80,6 +83,7 @@ export class CacheService implements OnApplicationShutdown {
 			}).then(xs => new Set(xs.map(x => x.muteeId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.userBlockingCache = new RedisKVCache<Set<string>>(this.redisClient, 'userBlocking', {
@@ -91,6 +95,7 @@ export class CacheService implements OnApplicationShutdown {
 			}).then(xs => new Set(xs.map(x => x.blockeeId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.userBlockedCache = new RedisKVCache<Set<string>>(this.redisClient, 'userBlocked', {
@@ -102,6 +107,7 @@ export class CacheService implements OnApplicationShutdown {
 			}).then(xs => new Set(xs.map(x => x.blockerId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.renoteMutingsCache = new RedisKVCache<Set<string>>(this.redisClient, 'renoteMutings', {
@@ -113,6 +119,7 @@ export class CacheService implements OnApplicationShutdown {
 			}).then(xs => new Set(xs.map(x => x.muteeId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		// Inverse index used by note fanout. A pure renote only needs to know which
@@ -127,6 +134,7 @@ export class CacheService implements OnApplicationShutdown {
 			}).then((xs: Array<{ muterId: string }>) => new Set(xs.map((x: { muterId: string }) => x.muterId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.userFollowingsCache = new RedisKVCache<Record<string, Pick<MiFollowing, 'withReplies'> | undefined>>(this.redisClient, 'userFollowings', {
@@ -144,6 +152,7 @@ export class CacheService implements OnApplicationShutdown {
 			}),
 			toRedisConverter: (value) => JSON.stringify(value),
 			fromRedisConverter: (value) => JSON.parse(value),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		// NOTE: チャンネルのフォロー状況キャッシュはChannelFollowingServiceで行っている

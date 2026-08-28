@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement } from '@/vune/native.js';
 import { i18n } from '@/i18n.js';
 
 function timeContent(invalid: boolean, mode: 'relative' | 'absolute' | 'detail', absolute: string, relative: string): string {
@@ -44,7 +44,7 @@ export struct MkTime: View {
 	}
 
 	var body: some View {
-		return nativeElement('time', {
+		return htmlElement('time', {
 			title: absolute,
 			className: [
 				colored && ago > 60 * 60 * 24 * 90 ? old1Class : null,

@@ -2,6 +2,7 @@
 /* @misutgaru-vune-native */
 import { Binding, Switch } from 'vune-ui';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import { ignoreSwitchToggle, type SwitchActions, type SwitchToggleAction } from './MkSwitchButton.types.js';
 import './misskey-vune.scss';
 
@@ -37,6 +38,7 @@ export struct MkSwitchButton: View {
 			.className([
 				'_button',
 				'mk-vune-switch-button',
+				prefer.s.animation ? 'mk-vune-switch-button--animated' : null,
 				checked ? 'mk-vune-switch-button--checked' : null,
 				disabled ? 'mk-vune-switch-button--disabled' : null,
 			])

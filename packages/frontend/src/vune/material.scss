@@ -158,3 +158,17 @@
 		--vune-material-border-opacity: 32%;
 	}
 }
+
+
+/* Backdrop filters are one of the most expensive effects during long timeline
+ * scrolls. Keep saturation and tint stable, but temporarily lower the blur
+ * radius while any scroll container is moving. The boot policy removes this
+ * flag 140 ms after the final scroll event. */
+html[data-vune-scrolling='true'] .vune-material {
+	--vune-material-blur: min(var(--vune-material-blur-target), 8px);
+}
+
+html[data-vune-material-economy='true'] .vune-material {
+	--vune-material-blur: min(var(--vune-material-blur-target), 6px);
+	--vune-material-saturation: 1.12;
+}

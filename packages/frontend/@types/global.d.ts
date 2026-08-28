@@ -18,5 +18,10 @@ declare module '*.vune' {
 	export default component;
 }
 
+declare module '*.vune?vue-host' {
+	const component: import('vue').Component;
+	export default component;
+}
+
 // for dev-mode
 declare const _LANGS_FULL_: string[][];

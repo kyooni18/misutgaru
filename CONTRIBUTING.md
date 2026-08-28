@@ -1,3 +1,11 @@
+# Misutgaru contributor note
+
+Before following the upstream contribution guide below, read [AGENTS.md](AGENTS.md) and [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md). This fork has additional Vune ownership rules, linked-module build requirements, known checkpoint blockers, and backend performance invariants that are not covered by the upstream Misskey instructions.
+
+For architecture and file ownership, use [docs/SOURCE_MAP.md](docs/SOURCE_MAP.md).
+
+---
+
 # Contribution guide
 We're glad you're interested in contributing Misskey! In this document you will find the information you need to contribute to the project.
 

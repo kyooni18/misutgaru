@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement } from '@/vune/native.js';
 import Pie from './pie.vune';
 import bytes from '@/filters/bytes.js';
 
@@ -18,13 +18,13 @@ export struct Disk: View {
 	}
 
 	var body: some View {
-		nativeElement('div', { className: 'zbwaqsat' },
+		htmlElement('div', { className: 'zbwaqsat' },
 			Pie(usage).className('pie'),
-			nativeElement('div', {},
-				nativeElement('p', {}, nativeElement('i', { className: 'ti ti-database' }), 'Disk'),
-				nativeElement('p', {}, `Total: ${bytes(total, 1)}`),
-				nativeElement('p', {}, `Free: ${bytes(available, 1)}`),
-				nativeElement('p', {}, `Used: ${bytes(used, 1)}`),
+			htmlElement('div', {},
+				htmlElement('p', {}, htmlElement('i', { className: 'ti ti-database' }), 'Disk'),
+				htmlElement('p', {}, `Total: ${bytes(total, 1)}`),
+				htmlElement('p', {}, `Free: ${bytes(available, 1)}`),
+				htmlElement('p', {}, `Used: ${bytes(used, 1)}`),
 			),
 		)
 	}

@@ -68,6 +68,33 @@ describe('misc:RedisKVCache', () => {
 		cache.dispose();
 	});
 
+	test('returns a superseding set when an invalidated cache-fill write fails', async () => {
+		const redis = redisStub();
+		let rejectStaleWrite!: (error: Error) => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>((_resolve, reject) => {
+				rejectStaleWrite = reject;
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('stale'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch('key');
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		const setting = cache.set('key', 'fresh');
+		rejectStaleWrite(new Error('stale write failed'));
+
+		await expect(setting).resolves.toBeUndefined();
+		await expect(filling).resolves.toBe('fresh');
+		expect(redis.set).toHaveBeenLastCalledWith('kvcache:test:key', 'fresh', 'EX', 1);
+		cache.dispose();
+	});
+
 	test('does not make an explicit set wait for a fetcher that has not started writing', async () => {
 		const redis = redisStub();
 		let resolveFetch!: (value: string) => void;
@@ -87,8 +114,117 @@ describe('misc:RedisKVCache', () => {
 		expect(redis.set).toHaveBeenCalledOnce();
 
 		resolveFetch('stale');
-		await expect(filling).resolves.toBe('stale');
+		await expect(filling).resolves.toBe('fresh');
 		await expect(cache.get('key')).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('does not return a Redis snapshot invalidated by a concurrent set', async () => {
+		const redis = redisStub();
+		let resolveRedisRead!: (value: string | null) => void;
+		redis.get
+			.mockImplementationOnce(() => new Promise<string | null>(resolve => {
+				resolveRedisRead = resolve;
+			}))
+			.mockResolvedValueOnce('fresh');
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch('key');
+		await vi.waitFor(() => expect(redis.get).toHaveBeenCalledOnce());
+		await cache.set('key', 'fresh');
+		resolveRedisRead('stale');
+
+		await expect(filling).resolves.toBe('fresh');
+		expect(redis.get).toHaveBeenCalledTimes(2);
+		cache.dispose();
+	});
+
+	test('does not return a Redis snapshot invalidated by a concurrent delete', async () => {
+		const redis = redisStub();
+		let resolveRedisRead!: (value: string | null) => void;
+		redis.get
+			.mockImplementationOnce(() => new Promise<string | null>(resolve => {
+				resolveRedisRead = resolve;
+			}))
+			.mockResolvedValueOnce(null);
+		const fetcher = vi.fn().mockResolvedValue('backend');
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch('key');
+		await vi.waitFor(() => expect(redis.get).toHaveBeenCalledOnce());
+		await cache.delete('key');
+		resolveRedisRead('stale');
+
+		await expect(filling).resolves.toBe('backend');
+		expect(fetcher).toHaveBeenCalledOnce();
+		expect(redis.del).toHaveBeenCalledWith('kvcache:test:key');
+		cache.dispose();
+	});
+
+	test('serializes refresh and explicit set so the later set wins', async () => {
+		const redis = redisStub();
+		let resolveRefresh!: (value: string) => void;
+		const fetcher = vi.fn(() => new Promise<string>(resolve => {
+			resolveRefresh = resolve;
+		}));
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const refreshing = cache.refresh('key');
+		await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+		const setting = cache.set('key', 'fresh');
+		expect(redis.set).not.toHaveBeenCalled();
+
+		resolveRefresh('refreshed');
+		await Promise.all([refreshing, setting]);
+		expect(redis.set).toHaveBeenNthCalledWith(1, 'kvcache:test:key', 'refreshed', 'EX', 1);
+		expect(redis.set).toHaveBeenNthCalledWith(2, 'kvcache:test:key', 'fresh', 'EX', 1);
+		await expect(cache.get('key')).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('serializes explicit writes so the last set wins', async () => {
+		const redis = redisStub();
+		let releaseFirstWrite!: () => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>(resolve => {
+				releaseFirstWrite = () => resolve('OK');
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisKVCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const first = cache.set('key', 'first');
+		const second = cache.set('key', 'second');
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		releaseFirstWrite();
+		await Promise.all([first, second]);
+
+		expect(redis.set).toHaveBeenNthCalledWith(1, 'kvcache:test:key', 'first', 'EX', 1);
+		expect(redis.set).toHaveBeenNthCalledWith(2, 'kvcache:test:key', 'second', 'EX', 1);
+		await expect(cache.get('key')).resolves.toBe('second');
 		cache.dispose();
 	});
 });
@@ -147,6 +283,33 @@ describe('misc:RedisSingleCache', () => {
 		cache.dispose();
 	});
 
+	test('returns a superseding set when an invalidated cache-fill write fails', async () => {
+		const redis = redisStub();
+		let rejectStaleWrite!: (error: Error) => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>((_resolve, reject) => {
+				rejectStaleWrite = reject;
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('stale'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch();
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		const setting = cache.set('fresh');
+		rejectStaleWrite(new Error('stale write failed'));
+
+		await expect(setting).resolves.toBeUndefined();
+		await expect(filling).resolves.toBe('fresh');
+		expect(redis.set).toHaveBeenLastCalledWith('singlecache:test', 'fresh', 'EX', 1);
+		cache.dispose();
+	});
+
 	test('does not make an explicit set wait for a fetcher that has not started writing', async () => {
 		const redis = redisStub();
 		let resolveFetch!: (value: string) => void;
@@ -166,8 +329,117 @@ describe('misc:RedisSingleCache', () => {
 		expect(redis.set).toHaveBeenCalledOnce();
 
 		resolveFetch('stale');
-		await expect(filling).resolves.toBe('stale');
+		await expect(filling).resolves.toBe('fresh');
 		await expect(cache.get()).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('does not return a Redis snapshot invalidated by a concurrent set', async () => {
+		const redis = redisStub();
+		let resolveRedisRead!: (value: string | null) => void;
+		redis.get
+			.mockImplementationOnce(() => new Promise<string | null>(resolve => {
+				resolveRedisRead = resolve;
+			}))
+			.mockResolvedValueOnce('fresh');
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch();
+		await vi.waitFor(() => expect(redis.get).toHaveBeenCalledOnce());
+		await cache.set('fresh');
+		resolveRedisRead('stale');
+
+		await expect(filling).resolves.toBe('fresh');
+		expect(redis.get).toHaveBeenCalledTimes(2);
+		cache.dispose();
+	});
+
+	test('does not return a Redis snapshot invalidated by a concurrent delete', async () => {
+		const redis = redisStub();
+		let resolveRedisRead!: (value: string | null) => void;
+		redis.get
+			.mockImplementationOnce(() => new Promise<string | null>(resolve => {
+				resolveRedisRead = resolve;
+			}))
+			.mockResolvedValueOnce(null);
+		const fetcher = vi.fn().mockResolvedValue('backend');
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const filling = cache.fetch();
+		await vi.waitFor(() => expect(redis.get).toHaveBeenCalledOnce());
+		await cache.delete();
+		resolveRedisRead('stale');
+
+		await expect(filling).resolves.toBe('backend');
+		expect(fetcher).toHaveBeenCalledOnce();
+		expect(redis.del).toHaveBeenCalledWith('singlecache:test');
+		cache.dispose();
+	});
+
+	test('serializes refresh and explicit set so the later set wins', async () => {
+		const redis = redisStub();
+		let resolveRefresh!: (value: string) => void;
+		const fetcher = vi.fn(() => new Promise<string>(resolve => {
+			resolveRefresh = resolve;
+		}));
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher,
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const refreshing = cache.refresh();
+		await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+		const setting = cache.set('fresh');
+		expect(redis.set).not.toHaveBeenCalled();
+
+		resolveRefresh('refreshed');
+		await Promise.all([refreshing, setting]);
+		expect(redis.set).toHaveBeenNthCalledWith(1, 'singlecache:test', 'refreshed', 'EX', 1);
+		expect(redis.set).toHaveBeenNthCalledWith(2, 'singlecache:test', 'fresh', 'EX', 1);
+		await expect(cache.get()).resolves.toBe('fresh');
+		cache.dispose();
+	});
+
+	test('serializes explicit writes so the last set wins', async () => {
+		const redis = redisStub();
+		let releaseFirstWrite!: () => void;
+		redis.set
+			.mockImplementationOnce(() => new Promise<string>(resolve => {
+				releaseFirstWrite = () => resolve('OK');
+			}))
+			.mockResolvedValue('OK');
+		const cache = new RedisSingleCache<string>(redis as never, 'test', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+
+		const first = cache.set('first');
+		const second = cache.set('second');
+		await vi.waitFor(() => expect(redis.set).toHaveBeenCalledOnce());
+		releaseFirstWrite();
+		await Promise.all([first, second]);
+
+		expect(redis.set).toHaveBeenNthCalledWith(1, 'singlecache:test', 'first', 'EX', 1);
+		expect(redis.set).toHaveBeenNthCalledWith(2, 'singlecache:test', 'second', 'EX', 1);
+		await expect(cache.get()).resolves.toBe('second');
 		cache.dispose();
 	});
 });
@@ -505,5 +777,147 @@ describe('misc:MemorySingleCache', () => {
 			await expect(pending).resolves.toBe('stale');
 			expect(cache.get()).toBe('fresh');
 		});
+	});
+});
+
+describe('misc:Redis cache invalidation bus', () => {
+	test('does not resurrect a KV value when a remote invalidation lands during a local write', async () => {
+		const redis = redisStub();
+		let releaseWrite!: () => void;
+		redis.set.mockImplementationOnce(() => new Promise<string>(resolve => {
+			releaseWrite = () => resolve('OK');
+		}));
+		const listeners = new Set<(key: string | null) => void>();
+		const bus = {
+			register(_name: string, listener: (key: string | null) => void) { listeners.add(listener); return () => listeners.delete(listener); },
+			publish: vi.fn().mockResolvedValue(undefined),
+		};
+		const cache = new RedisKVCache<string>(redis as never, 'shared-race', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+			invalidationBus: bus,
+		});
+
+		const writing = cache.set('key', 'local-write');
+		await vi.waitFor(() => expect(releaseWrite).toBeTypeOf('function'));
+		for (const listener of listeners) listener('key');
+		releaseWrite();
+		await writing;
+
+		redis.get.mockResolvedValueOnce('remote-authoritative');
+		await expect(cache.get('key')).resolves.toBe('remote-authoritative');
+		cache.dispose();
+	});
+
+	test('an explicit KV mutation removes the old memory value before its Redis write completes', async () => {
+		const redis = redisStub();
+		const cache = new RedisKVCache<string>(redis as never, 'local-mutation-race', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+		});
+		await cache.set('key', 'old');
+		let releaseWrite!: () => void;
+		redis.set.mockImplementationOnce(() => new Promise<string>(resolve => {
+			releaseWrite = () => resolve('OK');
+		}));
+
+		const writing = cache.set('key', 'fresh');
+		let readSettled = false;
+		const reading = cache.fetch('key').finally(() => { readSettled = true; });
+		await Promise.resolve();
+		expect(readSettled).toBe(false);
+		releaseWrite();
+		await expect(Promise.all([writing, reading])).resolves.toEqual([undefined, 'fresh']);
+		cache.dispose();
+	});
+
+	test('remote invalidation drops a KV memory snapshot and refills from Redis', async () => {
+		const redis = redisStub();
+		const listeners = new Map<string, Set<(key: string | null) => void>>();
+		const bus = {
+			register(name: string, listener: (key: string | null) => void) {
+				let set = listeners.get(name);
+				if (!set) listeners.set(name, set = new Set());
+				set.add(listener);
+				return () => set!.delete(listener);
+			},
+			publish: vi.fn().mockResolvedValue(undefined),
+			remote(name: string, key: string | null) {
+				for (const listener of listeners.get(name) ?? []) listener(key);
+			},
+		};
+		const cache = new RedisKVCache<string>(redis as never, 'shared', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+			invalidationBus: bus,
+		});
+		await cache.set('key', 'local');
+		expect(await cache.get('key')).toBe('local');
+		redis.get.mockResolvedValueOnce('remote');
+		bus.remote('shared', 'key');
+		expect(await cache.get('key')).toBe('remote');
+		cache.dispose();
+	});
+
+	test('does not resurrect a single-value snapshot when remote invalidation lands during a local write', async () => {
+		const redis = redisStub();
+		let releaseWrite!: () => void;
+		redis.set.mockImplementationOnce(() => new Promise<string>(resolve => {
+			releaseWrite = () => resolve('OK');
+		}));
+		const listeners = new Set<(key: string | null) => void>();
+		const bus = {
+			register(_name: string, listener: (key: string | null) => void) { listeners.add(listener); return () => listeners.delete(listener); },
+			publish: vi.fn().mockResolvedValue(undefined),
+		};
+		const cache = new RedisSingleCache<string>(redis as never, 'shared-single-race', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+			invalidationBus: bus,
+		});
+
+		const writing = cache.set('local-write');
+		await vi.waitFor(() => expect(releaseWrite).toBeTypeOf('function'));
+		for (const listener of listeners) listener(null);
+		releaseWrite();
+		await writing;
+
+		redis.get.mockResolvedValueOnce('remote-authoritative');
+		await expect(cache.get()).resolves.toBe('remote-authoritative');
+		cache.dispose();
+	});
+
+	test('remote invalidation drops a single-value memory snapshot', async () => {
+		const redis = redisStub();
+		const listeners = new Set<(key: string | null) => void>();
+		const bus = {
+			register(_name: string, listener: (key: string | null) => void) { listeners.add(listener); return () => listeners.delete(listener); },
+			publish: vi.fn().mockResolvedValue(undefined),
+		};
+		const cache = new RedisSingleCache<string>(redis as never, 'shared-single', {
+			lifetime: 1000,
+			memoryCacheLifetime: 1000,
+			fetcher: vi.fn().mockResolvedValue('backend'),
+			toRedisConverter: value => value,
+			fromRedisConverter: value => value,
+			invalidationBus: bus,
+		});
+		await cache.set('local');
+		redis.get.mockResolvedValueOnce('remote');
+		for (const listener of listeners) listener(null);
+		expect(await cache.get()).toBe('remote');
+		cache.dispose();
 	});
 });

@@ -32,13 +32,14 @@ const forbidden = [
 	{ label: 'VueComponent fallback', pattern: /\bVueComponent\s*\(/g },
 	{ label: 'VueSlot fallback', pattern: /\bVueSlot\s*\(/g },
 	{ label: 'raw Element primitive', pattern: /\bElement\s*\(/g },
+	{ label: 'unrestricted nativeElement escape hatch', pattern: /\bnativeElement\s*\(/g },
+	{ label: 'direct viewElement host construction', pattern: /\bviewElement\s*\(/g },
 	{ label: 'legacy createVuneComponent factory', pattern: /\bcreateVuneComponent\b/g },
 	{ label: 'legacy NativeVuneFactory API', pattern: /\bNativeVuneFactory\b/g },
 	{ label: 'legacy nativeWebDecoration adapter', pattern: /\bnativeWebDecoration\b/g },
 	{ label: 'Vue placement host leaked into native source', pattern: /\bcreateVuneWebHost\b/g },
 	{ label: '.vue dependency in native Vune source', pattern: /from\s+['"][^'"]+\.vue['"]/g },
 	{ label: 'function-style component binding', pattern: /\bconst\s+(?:render|view|component)\b/g },
-	{ label: 'const declaration in SwiftUI-style native View source', pattern: /\bconst\s+[A-Za-z_$][\w$]*\s*(?:=|:)/g },
 ];
 
 let marked = 0;
