@@ -6,30 +6,52 @@
 import { throttle } from 'throttle-debounce';
 import type { Directive } from 'vue';
 import type { Awaitable } from '@/types/misc.js';
+import { getScrollContainer } from '@@/js/scroll.js';
 
-const observers = new WeakMap<HTMLElement, IntersectionObserver>();
+type ObserverState = {
+	observer: IntersectionObserver;
+};
+
+const observers = new WeakMap<HTMLElement, ObserverState>();
+
+function attach(src: HTMLElement, callback: (() => Awaitable<void>) | null | undefined): void {
+	const previous = observers.get(src);
+	previous?.observer.disconnect();
+	observers.delete(src);
+	if (callback == null) return;
+
+	const check = throttle<IntersectionObserverCallback>(500, (entries) => {
+		if (entries.some(entry => entry.isIntersecting)) {
+			void callback();
+		}
+	});
+
+	// Timeline feeds live inside their own scrollable page/column. Using that
+	// container as the observer root keeps appearance detection tied to the
+	// scroll that actually moves the target instead of relying on viewport
+	// clipping through an ancestor with overflow.
+	const observer = new IntersectionObserver(check, {
+		root: getScrollContainer(src),
+	});
+	observer.observe(src);
+	observers.set(src, { observer });
+}
 
 export const appearDirective = {
 	mounted(src, binding) {
-		const fn = binding.value;
-		if (fn == null) return;
+		attach(src, binding.value);
+	},
 
-		const check = throttle<IntersectionObserverCallback>(500, (entries) => {
-			if (entries.some(entry => entry.isIntersecting)) {
-				fn();
-			}
-		});
-
-		const observer = new IntersectionObserver(check);
-		observer.observe(src);
-
-		observers.set(src, observer);
+	updated(src, binding) {
+		if (binding.value !== binding.oldValue) {
+			attach(src, binding.value);
+		}
 	},
 
 	beforeUnmount(src) {
 		const observer = observers.get(src);
 		if (observer) {
-			observer.disconnect();
+			observer.observer.disconnect();
 			observers.delete(src);
 		}
 	},

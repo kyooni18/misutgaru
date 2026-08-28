@@ -8,11 +8,12 @@
 import {
 	defineComponent,
 	h,
+	onBeforeUpdate,
 	onBeforeUnmount,
 	onMounted,
-	onUpdated,
 	shallowRef,
 	unref,
+	watch,
 } from 'vue';
 import {
 	State,
@@ -122,6 +123,23 @@ function compileParameterCoercion(
  * no longer repeat initializer lookup, alias resolution, or type-string
  * parsing for every body evaluation.
  */
+function legacyHostPropNames(
+	ViewType: ViewConstructor,
+	options: LegacyVuneHostOptions,
+): readonly string[] {
+	const initializers = initializersOf(ViewType);
+	const selected = initializers[options.initializerIndex ?? 0];
+	if (!selected) return [];
+	const generated = ViewType.viewType.legacyHost?.initializers.find(plan => plan.index === (options.initializerIndex ?? 0));
+	const names = new Set<string>();
+	for (const [index, parameter] of (selected.parameters ?? []).entries()) {
+		const planned = generated?.parameters[index];
+		const name = planned?.name ?? parameter.name ?? parameter.label;
+		if (name) names.add(options.aliases?.[name] ?? name);
+	}
+	return [...names];
+}
+
 function compileLegacyViewAdapter(
 	ViewType: ViewConstructor,
 	options: LegacyVuneHostOptions,
@@ -197,14 +215,31 @@ export function createVuneWebHost(
 	options: LegacyVuneHostOptions = {},
 ) {
 	const instantiate = compileLegacyViewAdapter(ViewType, options);
+	const propNames = legacyHostPropNames(ViewType, options);
 	return defineComponent({
 		name: 'MisutgaruNativeVuneHost',
 		inheritAttrs: false,
-		setup(_props, { attrs }) {
+		// Declaring initializer inputs as real Vue props makes the compatibility
+		// boundary participate in Vue's normal prop invalidation. In particular,
+		// action-shaped names such as onToggle no longer live only in the
+		// non-reactive attrs bag, and a checked change cannot wait until a
+		// post-render lifecycle callback before Vune sees it.
+		props: [...propNames],
+		setup(props, { attrs }) {
 			const host = shallowRef<HTMLElement | null>(null);
-			let current = snapshotAttrs(attrs);
+			const snapshotInput = (): LegacyAttrs => snapshotAttrs({ ...attrs, ...props });
+			let current = snapshotInput();
 			const state = State<LegacyAttrs>(current);
 			let dispose: (() => void) | undefined;
+			const syncInput = () => {
+				const next = snapshotInput();
+				if (shallowEqual(current, next)) return;
+				current = next;
+				state.value = next;
+			};
+			const stopPropWatch = propNames.length > 0
+				? watch(() => propNames.map(name => (props as Readonly<Record<string, unknown>>)[name]), syncInput, { flush: 'sync' })
+				: undefined;
 
 			const Root = defineView('MisutgaruNativeVuneCompatRoot', {
 				initializers: [initializer(
@@ -219,14 +254,13 @@ export function createVuneWebHost(
 				if (host.value) dispose = mount(Root(), host.value);
 			});
 
-			onUpdated(() => {
-				const next = snapshotAttrs(attrs);
-				if (shallowEqual(current, next)) return;
-				current = next;
-				state.value = next;
-			});
+			// attrs itself is intentionally not reactive in Vue. Class/style and any
+			// legacy pass-through attrs therefore still get one pre-commit sync,
+			// while declared initializer props take the synchronous watcher above.
+			onBeforeUpdate(syncInput);
 
 			onBeforeUnmount(() => {
+				stopPropWatch?.();
 				dispose?.();
 				dispose = undefined;
 			});

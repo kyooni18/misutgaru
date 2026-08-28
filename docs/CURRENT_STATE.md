@@ -39,7 +39,7 @@ Run `pnpm vune:report` to refresh these values.
 
 | Metric | Current value |
 | --- | ---: |
-| Vue SFC compatibility surface | 593 |
+| Vue SFC compatibility surface | 594 |
 | Vune source components | 233 |
 | Native Vune components | 65 |
 | Explicit compatibility Vune shells | 2 |
@@ -47,7 +47,7 @@ Run `pnpm vune:report` to refresh these values.
 | SwiftUI-syntax Vune files | 145 |
 | Vune files using `ForEach` | 62 |
 | Native share of Vune sources | 27.9% |
-| Legacy-shell coverage of Vue SFCs | 38.3% |
+| Legacy-shell coverage of Vue SFCs | 38.2% |
 
 Inside the 65 native sources, the current report shows zero `VueComponent`, `VueSlot`, raw `Element`, and `.vue` dependency fallbacks. `MkEmojiPicker.vune` and `MkPostFormSurface.vune` are explicitly classified as compatibility sources instead of inflating the native count.
 

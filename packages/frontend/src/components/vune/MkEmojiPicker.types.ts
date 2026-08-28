@@ -15,6 +15,7 @@ export interface NativeEmojiPickerItem {
 export interface NativeEmojiPickerSection {
 	key: string;
 	title: string;
+	icon: string;
 	count: number;
 	emojis: NativeEmojiPickerItem[];
 	expanded: boolean;
@@ -25,6 +26,7 @@ export interface NativeEmojiPickerGroup {
 	key: string;
 	title: string;
 	icon: string;
+	count: number;
 	sections: NativeEmojiPickerSection[];
 }
 

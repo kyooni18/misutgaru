@@ -31,11 +31,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		[$style.transition_send_leaveTo]: transitionName === 'send',
 	})"
 	:duration="transitionDuration"
-	:css="!useMenuMotion"
+	:css="!useCustomMotion"
 	appear
 	@afterLeave="onClosed"
-	@enter="enter"
-	@leave="leave"
+	@enter="enterHook"
+	@leave="leaveHook"
 	@afterEnter="onOpened"
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
@@ -57,6 +57,7 @@ import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
+import { Animation } from 'vune-ui';
 import { animateContextMenuTransition, contextMenuAnimation, contextMenuDrawerKeyframes, contextMenuRootKeyframes } from './MkContextMenu.motion.js';
 import type { ContextMenuMotionPhase } from './MkContextMenu.motion.js';
 import { animateVuneTransition } from '@/vune/motion.js';
@@ -72,6 +73,7 @@ function getFixedContainer(el: Element | null): Element | null {
 }
 
 type ModalTypes = 'popup' | 'dialog' | 'drawer';
+type ModalMotion = 'menu' | 'post-form';
 
 const props = withDefaults(defineProps<{
 	manualShowing?: boolean | null;
@@ -84,6 +86,7 @@ const props = withDefaults(defineProps<{
 	hasInteractionWithOtherFocusTrappedEls?: boolean;
 	returnFocusTo?: HTMLElement | null;
 	menuAnimation?: boolean;
+	motion?: ModalMotion;
 }>(), {
 	manualShowing: null,
 	anchorElement: null,
@@ -95,6 +98,7 @@ const props = withDefaults(defineProps<{
 	hasInteractionWithOtherFocusTrappedEls: false,
 	returnFocusTo: null,
 	menuAnimation: false,
+	motion: undefined,
 });
 
 const emit = defineEmits<{
@@ -150,23 +154,42 @@ const transitionDuration = computed((() =>
 					? 300
 					: 0
 ));
-const useMenuMotion = computed(() => props.menuAnimation && (type.value === 'popup' || type.value === 'drawer'));
+const motion = computed<ModalMotion | null>(() => props.motion ?? (props.menuAnimation ? 'menu' : null));
+const useCustomMotion = computed(() => motion.value != null);
+// A two-argument Vue transition hook opts into manual completion. Only attach
+// those hooks while Vune owns the transition; otherwise Vue must be free to
+// wait for its CSS transition end instead of receiving an immediate `done()`.
+const enterHook = computed(() => useCustomMotion.value ? enter : undefined);
+const leaveHook = computed(() => useCustomMotion.value ? leave : undefined);
 
 function enter(element: Element, done: () => void) {
 	emit('opening');
-	if (!useMenuMotion.value || !prefer.s.animation) {
+	if (!useCustomMotion.value || !prefer.s.animation) {
 		done();
 		return;
 	}
-	animateMenuTransition(element, 'enter', done);
+	animateModalTransition(element, 'enter', done);
 }
 
 function leave(element: Element, done: () => void) {
-	if (!useMenuMotion.value || !prefer.s.animation) {
+	if (!useCustomMotion.value || !prefer.s.animation) {
 		done();
 		return;
 	}
-	animateMenuTransition(element, 'leave', done);
+	animateModalTransition(element, 'leave', done);
+}
+
+function animateModalTransition(
+	element: Element,
+	phase: ContextMenuMotionPhase,
+	done: () => void,
+) {
+	if (motion.value === 'post-form') {
+		animatePostFormTransition(element, phase, done);
+		return;
+	}
+
+	animateMenuTransition(element, phase, done);
 }
 
 function animateMenuTransition(
@@ -177,7 +200,11 @@ function animateMenuTransition(
 	const contentElement = element.querySelector<HTMLElement>('[data-vune-popup-content]');
 	const keyframes = type.value === 'drawer'
 		? contextMenuDrawerKeyframes(phase)
-		: contextMenuRootKeyframes(phase);
+		: type.value === 'popup'
+			? contextMenuRootKeyframes(phase)
+			: phase === 'enter'
+				? [{ opacity: 0, transform: 'scale(0.96)' }, { opacity: 1, transform: 'scale(1)' }]
+				: [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.96)' }];
 	const bgElement = element.querySelector<HTMLElement>('[data-testid="bg"]');
 	const blurTarget = bgElement == null
 		? '0px'
@@ -188,16 +215,79 @@ function animateMenuTransition(
 		if (pending === 0) done();
 	};
 
-	// The custom menu transition disables Vue's CSS transition classes. Keep
-	// the backdrop on its own track so drawer blur enters and leaves with the
-	// same timing as the menu surface.
+	// Vune owns both surface and backdrop tracks. Vue only owns the lifecycle,
+	// so CSS transitions cannot race the shared motion scheduler.
 	animateContextMenuTransition(element, phase, finish, contentElement ?? element, keyframes);
-	if (bgElement != null && blurTarget !== '0px') {
+	if (bgElement != null) {
 		pending += 1;
-		const blurKeyframes = phase === 'enter'
-			? [{ '--MI-modalBgBlur': '0px' }, { '--MI-modalBgBlur': blurTarget }]
-			: [{ '--MI-modalBgBlur': blurTarget }, { '--MI-modalBgBlur': '0px' }];
-		void animateVuneTransition(bgElement, blurKeyframes, contextMenuAnimation, finish);
+		const backdropKeyframes = phase === 'enter'
+			? [{ opacity: 0, '--MI-modalBgBlur': '0px' }, { opacity: 1, '--MI-modalBgBlur': blurTarget }]
+			: [{ opacity: 1, '--MI-modalBgBlur': blurTarget }, { opacity: 0, '--MI-modalBgBlur': '0px' }];
+		void animateVuneTransition(bgElement, backdropKeyframes, contextMenuAnimation, finish);
+	}
+}
+
+const postFormEnterAnimation = Animation.spring(0.4, 0.86);
+const postFormLeaveAnimation = Animation.easeIn(0.2);
+const postFormBackdropAnimation = Animation.easeOut(0.24);
+const postFormSendAnimation = Animation.easeIn(0.3);
+
+function animatePostFormTransition(
+	element: Element,
+	phase: ContextMenuMotionPhase,
+	done: () => void,
+) {
+	const contentElement = element.querySelector<HTMLElement>('[data-vune-popup-content]') ?? element;
+	const bgElement = element.querySelector<HTMLElement>('[data-testid="bg"]');
+	const blurTarget = bgElement == null
+		? '0px'
+		: window.getComputedStyle(bgElement).getPropertyValue('--MI-modalBgBlurTarget').trim() || '0px';
+	const isSend = useSendAnime.value && phase === 'leave';
+	const contentKeyframes = isSend
+		? [
+			{ opacity: 1, transform: 'translateY(0px)' },
+			{ opacity: 0, transform: 'translateY(-300px)' },
+		]
+		: phase === 'enter'
+		? [
+			{ opacity: 0, transform: 'translateY(28px) scale(0.97)' },
+			{ opacity: 1, transform: 'translateY(0px) scale(1)' },
+		]
+		: [
+			{ opacity: 1, transform: 'translateY(0px) scale(1)' },
+			{ opacity: 0, transform: 'translateY(16px) scale(0.985)' },
+		];
+	const contentAnimation = isSend
+		? postFormSendAnimation
+		: phase === 'enter'
+			? postFormEnterAnimation
+			: postFormLeaveAnimation;
+	const backdropAnimation = isSend ? postFormSendAnimation : postFormBackdropAnimation;
+	const opaqueKeyframes = phase === 'enter'
+		? [{ opacity: 1 }, { opacity: 0 }]
+		: [{ opacity: 0 }, { opacity: 1 }];
+
+	let pending = 1;
+	const finish = () => {
+		pending -= 1;
+		if (pending === 0) done();
+	};
+
+	// Keep the composer surface and its Material backing layer on independent
+	// tracks so the surface can move without flashing through the backdrop.
+	void animateVuneTransition(contentElement, contentKeyframes, contentAnimation, finish);
+	for (const opaque of contentElement.querySelectorAll<HTMLElement>('.vune-material__opaque')) {
+		pending += 1;
+		void animateVuneTransition(opaque, opaqueKeyframes, contentAnimation, finish);
+	}
+	if (bgElement != null) {
+		pending += 1;
+		const backdropKeyframes = isSend
+			? [{ opacity: 1, '--MI-modalBgBlur': blurTarget }, { opacity: 0, '--MI-modalBgBlur': '0px' }]
+			: phase === 'enter'
+			? [{ opacity: 0, '--MI-modalBgBlur': '0px' }, { opacity: 1, '--MI-modalBgBlur': blurTarget }]
+			: [{ opacity: 1, '--MI-modalBgBlur': blurTarget }, { opacity: 0, '--MI-modalBgBlur': '0px' }];
+		void animateVuneTransition(bgElement, backdropKeyframes, backdropAnimation, finish);
 	}
 }
 

@@ -35,9 +35,15 @@ Vune core owns graph-first primitives for browser concepts that previously requi
 
 The web package owns DOM-only behavior such as focus trapping/restoration. This keeps feature Views renderer-oriented instead of embedding DOM construction throughout Misutgaru.
 
+Detailed notes are composed from a reusable avatar/content renderer and a separate action-control renderer. `MkNoteDetailed` owns the surrounding layout, optional tabs, and thread context, so the thread window can show ancestor and continuation notes without repeating reply controls.
+
 ## Motion and layout
 
 Misutgaru delegates per-element property ownership to o0o0o. Starting a new opacity animation only replaces the opacity owner; transform, size, color, and other property owners remain independent.
+
+Bare Vune `.animation()` is a compiler-assisted automatic motion domain. The compiler records the properties implied by the modifier chain, while the web renderer checks the actual DOM/style diff before scheduling work. Opacity, compositor transforms, paint/color, and layout changes can therefore choose separate default motion profiles and remain independently retargetable. Explicit `.animation(animation)` and `.animation(animation, value)` keep their authored timing and trigger semantics.
+
+Vue compatibility surfaces that still need imperative enter/leave or keyframe motion use `packages/frontend/src/vune/motion.ts`, which is intentionally only a compatibility re-export of the shared Vune Web element-motion engine. Feature code must not create a second scheduler or bypass per-property ownership with direct `Element.animate()` calls.
 
 Vune intrinsic layout animation snapshots geometry before and after a structural update and applies FLIP projection. The layout channel uses CSS `translate` and `scale` when available, leaving the normal `transform` channel available for user rotation/transform animation. Unsupported environments retain a conservative fallback.
 

@@ -35,7 +35,6 @@ export type NativeMenuRow = {
 	onHover?: (event: MouseEvent) => void;
 	onMove?: (event: MouseEvent) => void;
 	onLeave?: () => void;
-	onToggle?: () => void;
 };
 
 export type NativeMenuModel = {

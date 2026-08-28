@@ -10,13 +10,15 @@ import type { NativeMenuModel, NativeMenuRow } from './MkMenu.types.js';
 import './MkMenu.vune.scss';
 
 function ignorePointer(_event: PointerEvent): void {}
-function ignoreAction(): void {}
 function viewValue(value: ViewGraphValue | undefined): ViewGraphValue {
 	return value ?? null;
 }
 
 function menuSwitch(row: NativeMenuRow): ViewGraphValue {
-	return MkSwitchButton(row.checked ?? false, disabled: row.disabled ?? false, onToggle: row.onToggle ?? ignoreAction)
+	// The menu row itself owns activation. Render only the switch visual here so
+	// we never create a button inside a button or send one pointer gesture down
+	// two independent toggle paths.
+	return MkSwitchButton(row.checked ?? false, disabled: row.disabled ?? false, interactive: false)
 		.className(['mk-vune-menu__switch', row.switchClass])
 }
 
@@ -34,13 +36,6 @@ function itemClasses(row: NativeMenuRow): string[] {
 }
 
 function activateMenuButton(row: NativeMenuRow, event: PointerEvent): void {
-	// SwitchButton renders its own native button inside the menu row. The
-	// switch handler already toggles the Vue ref; letting the parent row handle
-	// the bubbled click would toggle it a second time and leave it unchanged.
-	if (row.kind === 'switch') {
-		const target = event.target as { closest?: (selector: string) => unknown } | null
-		if (target?.closest?.('[data-vune="Switch"]')) return
-	}
 	row.onActivate?.(event)
 }
 
