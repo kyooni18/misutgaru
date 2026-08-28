@@ -16,6 +16,8 @@ import type { MiMeta, UserIpsRepository } from '@/models/_.js';
 import { createTemp } from '@/misc/create-temp.js';
 import { bindThis } from '@/decorators.js';
 import { createBufferedWriteStream } from '@/misc/block-io.js';
+import { requestBatchContext } from '@/misc/request-batch-context.js';
+import { runtimeDiagnostics } from '@/misc/runtime-diagnostics.js';
 import { RoleService } from '@/core/RoleService.js';
 import { TelemetryService } from '@/core/telemetry/TelemetryService.js';
 import type { Config } from '@/config.js';
@@ -434,10 +436,22 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
-		// The API span starts in handleRequest/handleMultipartRequest so it also covers
-		// authentication, rate limiting, and parameter validation.
-		return await ep.exec(data, user, token, file, request.ip, request.headers)
-			.catch((err: Error) => this.#onExecError(ep, data, err, user?.id));
+		// Keep a low-cardinality process-local latency distribution. Endpoint names
+		// are attached only to the bounded slow-trace ring so an instance with many
+		// plugins cannot create an unbounded metrics map.
+		const execStartedAt = performance.now();
+		runtimeDiagnostics.increment('api.requests');
+		try {
+			return await requestBatchContext.run(() => ep.exec(data, user, token, file, request.ip, request.headers))
+				.catch((err: Error) => {
+					runtimeDiagnostics.increment('api.errors');
+					return this.#onExecError(ep, data, err, user?.id);
+				});
+		} finally {
+			const durationMs = performance.now() - execStartedAt;
+			runtimeDiagnostics.observe('api.endpointDurationMs', durationMs);
+			if (durationMs >= 500) runtimeDiagnostics.trace('api.slowEndpoint', durationMs, { endpoint: ep.name });
+		}
 	}
 
 	@bindThis

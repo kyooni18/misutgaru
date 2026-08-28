@@ -1,0 +1,45 @@
+name: Misutgaru integrity
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout with framework sources
+        uses: actions/checkout@v7.0.0
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 26.4.0
+          cache: pnpm
+
+      - name: Verify vanilla DB schema invariant
+        run: node scripts/check-db-schema-invariant.mjs
+
+      - name: Install application dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify repository boundaries and types
+        run: pnpm verify:repo
+
+      - name: Run Misutgaru backend regression tests
+        run: pnpm test:misutgaru-regressions
+
+      - name: Run deterministic motion regression benchmark
+        run: pnpm bench:regression

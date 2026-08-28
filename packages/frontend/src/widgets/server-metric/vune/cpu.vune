@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement } from '@/vune/native.js';
 import type * as Misskey from 'misskey-js';
 import Pie from './pie.vune';
 
@@ -14,12 +14,12 @@ export struct Cpu: View {
 	}
 
 	var body: some View {
-		nativeElement('div', { className: 'vrvdvrys' },
+		htmlElement('div', { className: 'vrvdvrys' },
 			Pie(usage).className('pie'),
-			nativeElement('div', {},
-				nativeElement('p', {}, nativeElement('i', { className: 'ti ti-cpu' }), 'CPU'),
-				nativeElement('p', {}, `${meta.cpu.cores} Logical cores`),
-				nativeElement('p', {}, meta.cpu.model),
+			htmlElement('div', {},
+				htmlElement('p', {}, htmlElement('i', { className: 'ti ti-cpu' }), 'CPU'),
+				htmlElement('p', {}, `${meta.cpu.cores} Logical cores`),
+				htmlElement('p', {}, meta.cpu.model),
 			),
 		)
 	}

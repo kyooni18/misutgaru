@@ -17,8 +17,9 @@
 		"eslint": "eslint --quiet \"src/**/*.{ts,vue}\"",
 		"lint": "pnpm typecheck && pnpm eslint",
 		"typecheck:vue": "vue-tsc --noEmit",
-		"typecheck:vune": "node ../../scripts/check-vune.mjs packages/frontend/src && pnpm typecheck:vune-native",
-		"typecheck:vune-native": "node ../../scripts/check-vune-native.mjs packages/frontend/src"
+		"typecheck:vune": "node ../../scripts/check-vune.mjs src && pnpm typecheck:vune-native",
+		"typecheck:vune-native": "node ../../scripts/check-vune-native.mjs src",
+		"test:e2e:performance": "playwright test --config playwright.config.ts performance.spec.ts"
 	},
 	"dependencies": {
 		"@analytics/google-analytics": "1.1.0",
@@ -31,8 +32,8 @@
 		"@syuilo/aiscript": "1.2.1",
 		"@syuilo/aiscript-0-19-0": "npm:@syuilo/aiscript@^0.19.0",
 		"@vitejs/plugin-vue": "6.0.8",
-		"@vune-ui/core": "0.1.20",
-		"@vune-ui/vue": "0.1.20",
+		"@vune-ui/core": "link:../modules/Vune/packages/core",
+		"@vune-ui/vue": "link:../modules/Vune/packages/vue",
 		"aiscript-vscode": "github:aiscript-dev/aiscript-vscode#v0.1.16",
 		"analytics": "0.8.19",
 		"broadcast-channel": "7.4.0",
@@ -76,7 +77,8 @@
 		"vune-ui": "link:../modules/Vune",
 		"o0o0o": "link:../modules/o0o0o",
 		"wanakana": "5.3.1",
-		"@vune-ui/web": "0.1.20"
+		"@vune-ui/web": "link:../modules/Vune/packages/web",
+		"@misutgaru/core": "workspace:*"
 	},
 	"devDependencies": {
 		"@misskey-dev/emoji-assets": "17.0.3",
@@ -118,8 +120,8 @@
 		"@vitest/browser-playwright": "4.1.10",
 		"@vitest/coverage-v8": "4.1.10",
 		"@vue/compiler-core": "3.5.41",
-		"@vune-ui/compiler": "0.1.20",
-		"@vune-ui/vite": "0.1.20",
+		"@vune-ui/compiler": "link:../modules/Vune/packages/compiler",
+		"@vune-ui/vite": "link:../modules/Vune/packages/vite",
 		"astring": "1.9.0",
 		"chromatic": "18.1.0",
 		"eslint-plugin-import": "2.32.0",

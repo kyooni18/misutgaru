@@ -2,7 +2,7 @@
 /* @misutgaru-vune-native */
 import { Box, Text } from 'vune-ui';
 import { i18n } from '@/i18n.js';
-import { nativeElement } from '@/vune/native.js';
+import { anchorElement } from '@/vune/native.js';
 import VuneIcon from '@/vune/Icon.vune';
 
 type RevealAction = () => void | Promise<void>;
@@ -47,7 +47,7 @@ export struct MkMediaBanner: View {
 					.className(sensitiveClass)
 					.withProps({ onClick: () => onReveal() })
 			} else {
-				nativeElement('a', { className: downloadClass, href: mediaUrl, title: mediaName, download: mediaName },
+				anchorElement({ className: downloadClass, href: mediaUrl, title: mediaName, download: mediaName },
 					VuneIcon('ti ti-download').fontSize('1.6em'),
 					Text(mediaName).bold(),
 				)

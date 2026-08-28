@@ -27,8 +27,9 @@ const localFrontendPackages = [
 ];
 
 /**
- * Link the frontend to the checked-out Vune/o0o0o packages instead of the
- * published package copies installed by the root workspace.
+ * Reassert the package.json local Vune/o0o0o links after rebuilding the
+ * framework. This keeps dev startup deterministic even if an older install
+ * left published-package symlinks behind.
  */
 function linkLocalFrontendPackages() {
 	const nodeModulesDir = resolve(projectRoot, 'packages/frontend/node_modules');
@@ -226,8 +227,8 @@ try {
 	});
 
 	// Build the checked-out motion runtime before the frontend starts. The
-	// frontend package.json intentionally keeps published versions for Docker,
-	// so development links are installed after the local packages are built.
+	// frontend package.json already points at local Vune/o0o0o packages; the
+	// explicit link refresh below only repairs stale installs from older trees.
 	await runChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/o0o0o'), 'run', 'build:wasm'], {
 		cwd: projectRoot,
 		stdout: process.stdout,

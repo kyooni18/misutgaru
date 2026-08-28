@@ -59,6 +59,7 @@ import { SignupService } from './SignupService.js';
 import { WebAuthnService } from './WebAuthnService.js';
 import { UserBlockingService } from './UserBlockingService.js';
 import { CacheService } from './CacheService.js';
+import { CacheInvalidationService } from './CacheInvalidationService.js';
 import { UserService } from './UserService.js';
 import { UserFollowingService } from './UserFollowingService.js';
 import { UserKeypairService } from './UserKeypairService.js';
@@ -358,6 +359,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		SignupService,
 		WebAuthnService,
 		UserBlockingService,
+		CacheInvalidationService,
 		CacheService,
 		UserService,
 		UserFollowingService,
@@ -661,6 +663,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		SignupService,
 		WebAuthnService,
 		UserBlockingService,
+		CacheInvalidationService,
 		CacheService,
 		UserService,
 		UserFollowingService,

@@ -4,7 +4,7 @@
  */
 
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
+import { EntityNotFoundError, In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { DriveFilesRepository, MiMeta } from '@/models/_.js';
 import type { Config } from '@/config.js';
@@ -15,6 +15,8 @@ import type { MiDriveFile } from '@/models/DriveFile.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
 import { deepClone } from '@/misc/clone.js';
 import { bindThis } from '@/decorators.js';
+import { BatchLoader } from '@/misc/loader.js';
+import { requestBatchContext } from '@/misc/request-batch-context.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IdService } from '@/core/IdService.js';
 import { uniqueByKey } from '@/misc/unique-by-key.js';
@@ -31,6 +33,16 @@ type PackOptions = {
 
 @Injectable()
 export class DriveFileEntityService {
+	private fileLoader = new BatchLoader<MiDriveFile['id'], MiDriveFile | null>(this.findFilesBatch, () => null, 'driveFile.entity');
+
+	private get fileLoaderForRequest(): BatchLoader<MiDriveFile['id'], MiDriveFile | null> {
+		return requestBatchContext.getOrCreate(
+			'DriveFileEntityService.fileLoader',
+			() => new BatchLoader<MiDriveFile['id'], MiDriveFile | null>(this.findFilesBatch, () => null, 'driveFile.entity', true),
+			this.fileLoader,
+		);
+	}
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -197,7 +209,8 @@ export class DriveFileEntityService {
 			self: false,
 		}, options);
 
-		const file = typeof src === 'object' ? src : await this.driveFilesRepository.findOneByOrFail({ id: src });
+		const file = typeof src === 'object' ? src : await this.fileLoaderForRequest.load(src);
+		if (file == null) throw new EntityNotFoundError('DriveFile', { id: typeof src === 'object' ? src.id : src });
 
 		return await awaitAll<Packed<'DriveFile'>>({
 			id: file.id,
@@ -235,7 +248,7 @@ export class DriveFileEntityService {
 			self: false,
 		}, options);
 
-		const file = typeof src === 'object' ? src : await this.driveFilesRepository.findOneBy({ id: src });
+		const file = typeof src === 'object' ? src : await this.fileLoaderForRequest.load(src);
 		if (file == null) return null;
 
 		return await awaitAll<Packed<'DriveFile'>>({
@@ -258,6 +271,14 @@ export class DriveFileEntityService {
 			userId: file.userId,
 			user: (opts.withUser && file.userId) ? hint?.packedUser ?? this.userEntityService.pack(file.userId) : null,
 		});
+	}
+
+	@bindThis
+	private async findFilesBatch(ids: readonly MiDriveFile['id'][]): Promise<ReadonlyMap<MiDriveFile['id'], MiDriveFile | null>> {
+		const rows = ids.length > 0 ? await this.driveFilesRepository.findBy({ id: In([...ids]) }) : [];
+		const result = new Map<MiDriveFile['id'], MiDriveFile | null>(ids.map(id => [id, null]));
+		for (const file of rows) result.set(file.id, file);
+		return result;
 	}
 
 	@bindThis

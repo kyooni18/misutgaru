@@ -13,6 +13,7 @@ import { getNoteSummary } from '@/misc/get-note-summary.js';
 import type { MiMeta, MiSwSubscription, SwSubscriptionsRepository } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 
 // Defined also packages/sw/types.ts#L13
@@ -131,6 +132,7 @@ export class PushNotificationService implements OnApplicationShutdown {
 		private swSubscriptionsRepository: SwSubscriptionsRepository,
 
 		loggerService: LoggerService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.logger = loggerService.getLogger('push');
 		this.subscriptionsCache = new RedisKVCache<MiSwSubscription[]>(this.redisClient, 'userSwSubscriptions', {
@@ -139,6 +141,7 @@ export class PushNotificationService implements OnApplicationShutdown {
 			fetcher: (key) => this.swSubscriptionsRepository.findBy({ userId: key }),
 			toRedisConverter: (value) => JSON.stringify(value),
 			fromRedisConverter: (value) => JSON.parse(value),
+			invalidationBus: this.cacheInvalidationService,
 		});
 	}
 

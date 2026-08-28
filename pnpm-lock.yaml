@@ -51,8 +51,8 @@ importers:
         specifier: npm:typescript@7.0.2
         version: typescript@7.0.2
       '@vune-ui/compiler':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: link:packages/modules/Vune/packages/compiler
+        version: link:packages/modules/Vune/packages/compiler
       cross-env:
         specifier: 10.1.0
         version: 10.1.0
@@ -164,8 +164,13 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.10)(@vitest/coverage-v8@4.1.10)(happy-dom@20.11.2(bufferutil@4.1.0)(utf-8-validate@6.0.6))(msw@2.15.0(@types/node@26.2.0)(typescript@6.0.2))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.48.0)(tsx@4.23.12))
 
+  packages/misutgaru-core: {}
+
   packages/backend:
     dependencies:
+      '@misutgaru/core':
+        specifier: workspace:*
+        version: link:../misutgaru-core
       '@aws-sdk/client-s3':
         specifier: 3.1107.0
         version: 3.1107.0
@@ -627,6 +632,9 @@ importers:
 
   packages/frontend:
     dependencies:
+      '@misutgaru/core':
+        specifier: workspace:*
+        version: link:../misutgaru-core
       '@analytics/google-analytics':
         specifier: 1.1.0
         version: 1.1.0
@@ -658,14 +666,14 @@ importers:
         specifier: 6.0.8
         version: 6.0.8(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.48.0)(tsx@4.23.12))(vue@3.5.41(typescript@6.0.3))
       '@vune-ui/core':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: link:../modules/Vune/packages/core
+        version: link:../modules/Vune/packages/core
       '@vune-ui/vue':
-        specifier: 0.1.20
-        version: 0.1.20(vue@3.5.41(typescript@6.0.3))
+        specifier: link:../modules/Vune/packages/vue
+        version: link:../modules/Vune/packages/vue(vue@3.5.41(typescript@6.0.3))
       '@vune-ui/web':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: link:../modules/Vune/packages/web
+        version: link:../modules/Vune/packages/web
       aiscript-vscode:
         specifier: github:aiscript-dev/aiscript-vscode#v0.1.16
         version: https://codeload.github.com/aiscript-dev/aiscript-vscode/tar.gz/1dc7f60cda78d030dadfc518a33c472202b2ef67
@@ -914,11 +922,11 @@ importers:
         specifier: 3.5.41
         version: 3.5.41
       '@vune-ui/compiler':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: link:../modules/Vune/packages/compiler
+        version: link:../modules/Vune/packages/compiler
       '@vune-ui/vite':
-        specifier: 0.1.20
-        version: 0.1.20
+        specifier: link:../modules/Vune/packages/vite
+        version: link:../modules/Vune/packages/vite
       astring:
         specifier: 1.9.0
         version: 1.9.0

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../packages/frontend/src/', import.meta.url));
 const nativeMarker = '@misutgaru-vune-native';
+const compatMarker = '@misutgaru-vune-compat';
 
 async function walk(dir) {
 	const entries = await readdir(dir, { withFileTypes: true });
@@ -22,6 +23,7 @@ const vueFiles = files.filter(file => extname(file) === '.vue');
 const vuneFiles = files.filter(file => /\.vune(?:\.[cm]?[jt]sx?)?$/.test(file));
 const wrappers = [];
 const nativeFiles = [];
+const compatFiles = [];
 const featureCounts = new Map();
 let swiftSyntaxFiles = 0;
 let vueComponentFallbacks = 0;
@@ -37,16 +39,20 @@ let forEachFiles = 0;
 
 for (const file of vueFiles) {
 	const source = await readFile(file, 'utf8');
-	if (/\.vune['"]/.test(source)) wrappers.push(file);
+	const isWrapper = /\.vune['"]/.test(source);
+	if (isWrapper) wrappers.push(file);
 	for (const feature of ['v-if', 'v-for', '<Transition', '<Teleport', '<slot', 'v-model', 'ref=', ':is=', '<component']) {
-		if (source.includes(feature)) featureCounts.set(feature, (featureCounts.get(feature) ?? 0) + 1);
+		const count = source.split(feature).length - 1;
+		if (count > 0) featureCounts.set(feature, (featureCounts.get(feature) ?? 0) + 1);
 	}
 }
 
 for (const file of vuneFiles) {
 	const source = await readFile(file, 'utf8');
 	const isNative = source.includes(nativeMarker);
+	const isCompat = source.includes(compatMarker);
 	if (isNative) nativeFiles.push(file);
+	if (isCompat) compatFiles.push(file);
 	if (/\b(?:VStack|HStack|ZStack|Group|Grid|LazyVStack|ForEach)\s*\([^)]*\)\s*\{/.test(source)) swiftSyntaxFiles += 1;
 	const vueComponents = (source.match(/\bVueComponent\s*\(/g) ?? []).length;
 	const vueSlots = (source.match(/\bVueSlot\s*\(/g) ?? []).length;
@@ -68,6 +74,7 @@ for (const file of vuneFiles) {
 console.log(`Vue SFC compatibility surface: ${vueFiles.length}`);
 console.log(`Vune source components:         ${vuneFiles.length}`);
 console.log(`Native Vune components:         ${nativeFiles.length}`);
+console.log(`Explicit compatibility shells:  ${compatFiles.length}`);
 console.log(`Legacy Vue placement shells:    ${wrappers.length}`);
 console.log(`SwiftUI-syntax Vune files:      ${swiftSyntaxFiles}`);
 console.log(`Vune files using ForEach:       ${forEachFiles}`);
@@ -82,6 +89,9 @@ console.log(`Native const declarations:      ${nativeConstDeclarations}`);
 console.log(`Native .vue dependencies:       ${nativeVueFileDependencies}`);
 console.log(`Native share of Vune sources:   ${((nativeFiles.length / Math.max(1, vuneFiles.length)) * 100).toFixed(1)}%`);
 console.log(`Legacy-shell coverage:          ${((wrappers.length / Math.max(1, vueFiles.length)) * 100).toFixed(1)}%`);
+console.log('');
+console.log('Compatibility Vune:');
+for (const file of compatFiles.sort()) console.log(`  ${relative(root, file)}`);
 console.log('');
 console.log('Native Vune:');
 for (const file of nativeFiles.sort()) console.log(`  ${relative(root, file)}`);

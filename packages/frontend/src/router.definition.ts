@@ -495,6 +495,10 @@ export const ROUTE_DEF = [{
 		name: 'performance',
 		component: page(() => import('@/pages/admin/performance.vue')),
 	}, {
+		path: '/runtime-diagnostics',
+		name: 'runtime-diagnostics',
+		component: page(() => import('@/pages/admin/runtime-diagnostics.vue')),
+	}, {
 		path: '/invites',
 		name: 'invites',
 		component: page(() => import('@/pages/admin/invites.vue')),

@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
 import _Ajv from 'ajv';
 import { ModuleRef } from '@nestjs/core';
-import { In } from 'typeorm';
+import { EntityNotFoundError, In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import type { Packed } from '@/misc/json-schema.js';
@@ -42,6 +42,8 @@ import type {
 	UsersRepository,
 } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
+import { BatchLoader } from '@/misc/loader.js';
+import { requestBatchContext } from '@/misc/request-batch-context.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
@@ -97,6 +99,15 @@ export class UserEntityService implements OnModuleInit {
 	private idService: IdService;
 	private avatarDecorationService: AvatarDecorationService;
 	private chatService: ChatService;
+	private userLoader = new BatchLoader<MiUser['id'], MiUser>(this.findUsersBatch, id => new EntityNotFoundError('User', { id }), 'user.entity');
+
+	private get userLoaderForRequest(): BatchLoader<MiUser['id'], MiUser> {
+		return requestBatchContext.getOrCreate(
+			'UserEntityService.userLoader',
+			() => new BatchLoader<MiUser['id'], MiUser>(this.findUsersBatch, id => new EntityNotFoundError('User', { id }), 'user.entity', true),
+			this.userLoader,
+		);
+	}
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -437,7 +448,7 @@ export class UserEntityService implements OnModuleInit {
 			includeSecrets: false,
 		}, options);
 
-		const user = typeof src === 'object' ? src : await this.usersRepository.findOneByOrFail({ id: src });
+		const user = typeof src === 'object' ? src : await this.userLoaderForRequest.load(src);
 
 		const isDetailed = opts.schema !== 'UserLite';
 		const meId = me ? me.id : null;
@@ -694,6 +705,12 @@ export class UserEntityService implements OnModuleInit {
 		} as Promiseable<Packed<S>>;
 
 		return await awaitAll(packed);
+	}
+
+	@bindThis
+	private async findUsersBatch(ids: readonly MiUser['id'][]): Promise<ReadonlyMap<MiUser['id'], MiUser>> {
+		const rows = ids.length > 0 ? await this.usersRepository.findBy({ id: In([...ids]) }) : [];
+		return new Map(rows.map(user => [user.id, user]));
 	}
 
 	public async packMany<S extends 'MeDetailed' | 'UserDetailedNotMe' | 'UserDetailed' | 'UserLite' = 'UserLite'>(

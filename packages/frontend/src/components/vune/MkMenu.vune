@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Divider, Element, ForEach, Group, HStack, NavigationLink, ScrollView, Text, VStack, type ViewGraphValue } from 'vune-ui';
+import { Divider, ForEach, Group, HStack, NavigationLink, ScrollView, Text, VStack, type ViewGraphValue } from 'vune-ui';
 import MkEllipsis from './MkEllipsis.vune';
 import MkSwitchButton from './MkSwitchButton.vune';
 import VuneIcon from '@/vune/Icon.vune';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
+import { buttonElement } from '@/vune/native.js';
 import type { NativeMenuModel, NativeMenuRow } from './MkMenu.types.js';
 import './MkMenu.vune.scss';
 
@@ -94,9 +95,9 @@ function menuNavigationRow(row: NativeMenuRow): ViewGraphValue {
 }
 
 function menuButtonRow(row: NativeMenuRow): ViewGraphValue {
-	return Element('button', {
+	return buttonElement({
 		type: 'button',
-		// Raw Element props only accept a string className. Passing the array
+		// Native host props currently accept a string className. Passing the array
 		// directly is discarded while Vune snapshots native HTML attributes,
 		// which leaves the browser's default button styling in the menu.
 		className: itemClasses(row).join(' '),

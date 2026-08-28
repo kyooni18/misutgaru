@@ -12,7 +12,8 @@ import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser, MiNote, MiNoteDraft } from '@/models/_.js';
 import type { NoteDraftsRepository, ChannelsRepository, NotesRepository } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
-import { DebounceLoader } from '@/misc/loader.js';
+import { BatchLoader } from '@/misc/loader.js';
+import { requestBatchContext } from '@/misc/request-batch-context.js';
 import { IdService } from '@/core/IdService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { UserEntityService } from './UserEntityService.js';
@@ -25,7 +26,23 @@ export class NoteDraftEntityService implements OnModuleInit {
 	private driveFileEntityService: DriveFileEntityService;
 	private idService: IdService;
 	private noteEntityService: NoteEntityService;
-	private noteDraftLoader = new DebounceLoader(this.findNoteDraftOrFail);
+	private noteDraftLoader = new BatchLoader<string, MiNoteDraft>(this.findNoteDraftsBatch, id => new EntityNotFoundError('NoteDraft', { id }), 'noteDraft.entity');
+	private channelLoader = new BatchLoader<string, Awaited<ReturnType<ChannelsRepository['findOneBy']>>>(this.findChannelsBatch, () => null, 'noteDraft.channel');
+	private get noteDraftLoaderForRequest(): BatchLoader<string, MiNoteDraft> {
+		return requestBatchContext.getOrCreate(
+			'NoteDraftEntityService.noteDraftLoader',
+			() => new BatchLoader<string, MiNoteDraft>(this.findNoteDraftsBatch, id => new EntityNotFoundError('NoteDraft', { id }), 'noteDraft.entity', true),
+			this.noteDraftLoader,
+		);
+	}
+
+	private get channelLoaderForRequest(): BatchLoader<string, Awaited<ReturnType<ChannelsRepository['findOneBy']>>> {
+		return requestBatchContext.getOrCreate(
+			'NoteDraftEntityService.channelLoader',
+			() => new BatchLoader<string, Awaited<ReturnType<ChannelsRepository['findOneBy']>>>(this.findChannelsBatch, () => null, 'noteDraft.channel', true),
+			this.channelLoader,
+		);
+	}
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -84,14 +101,14 @@ export class NoteDraftEntityService implements OnModuleInit {
 			detail: true,
 		}, options);
 
-		const noteDraft = typeof src === 'object' ? src : await this.noteDraftLoader.load(src);
+		const noteDraft = typeof src === 'object' ? src : await this.noteDraftLoaderForRequest.load(src);
 
 		const text = noteDraft.text;
 
 		const channel = noteDraft.channelId
 			? noteDraft.channel ?? (options?._hint_?.channels?.has(noteDraft.channelId)
 				? options._hint_.channels.get(noteDraft.channelId) ?? null
-				: await this.channelsRepository.findOneBy({ id: noteDraft.channelId }))
+				: await this.channelLoaderForRequest.load(noteDraft.channelId))
 			: null;
 
 		const packedFiles = options?._hint_?.packedFiles;
@@ -223,12 +240,21 @@ export class NoteDraftEntityService implements OnModuleInit {
 	}
 
 	@bindThis
-	private findNoteDraftOrFail(id: string): Promise<MiNoteDraft> {
-		return this.noteDraftsRepository.findOneOrFail({
-			where: { id },
+	private async findChannelsBatch(ids: readonly string[]): Promise<ReadonlyMap<string, Awaited<ReturnType<ChannelsRepository['findOneBy']>>>> {
+		const rows = ids.length > 0 ? await this.channelsRepository.findBy({ id: In([...ids]) }) : [];
+		const result = new Map<string, Awaited<ReturnType<ChannelsRepository['findOneBy']>>>(ids.map(id => [id, null]));
+		for (const row of rows) result.set(row.id, row);
+		return result;
+	}
+
+	@bindThis
+	private async findNoteDraftsBatch(ids: readonly string[]): Promise<ReadonlyMap<string, MiNoteDraft>> {
+		const drafts = await this.noteDraftsRepository.find({
+			where: { id: In([...ids]) },
 			relations: {
 				user: true,
 			},
 		});
+		return new Map(drafts.map(draft => [draft.id, draft]));
 	}
 }

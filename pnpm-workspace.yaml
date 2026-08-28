@@ -1,4 +1,8 @@
+# Vune is a nested pnpm workspace with its own lockfile. It is built through
+# scripts/build-local-modules.mjs so its internal workspace packages do not
+# leak into Misskey's outer dependency graph. o0o0o remains a direct local link.
 packages:
+  - packages/misutgaru-core
   - packages/backend
   - packages/frontend-shared
   - packages/frontend

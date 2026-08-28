@@ -229,6 +229,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.performance,
 		to: '/admin/performance',
 		active: currentPage.value?.route.name === 'performance',
+	}, {
+		icon: 'ti ti-activity-heartbeat',
+		text: 'Runtime diagnostics',
+		to: '/admin/runtime-diagnostics',
+		active: currentPage.value?.route.name === 'runtime-diagnostics',
 	}],
 }, {
 	title: i18n.ts.info,

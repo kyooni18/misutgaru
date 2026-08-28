@@ -156,7 +156,10 @@ export function getConfig(): UserConfig {
 		},
 
 		plugins: [
-			vunePlugin({ include: /\.vune(?:\.[cm]?[jt]sx?)?$/ }),
+			vunePlugin({
+				include: /\.vune(?:\.[cm]?[jt]sx?)?$/,
+				vueHost: { factoryImport: '@/vune/compat-vue.js' },
+			}),
 			vuneTypeScriptPlugin(),
 			pluginWatchLocales(),
 			...searchIndexes.map(options => pluginCreateSearchIndex(options)),

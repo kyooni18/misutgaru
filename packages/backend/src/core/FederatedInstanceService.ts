@@ -8,6 +8,7 @@ import * as Redis from 'ioredis';
 import type { InstancesRepository } from '@/models/_.js';
 import type { MiInstance } from '@/models/Instance.js';
 import { MemoryKVCache, RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { IdService } from '@/core/IdService.js';
 import { DI } from '@/di-symbols.js';
 import { UtilityService } from '@/core/UtilityService.js';
@@ -27,6 +28,7 @@ export class FederatedInstanceService implements OnApplicationShutdown {
 
 		private utilityService: UtilityService,
 		private idService: IdService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.federatedInstanceCache = new RedisKVCache<MiInstance | null>(this.redisClient, 'federatedInstance', {
 			lifetime: 1000 * 60 * 30, // 30m
@@ -44,6 +46,7 @@ export class FederatedInstanceService implements OnApplicationShutdown {
 					notRespondingSince: parsed.notRespondingSince ? new Date(parsed.notRespondingSince) : null,
 				};
 			},
+			invalidationBus: this.cacheInvalidationService,
 		});
 	}
 
@@ -53,8 +56,7 @@ export class FederatedInstanceService implements OnApplicationShutdown {
 		const pending = this.pendingFetchOrRegister.get(host);
 		if (pending) return pending;
 
-		let operation!: Promise<MiInstance>;
-		operation = (async () => {
+		const operation = (async () => {
 			const cached = await this.federatedInstanceCache.get(host);
 			if (cached) return cached;
 

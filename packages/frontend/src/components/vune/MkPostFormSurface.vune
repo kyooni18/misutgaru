@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
+/* @misutgaru-vune-compat */
 import { VStack } from 'vune-ui';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
 import { Material } from '@/vune/material.js';

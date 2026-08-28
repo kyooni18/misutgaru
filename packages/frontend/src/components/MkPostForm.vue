@@ -72,7 +72,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
 	</MkInfo>
 	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
-	<div v-show="useCw" :class="$style.cwOuter">
+	<!-- eslint-disable vue/html-indent -->
+	<div
+		:class="$style.cwOuter"
+		:style="{
+			maxHeight: useCw ? '80px' : '0px',
+			opacity: useCw ? 1 : 0,
+			transform: useCw ? 'none' : 'translateY(-6px)',
+			pointerEvents: useCw ? 'auto' : 'none',
+		}"
+		:aria-hidden="!useCw"
+	>
 		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
 		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
 	</div>
@@ -81,7 +91,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
-	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
+	<Transition
+		:enterActiveClass="$style.optionalSectionActive"
+		:leaveActiveClass="$style.optionalSectionActive"
+		:enterFromClass="$style.optionalSectionHidden"
+		:leaveToClass="$style.optionalSectionHidden"
+	>
+		<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
+	</Transition>
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
 		<MkTip k="postFormUploader">
@@ -89,8 +106,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkTip>
 		<MkUploaderItems :items="uploader.items.value" @showMenu="(item, ev) => showPerUploadItemMenu(item, ev)" @showMenuViaContextmenu="(item, ev) => showPerUploadItemMenuViaContextmenu(item, ev)"/>
 	</div>
-	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
-	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
+	<Transition
+		:enterActiveClass="$style.optionalSectionActive"
+		:leaveActiveClass="$style.optionalSectionActive"
+		:enterFromClass="$style.optionalSectionHidden"
+		:leaveToClass="$style.optionalSectionHidden"
+	>
+		<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
+	</Transition>
+	<Transition
+		:enterActiveClass="$style.optionalSectionActive"
+		:leaveActiveClass="$style.optionalSectionActive"
+		:enterFromClass="$style.optionalSectionHidden"
+		:leaveToClass="$style.optionalSectionHidden"
+	>
+		<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
+	</Transition>
+	<!-- eslint-enable vue/html-indent -->
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
 	<footer ref="footerEl" :class="$style.footer">
@@ -218,6 +250,7 @@ const scheduledAt = ref<number | null>(null);
 const draghover = ref(false);
 const quoteId = ref<string | null>(null);
 const hasNotSpecifiedMentions = ref(false);
+
 function readRecentHashtags(): string[] {
 	try {
 		const raw = miLocalStorage.getItem('hashtags');
@@ -1787,6 +1820,34 @@ html[data-color-scheme=light] .preview {
 .cwOuter {
 	width: 100%;
 	position: relative;
+	max-height: 80px;
+	overflow: hidden;
+	transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+	opacity: 1 !important;
+	transform: none !important;
+}
+
+.cwOuter[aria-hidden='true'] {
+	max-height: 0 !important;
+	opacity: 0 !important;
+	transform: translateY(-6px) !important;
+}
+
+.optionalSectionActive {
+	transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.optionalSectionHidden {
+	max-height: 0;
+	opacity: 0;
+	transform: translateY(-6px);
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.optionalSectionActive {
+		transition: none;
+	}
 }
 
 .cw {

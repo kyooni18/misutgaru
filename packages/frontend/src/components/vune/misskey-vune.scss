@@ -544,7 +544,7 @@
 	position: absolute;
 	box-sizing: border-box;
 	inset-block-start: var(--inset);
-	left: var(--inset);
+	left: var(--inset) !important;
 	width: calc(var(--height) - (var(--inset) * 2));
 	height: calc(var(--height) - (var(--inset) * 2));
 	border-radius: 999px;
@@ -553,6 +553,20 @@
 		0 1px 2px color-mix(in srgb, var(--MI_THEME-fg) 24%, transparent),
 		inset 0 1px 0 color-mix(in srgb, var(--MI_THEME-panel) 65%, transparent);
 	transition: none;
+}
+
+.mk-vune-switch-button--checked > span {
+	left: calc(100% - var(--height) + var(--inset)) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.mk-vune-switch-button--animated {
+		transition: background-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.mk-vune-switch-button--animated > span {
+		transition: left 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+	}
 }
 
 @keyframes mk-vune-system-icon-draw {

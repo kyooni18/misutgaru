@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { nativeElement } from '@/vune/native.js';
+import { htmlElement, svgElement } from '@/vune/native.js';
 import bytes from '@/filters/bytes.js';
 
 type Props = {
@@ -29,11 +29,11 @@ function graph(
 	label: string,
 	recent: number,
 ) {
-	return nativeElement('svg', {},
-		nativeElement('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
-		nativeElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
-		nativeElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
-		nativeElement('text', {}, `${label} `, nativeElement('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
+	return svgElement('svg', {},
+		svgElement('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
+		svgElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
+		svgElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
+		svgElement('text', {}, `${label} `, svgElement('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
 	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
 }
 
@@ -80,7 +80,7 @@ export struct Net: View {
 	}
 
 	var body: some View {
-		nativeElement('div', { className: 'oxxrhrto' },
+		htmlElement('div', { className: 'oxxrhrto' },
 			graph(viewBoxX, viewBoxY, inPolygonPoints, inPolylinePoints, inHeadX, inHeadY, '#94a029', 'NET rx', inRecent),
 			graph(viewBoxX, viewBoxY, outPolygonPoints, outPolylinePoints, outHeadX, outHeadY, '#ff9156', 'NET tx', outRecent),
 		)

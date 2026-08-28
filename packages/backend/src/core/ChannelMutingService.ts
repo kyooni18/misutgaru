@@ -13,6 +13,7 @@ import { GlobalEvents, GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
 import { RedisKVCache } from '@/misc/cache.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 
 @Injectable()
 export class ChannelMutingService {
@@ -29,6 +30,7 @@ export class ChannelMutingService {
 		private channelMutingRepository: ChannelMutingRepository,
 		private idService: IdService,
 		private globalEventService: GlobalEventService,
+		private cacheInvalidationService: CacheInvalidationService,
 	) {
 		this.mutingChannelsCache = new RedisKVCache<Set<string>>(this.redisClient, 'channelMutingChannels', {
 			lifetime: 1000 * 60 * 30, // 30m
@@ -39,6 +41,7 @@ export class ChannelMutingService {
 			}).then(xs => new Set(xs.map(x => x.channelId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+			invalidationBus: this.cacheInvalidationService,
 		});
 
 		this.redisForSub.on('message', this.onMessage);

@@ -1,70 +1,60 @@
 # Source map
 
-This is the human-oriented map of the fork. For exhaustive per-file indexing, use `scripts/generate-source-inventory.mjs`.
+Use this file for architectural navigation and `docs/source-map/INVENTORY.md` for an exhaustive path-by-path index.
 
-## Repository areas
-
-| Path | What it does |
+| Path | Responsibility |
 | --- | --- |
-| `packages/frontend` | main browser UI, Vue/Vune migration, pages, components, widgets, motion and Material integration |
-| `packages/backend` | API, federation, queues, entity packing, storage, cache, runtime and server behavior |
-| `packages/sw` | service worker and Web Push behavior |
-| `packages/misskey-js` | generated and handwritten JavaScript client SDK/types |
-| `packages/frontend-shared` | frontend code shared across browser-facing packages |
-| `packages/frontend-embed` | embedded-note and embed UI |
-| `packages/frontend-builder` | frontend build pipeline |
-| `packages/shared` | cross-package shared utilities/types |
-| `packages/i18n` | localization build/runtime code |
-| `packages/modules/Vune` | Vune submodule; may be empty in extracted archives |
-| `packages/modules/o0o0o` | motion/runtime submodule; may be empty in extracted archives |
-| `scripts` | repository validation, reporting, build and maintenance tools |
-| `docs/archive` | historical snapshots only, not current truth |
+| `packages/frontend` | Vue/Vune browser application and migration shells |
+| `packages/backend` | API, federation, queues, caches, entity packing, storage and runtime |
+| `packages/misutgaru-core` | fork-owned contracts/helpers that should not live in upstream-shaped implementation files |
+| `packages/sw` | service worker and Web Push lifecycle |
+| `packages/modules/Vune` | checked-out Vune framework/compiler/web renderer source |
+| `packages/modules/o0o0o` | shared motion engine and DOM property ownership source |
+| `scripts` | repository checks, local module build, source inventory, upstream delta and regression benchmark |
 
-## Frontend files that matter first
+## Vune/compiler/runtime
 
-| File or area | Responsibility |
+| File | Responsibility |
 | --- | --- |
-| `packages/frontend/vite.config.ts` | frontend build pipeline and Vune/Vue plugin order |
-| `packages/frontend/src/vune/native.ts` | native Vune web primitives |
-| `packages/frontend/src/vune/compat-vue.ts` | Vue placement bridge |
-| `packages/frontend/src/vune/vue.ts` | legacy Vue compatibility path |
-| `packages/frontend/src/vune/motion.ts` | shared migrated animation adapter |
-| `packages/frontend/src/components/MkLoading.vue` and `.vune` peer | representative Vue shell to Vune-rendered leaf migration |
-| `packages/frontend/src/components/MkWindow.vue` | window lifecycle and motion integration |
-| `packages/frontend/src/components/MkModal.vue` | modal lifecycle and migrated animation behavior |
-| `packages/frontend/src/components/MkThreadWindow.vue` | fork-specific resizable thread window |
-| `packages/frontend/src/components/MkNote.vue` | note interactions, thread-window entry, translated image rendering |
-| `packages/frontend/src/components/MkNoteDetailed.vue` | detailed note/thread loading and translated image output |
+| `packages/modules/Vune/packages/compiler/src/pipeline.ts` | Vune lowering and compiler-emitted legacy-host metadata |
+| `packages/modules/Vune/packages/compiler/src/vue-host.ts` | typed transitional Vue host code generation |
+| `packages/modules/Vune/packages/core/src/web-primitives.ts` | graph-first browser primitives |
+| `packages/modules/Vune/packages/web/src/dom.ts` | DOM reconciliation, fine-grained State boundary scheduling and DevTools recording |
+| `packages/modules/Vune/packages/web/src/devtools.ts` | optional boundary profiling store |
+| `packages/modules/Vune/packages/web/src/focus.ts` | focus-scope DOM behavior |
+| `packages/modules/Vune/packages/web/src/motion.ts` | Vune web motion and layout FLIP integration |
+| `packages/frontend/src/vune/compat-vue.ts` | transitional Vue placement host consuming compiler plans |
+| `packages/frontend/src/vune/devtools-overlay.ts` | development-only in-app Vune profiler panel |
 
-## Backend files that matter first
+## Fork package
 
-| File or area | Responsibility |
+| File | Responsibility |
 | --- | --- |
-| `packages/backend/src/boot/common.ts` | constructs server, queue, or combined app contexts |
-| `packages/backend/src/boot/master.ts` | selects runtime mode and owns process lifecycle |
-| `packages/backend/src/core/QueueModule.ts` | BullMQ producer queues and shared Redis wiring |
-| `packages/backend/src/queue/QueueProcessorService.ts` | worker construction and worker-side connection ownership |
-| `packages/backend/src/misc/cache.ts` | generic cache and in-flight miss coalescing behavior |
-| `packages/backend/src/misc/block-io.ts` | shared block-size policy for hot-path file I/O |
+| `packages/misutgaru-core/src/translation.ts` | provider-neutral translation prompt/input/result contracts and parsing |
+| `packages/misutgaru-core/src/thread.ts` | shared thread-window defaults |
+
+## Backend hot paths
+
+| File | Responsibility |
+| --- | --- |
+| `packages/backend/src/misc/cache.ts` | memory/Redis caches, generation guards and invalidation-bus hooks |
+| `packages/backend/src/core/CacheInvalidationService.ts` | Redis pub/sub fan-out for cross-process cache invalidation |
+| `packages/backend/src/misc/loader.ts` | DebounceLoader and same-turn BatchLoader |
+| `packages/backend/src/core/entities/NoteEntityService.ts` | note serialization and batched note lookup |
+| `packages/backend/src/core/entities/NoteDraftEntityService.ts` | draft serialization and batched draft lookup |
+| `packages/backend/src/core/OpenAiTranslationService.ts` | provider transport using `@misutgaru/core` contracts |
+| `packages/backend/src/misc/block-io.ts` | shared hot-path block-size policy |
 | `packages/backend/src/misc/FileWriterStream.ts` | buffered/vector file writes |
-| `packages/backend/src/misc/BufferedTextFileWriter.ts` | text writer used by exporters |
-| `packages/backend/src/daemons/ServerStatsService.ts` | demand-sensitive server statistics |
-| `packages/backend/src/daemons/QueueStatsService.ts` | demand-sensitive queue statistics |
-| `packages/backend/src/core/entities` | API entity serialization and new batch-packing work |
-| translation service/API path | OpenAI-compatible translation, image context, DeepL fallback |
 
-## Per-file inventory
+## Regression and maintenance
 
-Run:
+| File | Responsibility |
+| --- | --- |
+| `packages/frontend/test/e2e/performance.spec.ts` | browser runaway-performance guard |
+| `scripts/benchmark-regressions.mjs` | deterministic DOM/motion work and property-ownership regression |
+| `scripts/check-repository-integrity.mjs` | merge markers, package alignment, Docker contract and inventory checks |
+| `scripts/generate-source-inventory.mjs` | exhaustive source index generation |
+| `scripts/upstream-delta.mjs` | whole-tree comparison with the recorded Misskey upstream base |
+| `UPSTREAM_BASE.json` | upstream reference metadata |
 
-```sh
-node scripts/generate-source-inventory.mjs
-```
-
-If an upstream Misskey checkout is available:
-
-```sh
-node scripts/generate-source-inventory.mjs --upstream /path/to/misskey
-```
-
-The generated table records path, area, upstream delta classification, and a short purpose description for every indexed source/config file.
+Regenerate the inventory with `node scripts/generate-source-inventory.mjs --upstream /path/to/misskey` after adding, moving, or removing implementation files.

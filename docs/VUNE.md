@@ -1,29 +1,53 @@
-# Vune migration
+# Vune integration and migration rules
 
-## Current model
+Misutgaru is intentionally hybrid while Vue ownership is removed subtree by subtree. A `.vune` extension alone does not prove that a source is native.
 
-Misutgaru is not fully Vune-native. Vue and Vune coexist.
+## Native and compatibility markers
 
-A `.vune` file may be either a native Vune view or a compatibility renderer hosted by Vue. Use the native marker and boundary check, not file extension alone, when deciding whether Vue dependencies are allowed.
+`@misutgaru-vune-native` means the View must pass the native boundary checker. Native sources cannot depend on Vue components/slots, `.vue` files, raw `Element`, unrestricted host creation, or legacy bridge factories.
 
-## Boundaries
+`@misutgaru-vune-compat` marks a Vune source that intentionally still crosses the Vue boundary. The current compatibility set is `MkEmojiPicker.vune` and `MkPostFormSurface.vune`.
 
-- `packages/frontend/src/vune/native.ts` owns native web semantics.
-- `packages/frontend/src/vune/compat-vue.ts` is the placement bridge while Vue owns surrounding state/lifecycle.
-- `packages/frontend/src/vune/vue.ts` is legacy compatibility debt.
-- `packages/frontend/src/vune/motion.ts` is the shared migrated motion path.
+Current report: 233 Vune sources, 65 native Views, 2 explicit compatibility sources, 227 Vue placement shells.
 
-Native parents should import native child Views directly whenever possible. Do not hide a Vue component, raw DOM `Element`, `.vue` dependency, or old compatibility factory behind `@misutgaru-vune-native`.
+## Typed Vue placement bridge
 
-## Migration order
+The compatibility host remains a migration mechanism, not a target architecture.
 
-Prefer low-state leaves first, then complete self-contained subtrees. Keep Vue ownership for behavior that Vune cannot yet match cleanly, especially teleport, directives, focus semantics, complex slots, transitions, and lifecycle-heavy components.
+Authored Vune initializer metadata is lowered by the compiler into a small legacy-host plan containing parameter names, labels, kinds, required state, and primitive coercion. `compat-vue.ts` consumes that plan once when a Vue host is created. This removes repeated runtime type-string interpretation from normal authored Vune components.
 
-## Validation
+`@vune-ui/compiler` also exposes `generateVueHostModule` to emit a typed transitional Vue host from the Vune semantic model. With `vueHost.factoryImport` configured in the Vite plugin, `.vune?vue-host` imports generate a pure-JS runtime host automatically. Physical `generateVueHostModule` output keeps `$props` typing, while the query form avoids TypeScript-only syntax under a custom Vite module ID. Both forms and runtime metadata use the same initializer source of truth; aliases and unusual initializer selection can still use the explicit generator/compatibility API.
+
+## Renderer invalidation
+
+State reads are collected per View boundary. A changed State schedules that boundary when it is locally safe, or escalates to the smallest safe root pass when geometry/lazy/empty-output constraints require it. Multiple dirty boundaries in the same turn share one microtask flush and parents are processed first.
+
+This behavior is more important than merely increasing the number of `.vune` files: a native View should have narrow invalidation, stable identity, and direct child View composition.
+
+## Native browser primitives
+
+Prefer framework primitives over Misutgaru-specific host escapes. Current Vune web-facing coverage includes ordinary controls plus text editing, file input, content-editable text, canvas, media, SVG/path, focus scope, and popover primitives.
+
+The remaining low-level Misutgaru native bridge uses closed HTML/SVG tag sets and dedicated interactive helpers. Do not reintroduce a generic string-tag escape hatch into native feature Views.
+
+## Motion and automatic layout animation
+
+Vune motion preserves independent CSS property ownership through o0o0o. Layout FLIP uses separate translate/scale channels so intrinsic size/position animation does not cancel a simultaneous transform animation.
+
+Animations must preserve reduced-motion behavior, cancellation, retargeting, repeat/autoreverse semantics, and exact final values. Keep layout animation automatic at the renderer boundary rather than adding per-component FLIP code.
+
+## DevTools
+
+Development builds can enable the Vune overlay with `?vune-devtools=1` or Ctrl/Command + Shift + V. It shows the most expensive active boundaries with render count, average/max duration, dependency count, node count, and update mode.
+
+The recorder short-circuits while disabled so production/default development behavior does not accumulate profiling state.
+
+## Checks
 
 ```sh
 pnpm vune:report
 node scripts/check-vune-native.mjs packages/frontend/src
+pnpm verify:modules
 ```
 
-At the 2026-08-27 checkpoint the report found about 233 `.vune` files and 67 native-marked files. The native boundary check still had 20 violations across three files, so archived claims of a fully clean native boundary are no longer current.
+The report intentionally measures migration facts and remaining Vue features. It does not assign migration-priority scores; component selection remains an engineering decision.
