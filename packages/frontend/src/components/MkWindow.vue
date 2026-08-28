@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<div v-if="showing" ref="rootEl" :class="[$style.root, { [$style.maximized]: maximized }]">
 		<div :class="$style.body" class="_shadow" @pointerdown="onBodyPointerDown" @keydown="onKeydown">
-			<div :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
+			<div ref="headerEl" :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
 				<span :class="$style.headerLeft">
 					<template v-if="!minimized">
 						<button v-for="button in buttonsLeft" v-tooltip="button.title" class="_button" :class="[$style.headerButton, { [$style.highlighted]: button.highlighted }]" @click="button.onClick"><i :class="button.icon"></i></button>
@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<button v-if="closeButton" v-tooltip="i18n.ts.close" class="_button" :class="$style.headerButton" @click="close()"><i class="ti ti-x"></i></button>
 				</span>
 			</div>
-			<div :class="$style.content">
+			<div ref="contentEl" :class="$style.content">
 				<slot></slot>
 			</div>
 		</div>
@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, provide, useTemplateRef, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, provide, useTemplateRef, ref } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import { elementContains } from '@/utility/element-contains.js';
 import * as os from '@/os.js';
@@ -146,6 +146,7 @@ function capturePointer(evt: PointerEvent) {
 const props = withDefaults(defineProps<{
 	initialWidth?: number | null;
 	initialHeight?: number | null;
+	autoHeight?: boolean;
 	canResize?: boolean;
 	closeButton?: boolean;
 	mini?: boolean;
@@ -156,6 +157,7 @@ const props = withDefaults(defineProps<{
 }>(), {
 	initialWidth: null,
 	initialHeight: null,
+	autoHeight: false,
 	canResize: false,
 	closeButton: true,
 	mini: false,
@@ -178,6 +180,8 @@ const INITIAL_WINDOW_HEIGHT_MIN = 500; // スクリーンの最小幅に合わ�
 provide('inWindow', true);
 
 const rootEl = useTemplateRef('rootEl');
+const headerEl = useTemplateRef<HTMLElement>('headerEl');
+const contentEl = useTemplateRef<HTMLElement>('contentEl');
 const showing = ref(true);
 let beforeClickedAt = 0;
 const maximized = ref(false);
@@ -186,6 +190,75 @@ let unResizedTop = '';
 let unResizedLeft = '';
 let unResizedWidth = '';
 let unResizedHeight = '';
+let autoHeightResizeObserver: ResizeObserver | undefined;
+let autoHeightMutationObserver: MutationObserver | undefined;
+let autoHeightFrame = 0;
+let autoHeightInitialized = false;
+
+function fitAutoHeight() {
+	if (!props.autoHeight || maximized.value || minimized.value) return;
+
+	const main = rootEl.value;
+	const header = headerEl.value;
+	const content = contentEl.value;
+	if (main == null || header == null || content == null) return;
+
+	const desiredHeight = Math.ceil(header.offsetHeight + content.scrollHeight);
+	const nextHeight = Math.min(Math.max(desiredHeight, minHeight), window.innerHeight);
+	const currentHeight = main.offsetHeight;
+
+	// The first pass uses the slot's natural height. Afterwards, only content
+	// growth (or a viewport becoming shorter) changes an automatically-sized
+	// window, so manual resizing remains useful.
+	if (!autoHeightInitialized || nextHeight > currentHeight + 1 || currentHeight > window.innerHeight) {
+		applyTransformHeight(nextHeight);
+		autoHeightInitialized = true;
+
+		const position = main.getBoundingClientRect();
+		if (position.top + nextHeight > window.innerHeight) {
+			main.style.top = Math.max(0, window.innerHeight - nextHeight) + 'px';
+		}
+	}
+}
+
+function scheduleAutoHeight() {
+	if (!props.autoHeight || autoHeightFrame !== 0) return;
+	autoHeightFrame = window.requestAnimationFrame(() => {
+		autoHeightFrame = 0;
+		fitAutoHeight();
+	});
+}
+
+function observeAutoHeightContent() {
+	const content = contentEl.value;
+	if (content == null || autoHeightResizeObserver == null) return;
+
+	autoHeightResizeObserver.disconnect();
+	for (const child of content.children) autoHeightResizeObserver.observe(child);
+}
+
+function setupAutoHeightObservers() {
+	if (!props.autoHeight || contentEl.value == null) return;
+
+	if (typeof ResizeObserver !== 'undefined') {
+		autoHeightResizeObserver = new ResizeObserver(() => scheduleAutoHeight());
+		observeAutoHeightContent();
+	}
+
+	if (typeof MutationObserver !== 'undefined') {
+		autoHeightMutationObserver = new MutationObserver(() => {
+			observeAutoHeightContent();
+			scheduleAutoHeight();
+		});
+		autoHeightMutationObserver.observe(contentEl.value, {
+			childList: true,
+			characterData: true,
+			subtree: true,
+		});
+	}
+
+	scheduleAutoHeight();
+}
 
 function close() {
 	showing.value = false;
@@ -529,6 +602,7 @@ function onBrowserResize() {
 	if (position.top + windowHeight > browserHeight) main.style.top = browserHeight - windowHeight + 'px'; // 下はみ出し
 	if (position.left + windowWidth > browserWidth) main.style.left = browserWidth - windowWidth + 'px'; // 右はみ出し
 	if (position.top < 0) main.style.top = '0'; // 上はみ出し
+	scheduleAutoHeight();
 }
 
 onMounted(() => {
@@ -536,14 +610,25 @@ onMounted(() => {
 	let initialHeight = props.initialHeight;
 
 	if (initialWidth == null) initialWidth = Math.min(Math.max(Math.round(window.innerWidth * INITIAL_WINDOW_WIDTH_RATIO), INITIAL_WINDOW_WIDTH_MIN), INITIAL_WINDOW_WIDTH_MAX);
-	if (initialHeight == null) initialHeight = Math.max(Math.round(window.innerHeight * INITIAL_WINDOW_HEIGHT_RATIO), INITIAL_WINDOW_HEIGHT_MIN);
 
 	applyTransformWidth(initialWidth);
-	applyTransformHeight(initialHeight);
+	if (!props.autoHeight) {
+		if (initialHeight == null) initialHeight = Math.max(Math.round(window.innerHeight * INITIAL_WINDOW_HEIGHT_RATIO), INITIAL_WINDOW_HEIGHT_MIN);
+		applyTransformHeight(initialHeight);
+		if (rootEl.value) {
+			applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
+			applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
+		}
+	} else {
+		void nextTick(() => {
+			setupAutoHeightObservers();
+			fitAutoHeight();
 
-	if (rootEl.value) {
-		applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
-		applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
+			if (rootEl.value) {
+				applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
+				applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
+			}
+		});
 	}
 
 	// 他のウィンドウ内のボタンなどを押してこのウィンドウが開かれた場合、親が最前面になろうとするのでそれに隠されないようにする
@@ -554,6 +639,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
 	for (const cleanup of [...pointerCleanups]) cleanup();
+	autoHeightResizeObserver?.disconnect();
+	autoHeightMutationObserver?.disconnect();
+	if (autoHeightFrame !== 0) window.cancelAnimationFrame(autoHeightFrame);
 	window.removeEventListener('resize', onBrowserResize);
 });
 

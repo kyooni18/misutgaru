@@ -27,6 +27,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:noteId="appearNote.id"
 	/>
 	<button
+		ref="reactButton"
+		class="_button"
+		:class="$style.noteFooterButton"
+		:aria-label="i18n.ts.reaction"
+		@click="onToggleReact"
+	>
+		<i v-if="appearNote.reactionAcceptance === 'likeOnly' && reactiveNote.myReaction != null" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
+		<i v-else-if="reactiveNote.myReaction != null" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
+		<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
+		<i v-else class="ti ti-plus"></i>
+		<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && reactiveNote.reactionCount > 0" :class="$style.noteFooterButtonCount">{{ number(reactiveNote.reactionCount) }}</p>
+	</button>
+	<button
 		v-if="showReplyButton"
 		class="_button"
 		:class="$style.noteFooterButton"
@@ -49,19 +62,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</button>
 	<button v-else class="_button" :class="$style.noteFooterButton" :aria-label="i18n.ts.renote" disabled>
 		<i class="ti ti-ban"></i>
-	</button>
-	<button
-		ref="reactButton"
-		class="_button"
-		:class="$style.noteFooterButton"
-		:aria-label="i18n.ts.reaction"
-		@click="onToggleReact"
-	>
-		<i v-if="appearNote.reactionAcceptance === 'likeOnly' && reactiveNote.myReaction != null" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
-		<i v-else-if="reactiveNote.myReaction != null" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
-		<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
-		<i v-else class="ti ti-plus"></i>
-		<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && reactiveNote.reactionCount > 0" :class="$style.noteFooterButtonCount">{{ number(reactiveNote.reactionCount) }}</p>
 	</button>
 	<button
 		v-if="showClipButton"
@@ -141,11 +141,11 @@ function handleReply(): void {
 
 .noteFooterButton {
 	margin: 0;
-	padding: 8px;
+	padding: 6px;
 	opacity: 0.7;
 
 	&:not(:last-child) {
-		margin-right: 28px;
+		margin-right: 24px;
 	}
 
 	&:hover {
@@ -166,7 +166,7 @@ function handleReply(): void {
 @container (max-width: 350px) {
 	.noteFooterButton {
 		&:not(:last-child) {
-			margin-right: 18px;
+			margin-right: 16px;
 		}
 	}
 }
@@ -174,7 +174,7 @@ function handleReply(): void {
 @container (max-width: 300px) {
 	.noteFooterButton {
 		&:not(:last-child) {
-			margin-right: 12px;
+			margin-right: 10px;
 		}
 	}
 }

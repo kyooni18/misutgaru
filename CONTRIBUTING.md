@@ -67,7 +67,7 @@ Thank you for your PR! Before creating a PR, please check the following:
 - Check if there are any documents that need to be created or updated due to this change.
 - If you have added a feature or fixed a bug, please add a test case if possible.
 - Please make sure that tests and Lint are passed in advance.
-	- You can run it with `pnpm test` and `pnpm lint`. [See more info](#testing)
+	- You can run the focused regression set with `pnpm test` and the complete workspace suite with `pnpm test:full`, followed by `pnpm lint`. [See more info](#testing)
 - If this PR includes UI changes, please attach a screenshot in the text.
 
 Thanks for your cooperation 🤗

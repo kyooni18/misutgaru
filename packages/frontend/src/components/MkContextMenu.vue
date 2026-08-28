@@ -117,6 +117,7 @@ function onMousedown(evt: MouseEvent) {
 	position: absolute;
 	transform: scale(var(--mk-context-menu-scale));
 	transform-origin: left top;
+	will-change: transform, opacity;
 
 	:global(.vune-material--animated) {
 		animation: none;

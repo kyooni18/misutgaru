@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Binding, Switch } from 'vune-ui';
+import { Animation, Binding, Switch } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import { ignoreSwitchToggle, type SwitchActions, type SwitchToggleAction } from './MkSwitchButton.types.js';
@@ -36,7 +36,7 @@ export struct MkSwitchButton: View {
 			size: 22,
 			label: checked ? i18n.ts.itsOn : i18n.ts.itsOff,
 			interactive,
-			animation: prefer.s.animation ? undefined : null,
+			animation: prefer.s.animation ? Animation.snappy(0.4) : null,
 		})
 			.className([
 				'_button',

@@ -20,7 +20,7 @@ function sourceIcon() {
 
 export default createVuneComponent<Props>((props) =>
 	Element('div', {
-		className: '_panel _shadow mk-vune-bottom-prompt',
+		className: '_acrylic _shadow mk-vune-bottom-prompt',
 		style: { zIndex: String(props.zIndex) },
 	},
 		Element('div', { className: 'mk-vune-bottom-prompt__icon' }, sourceIcon()),

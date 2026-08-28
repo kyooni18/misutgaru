@@ -6,8 +6,8 @@ Date: 2026-08-28
 
 - PostgreSQL compatibility invariant: 426 vanilla-owned schema/migration sources plus the entity registry and DataSource entity/migration configuration matched the supplied same-version vanilla snapshot exactly. Aggregate fingerprint: `e260f1f80d47e37e809dc0e57ac2b0e79387a2a0cee252609bc1ae3a81e9c4a7`;
 - repository integrity: passed after local Vune dependency, lockfile, Docker ordering, merge-marker and DB-invariant checks;
-- o0o0o Node suite: 111 passed, 0 failed;
-- focused Vune compiler/web/runtime suite: 28 total, 23 passed, 0 failed, 5 skipped because optional local React/jsdom compatibility dependencies are absent;
+- o0o0o focused motion suite: 75 passed, 0 failed; the complete 115-test module suite is opt-in via `pnpm --dir packages/modules/o0o0o run test:full`;
+- focused Vune compiler/web/runtime smoke suite: 31 passed, 0 failed; the complete non-browser package suite is opt-in via `pnpm --dir packages/modules/Vune run test:full`;
 - native Vune boundary: 65 files passed;
 - Vune compiler transform sweep: 233 frontend `.vune` files passed, 0 failed with the current local compiler;
 - `@misutgaru/core` translation contract test: 1 passed, 0 failed;
