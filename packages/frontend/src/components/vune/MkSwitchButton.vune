@@ -33,8 +33,6 @@ export struct MkSwitchButton: View {
 				}
 			},
 		), {
-			tint: 'var(--MI_THEME-accent)',
-			offTint: 'var(--MI_THEME-switchOffBg)',
 			size: 22,
 			label: checked ? i18n.ts.itsOn : i18n.ts.itsOff,
 			interactive,
