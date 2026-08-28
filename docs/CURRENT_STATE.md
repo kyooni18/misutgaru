@@ -43,11 +43,11 @@ Run `pnpm vune:report` to refresh these values.
 | Vune source components | 233 |
 | Native Vune components | 65 |
 | Explicit compatibility Vune shells | 2 |
-| Legacy Vue placement shells using Vune | 227 |
+| Legacy Vue placement shells using Vune | 228 |
 | SwiftUI-syntax Vune files | 145 |
 | Vune files using `ForEach` | 62 |
 | Native share of Vune sources | 27.9% |
-| Legacy-shell coverage of Vue SFCs | 38.2% |
+| Legacy-shell coverage of Vue SFCs | 38.4% |
 
 Inside the 65 native sources, the current report shows zero `VueComponent`, `VueSlot`, raw `Element`, and `.vue` dependency fallbacks. `MkEmojiPicker.vune` and `MkPostFormSurface.vune` are explicitly classified as compatibility sources instead of inflating the native count.
 
@@ -67,8 +67,8 @@ Fork-specific translation contracts and thread-window defaults have started movi
 
 ## Verification performed in this workspace
 
-- o0o0o Node suite: 111 passed;
-- focused Vune compiler/web/runtime tests: 28 total, 23 passed, 5 optional React/jsdom compatibility cases skipped, 0 failed;
+- o0o0o focused motion suite: 75 passed, 0 failed (the complete 115-test module suite remains available via `pnpm --dir packages/modules/o0o0o run test:full`);
+- focused Vune compiler/web/runtime smoke suite: 31 passed, 0 failed (the complete non-browser package suite remains available via `pnpm --dir packages/modules/Vune run test:full`);
 - native Vune boundary: 65 files passed;
 - Vune source transform sweep: 233 passed, 0 failed;
 - `@misutgaru/core` translation contract test passed;

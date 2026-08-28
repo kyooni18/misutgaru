@@ -19,9 +19,12 @@
 	--vune-material-saturation: 1.35;
 	--vune-material-border-opacity: 13%;
 	--vune-material-surface: var(--MI_THEME-panel);
+	--vune-material-radius: var(--MI-radius, 12px);
 	position: relative;
 	isolation: isolate;
 	border: 1px solid color-mix(in srgb, var(--MI_THEME-fg) var(--vune-material-border-opacity), transparent);
+	border-radius: var(--vune-material-radius);
+	corner-shape: round;
 	box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
 	contain: paint;
 
@@ -30,6 +33,7 @@
 		position: absolute;
 		z-index: 0;
 		inset: 0;
+		border-radius: inherit;
 		pointer-events: none;
 		background: color-mix(in srgb, var(--vune-material-surface) var(--vune-material-opacity), transparent);
 		-webkit-backdrop-filter: saturate(var(--vune-material-saturation)) blur(var(--vune-material-blur));
@@ -42,6 +46,13 @@
 	}
 }
 
+/* Native Vune surfaces own their content box and can clip it to the rounded
+ * edge. Legacy popup roots may also be scroll containers, so their backing
+ * layers inherit the radius without changing overflow behavior. */
+.vune-material--native {
+	overflow: clip;
+}
+
 /* Legacy floating surfaces (_popup/_acrylic) already inherit the Material
  * surface styles but do not have a Vune Rectangle for the first opaque frame.
  * Give them the same backing layer without duplicating the native one. */
@@ -50,6 +61,7 @@
 	position: absolute;
 	z-index: 1;
 	inset: 0;
+	border-radius: inherit;
 	pointer-events: none;
 	background: var(--vune-material-fallback-background);
 	opacity: 0;
@@ -60,6 +72,7 @@
 	position: absolute !important;
 	z-index: 1 !important;
 	inset: 0;
+	border-radius: inherit;
 	pointer-events: none;
 	background: var(--vune-material-opaque-background);
 	opacity: 1;

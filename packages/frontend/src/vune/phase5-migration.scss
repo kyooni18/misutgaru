@@ -9,7 +9,7 @@
 .mk-vune-blink { animation:mk-vune-blink 2s infinite; }
 @keyframes mk-vune-blink { 0%,10%,90%,100%{opacity:1} 50%{opacity:0} }
 .mk-vune-user-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--MI-margin); }
-.mk-vune-notification-shell { box-shadow:0 4px 16px rgb(0 0 0 / .3); border-radius:16px; overflow:clip; contain:content; }
+.mk-vune-notification-shell { box-shadow:0 4px 16px var(--MI_THEME-shadow); border-radius:var(--MI-radius); corner-shape:round; overflow:clip; contain:content; }
 .mk-vune-retention { padding:20px; }
 .mk-vune-room { padding:16px; }
 .mk-vune-room__header { display:flex; align-items:center; }

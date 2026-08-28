@@ -3,6 +3,8 @@
 import { Button, Group, HStack, Text, VStack } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import VuneIcon from '@/vune/Icon.vune';
+import MaterialSurface from '@/vune/MaterialSurface.vune';
+import { Material } from '@/vune/material.js';
 
 export struct StreamIndicator: View {
 	let visible: boolean
@@ -20,22 +22,25 @@ export struct StreamIndicator: View {
 	var body: some View {
 		Group() {
 			if (visible) {
-				VStack(alignment: 'leading', spacing: 0) {
-					HStack(alignment: 'center', spacing: 4) {
-						VuneIcon('ti ti-alert-triangle')
-						Text(i18n.ts.disconnectedFromServer)
+				MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
+					VStack(alignment: 'leading', spacing: 0) {
+						HStack(alignment: 'center', spacing: 4) {
+							VuneIcon('ti ti-alert-triangle')
+							Text(i18n.ts.disconnectedFromServer)
+						}
+							.className('mk-vune-stream-indicator__message')
+						HStack(alignment: 'center', spacing: 8) {
+							Button(i18n.ts.reload) { onReload() }
+								.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--primary')
+							Button(i18n.ts.doNothing) { onReset() }
+								.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--secondary')
+						}
+							.className('mk-vune-stream-indicator__command _buttons')
 					}
-						.className('mk-vune-stream-indicator__message')
-					HStack(alignment: 'center', spacing: 8) {
-						Button(i18n.ts.reload) { onReload() }
-							.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--primary')
-						Button(i18n.ts.doNothing) { onReset() }
-							.className('_button mk-vune-stream-indicator__button mk-vune-stream-indicator__button--secondary')
-					}
-						.className('mk-vune-stream-indicator__command _buttons')
+						.style({ width: 'max-content' })
 				}
-					.className('mk-vune-stream-indicator _panel _shadow')
-					.style({ zIndex })
+					.className(['mk-vune-stream-indicator', '_shadow'])
+					.style({ zIndex, width: 'max-content' })
 			}
 		}
 	}

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkWindow
 	:initialWidth="threadWindowDefaults.width"
-	:initialHeight="threadWindowDefaults.height"
+	autoHeight
 	:canResize="true"
 	:closeButton="true"
 	@closed="emit('closed')"
@@ -46,7 +46,6 @@ const emit = defineEmits<{
 
 <style lang="scss" module>
 .root {
-	min-height: 100%;
 	background: var(--MI_THEME-bg);
 }
 </style>

@@ -11,6 +11,9 @@
 	width: calc(100% - (var(--MI-margin) * 2));
 	max-width: 500px;
 	display: flex;
+	border-radius: var(--MI-radius);
+	corner-shape: round;
+	overflow: clip;
 }
 .mk-vune-bottom-prompt__icon {
 	text-align: center;

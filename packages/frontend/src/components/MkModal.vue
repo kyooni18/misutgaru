@@ -209,6 +209,10 @@ function animateMenuTransition(
 	const blurTarget = bgElement == null
 		? '0px'
 		: window.getComputedStyle(bgElement).getPropertyValue('--MI-modalBgBlurTarget').trim() || '0px';
+	// Keep the expensive backdrop-filter out of the per-frame menu motion path.
+	// The panel and scrim can then stay on compositor-friendly opacity/transform
+	// tracks instead of forcing a full backdrop repaint on every frame.
+	bgElement?.style.setProperty('--MI-modalBgBlur', blurTarget);
 	let pending = 1;
 	const finish = () => {
 		pending -= 1;
@@ -221,8 +225,8 @@ function animateMenuTransition(
 	if (bgElement != null) {
 		pending += 1;
 		const backdropKeyframes = phase === 'enter'
-			? [{ opacity: 0, '--MI-modalBgBlur': '0px' }, { opacity: 1, '--MI-modalBgBlur': blurTarget }]
-			: [{ opacity: 1, '--MI-modalBgBlur': blurTarget }, { opacity: 0, '--MI-modalBgBlur': '0px' }];
+			? [{ opacity: 0 }, { opacity: 1 }]
+			: [{ opacity: 1 }, { opacity: 0 }];
 		void animateVuneTransition(bgElement, backdropKeyframes, contextMenuAnimation, finish);
 	}
 }
@@ -711,18 +715,14 @@ defineExpose({
 .transition_modalDrawer_enterActive,
 .transition_modalDrawer_leaveActive {
 	> .bg {
-		transition: opacity 0.3s, -webkit-backdrop-filter 0.3s, backdrop-filter 0.3s !important;
+		transition: opacity 0.3s !important;
 	}
 }
 
 .transition_send_enterFrom,
 .transition_send_leaveTo,
 .transition_modal_enterFrom,
-.transition_modal_leaveTo,
-.transition_modalPopup_enterFrom,
-.transition_modalPopup_leaveTo,
-.transition_modalDrawer_enterFrom,
-.transition_modalDrawer_leaveTo {
+.transition_modal_leaveTo {
 	> .bg {
 		--MI-modalBgBlur: 0px;
 	}
@@ -753,6 +753,7 @@ defineExpose({
 			position: absolute;
 			transform: scale(var(--mk-context-menu-scale));
 			transform-origin: var(--transformOrigin);
+			will-change: transform, opacity;
 
 			&.fixed {
 				position: fixed;
@@ -774,6 +775,7 @@ defineExpose({
 			left: 0;
 			right: 0;
 			margin: auto;
+			will-change: transform;
 		}
 	}
 }

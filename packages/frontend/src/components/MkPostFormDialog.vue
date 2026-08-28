@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkModal
 	ref="modal"
 	:preferType="'dialog'"
-	motion="post-form"
 	@click="onBgClick()"
 	@closed="onModalClosed()"
 	@esc="onEsc"
