@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneFederationJobQueue :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="value => tab = value" :onPromote="promoteAllQueues" :onClear="clear"/>
+<VuneFederationJobQueue :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="(value: ApQueueDomain) => tab = value" :onPromote="promoteAllQueues" :onClear="clear"/>
 </template>
 
 <script lang="ts" setup>
-import VuneFederationJobQueue from './vune/federation-job-queue.vune';
+import VuneFederationJobQueue from './vune/federation-job-queue.vune?vue-host';
 import { ref, computed } from 'vue';
 import type { Ref } from 'vue';
 import * as os from '@/os.js';

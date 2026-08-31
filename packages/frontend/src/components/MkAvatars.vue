@@ -9,8 +9,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneAvatars from './vune/MkAvatars.vune';
+import VuneAvatarsView from './vune/MkAvatars.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+
+const VuneAvatars = createVuneWebHost(VuneAvatarsView);
 
 const props = withDefaults(defineProps<{
 	userIds: string[];

@@ -10,12 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Animation } from 'vune-ui';
-import VuneUrlPreviewPopup from './vune/MkUrlPreviewPopup.vune';
+import VuneUrlPreviewPopup from './vune/MkUrlPreviewPopup.vune?vue-host';
+import type { MotionHandle } from '@/vune/motion.js';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
-import { vuneMotion } from '@/vune/motion.js';
-import type { MotionHandle } from '@/vune/motion.js';
+import { surfaceMotionAnimation, surfaceScaleKeyframes, vuneMotion } from '@/vune/motion.js';
 
 const props = defineProps<{ showing: boolean; url: string; anchorElement: HTMLElement }>();
 const emit = defineEmits<{ (ev: 'closed'): void }>();
@@ -52,10 +51,9 @@ async function enter() {
 		el.style.transform = 'scale(1)';
 		return;
 	}
-	motion = vuneMotion.animateElement(el, [
-		{ opacity: 0, transform: 'scale(0.96)' },
-		{ opacity: 1, transform: 'scale(1)' },
-	], { animation: Animation.easeOut(0.2), fill: 'both' });
+	motion = vuneMotion.animateElement(el, surfaceScaleKeyframes('enter'), {
+		animation: surfaceMotionAnimation('enter'), fill: 'both',
+	});
 }
 
 async function leave() {
@@ -64,10 +62,9 @@ async function leave() {
 	const el = target();
 	if (el && prefer.s.animation) {
 		motion?.cancel();
-		motion = vuneMotion.animateElement(el, [
-			{ opacity: 1, transform: 'scale(1)' },
-			{ opacity: 0, transform: 'scale(0.96)' },
-		], { animation: Animation.easeIn(0.2), fill: 'forwards' });
+		motion = vuneMotion.animateElement(el, surfaceScaleKeyframes('leave'), {
+			animation: surfaceMotionAnimation('leave'), fill: 'forwards',
+		});
 		await motion.finished;
 	}
 	emit('closed');

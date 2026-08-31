@@ -5,23 +5,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <VuneInstanceMute
-	:instanceMutes="instanceMutes"
-	:changed="changed"
-	:onChange="value => instanceMutes = value"
-	:onSave="save"
+	:props="{
+		instanceMutes,
+		changed,
+		onChange: updateInstanceMutes,
+		onSave: save,
+	}"
 />
 </template>
 
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import VuneInstanceMute from './vune/mute-block.instance-mute.vune';
+import VuneInstanceMuteView from './vune/mute-block.instance-mute.vune';
 import { ensureSignin } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneInstanceMute = createVuneWebHost(VuneInstanceMuteView);
 
 const $i = ensureSignin();
 
 const instanceMutes = ref($i.mutedInstances.join('\n'));
 const changed = ref(false);
+
+function updateInstanceMutes(value: string): void {
+	instanceMutes.value = value;
+}
 
 async function save() {
 	let mutes = instanceMutes.value

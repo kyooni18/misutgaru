@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import * as Misskey from 'misskey-js';
-import MkStickyContainer from '@/components/global/MkStickyContainer.vue';
-import MkTab from '@/components/MkTab.vue';
-import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
+/* @misutgaru-vune-native */
+import MkStickyContainer from '@/components/global/vune/MkStickyContainer.vune';
+import MkTab from '@/components/vune/MkTab.vune';
+import MkNotesTimeline from '@/components/vune/MkNotesTimeline.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import type { IPaginator } from '@/utility/paginator.js';
 
 type UserTab = 'featured' | 'notes' | 'all' | 'files';
@@ -15,14 +14,30 @@ const tabs = [
 	{ key: 'all', label: i18n.ts.all },
 	{ key: 'files', label: i18n.ts.withFiles },
 ];
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkStickyContainer, {}, {
-		header: () => VueComponent(MkTab, { modelValue: props.tab, tabs, class: props.tabClass, 'onUpdate:modelValue': (value: UserTab) => props.onTabChange?.(value) }),
-		default: () => VueComponent(MkNotesTimeline, {
-			noGap: true,
-			paginator: props.tab === 'featured' ? props.featuredPaginator : props.notesPaginator,
-			pullToRefresh: false,
-			class: props.timelineClass,
-		}),
-	})
-);
+function updateTab(props: Props, value: string): void { props.onTabChange?.(value as UserTab); }
+struct UserTimelineHeader: View {
+	let props: Props
+	var body: some View {
+		MkTab(tabs, selection: props.tab, onSelect: { value in updateTab(props, value) }).className(props.tabClass)
+	}
+}
+
+
+export struct VuneIndexTimelineView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkStickyContainer(
+			header: UserTimelineHeader(props: props),
+		) {
+			MkNotesTimeline(props.tab === 'featured' ? props.featuredPaginator : props.notesPaginator, noGap: true)
+				.className(props.timelineClass)
+		}
+	}
+}
+
+export default VuneIndexTimelineView

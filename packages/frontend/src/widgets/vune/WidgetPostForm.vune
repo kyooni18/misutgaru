@@ -1,12 +1,15 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import MkPostForm from '@/components/MkPostForm.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import MkPostForm from '@/components/vune/MkPostForm.vune';
 
-export default createVuneComponent(() =>
-	VueComponent(MkPostForm, {
-		'data-testid': 'mkw-postForm',
-		class: '_panel mkw-post-form',
-		fixed: true,
-		autofocus: false,
-	})
-);
+
+
+export struct VuneWidgetPostFormView: View {
+	init() {}
+
+	var body: some View {
+		MkPostForm(autofocus: false, className: '_panel mkw-post-form').withProps({ 'data-testid': 'mkw-postForm' })
+	}
+}
+
+export default VuneWidgetPostFormView

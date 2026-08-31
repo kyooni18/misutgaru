@@ -105,12 +105,15 @@ export function useNote(
 	const currentAntenna = options.currentAntenna ?? null;
 
 	// プラグインの割り込み処理
-	let rawNote = deepClone(props.note);
+	let rawNote = props.note;
 	let hideByPlugin = false;
 	const noteViewInterruptors = getPluginHandlers('note_view_interruptor');
 
 	if (noteViewInterruptors.length > 0) {
-		let result: Misskey.entities.Note | null = deepClone(rawNote);
+		// The normalized timeline entity is safe to reuse until a plugin actually
+		// needs an isolated mutable copy. Avoid recursively cloning every note on
+		// the normal no-plugin hot path.
+		let result: Misskey.entities.Note | null = deepClone(props.note);
 		for (const interruptor of noteViewInterruptors) {
 			try {
 				result = interruptor.handler(result!) as Misskey.entities.Note | null;
@@ -146,6 +149,17 @@ export function useNote(
 	const isDeleted = ref(false);
 	const translating = ref(false);
 	const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
+	const menuShowing = ref(false);
+	let openMenuCount = 0;
+
+	function trackMenu(promise: Promise<void>): Promise<void> {
+		openMenuCount++;
+		menuShowing.value = true;
+		return promise.finally(() => {
+			openMenuCount = Math.max(0, openMenuCount - 1);
+			menuShowing.value = openMenuCount > 0;
+		});
+	}
 
 	// ミュート判定
 	// mutedはミュート解除の操作で書き換わるのでrefだが、hardMutedは解除できないのでリアクティブにしない
@@ -231,7 +245,7 @@ export function useNote(
 			renoteButton: els.renoteButton,
 			mock: props.mock,
 		});
-		os.popupMenu(menu, els.renoteButton.value);
+		trackMenu(os.popupMenu(menu, els.renoteButton.value));
 		subscribeManuallyToNoteCapture();
 	}
 
@@ -352,7 +366,7 @@ export function useNote(
 				currentClip: currentClip?.value,
 				currentAntenna: currentAntenna?.value ?? undefined,
 			});
-			os.contextMenu(menu, ev).then(focus).finally(cleanup);
+			trackMenu(os.contextMenu(menu, ev)).then(focus).finally(cleanup);
 		}
 	}
 
@@ -365,15 +379,15 @@ export function useNote(
 			currentClip: currentClip?.value,
 			currentAntenna: currentAntenna?.value ?? undefined,
 		});
-		os.popupMenu(menu, els.menuButton.value).then(focus).finally(cleanup);
+		trackMenu(os.popupMenu(menu, els.menuButton.value)).then(focus).finally(cleanup);
 	}
 
 	async function clip(): Promise<void> {
 		if (props.mock) return;
-		os.popupMenu(await getNoteClipMenu({
+		trackMenu(os.popupMenu(await getNoteClipMenu({
 			note: rawNote,
 			currentClip: currentClip?.value,
-		}), els.clipButton?.value).then(focus);
+		}), els.clipButton?.value)).then(focus);
 	}
 
 	async function showRenoteMenu() {
@@ -411,14 +425,14 @@ export function useNote(
 
 		if (isMyRenote) {
 			menuItems.push(getUnrenote());
-			os.popupMenu(menuItems, els.renoteTime?.value);
+			trackMenu(os.popupMenu(menuItems, els.renoteTime?.value));
 		} else {
 			menuItems.push(getAbuseNoteMenu(rawNote, i18n.ts.reportAbuseRenote));
 			if ($i?.isModerator || $i?.isAdmin) {
 				menuItems.push(getUnrenote());
 			}
 
-			os.popupMenu(menuItems, els.renoteTime?.value);
+			trackMenu(os.popupMenu(menuItems, els.renoteTime?.value));
 		}
 	}
 
@@ -450,6 +464,7 @@ export function useNote(
 		isLong,
 		showTicker,
 		canRenote,
+		menuShowing,
 
 		// アクション関数
 		renote,

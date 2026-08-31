@@ -10,10 +10,12 @@ Vue application/state while migration is incomplete
   -> compiled Vune View boundary
   -> fine-grained State dependency scheduler
   -> @vune-ui/web DOM renderer
-  -> o0o0o motion ownership/scheduler
+  -> @vune-ui/animation motion ownership/scheduler
 ```
 
 `packages/frontend/src/vune/compat-vue.ts` is intentionally transitional. Authored Vune Views now carry compiler-emitted legacy-host parameter plans, so primitive coercion and initializer mapping are mostly decided at compile time. `@vune-ui/compiler` exports `generateVueHostModule`, and its Vite plugin can materialize the matching pure-JS runtime placement module through a `.vune?vue-host` import. The physical generator retains consumer-visible `$props` typing; the query form deliberately emits no TypeScript-only syntax.
+
+NIRAX route matching/navigation now lives in renderer-neutral `packages/frontend/src/lib/nirax-core.ts`. `packages/frontend/src/lib/nirax.ts` is the Vue binding that adds `shallowRef` state and component-lifecycle listener cleanup. This keeps current Vue routing behavior intact while allowing a future Vune router owner to consume the same navigation core without importing Vue runtime APIs.
 
 Native Vune feature sources must not import Vue components or use raw host constructors. Browser-specific semantics should be expressed through Vune primitives first and the closed low-level Misutgaru native bridge only when the framework does not yet expose an equivalent.
 
@@ -39,7 +41,7 @@ Detailed notes are composed from a reusable avatar/content renderer and a separa
 
 ## Motion and layout
 
-Misutgaru delegates per-element property ownership to o0o0o. Starting a new opacity animation only replaces the opacity owner; transform, size, color, and other property owners remain independent.
+Misutgaru delegates per-element property ownership to Vune's `@vune-ui/animation` package. Starting a new opacity animation only replaces the opacity owner; transform, size, color, and other property owners remain independent.
 
 Bare Vune `.animation()` is a compiler-assisted automatic motion domain. The compiler records the properties implied by the modifier chain, while the web renderer checks the actual DOM/style diff before scheduling work. Opacity, compositor transforms, paint/color, and layout changes can therefore choose separate default motion profiles and remain independently retargetable. Explicit `.animation(animation)` and `.animation(animation, value)` keep their authored timing and trigger semantics.
 

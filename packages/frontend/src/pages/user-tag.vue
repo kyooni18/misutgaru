@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
-import VuneUserTag from './vune/user-tag.vune';
+import VuneUserTag from './vune/user-tag.vune?vue-host';
 import { definePage } from '@/page.js';
 import { Paginator } from '@/utility/paginator.js';
 

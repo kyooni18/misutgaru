@@ -1,17 +1,34 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import MkA from '@/components/global/MkA.vue';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import { definePage } from '@/page.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, Group, Image } from 'vune-ui';
+import MkA from '@/components/global/vune/MkA.vune';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import type { PageMetadata } from '@/page.js';
 import '@/vune/phase5-migration.scss';
+struct GameLink: View {
+	let to: string
+	let src: string
+	var body: some View {
+		Group() {
+			MkA(to) { Image(src, { alt: '' }).style({ display: 'block', maxWidth: '100%', maxHeight: '200px', margin: 'auto' }) }
+		}.className(['_panel', 'mk-vune-games-link'])
+	}
+}
 
-definePage(() => ({ title: 'Misskey Games', icon: 'ti ti-device-gamepad' }));
-const game = (to: string, src: string) => Group() {
-	VueComponent(MkA, { to }, { default: () => Element('img', { src, style: { display: 'block', maxWidth: '100%', maxHeight: '200px', margin: 'auto' } }) })
-}.className(['_panel', 'mk-vune-games-link']);
-export default createVuneComponent(() =>
-	VueComponent(PageWithHeader, {}, { default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
-		Group() { game('/bubble-game', '/client-assets/drop-and-fusion/logo.png'); game('/reversi', '/client-assets/reversi/logo.png') }.className('_gaps'),
-	) })
-);
+
+export struct VuneGamesView: View {
+	let pageMetadata: PageMetadata | null
+
+	init(pageMetadata: PageMetadata | null = null) {
+		self.pageMetadata = pageMetadata
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: pageMetadata) {
+			VStack(alignment: 'leading', spacing: 0) { Group() { GameLink(to: '/bubble-game', src: '/client-assets/drop-and-fusion/logo.png'); GameLink(to: '/reversi', src: '/client-assets/reversi/logo.png') }.className('_gaps') }
+				.className('_spacer').style({ '--MI_SPACER-w': '800px' })
+		}
+	}
+}
+
+export default VuneGamesView

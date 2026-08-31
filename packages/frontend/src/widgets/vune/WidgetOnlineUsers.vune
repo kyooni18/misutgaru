@@ -1,28 +1,42 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import I18n from '@/components/global/I18n.vue';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import number from '@/filters/number.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
 
-type Props = {
-	onlineUsersCount: number;
-	transparent?: boolean;
-	classes: Record<string, string>;
-};
+type StyleClasses = Record<string, string>;
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', {
-		'data-testid': 'mkw-onlineUsers',
-		className: [props.classes.root, !vuneBoolean(props.transparent, true) ? '_panel' : null, !vuneBoolean(props.transparent, true) ? props.classes.pad : null],
-	},
-		Element('span', { className: props.classes.text },
-			props.onlineUsersCount ? VueComponent(I18n, {
-				src: i18n.ts.onlineUsersCount,
-				textTag: 'span',
-			}, {
-				n: () => Element('b', { style: { color: '#41b781' } }, number(props.onlineUsersCount)),
-			}) : null,
-		),
-	)
-);
+function onlineUsersLabel(count: number) {
+	const [before = '', after = ''] = i18n.ts.onlineUsersCount.split('{n}');
+	return VStack(alignment: 'stretch', spacing: 0) {
+		Text(before)
+		Text(number(count)).bold().foregroundStyle('#41b781')
+		Text(after)
+	}.className('mk-vune-online-users__label');
+}
+
+export struct WidgetOnlineUsers: View {
+	let onlineUsersCount: number
+	let transparent: boolean
+	let classes: StyleClasses
+
+	init(
+		_ onlineUsersCount: number,
+		transparent: boolean = true,
+		classes: StyleClasses,
+	) {
+		self.onlineUsersCount = onlineUsersCount
+		self.transparent = transparent
+		self.classes = classes
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (onlineUsersCount > 0) { onlineUsersLabel(onlineUsersCount) }
+		}
+			.className([classes.root, !transparent ? '_panel' : null, !transparent ? classes.pad : null, classes.text])
+			.withProps({ 'data-testid': 'mkw-onlineUsers' })
+	}
+}
+
+export default WidgetOnlineUsers

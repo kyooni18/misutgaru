@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneStatusbar from './vune/statusbar.vune';
+import VuneStatusbar from './vune/statusbar.vune?vue-host';
 import { genId } from '@/utility/id.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';

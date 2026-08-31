@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Box, Button, ForEach, Group, Text } from 'vune-ui';
+import { VStack, Button, ForEach, Group, Text } from 'vune-ui';
 import type { LegendItem } from 'chart.js';
 import '@/vune/phase6-migration.scss';
 
@@ -26,7 +26,7 @@ export struct MkChartLegend: View {
 	}
 
 	var body: some View {
-		Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
 			ForEach(items, key: (item, index) => `${item.datasetIndex ?? ''}:${item.index ?? ''}:${item.text}:${index}`) { item in
 				Button(action: {
 					actions.itemClick(item)

@@ -1,0 +1,309 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { ForEach, Group, Link, Text, VStack } from 'vune-ui';
+import * as mfm from 'mfm-js';
+import * as Misskey from 'misskey-js';
+import { url as localBaseUrl } from '@@/js/config.js';
+import MkA, { type MkABehavior } from './MkA.vune';
+import MkPlainMfm from './MkPlainMfm.vune';
+import { prefer } from '@/preferences.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './MkMfm.scss';
+
+type Props = {
+	text: string;
+	plain?: boolean;
+	nowrap?: boolean;
+	author?: Misskey.entities.UserLite;
+	isNote?: boolean;
+	emojiUrls?: Record<string, string>;
+	rootScale?: number;
+	nyaize?: boolean | 'respect';
+	parsedNodes?: mfm.MfmNode[] | null;
+	linkNavigationBehavior?: MkABehavior;
+	onClickEv?: (id: string) => void;
+};
+
+type NodeRow = { node: mfm.MfmNode; index: number };
+type FnStyle = { style?: Record<string, string | number>; className?: string; scale?: number };
+
+function safeParseFloat(value: unknown): number | null {
+	if (typeof value !== 'string' || value === '') return null;
+	const number = Number.parseFloat(value);
+	return Number.isFinite(number) ? number : null;
+}
+
+function validTime(value: unknown): string | null {
+	return typeof value === 'string' && /^\-?[0-9.]+s$/.test(value) ? value : null;
+}
+
+function validColor(value: unknown): string | null {
+	return typeof value === 'string' && /^[0-9a-f]{3,6}$/i.test(value) ? value : null;
+}
+
+function rows(nodes: mfm.MfmNode[]): NodeRow[] {
+	return nodes.map((node, index) => ({ node, index }));
+}
+
+function localPath(raw: string): string | null {
+	try {
+		const parsed = new URL(raw, localBaseUrl);
+		const local = new URL(localBaseUrl);
+		return parsed.origin === local.origin ? `${parsed.pathname}${parsed.search}${parsed.hash}` : null;
+	} catch {
+		return raw.startsWith('/') ? raw : null;
+	}
+}
+
+function fnStyle(node: any, useAnim: boolean): FnStyle {
+	const args = node.props.args ?? {};
+	switch (node.props.name) {
+		case 'tada': return { style: useAnim ? { fontSize: '150%', animation: `global-tada ${validTime(args.speed) ?? '1s'} linear infinite both`, animationDelay: validTime(args.delay) ?? '0s' } : { fontSize: '150%' } };
+		case 'jelly': return { style: useAnim ? { animation: `mfm-rubberBand ${validTime(args.speed) ?? '1s'} linear infinite both`, animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		case 'twitch': return { style: useAnim ? { animation: `mfm-twitch ${validTime(args.speed) ?? '.5s'} ease infinite`, animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		case 'shake': return { style: useAnim ? { animation: `mfm-shake ${validTime(args.speed) ?? '.5s'} ease infinite`, animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		case 'spin': {
+			const animationName = args.x ? 'mfm-spinX' : args.y ? 'mfm-spinY' : 'mfm-spin';
+			const direction = args.left ? 'reverse' : args.alternate ? 'alternate' : 'normal';
+			return { style: useAnim ? { animation: `${animationName} ${validTime(args.speed) ?? '1.5s'} linear infinite`, animationDirection: direction, animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		}
+		case 'jump': return { style: useAnim ? { animation: `mfm-jump ${validTime(args.speed) ?? '.75s'} linear infinite`, animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		case 'bounce': return { style: useAnim ? { animation: `mfm-bounce ${validTime(args.speed) ?? '.75s'} linear infinite`, transformOrigin: 'center bottom', animationDelay: validTime(args.delay) ?? '0s' } : {} };
+		case 'flip': return { style: { transform: args.h && args.v ? 'scale(-1,-1)' : args.v ? 'scaleY(-1)' : 'scaleX(-1)' } };
+		case 'x2': return { className: prefer.s.advancedMfm ? 'mfm-x2' : '', scale: 2 };
+		case 'x3': return { className: prefer.s.advancedMfm ? 'mfm-x3' : '', scale: 3 };
+		case 'x4': return { className: prefer.s.advancedMfm ? 'mfm-x4' : '', scale: 4 };
+		case 'font': {
+			const family = args.serif ? 'serif' : args.monospace ? 'monospace' : args.cursive ? 'cursive' : args.fantasy ? 'fantasy' : args.emoji ? 'emoji' : args.math ? 'math' : undefined;
+			return { style: family ? { fontFamily: family } : {} };
+		}
+		case 'blur': return { className: '_mfm_blur_' };
+		case 'rainbow': return useAnim ? { style: { animation: `mfm-rainbow ${validTime(args.speed) ?? '1s'} linear infinite`, animationDelay: validTime(args.delay) ?? '0s' } } : { className: '_mfm_rainbow_fallback_' };
+		case 'rotate': return { style: { transform: `rotate(${safeParseFloat(args.deg) ?? 90}deg)`, transformOrigin: 'center center' } };
+		case 'position': return prefer.s.advancedMfm ? { style: { transform: `translateX(${safeParseFloat(args.x) ?? 0}em) translateY(${safeParseFloat(args.y) ?? 0}em)` } } : {};
+		case 'scale': {
+			if (!prefer.s.advancedMfm) return {};
+			const x = Math.min(safeParseFloat(args.x) ?? 1, 5);
+			const y = Math.min(safeParseFloat(args.y) ?? 1, 5);
+			return { style: { transform: `scale(${x},${y})` }, scale: Math.max(x, y) };
+		}
+		case 'fg': return { style: { color: `#${validColor(args.color) ?? 'f00'}`, overflowWrap: 'anywhere' } };
+		case 'bg': return { style: { backgroundColor: `#${validColor(args.color) ?? 'f00'}`, overflowWrap: 'anywhere' } };
+		case 'border': {
+			const allowed = ['hidden','dotted','dashed','solid','double','groove','ridge','inset','outset'];
+			const borderStyle = typeof args.style === 'string' && allowed.includes(args.style) ? args.style : 'solid';
+			const color = validColor(args.color) ? `#${validColor(args.color)}` : 'var(--MI_THEME-accent)';
+			return { style: { border: `${safeParseFloat(args.width) ?? 1}px ${borderStyle} ${color}`, borderRadius: `${safeParseFloat(args.radius) ?? 0}px`, overflow: args.noclip ? 'visible' : 'clip' } };
+		}
+		default: return {};
+	}
+}
+
+function parsed(props: Props): mfm.MfmNode[] {
+	if (props.parsedNodes) return props.parsedNodes;
+	if (!props.text) return [];
+	return (props.plain ? mfm.parseSimple : mfm.parse)(props.text) as mfm.MfmNode[];
+}
+
+function unixTimeText(node: any): string {
+	const raw = node.children?.[0]?.type === 'text' ? Number.parseInt(node.children[0].props.text, 10) : Number.NaN;
+	return Number.isFinite(raw) ? new Date(raw * 1000).toLocaleString() : '';
+}
+
+function eventId(node: any): string {
+	return typeof node.props.args.ev === 'string' ? node.props.args.ev : '';
+}
+
+function activateMfmEvent(props: Props, node: any): void {
+	props.onClickEv?.(eventId(node));
+}
+
+struct MfmTextNode: View {
+	let text: string
+	let plain: boolean
+	init(_ text: string, plain: boolean) {
+		self.text = text.replace(/(\r\n|\n|\r)/g, '\n')
+		self.plain = plain
+	}
+	var body: some View {
+		Text(String(plain ? text.replace(/\n/g, ' ') : text))
+	}
+}
+
+struct MfmUrlNode: View {
+	let raw: string
+	let behavior: MkABehavior
+	let path: string | null
+	init(_ raw: string, behavior: MkABehavior) {
+		self.raw = raw
+		self.behavior = behavior
+		self.path = localPath(raw)
+	}
+	var body: some View {
+		Group() {
+			if (path) { MkA(path, behavior: behavior) { Text(raw) } }
+			else { Link(raw, raw).withProps({ rel: 'nofollow noopener', target: '_blank' }) }
+		}
+	}
+}
+
+struct MfmLinkNode: View {
+	let node: any
+	let props: Props
+	let scale: number
+	let path: string | null
+	init(_ node: any, props: Props, scale: number) {
+		self.node = node
+		self.props = props
+		self.scale = scale
+		self.path = localPath(node.props.url)
+	}
+	var body: some View {
+		Group() {
+			if (path) {
+				MkA(path, behavior: props.linkNavigationBehavior ?? null) { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: true) }
+			} else {
+				VStack(alignment: 'leading', spacing: 0) { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: true) }
+					.withProps({ role: 'link', onClick: () => window.open(node.props.url, '_blank', 'noopener,noreferrer') })
+			}
+		}
+	}
+}
+
+struct MfmRubyNode: View {
+	let node: any
+	let props: Props
+	let scale: number
+	let disableNyaize: boolean
+	let annotation: string
+	let baseNodes: mfm.MfmNode[]
+	init(_ node: any, props: Props, scale: number, disableNyaize: boolean) {
+		self.node = node
+		self.props = props
+		self.scale = scale
+		self.disableNyaize = disableNyaize
+		const children = node.children as mfm.MfmNode[]
+		if (children.length === 1 && children[0]?.type === 'text') {
+			const parts = String((children[0] as any).props.text).split(' ')
+			self.baseNodes = [{ type: 'text', props: { text: parts[0] ?? '' } } as any]
+			self.annotation = parts[1] ?? ''
+		} else {
+			const annotationNode = children.at(-1) as any
+			self.annotation = annotationNode?.type === 'text' ? String(annotationNode.props.text).trim() : ''
+			self.baseNodes = children.slice(0, -1)
+		}
+	}
+	var body: some View {
+		VStack(alignment: 'center', spacing: 0) {
+			MfmNodes(baseNodes, props: props, scale: scale, disableNyaize: disableNyaize)
+			Text(annotation).fontSize('0.6em')
+		}.className('mk-vune-mfm__ruby')
+	}
+}
+
+struct MfmFunctionNode: View {
+	let node: any
+	let props: Props
+	let scale: number
+	let disableNyaize: boolean
+	let resolved: FnStyle
+	let nextScale: number
+	init(_ node: any, props: Props, scale: number, disableNyaize: boolean) {
+		self.node = node
+		self.props = props
+		self.scale = scale
+		self.disableNyaize = disableNyaize
+		self.resolved = fnStyle(node, prefer.s.advancedMfm && prefer.s.animatedMfm)
+		self.nextScale = scale * (self.resolved.scale ?? 1)
+	}
+	var body: some View {
+		Group() {
+			if (node.props.name === 'ruby') {
+				MfmRubyNode(node, props: props, scale: scale, disableNyaize: disableNyaize)
+			} else if (node.props.name === 'unixtime') {
+				Group() { VuneIcon('ti ti-clock'); Text(unixTimeText(node)) }.className('mk-vune-mfm__unixtime')
+			} else if (node.props.name === 'clickable') {
+				Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }
+					.withProps({ onClick: () => activateMfmEvent(props, node) })
+			} else if (node.props.name === 'sparkle') {
+				Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }.className(prefer.s.animatedMfm ? 'mk-vune-mfm__sparkle' : '')
+			} else {
+				Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: nextScale, disableNyaize: disableNyaize) }
+					.className(resolved.className ?? '')
+					.style({ display: 'inline-block', ...(resolved.style ?? {}) })
+			}
+		}
+	}
+}
+
+struct MfmNodeView: View {
+	let node: any
+	let props: Props
+	let scale: number
+	let disableNyaize: boolean
+	let nyaizedText: string
+	init(_ node: any, props: Props, scale: number, disableNyaize: boolean) {
+		self.node = node
+		self.props = props
+		self.scale = scale
+		self.disableNyaize = disableNyaize
+		self.nyaizedText = node.type === 'text' && !disableNyaize && props.nyaize === 'respect' && props.author?.isCat === true ? Misskey.nyaize(node.props.text) : node.props?.text ?? ''
+	}
+	var body: some View {
+		Group() {
+			if (node.type === 'text') { MfmTextNode(nyaizedText, plain: props.plain === true) }
+			else if (node.type === 'bold') { Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }.bold() }
+			else if (node.type === 'strike') { Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }.style({ textDecoration: 'line-through' }) }
+			else if (node.type === 'italic') { Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }.style({ fontStyle: 'oblique' }) }
+			else if (node.type === 'small') { Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) }.fontSize('0.8em').opacity(0.7) }
+			else if (node.type === 'center') { VStack(alignment: 'center', spacing: 0) { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: disableNyaize) } }
+			else if (node.type === 'url') { MfmUrlNode(String(node.props.url), behavior: props.linkNavigationBehavior ?? null) }
+			else if (node.type === 'link') { MfmLinkNode(node, props: props, scale: scale) }
+			else if (node.type === 'mention') { MkA(`/@${node.props.host ? `${node.props.username}@${node.props.host}` : node.props.username}`, behavior: props.linkNavigationBehavior ?? null, className: 'mk-vune-mfm__mention') { Text(`@${node.props.host ? `${node.props.username}@${node.props.host}` : node.props.username}`) } }
+			else if (node.type === 'hashtag') { MkA(`${props.isNote ?? true ? '/tags/' : '/user-tags/'}${encodeURIComponent(node.props.hashtag)}`, behavior: props.linkNavigationBehavior ?? null, className: 'mk-vune-mfm__hashtag') { Text(`#${node.props.hashtag}`) } }
+			else if (node.type === 'blockCode') { Text(node.props.code).fontDesign('monospaced').className('_selectable mk-vune-mfm__code-block').withProps({ 'data-lang': node.props.lang ?? '' }) }
+			else if (node.type === 'inlineCode') { Text(node.props.code).fontDesign('monospaced').className('_selectable mk-vune-mfm__code-inline') }
+			else if (node.type === 'quote') { Group() { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: true) }.className('mk-vune-mfm__quote') }
+			else if (node.type === 'emojiCode') { MkPlainMfm(`:${node.props.name}:`, author: props.author, emojiUrls: props.emojiUrls, nowrap: true) }
+			else if (node.type === 'unicodeEmoji') { MkPlainMfm(node.props.emoji, author: props.author, emojiUrls: props.emojiUrls, nowrap: true) }
+			else if (node.type === 'mathInline') { Text(node.props.formula).fontDesign('monospaced') }
+			else if (node.type === 'mathBlock') { Text(node.props.formula).fontDesign('monospaced').className('mk-vune-mfm__math-block') }
+			else if (node.type === 'plain') { MfmNodes((node.children ?? []) as mfm.MfmNode[], props: props, scale: scale, disableNyaize: true) }
+			else if (node.type === 'search') { Link(`${node.props.query} 🔍`, `https://www.google.com/search?q=${encodeURIComponent(node.props.query)}`).withProps({ target: '_blank', rel: 'noopener noreferrer' }) }
+			else if (node.type === 'fn') { MfmFunctionNode(node, props: props, scale: scale, disableNyaize: disableNyaize) }
+		}
+	}
+}
+
+struct MfmNodes: View {
+	let nodes: mfm.MfmNode[]
+	let props: Props
+	let scale: number
+	let disableNyaize: boolean
+	init(_ nodes: mfm.MfmNode[], props: Props, scale: number, disableNyaize: boolean = false) {
+		self.nodes = nodes
+		self.props = props
+		self.scale = scale
+		self.disableNyaize = disableNyaize
+	}
+	var body: some View {
+		Group() {
+			ForEach(rows(nodes), key: row => row.index) { row in
+				MfmNodeView(row.node, props: props, scale: scale, disableNyaize: disableNyaize)
+			}
+		}
+	}
+}
+
+export struct MkMfm: View {
+	let props: Props
+	let nodes: mfm.MfmNode[]
+	init(_ props: Props) { self.props = props; self.nodes = parsed(props) }
+	var body: some View {
+		Group() { MfmNodes(nodes, props: props, scale: props.rootScale ?? 1) }
+			.className('mk-vune-mfm')
+			.style(props.nowrap ? { whiteSpace: 'pre', wordWrap: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' } : { whiteSpace: 'pre-wrap' })
+	}
+}
+
+export default MkMfm

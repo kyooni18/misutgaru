@@ -1,15 +1,26 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import XSetup from '../welcome.setup.vue';
-import XEntranceClassic from '../welcome.entrance.classic.vue';
-import XEntranceSimple from '../welcome.entrance.simple.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import XEntranceSimple from './welcome.entrance.simple.vune';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { instance: Misskey.entities.MetaDetailed | null };
-export default createVuneComponent<Props>((props) => {
-	if (!props.instance) return Group() {};
-	if (props.instance.requireSetup) return VueComponent(XSetup);
-	if ((props.instance.clientOptions.entrancePageStyle ?? 'classic') === 'classic') return VueComponent(XEntranceClassic);
-	return VueComponent(XEntranceSimple);
-});
+export struct VuneWelcomeView: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		Group() {
+			if (!props.instance) {
+				Group() {}
+			} else if (props.instance.requireSetup) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					VuneIcon('ti ti-settings').fontSize('48px')
+					Text('Instance setup is required.').fontSize('1.4em')
+				}.className('_panel _gaps').padding(32)
+			} else {
+				XEntranceSimple()
+			}
+		}
+	}}
+export default VuneWelcomeView

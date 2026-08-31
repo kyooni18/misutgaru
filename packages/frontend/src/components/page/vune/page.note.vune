@@ -1,19 +1,15 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { Group } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkNote from '@/components/MkNote.vue';
-import MkNoteDetailed from '@/components/MkNoteDetailed.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkNote from '@/components/vune/MkNote.vune';
 
-type Props = {
-	block: Extract<Misskey.entities.PageBlock, { type: 'note' }>;
-	note: Misskey.entities.Note | null;
-	rootClass?: string;
-};
-
-export default createVuneComponent<Props>((props) =>
-	Group() {
-		if (props.note && !props.block.detailed) { VueComponent(MkNote, { key: `${props.note.id}:normal`, note: props.note }) }
-		if (props.note && props.block.detailed) { VueComponent(MkNoteDetailed, { key: `${props.note.id}:detail`, note: props.note }) }
-	}.className(props.rootClass)
-);
+type Props = { block: Extract<Misskey.entities.PageBlock, { type: 'note' }>; note: Misskey.entities.Note | null; rootClass?: string };
+export struct VunePageNoteView: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		Group() { if (props.note) { MkNote(props.note, showContent: true) } }.className(props.rootClass)
+	}
+}
+export default VunePageNoteView

@@ -4,14 +4,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkCustomEmoji v-if="reaction[0] === ':'" ref="elRef" :name="reaction" :normal="true" :noStyle="noStyle" :url="emojiUrl" :fallbackToImage="true"/>
-<MkEmoji v-else ref="elRef" :emoji="reaction" :normal="true" :noStyle="noStyle"/>
+<NativeReactionIconHost
+	v-bind="$attrs"
+	:reaction="reaction"
+	:noStyle="noStyle"
+	:emojiUrl="emojiUrl"
+	:onRef="setElementRef"
+/>
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, useTemplateRef } from 'vue';
+import { defineAsyncComponent, ref } from 'vue';
+import NativeReactionIcon from './vune/MkReactionIcon.vune';
 import { useTooltip } from '@/composables/use-tooltip.js';
 import * as os from '@/os.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+defineOptions({ inheritAttrs: false });
+
+const NativeReactionIconHost = createVuneWebHost(NativeReactionIcon);
 
 const props = defineProps<{
 	reaction: string;
@@ -20,7 +31,11 @@ const props = defineProps<{
 	withTooltip?: boolean;
 }>();
 
-const elRef = useTemplateRef('elRef');
+const elRef = ref<HTMLElement | null>(null);
+
+function setElementRef(element: unknown): void {
+	elRef.value = element instanceof HTMLElement ? element : null;
+}
 
 if (props.withTooltip) {
 	useTooltip(elRef, (showing) => {
@@ -28,10 +43,12 @@ if (props.withTooltip) {
 		const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkReactionTooltip.vue')), {
 			showing,
 			reaction: props.reaction.replace(/^:(\w+):$/, ':$1@.:'),
-			anchorElement: elRef.value.$el,
+			anchorElement: elRef.value,
 		}, {
 			closed: () => dispose(),
 		});
 	});
 }
+
+defineExpose({ $el: elRef });
 </script>

@@ -11,6 +11,16 @@
 	initial-value: 0px;
 }
 
+/* Menu surfaces animate their scale through a CSS custom property so the
+ * transform channel stays independent from Material descendants. Register
+ * the property or WAAPI treats the two numeric keyframes as a discrete jump.
+ */
+@property --mk-context-menu-scale {
+	syntax: '<number>';
+	inherits: false;
+	initial-value: 1;
+}
+
 .vune-material {
 	--vune-material-blur-target: 18px;
 	--vune-material-blur: var(--vune-material-blur-target);
@@ -20,6 +30,8 @@
 	--vune-material-border-opacity: 13%;
 	--vune-material-surface: var(--MI_THEME-panel);
 	--vune-material-radius: var(--MI-radius, 12px);
+	--vune-material-motion-duration: var(--MI-motion-duration-slow, 300ms);
+	--vune-material-motion-ease: var(--MI-motion-ease-standard, ease);
 	position: relative;
 	isolation: isolate;
 	border: 1px solid color-mix(in srgb, var(--MI_THEME-fg) var(--vune-material-border-opacity), transparent);
@@ -65,7 +77,7 @@
 	pointer-events: none;
 	background: var(--vune-material-fallback-background);
 	opacity: 0;
-	animation: vune-material-opaque-enter 0.3s ease 50ms both;
+	animation: vune-material-opaque-enter var(--vune-material-motion-duration) var(--vune-material-motion-ease) 50ms both;
 }
 
 .vune-material__opaque {
@@ -81,7 +93,7 @@
 .vune-material--animated .vune-material__opaque {
 	/* Hold the theme-colored backing layer for the first rendered frames so
 	 * popup menus never flash transparent before the material backdrop settles. */
-	animation: vune-material-opaque-enter 0.3s ease 50ms both;
+	animation: vune-material-opaque-enter var(--vune-material-motion-duration) var(--vune-material-motion-ease) 50ms both;
 }
 
 @keyframes vune-material-opaque-enter {
@@ -127,6 +139,14 @@
 	--vune-material-blur-target: 20px;
 	--vune-material-opacity: 64%;
 	--vune-material-saturation: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.vune-material:not(.vune-material--native)::after,
+	.vune-material--animated .vune-material__opaque {
+		animation: none;
+		opacity: 0;
+	}
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {

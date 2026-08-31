@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneInviteCode from './vune/MkInviteCode.vune';
+import VuneInviteCode from './vune/MkInviteCode.vune?vue-host';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';

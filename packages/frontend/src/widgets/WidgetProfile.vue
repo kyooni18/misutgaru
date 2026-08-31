@@ -3,12 +3,14 @@ SPDX-FileCopyrightText: syuilo and misskey-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 <template>
-<VuneWidgetProfile :user="$i"/>
+<VuneWidgetProfileHost :user="$i"/>
 </template>
 
 <script lang="ts" setup>
 import { useWidgetPropsManager } from './widget.js';
 import VuneWidgetProfile from './vune/WidgetProfile.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+const VuneWidgetProfileHost = createVuneWebHost(VuneWidgetProfile);
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { ensureSignin } from '@/i.js';

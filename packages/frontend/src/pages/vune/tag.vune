@@ -1,15 +1,16 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkNotesTimeline from '@/components/vune/MkNotesTimeline.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import type { PageHeaderItem } from '@/types/page-header.js';
 import type { IPaginator } from '@/utility/paginator.js';
 import { i18n } from '@/i18n.js';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
 import { Material } from '@/vune/material.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
 import '@/vune/phase5-migration.scss';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	paginator: IPaginator;
@@ -18,28 +19,36 @@ type Props = {
 	signedIn?: boolean;
 	onPost?: () => void;
 };
+function postTag(props: Props): void { props.onPost?.(); }
+struct TagFooter: View {
+	let props: Props
+	var body: some View {
+		Group() {
+			if (props.signedIn) {
+				MaterialSurface(Material.bar, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
+					VStack(alignment: 'leading', spacing: 0) {
+						MkButton(rounded: true, primary: true, className: 'mk-vune-tag-post-button', onClick: { postTag(props) }) { Group() { VuneIcon('ti ti-pencil'); Text(i18n.ts.postToHashtag) } }
+					}.className('_spacer').style({ '--MI_SPACER-w': '800px', '--MI_SPACER-min': '16px', '--MI_SPACER-max': '16px' })
+				}.className('mk-vune-tag-footer')
+			}
+		}
+	}
+}
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
-			VueComponent(MkNotesTimeline, { paginator: props.paginator }),
-		),
-		footer: () => vuneBoolean(props.signedIn) ? Group() {
-			MaterialSurface(Material.bar, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
-				Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px', '--MI_SPACER-min': '16px', '--MI_SPACER-max': '16px' } },
-					VueComponent(MkButton, {
-						rounded: true,
-						primary: true,
-						class: 'mk-vune-tag-post-button',
-						onClick: () => props.onPost?.(),
-					}, {
-						default: () => Group() {
-							Element('i', { className: 'ti ti-pencil' })
-							Text(i18n.ts.postToHashtag)
-						},
-					})
-				)
-			}.className('mk-vune-tag-footer')
-		} : null,
-	})
-);
+
+
+export struct VuneTagView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], footer: TagFooter(props: props)) {
+			VStack(alignment: 'leading', spacing: 0) { MkNotesTimeline(props.paginator) }.className('_spacer').style({ '--MI_SPACER-w': '800px' })
+		}
+	}
+}
+
+export default VuneTagView

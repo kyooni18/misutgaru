@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneSourceCodeAvailablePopup from './vune/MkSourceCodeAvailablePopup.vune';
+import VuneSourceCodeAvailablePopup from './vune/MkSourceCodeAvailablePopup.vune?vue-host';
 import { miLocalStorage } from '@/local-storage.js';
 import * as os from '@/os.js';
 

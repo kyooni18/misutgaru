@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNotifications :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :excludeTypes="excludeTypes" :mentionsPaginator="mentionsPaginator" :directNotesPaginator="directNotesPaginator" :notificationsClass="$style.notifications" :onTabChange="value => tab = value"/>
+<VuneNotifications :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :excludeTypes="excludeTypes" :mentionsPaginator="mentionsPaginator" :directNotesPaginator="directNotesPaginator" :notificationsClass="$style.notifications" :onTabChange="setTab"/>
 </template>
 
 <script lang="ts" setup>
-import VuneNotifications from '@/pages/vune/notifications.vune';
+import VuneNotifications from '@/pages/vune/notifications.vune?vue-host';
 import { computed, markRaw, ref } from 'vue';
 import { notificationTypes } from 'misskey-js';
 import type { PageHeaderItem } from '@/types/page-header.js';
@@ -31,6 +31,12 @@ const directNotesPaginator = markRaw(new Paginator('notes/mentions', {
 		visibility: 'specified',
 	},
 }));
+
+function setTab(value: string): void {
+	if (value === 'all' || value === 'mentions' || value === 'directNotes') {
+		tab.value = value;
+	}
+}
 
 function setFilter(ev: PointerEvent) {
 	const typeItems = notificationTypes.map(t => ({

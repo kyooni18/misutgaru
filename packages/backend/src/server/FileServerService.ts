@@ -15,6 +15,7 @@ import { InternalStorageService } from '@/core/InternalStorageService.js';
 import { FileInfoService } from '@/core/FileInfoService.js';
 import { ImageProcessingService } from '@/core/ImageProcessingService.js';
 import { VideoProcessingService } from '@/core/VideoProcessingService.js';
+import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { handleRequestRedirectToOmitSearch } from '@/misc/fastify-hook-handlers.js';
@@ -44,6 +45,7 @@ export class FileServerService {
 		private downloadService: DownloadService,
 		private imageProcessingService: ImageProcessingService,
 		private videoProcessingService: VideoProcessingService,
+		private httpRequestService: HttpRequestService,
 		private internalStorageService: InternalStorageService,
 		private loggerService: LoggerService,
 	) {
@@ -60,6 +62,7 @@ export class FileServerService {
 			this.fileResolver,
 			this.assets,
 			this.videoProcessingService,
+			this.httpRequestService,
 		);
 		this.proxyHandler = new FileServerProxyHandler(
 			this.config,

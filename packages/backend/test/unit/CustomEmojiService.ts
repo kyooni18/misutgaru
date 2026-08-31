@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { afterEach, beforeAll, describe, test, expect } from 'vitest';
+import { afterEach, beforeAll, describe, test, expect, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
+import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { EmojiEntityService } from '@/core/entities/EmojiEntityService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { IdService } from '@/core/IdService.js';
@@ -31,6 +32,13 @@ describe('CustomEmojiService', () => {
 				],
 				providers: [
 					CustomEmojiService,
+					{
+						provide: CacheInvalidationService,
+						useValue: {
+							register: () => () => undefined,
+							publish: async () => undefined,
+						},
+					},
 					UtilityService,
 					IdService,
 					EmojiEntityService,
@@ -44,6 +52,26 @@ describe('CustomEmojiService', () => {
 		service = app.get<CustomEmojiService>(CustomEmojiService);
 		emojisRepository = app.get<EmojisRepository>(DI.emojisRepository);
 		idService = app.get<IdService>(IdService);
+	});
+
+	describe('prefetchEmojis', () => {
+		test('negative-caches batch misses so populate does not issue per-emoji queries', async () => {
+			const name = 'missing_prefetch_emoji';
+			const host = 'prefetch-miss.example';
+			const find = vi.spyOn(emojisRepository, 'find').mockResolvedValueOnce([]);
+			const findOneBy = vi.spyOn(emojisRepository, 'findOneBy').mockResolvedValue(null);
+
+			try {
+				await service.prefetchEmojis([{ name, host }]);
+				expect(find).toHaveBeenCalledTimes(1);
+
+				await expect(service.populateEmojis([`${name}@${host}`], null)).resolves.toEqual({});
+				expect(findOneBy).not.toHaveBeenCalled();
+			} finally {
+				find.mockRestore();
+				findOneBy.mockRestore();
+			}
+		});
 	});
 
 	describe('fetchEmojis', () => {

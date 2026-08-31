@@ -4,13 +4,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneReactionEffect :reaction="props.reaction" :x="props.x" :y="props.y" :zIndex="zIndex" :up="up" :angle="angle" :rootClass="$style.root" :textClass="$style.text" :upClass="$style.up"/>
+<VuneReactionEffectHost :reaction="props.reaction" :x="props.x" :y="props.y" :zIndex="zIndex" :up="up" :angle="angle" :rootClass="$style.root" :textClass="$style.text" :upClass="$style.up"/>
 </template>
 
 <script lang="ts" setup>
 import VuneReactionEffect from './vune/MkReactionEffect.vune';
 import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneReactionEffectHost = createVuneWebHost(VuneReactionEffect);
 
 const props = withDefaults(defineProps<{
 	reaction: string;

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Box, Image, Text } from 'vune-ui';
+import { VStack, Image, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
 import VuneIcon from '@/vune/Icon.vune';
 
@@ -38,9 +38,9 @@ export struct MkRolePreviewBody: View {
 	}
 
 	var body: some View {
-		Box() {
-			Box() {
-				Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
 					if (role.iconUrl) {
 						Image(role.iconUrl, { alt: '' }).className(classes.bodyBadge)
 					} else {
@@ -54,7 +54,7 @@ export struct MkRolePreviewBody: View {
 				}
 			}
 				.className(classes.bodyTitle)
-			Box() {
+			VStack(alignment: 'stretch', spacing: 0) {
 				Text(role.description)
 			}
 				.className(classes.bodyDescription)

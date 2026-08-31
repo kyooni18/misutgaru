@@ -1,65 +1,17 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { ForEach, HStack, Text, VStack } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkSelect from '@/components/MkSelect.vue';
-import MkPagination from '@/components/MkPagination.vue';
-import XAbuseReport from '@/components/MkAbuseReport.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkTip from '@/components/global/MkTip.vue';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkSelect from '@/components/vune/MkSelect.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkTip from '@/components/global/vune/MkTip.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
 import { i18n } from '@/i18n.js';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
-type Props = {
-	state: string;
-	stateDef: unknown;
-	reporterOrigin: string;
-	reporterOriginDef: unknown;
-	targetUserOrigin: string;
-	targetUserOriginDef: unknown;
-	paginator: IPaginator<any, any>;
-	rootClass: string;
-	subMenusClass: string;
-	inputsClass: string;
-	headerActions?: unknown[];
-	headerTabs?: unknown[];
-	onState?: (value: string) => void;
-	onReporterOrigin?: (value: string) => void;
-	onTargetUserOrigin?: (value: string) => void;
-	onResolved?: (id: string) => void;
-};
-
-type PaginationSlot = { items?: Array<{ id: string } & Record<string, unknown>> };
-
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => VStack(alignment: 'stretch', spacing: 0) {
-			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-				HStack(alignment: 'center', spacing: 'var(--MI-marginHalf)') {
-					VueComponent(MkButton, { type: 'routerLink', to: '/admin/abuse-report-notification-recipient', primary: true }, {
-						default: () => Text(i18n.ts.notificationSetting),
-					})
-				}.className([props.subMenusClass, '_gaps'])
-			VueComponent(MkTip, { k: 'abuses' }, { default: () => Text(i18n.ts._abuseUserReport.resolveTutorial) })
-			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-				VueComponent(MkSelect, { modelValue: props.state, items: props.stateDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onState?.(value) }, { label: () => Text(i18n.ts.state) })
-				VueComponent(MkSelect, { modelValue: props.targetUserOrigin, items: props.targetUserOriginDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onTargetUserOrigin?.(value) }, { label: () => Text(i18n.ts.reporteeOrigin) })
-				VueComponent(MkSelect, { modelValue: props.reporterOrigin, items: props.reporterOriginDef, style: { margin: 0, flex: 1 }, 'onUpdate:modelValue': (value: string) => props.onReporterOrigin?.(value) }, { label: () => Text(i18n.ts.reporterOrigin) })
-			}.className([props.inputsClass, '_gaps'])
-				VueComponent(MkPagination, { paginator: props.paginator }, {
-					default: (...args: unknown[]) => {
-						let slot = (args[0] ?? {}) as PaginationSlot;
-						return VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-							ForEach(slot.items ?? [], key: (report) => report.id) { report in
-								VueComponent(XAbuseReport, { report, onResolved: (id: string) => props.onResolved?.(id) })
-							}
-						}.className('_gaps')
-					},
-				})
-			}
-				.className([props.rootClass, '_gaps'])
-		}
-			.className('_spacer')
-			.style({ '--MI_SPACER-w': '900px' })
-	})
-);
+type Props={state:string;stateDef:unknown;reporterOrigin:string;reporterOriginDef:unknown;targetUserOrigin:string;targetUserOriginDef:unknown;paginator:IPaginator<any,any>;rootClass:string;subMenusClass:string;inputsClass:string;headerActions?:any[];headerTabs?:any[];onState?:(v:string)=>void;onReporterOrigin?:(v:string)=>void;onTargetUserOrigin?:(v:string)=>void;onResolved?:(id:string)=>void};
+function state(props:Props,v:unknown){props.onState?.(String(v))} function reporter(props:Props,v:unknown){props.onReporterOrigin?.(String(v))} function target(props:Props,v:unknown){props.onTargetUserOrigin?.(String(v))} function resolveReport(props:Props,id:string){props.onResolved?.(id)}
+export struct VuneAbusesView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { PageWithHeader(pageMetadata:null,actions:props.headerActions??[],tabs:props.headerTabs??[]){VStack(alignment:'stretch',spacing:0){VStack(alignment:'stretch',spacing:'var(--MI-margin)'){HStack(){MkButton(primary:true){Text(i18n.ts.notificationSetting)}}.className([props.subMenusClass,'_gaps']);MkTip(){Text(i18n.ts._abuseUserReport.resolveTutorial)};VStack(alignment:'stretch',spacing:'var(--MI-margin)'){MkSelect(props.state,items:props.stateDef,onChange:{v in state(props,v)},label:Text(i18n.ts.state));MkSelect(props.targetUserOrigin,items:props.targetUserOriginDef,onChange:{v in target(props,v)},label:Text(i18n.ts.reporteeOrigin));MkSelect(props.reporterOrigin,items:props.reporterOriginDef,onChange:{v in reporter(props,v)},label:Text(i18n.ts.reporterOrigin))}.className([props.inputsClass,'_gaps']);MkPagination(props.paginator){VStack(alignment: 'stretch', spacing: 0){ForEach(props.paginator.items.value as any[],key:r=>r.id){r in VStack(alignment: 'stretch', spacing: 0){if(r.reporter){MkAvatar(r.reporter,className:'mk-vune-abuse__avatar');MkUserName({user:r.reporter})};Text(r.comment??r.reason??r.id);if(r.createdAt){MkTimeValue(r.createdAt)};if(!r.resolved){MkButton(primary:true,onClick:{resolveReport(props,r.id)}){Text(i18n.ts._abuseUserReport.resolve)}}}.className('_panel').padding(16)}}.className('_gaps')}}.className([props.rootClass,'_gaps'])}.className('_spacer').style({'--MI_SPACER-w':'900px'})} } }
+export default VuneAbusesView

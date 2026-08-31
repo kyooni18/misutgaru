@@ -1,21 +1,34 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach } from 'vune-ui';
 import * as Misskey from 'misskey-js';
-import XRoom from '@/pages/chat/XRoom.vue';
+import XRoom from '@/pages/chat/vune/XRoom.vune';
 import MkResult from '@/components/global/vune/MkResult.vune';
 import MkLoading from '@/components/global/vune/MkLoading.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = { memberships: Misskey.entities.ChatRoomMembership[]; fetching?: boolean };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: '_gaps' },
-		props.memberships.length > 0 ? Element('div', { className: '_gaps_s' },
-			ForEach(props.memberships, key: membership => membership.id) { membership in
-				if (membership.room) { VueComponent(XRoom, { room: membership.room }) }
-			},
-		) : null,
-		!props.fetching && props.memberships.length === 0 ? MkResult('empty', text: i18n.ts._chat.noRooms) : null,
-		props.fetching ? MkLoading() : null,
-	)
-);
+
+export struct HomeJoiningRooms: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (props.memberships.length > 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+				ForEach(props.memberships, key: membership => membership.id) { membership in
+					if (membership.room) { XRoom(membership.room) }
+				}
+				}.className('_gaps_s')
+			}
+			if (!props.fetching && props.memberships.length === 0) { MkResult('empty', text: i18n.ts._chat.noRooms) }
+			if (props.fetching) { MkLoading() }
+		}.className('_gaps')
+	}
+}
+
+export default HomeJoiningRooms

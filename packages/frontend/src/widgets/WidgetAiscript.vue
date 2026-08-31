@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: syuilo and misskey-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 <template>
-<VuneWidgetAiscript
+<VuneWidgetAiscriptHost
 	:showHeader="widgetProps.showHeader"
 	:script="widgetProps.script"
 	:logs="logs"
@@ -17,6 +17,7 @@ import { ref } from 'vue';
 import { Interpreter, Parser, utils } from '@syuilo/aiscript';
 import { useWidgetPropsManager } from './widget.js';
 import VuneWidgetAiscript from './vune/WidgetAiscript.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import type { Value } from '@syuilo/aiscript/interpreter/value.js';
@@ -27,6 +28,7 @@ import { i18n } from '@/i18n.js';
 import { genId } from '@/utility/id.js';
 
 const name = 'aiscript';
+const VuneWidgetAiscriptHost = createVuneWebHost(VuneWidgetAiscript);
 
 const widgetPropsDef = {
 	showHeader: {

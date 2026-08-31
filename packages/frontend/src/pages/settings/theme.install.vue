@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneThemeInstall :code="installThemeCode" :onCodeChange="value => installThemeCode = value" :onPreview="previewTheme" :onInstall="install"/>
+<VuneThemeInstall :code="installThemeCode" :onCodeChange="(value: string | null) => installThemeCode = value" :onPreview="previewTheme" :onInstall="install"/>
 </template>
 
 <script lang="ts" setup>
-import VuneThemeInstall from './vune/theme-install.vune';
+import VuneThemeInstall from './vune/theme-install.vune?vue-host';
 import { ref, computed } from 'vue';
 import { themeManager, installTheme, handleThemeInstallError } from '@/theme.js';
 import { parseThemeCode } from '@@/js/theme.js';

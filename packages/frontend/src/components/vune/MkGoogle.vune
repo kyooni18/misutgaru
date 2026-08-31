@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Binding, Box, Button, Group, Text, TextField } from 'vune-ui';
+import { VStack, Binding, Button, Group, Text, TextField } from 'vune-ui';
 import { i18n } from '@/i18n.js';
 import VuneIcon from '@/vune/Icon.vune';
 
@@ -32,7 +32,7 @@ export struct MkGoogle: View {
 	}
 
 	var body: some View {
-		Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
 			TextField(
 				Binding(
 					() => query,

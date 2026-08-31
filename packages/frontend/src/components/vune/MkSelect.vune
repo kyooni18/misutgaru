@@ -1,0 +1,117 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Binding, Picker, VStack, type ViewGraphValue } from 'vune-ui';
+import './MkFormControls.scss';
+
+type SelectAction = (value: any) => void;
+type SelectOption = { key: string; value: any; label: string; disabled: boolean };
+function ignoreSelectChange(_value: any): void {}
+
+function selectOptions(items: unknown): SelectOption[] {
+	if (!Array.isArray(items)) return [];
+	const result: SelectOption[] = [];
+	let index = 0;
+	for (const item of items) {
+		if (!item || typeof item !== 'object') continue;
+		const record = item as Record<string, unknown>;
+		if (record.type === 'group' && Array.isArray(record.items)) {
+			const group = typeof record.label === 'string' ? record.label : '';
+			for (const child of record.items) {
+				if (!child || typeof child !== 'object') continue;
+				const option = child as Record<string, unknown>;
+				if (typeof option.label !== 'string' || !('value' in option)) continue;
+				result.push({ key: String(index++), value: option.value, label: group ? `${group} · ${option.label}` : option.label, disabled: option.disabled === true });
+			}
+			continue;
+		}
+		if (typeof record.label !== 'string' || !('value' in record)) continue;
+		result.push({ key: String(index++), value: record.value, label: record.label, disabled: record.disabled === true });
+	}
+	return result;
+}
+
+function selectedKey(options: SelectOption[], value: unknown): string {
+	return options.find(option => Object.is(option.value, value))?.key ?? '';
+}
+
+function selectValue(options: SelectOption[], key: string, onChange: SelectAction): void {
+	const option = options.find(item => item.key === key);
+	if (option) onChange(option.value);
+}
+
+export struct MkSelect: View {
+	let value: any
+	let items: unknown
+	let disabled: boolean
+	let readonly: boolean
+	let required: boolean
+	let autofocus: boolean
+	let placeholder: string
+	let small: boolean
+	let large: boolean
+	let className: string
+	let style: any
+	let onChange: SelectAction
+	let label: ViewGraphValue
+	let caption: ViewGraphValue
+	let options: SelectOption[]
+	let pickerOptions: Array<{ label: string; value: string; disabled: boolean }>
+
+	init(
+		_ value: any,
+		items: unknown,
+		disabled: boolean = false,
+		readonly: boolean = false,
+		required: boolean = false,
+		autofocus: boolean = false,
+		placeholder: string = '',
+		small: boolean = false,
+		large: boolean = false,
+		className: string = '',
+		style: any = undefined,
+		@Action onChange: SelectAction = ignoreSelectChange,
+		label: ViewGraphValue = null,
+		caption: ViewGraphValue = null,
+	) {
+		self.value = value
+		self.items = items
+		self.disabled = disabled
+		self.readonly = readonly
+		self.required = required
+		self.autofocus = autofocus
+		self.placeholder = placeholder
+		self.small = small
+		self.large = large
+		self.className = className
+		self.style = style
+		self.onChange = onChange
+		self.label = label
+		self.caption = caption
+		self.options = selectOptions(items)
+		self.pickerOptions = [
+			...(placeholder ? [{ label: placeholder, value: '', disabled: true }] : []),
+			...self.options.map(option => ({ label: option.label, value: option.key, disabled: option.disabled })),
+		]
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (label) { VStack(alignment: 'leading', spacing: 0) { label }.className('mk-vune-field__label') }
+			VStack(alignment: 'leading', spacing: 0) {
+				Picker(Binding(
+					() => selectedKey(options, value),
+					(key: string) => { selectValue(options, key, onChange) },
+				), pickerOptions)
+					.className('mk-vune-field__select')
+					.withProps({ disabled: disabled || readonly, required, autofocus })
+			}
+				.className('mk-vune-field__shell')
+				.style({ minHeight: small ? '33px' : large ? '39px' : '36px' })
+			if (caption) { VStack(alignment: 'leading', spacing: 0) { caption }.className('mk-vune-field__caption') }
+		}
+			.className(['mk-vune-field', disabled ? 'mk-vune-field--disabled' : null, className])
+			.style(style ?? {})
+	}
+}
+
+export default MkSelect

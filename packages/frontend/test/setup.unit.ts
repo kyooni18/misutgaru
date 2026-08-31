@@ -48,6 +48,7 @@ const { updateI18n } = await import('@/i18n.js');
 updateI18n(locales['en-US']);
 
 export const preferState: Record<string, unknown> = {
+	nsfw: 'respect',
 
 	// なんかtestがうまいこと動かないのでここに書く
 	dataSaver: {
@@ -60,7 +61,7 @@ export const preferState: Record<string, unknown> = {
 	mutingEmojis: [],
 };
 
-export let preferReactive: Record<string, Ref<unknown>> = {};
+export const preferReactive: Record<string, Ref<unknown>> = {};
 
 for (const key in preferState) {
 	if (preferState[key] !== undefined) {
@@ -70,7 +71,6 @@ for (const key in preferState) {
 
 // XXX: store somehow becomes undefined in vitest?
 vi.mock('@/preferences.js', () => {
-
 	return {
 		prefer: {
 			s: preferState,

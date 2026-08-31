@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneWelcomeClassic from './vune/welcome.entrance.classic.vune';
+import VuneWelcomeClassic from './vune/welcome.entrance.classic.vune?vue-host';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { getProxiedImageUrl } from '@/utility/media-proxy.js';
 import { instance as meta } from '@/instance.js';
@@ -134,13 +134,26 @@ misskeyApiGet('federation/instances', {
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
 	border-radius: 999px;
-	overflow: clip;
+	overflow-x: auto;
+	overflow-y: clip;
+	scrollbar-width: none;
 	width: 800px;
 	padding: 8px 0;
 
 	@media (max-width: 900px) {
 		display: none;
 	}
+}
+
+.federation::-webkit-scrollbar {
+	display: none;
+}
+
+.federationTrack {
+	display: inline-flex;
+	align-items: center;
+	width: max-content;
+	min-width: 100%;
 }
 
 .federationInstance {

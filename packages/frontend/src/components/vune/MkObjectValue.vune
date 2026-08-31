@@ -1,0 +1,79 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Button, ForEach, Text, type ViewGraphValue } from 'vune-ui';
+import number from '@/filters/number.js';
+import './MkObjectValue.scss';
+
+type Entry = { key: string; value: unknown };
+
+function isObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function isEmpty(value: unknown): boolean {
+	return Array.isArray(value) ? value.length === 0 : isObject(value) ? Object.keys(value).length === 0 : false;
+}
+function collapsable(value: unknown): boolean {
+	return (Array.isArray(value) || isObject(value)) && !isEmpty(value);
+}
+function preview(value: unknown): string {
+	if (typeof value === 'string') return '"..."';
+	if (Array.isArray(value)) return '[...]';
+	if (isObject(value)) return '{...}';
+	return '';
+}
+
+export struct ObjectValueRow: View {
+	let entry: Entry
+	@State var collapsed: boolean = true
+	init(_ entry: Entry) { self.entry = entry }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			Button(collapsable(entry.value) ? (collapsed.value ? '+' : '-') : '') {
+				if (collapsable(entry.value)) { collapsed.value = !collapsed.value }
+			}
+				.className(['_button', 'mk-vune-object-value__toggle', collapsable(entry.value) ? 'mk-vune-object-value__toggle--visible' : null])
+			Text(`${entry.key}:`).className('mk-vune-object-value__key')
+			if (collapsable(entry.value) && collapsed.value) {
+				Button(preview(entry.value)) { collapsed.value = false }
+					.className('_button mk-vune-object-value__v mk-vune-object-value__v--compact')
+			} else {
+				VStack(alignment: 'stretch', spacing: 0) { valueView(entry.value) }.className('mk-vune-object-value__v mk-vune-object-value__v--expanded')
+			}
+		}
+			.className('mk-vune-object-value__kv')
+			.withProps({ 'data-collapsed': collapsable(entry.value) ? String(collapsed.value) : 'false' })
+	}
+}
+
+function valueView(value: unknown): ViewGraphValue {
+	if (value === null) return Text('null').className('mk-vune-object-value__null');
+	if (typeof value === 'boolean') return Text(value ? 'true' : 'false').className(['mk-vune-object-value__boolean', value ? 'mk-vune-object-value__boolean--true' : 'mk-vune-object-value__boolean--false']);
+	if (typeof value === 'string') return Text(`"${value}"`).className('mk-vune-object-value__string');
+	if (typeof value === 'number') return Text(number(value)).className('mk-vune-object-value__number');
+	if (Array.isArray(value)) {
+		if (value.length === 0) return Text('[]').className('mk-vune-object-value__empty');
+		return VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(value.map((item, index) => ({ key: String(index), index, item })), key: row => row.index) { row in
+				VStack(alignment: 'stretch', spacing: 0) { Text(`${row.index + 1}: `); valueView(row.item) }.className('mk-vune-object-value__element')
+			}
+		}.className('mk-vune-object-value__array');
+	}
+	if (isObject(value)) {
+		const entries = Object.keys(value).map(key => ({ key, value: value[key] }));
+		if (entries.length === 0) return Text('{}').className('mk-vune-object-value__empty');
+		return VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(entries, key: entry => entry.key) { entry in ObjectValueRow(entry) }
+		}.className('mk-vune-object-value__object');
+	}
+	return Text(String(value));
+}
+
+export struct MkObjectValue: View {
+	let value: unknown
+	init(_ value: unknown) { self.value = value }
+	var body: some View {
+		return VStack(alignment: 'stretch', spacing: 0) { valueView(value) }.className('mk-vune-object-value _monospace')
+	}
+}
+
+export default MkObjectValue

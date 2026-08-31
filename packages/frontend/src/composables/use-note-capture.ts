@@ -113,70 +113,82 @@ function pollingSubscribe(props: {
 	});
 }
 
+// One Stream listener owns noteUpdated dispatch for the whole client. The old
+// per-MkNote listener model made every event walk every recently mounted note,
+// and mounting the same note in multiple surfaces duplicated event fan-out.
+const realtimeCaptureRefs = new Map<string, number>();
+let realtimeCaptureConnection: Misskey.IStream | null = null;
+
+function onRealtimeNoteUpdated(noteData: NoteUpdatedEvent): void {
+	const { type, id, body } = noteData;
+	if (!realtimeCaptureRefs.has(id)) return;
+
+	switch (type) {
+		case 'reacted': {
+			noteEvents.emit(`reacted:${id}`, {
+				userId: body.userId,
+				reaction: body.reaction,
+				emoji: body.emoji,
+			});
+			break;
+		}
+
+		case 'unreacted': {
+			noteEvents.emit(`unreacted:${id}`, {
+				userId: body.userId,
+				reaction: body.reaction,
+			});
+			break;
+		}
+
+		case 'pollVoted': {
+			noteEvents.emit(`pollVoted:${id}`, {
+				userId: body.userId,
+				choice: body.choice,
+			});
+			break;
+		}
+
+		case 'deleted': {
+			globalEvents.emit('noteDeleted', id);
+			break;
+		}
+	}
+}
+
+function onRealtimeConnected(): void {
+	if (!realtimeCaptureConnection) return;
+	for (const [id, references] of realtimeCaptureRefs) {
+		if (references > 0) realtimeCaptureConnection.send('sr', { id });
+	}
+}
+
+function getRealtimeCaptureConnection(): Misskey.IStream {
+	if (realtimeCaptureConnection) return realtimeCaptureConnection;
+	const connection = useStream();
+	realtimeCaptureConnection = connection;
+	connection.on('noteUpdated', onRealtimeNoteUpdated);
+	connection.on('_connected_', onRealtimeConnected);
+	return connection;
+}
+
 function realtimeSubscribe(props: {
 	note: Pick<Misskey.entities.Note, 'id' | 'createdAt'>;
 }): void {
-	const note = props.note;
-	const connection = useStream();
-
-	function onStreamNoteUpdated(noteData: NoteUpdatedEvent): void {
-		const { type, id, body } = noteData;
-
-		if (id !== note.id) return;
-
-		switch (type) {
-			case 'reacted': {
-				noteEvents.emit(`reacted:${id}`, {
-					userId: body.userId,
-					reaction: body.reaction,
-					emoji: body.emoji,
-				});
-				break;
-			}
-
-			case 'unreacted': {
-				noteEvents.emit(`unreacted:${id}`, {
-					userId: body.userId,
-					reaction: body.reaction,
-				});
-				break;
-			}
-
-			case 'pollVoted': {
-				noteEvents.emit(`pollVoted:${id}`, {
-					userId: body.userId,
-					choice: body.choice,
-				});
-				break;
-			}
-
-			case 'deleted': {
-				globalEvents.emit('noteDeleted', id);
-				break;
-			}
-		}
-	}
-
-	function capture(withHandler = false): void {
-		connection.send('sr', { id: note.id });
-		if (withHandler) connection.on('noteUpdated', onStreamNoteUpdated);
-	}
-
-	function decapture(withHandler = false): void {
-		connection.send('un', { id: note.id });
-		if (withHandler) connection.off('noteUpdated', onStreamNoteUpdated);
-	}
-
-	function onStreamConnected() {
-		capture(false);
-	}
-
-	capture(true);
-	connection.on('_connected_', onStreamConnected);
+	const id = props.note.id;
+	const connection = getRealtimeCaptureConnection();
+	const references = realtimeCaptureRefs.get(id) ?? 0;
+	realtimeCaptureRefs.set(id, references + 1);
+	if (references === 0) connection.send('sr', { id });
 
 	onUnmounted(() => {
-		decapture(true);
-		connection.off('_connected_', onStreamConnected);
+		const nextReferences = (realtimeCaptureRefs.get(id) ?? 1) - 1;
+		if (nextReferences <= 0) {
+			realtimeCaptureRefs.delete(id);
+			connection.send('un', { id });
+		} else {
+			realtimeCaptureRefs.set(id, nextReferences);
+		}
 	});
 }
 

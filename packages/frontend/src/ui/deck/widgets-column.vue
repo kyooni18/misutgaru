@@ -22,7 +22,7 @@ import type { Column } from '@/deck.js';
 import type { Widget } from '@/components/MkWidgets.vue';
 import { addColumnWidget, removeColumnWidget, setColumnWidgets, updateColumnWidget } from '@/deck.js';
 import { i18n } from '@/i18n.js';
-import VuneWidgetsColumn from './vune/widgets-column.vune';
+import VuneWidgetsColumn from './vune/widgets-column.vune?vue-host';
 
 const props = defineProps<{
 	column: Column;

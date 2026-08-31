@@ -9,7 +9,7 @@ import type { StoryObj } from '@storybook/vue3';
 import { userDetailed } from '../../../.storybook/fakes.js';
 import MkUserName from './MkUserName.vue';
 export const Default = {
-	render(args) {
+	render(args: Record<string, unknown>) {
 		return {
 			components: {
 				MkUserName,
@@ -19,17 +19,10 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUserName v-bind="props"/>',
+			template: '<MkUserName v-bind="args"/>',
 		};
 	},
-	async play({ canvasElement }) {
+	async play({ canvasElement }: { canvasElement: HTMLElement }) {
 		await expect(canvasElement).toHaveTextContent(userDetailed().name as string);
 	},
 	args: {
@@ -41,7 +34,7 @@ export const Default = {
 } satisfies StoryObj<typeof MkUserName>;
 export const Anonymous = {
 	...Default,
-	async play({ canvasElement }) {
+	async play({ canvasElement }: { canvasElement: HTMLElement }) {
 		await expect(canvasElement).toHaveTextContent(userDetailed().username);
 	},
 	args: {

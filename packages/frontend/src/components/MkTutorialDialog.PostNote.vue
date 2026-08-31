@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import { reactive } from 'vue';
 import { i18n } from '@/i18n.js';
-import VuneTutorialPostNote from './vune/MkTutorialDialog.PostNote.vune';
+import VuneTutorialPostNote from './vune/MkTutorialDialog.PostNote.vune?vue-host';
 
 const exampleCWNote = reactive<Misskey.entities.Note>({
 	id: '0000000000',

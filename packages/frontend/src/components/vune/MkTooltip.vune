@@ -1,0 +1,124 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Group, VStack, Animation, type ViewGraphValue } from 'vune-ui';
+import * as os from '@/os.js';
+import { calcPopupPosition } from '@/utility/popup-position.js';
+import './MkTooltip.scss';
+
+type Direction = 'top' | 'bottom' | 'right' | 'left';
+type ClosedAction = () => void;
+function ignoreClosed(): void {}
+
+function positionRef(
+	anchorElement: HTMLElement | undefined,
+	x: number | undefined,
+	y: number | undefined,
+	direction: Direction,
+	innerMargin: number,
+) {
+	let current: HTMLElement | null = null;
+	let frame: number | null = null;
+	let observer: ResizeObserver | null = null;
+
+	const position = () => {
+		if (current == null) return;
+		const data = calcPopupPosition(current, {
+			anchorElement,
+			direction,
+			align: 'center',
+			innerMargin,
+			x,
+			y,
+		});
+		current.style.transformOrigin = data.transformOrigin;
+		current.style.left = `${data.left}px`;
+		current.style.top = `${data.top}px`;
+	};
+	const schedule = () => {
+		if (current == null || frame != null) return;
+		frame = window.requestAnimationFrame(() => {
+			frame = null;
+			position();
+		});
+	};
+	const stop = () => {
+		if (frame != null) window.cancelAnimationFrame(frame);
+		frame = null;
+		observer?.disconnect();
+		observer = null;
+		window.removeEventListener('scroll', schedule, true);
+		window.removeEventListener('resize', schedule);
+		window.visualViewport?.removeEventListener('scroll', schedule);
+		window.visualViewport?.removeEventListener('resize', schedule);
+	};
+
+	return (element: HTMLElement | null) => {
+		stop();
+		current = element;
+		if (current == null) return;
+		window.addEventListener('scroll', schedule, { capture: true, passive: true });
+		window.addEventListener('resize', schedule, { passive: true });
+		window.visualViewport?.addEventListener('scroll', schedule, { passive: true });
+		window.visualViewport?.addEventListener('resize', schedule, { passive: true });
+		if (typeof ResizeObserver !== 'undefined') {
+			observer = new ResizeObserver(schedule);
+			observer.observe(current);
+			if (anchorElement != null) observer.observe(anchorElement);
+		}
+		schedule();
+	};
+}
+
+function closedRef(onClosed: ClosedAction) {
+	return (element: HTMLElement | null) => { if (element) queueMicrotask(onClosed); };
+}
+
+export struct MkTooltip: View {
+	let showing: boolean
+	let anchorElement: HTMLElement | undefined
+	let x: number | undefined
+	let y: number | undefined
+	let maxWidth: number
+	let direction: Direction
+	let innerMargin: number
+	let onClosed: ClosedAction
+	let content: ViewGraphValue
+
+	init(
+		showing: boolean,
+		anchorElement: HTMLElement | undefined = undefined,
+		x: number | undefined = undefined,
+		y: number | undefined = undefined,
+		maxWidth: number = 250,
+		direction: Direction = 'top',
+		innerMargin: number = 0,
+		@Action onClosed: ClosedAction = ignoreClosed,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.showing = showing
+		self.anchorElement = anchorElement
+		self.x = x
+		self.y = y
+		self.maxWidth = maxWidth
+		self.direction = direction
+		self.innerMargin = innerMargin
+		self.onClosed = onClosed
+		self.content = content()
+	}
+
+	var body: some View {
+		Group() {
+			if (showing) {
+				VStack(alignment: 'leading', spacing: 0) { content }
+					.className('_acrylic _shadow mk-vune-tooltip')
+					.style({ zIndex: os.claimZIndex('high'), maxWidth: `${maxWidth}px` })
+					.elementRef(positionRef(anchorElement, x, y, direction, innerMargin))
+					.animation(Animation.easeInOut(0.125), value: showing)
+			} else {
+				Text('').hidden().elementRef(closedRef(onClosed))
+			}
+		}
+	}
+}
+
+export default MkTooltip

@@ -25,7 +25,7 @@ import { miLocalStorage } from '@/local-storage.js';
 import { prefer } from '@/preferences.js';
 import { themeManager } from '@/theme.js';
 import { getBgColor } from '@/utility/get-bg-color.js';
-import VuneFoldableSection from './vune/MkFoldableSection.vune';
+import VuneFoldableSection from './vune/MkFoldableSection.vune?vue-host';
 
 const miLocalStoragePrefix = 'ui:folder:' as const;
 

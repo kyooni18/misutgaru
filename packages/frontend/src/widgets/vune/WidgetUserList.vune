@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Button, ForEach, Text, type ViewGraphValue } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkContainer from '@/components/MkContainer.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkContainer from '@/components/vune/MkContainer.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
 import MkLoading from '@/components/global/vune/MkLoading.vune';
+import VuneIcon from '@/vune/Icon.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
 
 type Props = {
 	showHeader?: boolean;
@@ -19,28 +20,48 @@ type Props = {
 	onConfigure?: () => void;
 };
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkContainer, { showHeader: vuneBoolean(props.showHeader, true), class: 'mkw-userList' }, {
-		icon: () => Element('i', { className: 'ti ti-users' }),
-		header: () => Text(props.list ? props.list.name : i18n.ts._widgets.userList),
-		func: (slotProps: any) => Element('button', {
-			className: ['_button', slotProps.buttonStyleClass],
-			onClick: () => props.onConfigure?.(),
-		}, Element('i', { className: 'ti ti-settings' })),
-		default: () => Element('div', { className: props.rootClass },
-			props.listId == null
-				? Element('div', { className: 'init' },
-					VueComponent(MkButton, { primary: true, onClick: () => props.onChooseList?.() }, { default: () => Text(i18n.ts._widgets._userList.chooseList) }),
-				)
-				: vuneBoolean(props.fetching)
-					? MkLoading()
-					: Element('div', { className: 'users' },
-						ForEach(props.users, key: (user) => user.id) { user in
-							Element('span', { className: 'user' },
-								VueComponent(MkAvatar, { user, class: 'avatar', indicator: true, link: true, preview: true }),
-							)
-						},
-					),
-		),
-	})
-);
+function ignoreAction(): void {}
+function runConfigure(props: Props): void { (props.onConfigure ?? ignoreAction)(); }
+
+function configureButton(props: Props): ViewGraphValue {
+	return Button(action: { runConfigure(props) }, label: { VuneIcon('ti ti-settings') })
+		.className('_button mk-vune-container__header-button');
+}
+
+function userListContent(props: Props): ViewGraphValue {
+	if (props.listId == null) {
+		return VStack(alignment: 'stretch', spacing: 0) { VStack(alignment: 'stretch', spacing: 0) { MkButton(primary: true, onClick: { props.onChooseList?.() }) { Text(i18n.ts._widgets._userList.chooseList) } }.className('init') }.className(props.rootClass);
+	}
+	if (props.fetching) {
+		return VStack(alignment: 'stretch', spacing: 0) { MkLoading() }.className(props.rootClass);
+	}
+	return VStack(alignment: 'stretch', spacing: 0) {
+		VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(props.users, key: user => user.id) { user in
+				VStack(alignment: 'stretch', spacing: 0) { MkAvatar(user, indicator: true, link: true, preview: true, className: 'avatar') }.className('user')
+			}
+		}.className('users')
+	}.className(props.rootClass);
+}
+
+export struct WidgetUserList: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkContainer(
+			showHeader: props.showHeader ?? true,
+			className: 'mkw-userList',
+			icon: VuneIcon('ti ti-users'),
+			header: Text(props.list ? props.list.name : i18n.ts._widgets.userList),
+			func: configureButton(props),
+		) {
+			userListContent(props)
+		}
+	}
+}
+
+export default WidgetUserList

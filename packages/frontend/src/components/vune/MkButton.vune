@@ -1,0 +1,105 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Button, HStack, type ViewGraphValue } from 'vune-ui';
+import './MkButton.scss';
+
+function ignoreButtonClick(_event: PointerEvent): void {}
+function ignoreNativeButtonAction(): void {}
+
+export struct MkButton: View {
+	let type: 'button' | 'submit' | 'reset'
+	let primary: boolean
+	let gradate: boolean
+	let rounded: boolean
+	let inline: boolean
+	let wait: boolean
+	let danger: boolean
+	let full: boolean
+	let small: boolean
+	let large: boolean
+	let transparent: boolean
+	let iconOnly: boolean
+	let active: boolean
+	let disabled: boolean
+	let className: string
+	let style: any
+	let testId: string
+	let onClick: (event: PointerEvent) => void
+	let content: ViewGraphValue
+
+	init(
+		type: 'button' | 'submit' | 'reset' = 'button',
+		primary: boolean = false,
+		gradate: boolean = false,
+		rounded: boolean = false,
+		inline: boolean = false,
+		wait: boolean = false,
+		danger: boolean = false,
+		full: boolean = false,
+		small: boolean = false,
+		large: boolean = false,
+		transparent: boolean = false,
+		iconOnly: boolean = false,
+		active: boolean = false,
+		disabled: boolean = false,
+		className: string = '',
+		style: any = undefined,
+		testId: string = '',
+		@Action onClick: (event: PointerEvent) => void = ignoreButtonClick,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.type = type
+		self.primary = primary
+		self.gradate = gradate
+		self.rounded = rounded
+		self.inline = inline
+		self.wait = wait
+		self.danger = danger
+		self.full = full
+		self.small = small
+		self.large = large
+		self.transparent = transparent
+		self.iconOnly = iconOnly
+		self.active = active
+		self.disabled = disabled
+		self.className = className
+		self.style = style
+		self.testId = testId
+		self.onClick = onClick
+		self.content = content()
+	}
+
+	var body: some View {
+		Button(action: { ignoreNativeButtonAction() }, label: {
+			HStack(alignment: 'center', spacing: '0.45em') { content }
+				.className('mk-vune-button__content')
+				.style({ width: 'auto' })
+		})
+			.className([
+				'_button',
+				'mk-vune-button',
+				primary ? 'mk-vune-button--primary' : null,
+				gradate ? 'mk-vune-button--gradate' : null,
+				rounded ? 'mk-vune-button--rounded' : null,
+				inline ? 'mk-vune-button--inline' : null,
+				wait ? 'mk-vune-button--wait' : null,
+				danger ? 'mk-vune-button--danger' : null,
+				full ? 'mk-vune-button--full' : null,
+				small ? 'mk-vune-button--small' : null,
+				large ? 'mk-vune-button--large' : null,
+				transparent ? 'mk-vune-button--transparent' : null,
+				iconOnly ? 'mk-vune-button--icon-only' : null,
+				active ? 'mk-vune-button--active' : null,
+				className,
+			])
+			.style(style ?? {})
+			.withProps({
+				type,
+				disabled: disabled || wait,
+				'data-testid': testId || undefined,
+				onClick,
+			})
+	}
+}
+
+export default MkButton

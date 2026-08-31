@@ -18,7 +18,7 @@ import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } 
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { BLOCK_IO_READ_HIGH_WATER_MARK } from '@/misc/block-io.js';
 
-type ProxySource = DownloadedFileResult | FileResolveResult;
+type ProxySource = DownloadedFileResult | Exclude<FileResolveResult, { kind: 'remote-link' }>;
 type CleanupableFile = ProxySource & { cleanup: () => void };
 type AvailableFile = Exclude<ProxySource, { kind: 'not-found' | 'unavailable' }>;
 type ProxyQuery = {
@@ -267,7 +267,13 @@ export class FileServerProxyHandler {
 			const key = url.replace(`${this.config.url}/files/`, '').split('/').shift();
 			if (!key) throw new StatusError('Invalid File Key', 400, 'Invalid File Key');
 
-			return await this.fileResolver.resolveFileByAccessKey(key);
+			const file = await this.fileResolver.resolveFileByAccessKey(key);
+			// The image proxy still needs a local file for transforms. Ordinary
+			// /files delivery streams remote-link results without this download.
+			if (file.kind === 'remote-link') {
+				return await this.fileResolver.downloadAndDetectTypeFromUrl(file.url);
+			}
+			return file;
 		}
 
 		return await this.fileResolver.downloadAndDetectTypeFromUrl(url);

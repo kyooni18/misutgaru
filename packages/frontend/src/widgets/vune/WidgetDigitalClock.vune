@@ -1,28 +1,63 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import MkDigitalClock from '@/components/MkDigitalClock.vue';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import MkDigitalClock from '@/components/vune/MkDigitalClock.vune';
 
-type Props = {
-	transparent?: boolean;
-	fontSize: number;
-	showMs?: boolean;
-	showLabel?: boolean;
-	tzAbbrev: string;
-	tzOffset: number;
-	tzOffsetLabel: string;
-	rootClass: string;
-	labelClass: string;
-};
+export struct WidgetDigitalClock: View {
+	let transparent: boolean
+	let fontSize: number
+	let showMs: boolean
+	let showLabel: boolean
+	let tzAbbrev: string
+	let tzOffsetLabel: string
+	let rootClass: string
+	let labelClass: string
+	let hh: string
+	let mm: string
+	let ss: string
+	let ms: string
+	let showColon: boolean
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', {
-		'data-testid': 'mkw-digitalClock',
-		className: ['_monospace', props.rootClass, !vuneBoolean(props.transparent) ? '_panel' : null],
-		style: { fontSize: `${props.fontSize}em` },
-	},
-		vuneBoolean(props.showLabel) ? Element('div', { className: props.labelClass }, props.tzAbbrev) : null,
-		Element('div', {}, VueComponent(MkDigitalClock, { showMs: vuneBoolean(props.showMs), offset: props.tzOffset })),
-		vuneBoolean(props.showLabel) ? Element('div', { className: props.labelClass }, props.tzOffsetLabel) : null,
-	)
-);
+	init(
+		transparent: boolean = false,
+		fontSize: number,
+		showMs: boolean = false,
+		showLabel: boolean = false,
+		tzAbbrev: string,
+		tzOffsetLabel: string,
+		rootClass: string,
+		labelClass: string,
+		hh: string,
+		mm: string,
+		ss: string,
+		ms: string,
+		showColon: boolean = false,
+	) {
+		self.transparent = transparent
+		self.fontSize = fontSize
+		self.showMs = showMs
+		self.showLabel = showLabel
+		self.tzAbbrev = tzAbbrev
+		self.tzOffsetLabel = tzOffsetLabel
+		self.rootClass = rootClass
+		self.labelClass = labelClass
+		self.hh = hh
+		self.mm = mm
+		self.ss = ss
+		self.ms = ms
+		self.showColon = showColon
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (showLabel) { Text(tzAbbrev).className(labelClass) }
+			MkDigitalClock(hh, mm, ss, ms, showMs: showMs, showColon: showColon)
+			if (showLabel) { Text(tzOffsetLabel).className(labelClass) }
+		}
+			.className(['_monospace', rootClass, !transparent ? '_panel' : null])
+			.fontSize(`${fontSize}em`)
+			.withProps({ 'data-testid': 'mkw-digitalClock' })
+	}
+}
+
+export default WidgetDigitalClock

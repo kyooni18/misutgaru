@@ -1,22 +1,45 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import XPv from '../activity.pv.vue';
-import XNotes from '../activity.notes.vue';
-import XFollowing from '../activity.following.vue';
-import MkFoldableSection from '@/components/MkFoldableSection.vue';
-import MkHeatmap from '@/components/MkHeatmap.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkFoldableSection from '@/components/vune/MkFoldableSection.vune';
+import MkHeatmap from '@/components/vune/MkHeatmap.vune';
+import VuneIcon from '@/vune/Icon.vune';
 
-function header(icon: string, label: string) { return Group() { Element('i', { className: icon }); Text(' ' + label) }; }
 type Props = { user: Misskey.entities.User };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-		Group() {
-			VueComponent(MkFoldableSection, { class: 'item' }, { header: () => header('ti ti-activity', 'Heatmap'), default: () => VueComponent(MkHeatmap, { user: props.user, src: 'notes' }) })
-			VueComponent(MkFoldableSection, { class: 'item' }, { header: () => header('ti ti-pencil', 'Notes'), default: () => VueComponent(XNotes, { user: props.user }) })
-			VueComponent(MkFoldableSection, { class: 'item' }, { header: () => header('ti ti-users', 'Following'), default: () => VueComponent(XFollowing, { user: props.user }) })
-			VueComponent(MkFoldableSection, { class: 'item' }, { header: () => header('ti ti-eye', 'PV'), default: () => VueComponent(XPv, { user: props.user }) })
-		}.className('_gaps'),
-	)
-);
+function userCount(user: Misskey.entities.User, key: string): number { return Number((user as any)[key] ?? 0); }
+struct ActivityHeader: View {
+	let icon: string
+	let label: string
+	var body: some View { Group() { VuneIcon(icon); Text(' ' + label) } }
+}
+struct ActivityMetricSection: View {
+	let icon: string
+	let label: string
+	let value: number
+	var body: some View {
+		MkFoldableSection(header: ActivityHeader(icon: icon, label: label), className: 'item') { Text(String(value)).bold().fontSize('1.5em') }
+	}
+}
+
+
+export struct VuneActivityView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			Group() {
+				MkFoldableSection(header: ActivityHeader(icon: 'ti ti-activity', label: 'Heatmap'), className: 'item') { MkHeatmap() }
+				ActivityMetricSection(icon: 'ti ti-pencil', label: 'Notes', value: userCount(props.user, 'notesCount'))
+				ActivityMetricSection(icon: 'ti ti-users', label: 'Following', value: userCount(props.user, 'followingCount'))
+				ActivityMetricSection(icon: 'ti ti-eye', label: 'Profile views', value: userCount(props.user, 'followersCount'))
+			}.className('_gaps')
+		}.className('_spacer').style({ '--MI_SPACER-w': '700px' })
+	}
+}
+
+export default VuneActivityView

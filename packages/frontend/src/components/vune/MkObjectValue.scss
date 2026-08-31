@@ -1,0 +1,14 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-object-value { display: inline; }
+.mk-vune-object-value__null, .mk-vune-object-value__empty { opacity: .7; }
+.mk-vune-object-value__boolean { color: var(--MI_THEME-codeBoolean); }
+.mk-vune-object-value__boolean--true { font-weight: bold; }
+.mk-vune-object-value__boolean--false { opacity: .7; }
+.mk-vune-object-value__string { color: var(--MI_THEME-codeString); }
+.mk-vune-object-value__number { color: var(--MI_THEME-codeNumber); }
+.mk-vune-object-value__array, .mk-vune-object-value__object { display: inline; }
+.mk-vune-object-value__element, .mk-vune-object-value__kv { display: block; padding-left: 16px; }
+.mk-vune-object-value__toggle { width: 16px; color: var(--MI_THEME-accent); visibility: hidden; }
+.mk-vune-object-value__toggle--visible { visibility: visible; }
+.mk-vune-object-value__key { display: inline; margin-right: 8px; }
+.mk-vune-object-value__v { display: inline; }

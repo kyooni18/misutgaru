@@ -9,14 +9,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:searched="searched"
 	:searchResults="searchResults"
 	:searchResultItemClass="$style.searchResultItem"
-	:onQueryChange="value => searchQuery = value"
+	:onQueryChange="(value: string) => searchQuery = value"
 	:onSearch="search"
 />
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneRoomSearch from './vune/room.search.vune';
+import VuneRoomSearch from './vune/room.search.vune?vue-host';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 

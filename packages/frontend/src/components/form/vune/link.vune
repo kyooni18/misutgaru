@@ -1,29 +1,52 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import MkA from '@/components/global/MkA.vue';
-import MkCondensedLine from '@/components/global/MkCondensedLine.vue';
-import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Group, HStack, Link, VStack, ZStack, type ViewGraphValue } from 'vune-ui';
+import MkA from '@/components/global/vune/MkA.vune';
+import VuneIcon from '@/vune/Icon.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 
 type Props = { to?: string; active?: boolean; external?: boolean; behavior?: null | 'window' | 'browser'; inline?: boolean; classes: Record<string, string> };
 
-export default createVuneComponent<Props>((props, slots) => {
-	const content = () => Group() {
-		Element('span', { className: props.classes.icon }, VueSlot(slots.icon))
-		Element('div', { className: props.classes.headerText },
-			Element('div', {}, VueComponent(MkCondensedLine, { minScale: 2 / 3 }, { default: () => VueSlot(slots.default) })),
-		)
-		Element('span', { className: props.classes.suffix },
-			Element('span', { className: props.classes.suffixText }, VueSlot(slots.suffix)),
-			Element('i', { className: props.to && props.external ? 'ti ti-external-link' : 'ti ti-chevron-right' }),
-		)
-	};
-	const mainClass = [props.classes.main, props.active ? props.classes.active : null, '_button'];
-	const main = props.to
-		? (props.external
-			? Element('a', { className: mainClass, href: props.to, target: '_blank' }, content())
-			: VueComponent(MkA, { class: mainClass, to: props.to, behavior: props.behavior }, { default: content }))
-		: Element('div', { className: mainClass }, content());
-	return Element(props.to ? 'div' : 'button', {
-		className: [props.classes.root, props.inline ? props.classes.inline : null, props.to ? null : '_button'],
-	}, main);
-});
+export struct VuneLinkView: View {
+	let props: Props
+	let icon: ViewGraphValue
+	let suffix: ViewGraphValue
+	let content: ViewGraphValue
+
+	init(_ props: Props, icon: ViewGraphValue = null, suffix: ViewGraphValue = null, @ViewBuilder content: () => ViewGraphValue) {
+		self.props = props
+		self.icon = icon
+		self.suffix = suffix
+		self.content = content()
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (props.to) {
+				if (props.external) {
+					Link('', props.to).overlay(alignment: 'leading') {
+						HStack(alignment: 'center', spacing: 0) {
+							ZStack(alignment: 'center') { icon }.className(props.classes.icon)
+							VStack(alignment: 'leading', spacing: 0) { content }.className(props.classes.headerText)
+							HStack(alignment: 'center', spacing: 4) { suffix; VuneIcon('ti ti-external-link') }.className(props.classes.suffix)
+						}
+					}.className([props.classes.main, props.active ? props.classes.active : null, '_button']).withProps({ target: '_blank' })
+				} else {
+					MkA(props.to, behavior: props.behavior ?? null, className: [props.classes.main, props.active ? props.classes.active : null, '_button']) {
+						ZStack(alignment: 'center') { icon }.className(props.classes.icon)
+						VStack(alignment: 'leading', spacing: 0) { content }.className(props.classes.headerText)
+						HStack(alignment: 'center', spacing: 4) { suffix; VuneIcon('ti ti-chevron-right') }.className(props.classes.suffix)
+					}
+				}
+			} else {
+				MkButton(transparent: true, className: [props.classes.main, props.active ? props.classes.active : ''].filter(Boolean).join(' ')) {
+					ZStack(alignment: 'center') { icon }.className(props.classes.icon)
+					VStack(alignment: 'leading', spacing: 0) { content }.className(props.classes.headerText)
+					HStack(alignment: 'center', spacing: 4) { suffix; VuneIcon('ti ti-chevron-right') }.className(props.classes.suffix)
+				}
+			}
+		}.className([props.classes.root, props.inline ? props.classes.inline : null])
+	}
+}
+
+export default VuneLinkView

@@ -1,0 +1,116 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, ForEach, State, type StateRef } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import MkError from '@/components/vune/MkError.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
+import MkNotification from '@/components/vune/MkNotification.vune';
+import MkNote from '@/components/vune/MkNote.vune';
+import { i18n } from '@/i18n.js';
+import './MkStreamingNotificationsTimeline.scss';
+
+type Notification = Misskey.entities.Notification;
+type NotificationCache = {
+	items: StateRef<Notification[] | null>;
+	loading: StateRef<boolean>;
+	error: StateRef<boolean>;
+};
+
+const notificationCaches = new Map<string, NotificationCache>();
+
+function cacheFor(excludeTypes: readonly string[] | null | undefined): NotificationCache {
+	const key = excludeTypes == null ? '' : [...excludeTypes].sort().join(',');
+	let cache = notificationCaches.get(key);
+	if (!cache) {
+		cache = { items: State<Notification[] | null>(null), loading: State(false), error: State(false) };
+		notificationCaches.set(key, cache);
+	}
+	return cache;
+}
+
+function cacheAndLoad(excludeTypes: readonly string[] | null | undefined): NotificationCache {
+	const cache = cacheFor(excludeTypes);
+	loadNotifications(cache.items, cache.loading, cache.error, excludeTypes);
+	return cache;
+}
+
+function loadNotifications(
+	items: StateRef<Notification[] | null>,
+	loading: StateRef<boolean>,
+	error: StateRef<boolean>,
+	excludeTypes: readonly string[] | null | undefined,
+): void {
+	if (loading.value || items.value != null) return;
+	loading.value = true;
+	error.value = false;
+	void misskeyApi('i/notifications', {
+		limit: 30,
+		excludeTypes: excludeTypes == null ? undefined : [...excludeTypes],
+	}).then(result => {
+		items.value = result;
+	}).catch(() => {
+		error.value = true;
+	}).finally(() => {
+		loading.value = false;
+	});
+}
+
+function retryNotifications(
+	items: StateRef<Notification[] | null>,
+	loading: StateRef<boolean>,
+	error: StateRef<boolean>,
+	excludeTypes: readonly string[] | null | undefined,
+): void {
+	items.value = null;
+	loadNotifications(items, loading, error, excludeTypes);
+}
+
+function mountNotifications(cache: NotificationCache, excludeTypes: readonly string[] | null | undefined) {
+	return (element: HTMLElement | null) => {
+		if (element) loadNotifications(cache.items, cache.loading, cache.error, excludeTypes);
+	};
+}
+
+function notificationBody(notification: Notification): any {
+	if (
+		(notification.type === 'reply' || notification.type === 'quote' || notification.type === 'mention')
+		&& 'note' in notification
+		&& notification.note
+	) {
+		return MkNote(notification.note, className: 'mk-vune-notifications-timeline__content');
+	}
+	return MkNotification(notification);
+}
+
+export struct MkStreamingNotificationsTimeline: View {
+	let excludeTypes: readonly string[] | null | undefined
+	let className: string
+	let cache: NotificationCache
+
+	init(excludeTypes: readonly string[] | null | undefined = undefined, className: string = '') {
+		self.excludeTypes = excludeTypes
+		self.className = className
+		self.cache = cacheAndLoad(excludeTypes)
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (cache.items.value == null && !cache.error.value) { MkLoading() }
+			else if (cache.error.value) {
+				MkError(onRetry: { retryNotifications(cache.items, cache.loading, cache.error, excludeTypes) })
+			}
+			else if (cache.items.value != null && cache.items.value.length === 0) { MkResult('empty', text: i18n.ts.noNotifications) }
+			else if (cache.items.value != null) {
+				ForEach(cache.items.value, key: item => item.id) { item in
+					VStack(alignment: 'stretch', spacing: 0) {
+						notificationBody(item)
+					}.className('mk-vune-notifications-timeline__item').withProps({ 'data-scroll-anchor': item.id })
+				}
+			}
+		}.className([className, 'mk-vune-notifications-timeline'])
+			.elementRef(mountNotifications(cache, excludeTypes))
+	}
+}
+export default MkStreamingNotificationsTimeline

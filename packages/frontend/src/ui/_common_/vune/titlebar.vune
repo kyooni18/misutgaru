@@ -1,31 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Button, Image, Text } from 'vune-ui';
+import { VStack, Button, Image, Text } from 'vune-ui';
 import { host } from '@@/js/config.js';
 import { instance } from '@/instance.js';
-import { htmlElement } from '@/vune/native.js';
 import '@/vune/phase6-migration.scss';
 
 export struct Titlebar: View {
 	init() {}
 
 	var body: some View {
-		htmlElement('div', { className: 'mk-vune-titlebar' },
-			htmlElement('div', { className: 'mk-vune-titlebar__title' },
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
 				Image(instance.iconUrl || '/favicon.ico', { alt: '' })
-					.className('mk-vune-titlebar__icon'),
-				Text(instance.name ?? host).className('mk-vune-titlebar__instance'),
-			),
-			htmlElement('div', { className: 'mk-vune-titlebar__controls' },
-				htmlElement('span', { className: 'mk-vune-titlebar__left' },
+					.className('mk-vune-titlebar__icon')
+				Text(instance.name ?? host).className('mk-vune-titlebar__instance')
+			}.className('mk-vune-titlebar__title')
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
 					Button(action: { window.history.back() }, label: {
 						Text('').className('ti ti-arrow-left')
 					})
-						.className(['_button', 'mk-vune-titlebar__button']),
-				),
-				htmlElement('span', { className: 'mk-vune-titlebar__right' }),
-			),
-		)
+						.className(['_button', 'mk-vune-titlebar__button'])
+				}.className('mk-vune-titlebar__left')
+				VStack(alignment: 'stretch', spacing: 0).className('mk-vune-titlebar__right')
+			}.className('mk-vune-titlebar__controls')
+		}.className('mk-vune-titlebar')
 	}
 }
 

@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
+
+export struct XMessage: View {
+	let message: any
+	let isSearchResult: boolean
+	init(_ message: any, isSearchResult: boolean = false) { self.message = message; self.isSearchResult = isSearchResult }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (message.fromUser) { MkAvatar(message.fromUser, className: 'mk-vune-chat-message__avatar') }
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (message.fromUser) { MkUserName({ user: message.fromUser, nowrap: true }) }
+				MkTimeValue(message.createdAt)
+				if (message.text) { Text(message.text) }
+			}.className('mk-vune-chat-message__body')
+		}.className(['mk-vune-chat-message', isSearchResult ? 'mk-vune-chat-message--search' : null])
+	}
+}
+
+export default XMessage

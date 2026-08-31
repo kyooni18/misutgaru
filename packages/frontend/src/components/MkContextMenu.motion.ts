@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
+import { animateVuneTransition, surfaceMotionAnimation, uiMotion } from '@/vune/motion.js';
 
 export type ContextMenuMotionPhase = 'enter' | 'leave';
 
 export const contextMenuScaleProperty = '--mk-context-menu-scale';
 
-export const contextMenuAnimation = Animation.spring(0.3, 0.825);
+export const contextMenuAnimation = uiMotion.surfaceEnter;
+
+export function contextMenuAnimationForPhase(phase: ContextMenuMotionPhase) {
+	return surfaceMotionAnimation(phase);
+}
 
 /**
  * Keep menu geometry on its own scale track. The leave fade hides the element
@@ -58,14 +61,14 @@ export function animateContextMenuTransition(
 	keyframes: Keyframe[] = contextMenuRootKeyframes(phase),
 ): void {
 	const handles = [
-		animateVuneTransition(animatedElement, keyframes, contextMenuAnimation, () => {}),
+		animateVuneTransition(animatedElement, keyframes, contextMenuAnimationForPhase(phase), () => {}),
 	];
 
 	// MaterialSurface's enter animation is CSS-driven, but closing must restore
 	// the opaque backing layer while the menu collapses.
 	if (phase === 'leave') {
 		for (const opaque of animatedElement.querySelectorAll<HTMLElement>('.vune-material__opaque')) {
-			handles.push(animateVuneTransition(opaque, contextMenuOpaqueKeyframes(phase), contextMenuAnimation, () => {}));
+			handles.push(animateVuneTransition(opaque, contextMenuOpaqueKeyframes(phase), contextMenuAnimationForPhase(phase), () => {}));
 		}
 	}
 

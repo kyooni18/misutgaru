@@ -1,0 +1,224 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+
+.mk-vune-notification {
+	position: relative;
+	display: flex;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 24px 32px;
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
+	contain: content;
+	content-visibility: auto;
+	contain-intrinsic-size: 0 90px;
+}
+
+.mk-vune-notification__head {
+	position: relative;
+	flex: 0 0 42px;
+	width: 42px;
+	height: 42px;
+	min-width: 42px;
+	min-height: 42px;
+}
+
+.mk-vune-notification__avatar,
+.mk-vune-notification__app-icon,
+.mk-vune-notification__event-avatar {
+	display: block;
+	width: 42px;
+	height: 42px;
+}
+
+.mk-vune-notification__app-icon {
+	object-fit: cover;
+	border-radius: calc(var(--MI-radius) / 2);
+}
+
+.mk-vune-notification__event-avatar {
+	display: grid !important;
+	place-items: center;
+	width: 34px !important;
+	height: 34px;
+	justify-content: center;
+	border-radius: 50%;
+	color: var(--MI_THEME-fgOnAccent);
+}
+
+.mk-vune-notification__event-avatar--heart {
+	background: var(--MI_THEME-love);
+}
+
+.mk-vune-notification__event-avatar--reaction {
+	background: var(--MI_THEME-warn);
+}
+
+.mk-vune-notification__event-avatar--renote {
+	background: var(--MI_THEME-renote);
+}
+
+.mk-vune-notification__event-avatar--other {
+	background: var(--MI_THEME-accent);
+}
+
+.mk-vune-notification__sub-icon {
+	position: absolute;
+	z-index: 2;
+	right: -2px;
+	bottom: -2px;
+	display: grid !important;
+	place-items: center;
+	box-sizing: border-box;
+	width: 20px !important;
+	height: 20px;
+	border: 3px solid var(--MI_THEME-panel);
+	border-radius: 50%;
+	font-size: 10px;
+	line-height: 1;
+	color: var(--MI_THEME-fgOnAccent);
+}
+
+.mk-vune-notification__sub-icon--follow,
+.mk-vune-notification__sub-icon--reply,
+.mk-vune-notification__sub-icon--login {
+	background: var(--MI_THEME-accent);
+}
+
+.mk-vune-notification__sub-icon--renote {
+	background: var(--MI_THEME-renote);
+}
+
+.mk-vune-notification__sub-icon--reaction,
+.mk-vune-notification__sub-icon--achievement {
+	background: var(--MI_THEME-warn);
+}
+
+.mk-vune-notification__sub-icon--warning {
+	background: var(--MI_THEME-error);
+}
+
+.mk-vune-notification__sub-icon--other {
+	background: var(--MI_THEME-fg);
+}
+
+.mk-vune-notification__reaction-icon {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.mk-vune-notification__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mk-vune-notification__header {
+	display: flex;
+	align-items: baseline;
+	min-width: 0;
+	width: 100%;
+	white-space: nowrap;
+}
+
+.mk-vune-notification__header-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mk-vune-notification__time {
+	flex: 0 0 auto;
+	margin-left: auto;
+	font-size: 0.9em;
+	color: color-mix(in srgb, var(--MI_THEME-fg) 65%, transparent);
+}
+
+.mk-vune-notification__text {
+	display: block;
+	min-width: 0;
+	width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mk-vune-notification__text--muted {
+	color: color-mix(in srgb, var(--MI_THEME-fg) 68%, transparent);
+}
+
+.mk-vune-notification__text--warning {
+	color: var(--MI_THEME-error);
+}
+
+.mk-vune-notification__message {
+	font-style: oblique;
+}
+
+.mk-vune-notification__reaction-users {
+	display: flex;
+	justify-content: flex-start !important;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 4px;
+}
+
+.mk-vune-notification__reaction-user {
+	position: relative;
+	width: 38px;
+	height: 38px;
+}
+
+.mk-vune-notification__reaction-user-avatar {
+	display: block;
+	width: 38px;
+	height: 38px;
+}
+
+.mk-vune-notification__reaction-user-badge {
+	position: absolute;
+	z-index: 2;
+	right: -2px;
+	bottom: -2px;
+	display: grid !important;
+	place-items: center;
+	box-sizing: border-box;
+	width: 20px !important;
+	height: 20px;
+	padding: 2px;
+	border: 3px solid var(--MI_THEME-panel);
+	border-radius: 50%;
+	background: var(--MI_THEME-panel);
+}
+
+.mk-vune-notification__reaction-user-icon {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.mk-vune-notification__request-actions {
+	display: flex;
+	max-width: 300px;
+	align-self: flex-start;
+	gap: 8px;
+}
+
+.mk-vune-notification__request-button {
+	flex: 1 1 0;
+}
+
+@container (max-width: 600px) {
+	.mk-vune-notification {
+		padding: 16px;
+		font-size: 0.9em;
+	}
+}
+
+@container (max-width: 500px) {
+	.mk-vune-notification {
+		padding: 12px;
+		font-size: 0.85em;
+	}
+}

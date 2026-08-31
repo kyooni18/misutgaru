@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="show" ref="el" :class="[$style.root]">
+<div v-if="show" ref="el" class="_materialBar" :class="[$style.root]">
 	<div :class="[$style.upper, { [$style.slim]: narrow, [$style.thin]: thin_ }]">
 		<div v-if="!thin_ && (narrow || deviceKind === 'smartphone') && props.displayMyAvatar && $i" class="_button" @click="openAccountMenu">
 			<MkAvatar :class="$style.avatar" :user="$i"/>
@@ -133,9 +133,8 @@ onUnmounted(() => {
 
 <style lang="scss" module>
 .root {
-	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
-	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
-	backdrop-filter: var(--MI-blur, blur(15px));
+	--vune-material-surface: var(--MI_THEME-pageHeaderBg);
+	--vune-material-fallback-background: var(--MI_THEME-pageHeaderBg);
 	border-bottom: solid 0.5px transparent;
 	width: 100%;
 	color: var(--MI_THEME-pageHeaderFg);

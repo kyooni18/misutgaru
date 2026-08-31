@@ -17,6 +17,7 @@ import { store } from '@/store.js';
 import { $i } from '@/i.js';
 import { signout } from '@/signout.js';
 import { syncServiceWorkerAccounts } from '@/utility/sync-service-worker-accounts.js';
+import MkWaitingDialog from '@/components/MkWaitingDialog.vue';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -167,7 +168,7 @@ export async function refreshCurrentAccount() {
 
 export async function login(token: AccountWithToken['token'], redirect?: string) {
 	const showing = ref(true);
-	const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
+	const { dispose } = popup(MkWaitingDialog, {
 		success: false,
 		showing: showing,
 	}, {

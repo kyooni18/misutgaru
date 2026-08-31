@@ -4,17 +4,16 @@
  */
 
 import { inject } from 'vue';
-import { page } from '@/router.definition.js';
 import { $i } from '@/i.js';
 import { Nirax } from '@/lib/nirax.js';
-import { ROUTE_DEF } from '@/router.definition.js';
+import { notFoundVuneRoute, ROUTE_DEF } from '@/router.definition.js';
 import { analytics } from '@/analytics.js';
 import { DI } from '@/di.js';
 
 export type Router = Nirax<typeof ROUTE_DEF>;
 
 export function createRouter(fullPath: string): Router {
-	return new Nirax(ROUTE_DEF, fullPath, !!$i, page(() => import('@/pages/not-found.vue')));
+	return new Nirax(ROUTE_DEF, fullPath, !!$i, notFoundVuneRoute);
 }
 
 export const mainRouter = createRouter(window.location.pathname + window.location.search + window.location.hash);

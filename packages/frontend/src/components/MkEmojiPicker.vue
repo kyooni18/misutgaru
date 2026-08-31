@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<NativeMkEmojiPicker ref="pickerRoot" :model="nativeModel" :class="$attrs.class" :style="$attrs.style"/>
+<NativeMkEmojiPickerHost ref="pickerRoot" :model="nativeModel" :class="$attrs.class" :style="$attrs.style"/>
 <!--
 	<input
 		ref="searchEl"
@@ -124,13 +124,13 @@ import {
 	emojilist,
 	emojiCharByCategory,
 	unicodeEmojiCategories as categories,
+	colorizeEmoji,
 	getEmojiName,
 	getUnicodeEmoji,
 } from '@@/js/emojilist.js';
 import type { UnicodeEmojiDef } from '@@/js/emojilist.js';
+import { char2fluentEmojiFilePath, char2twemojiFilePath } from '@@/js/emoji-base.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
-import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
-import MkEmoji from '@/components/global/MkEmoji.vue';
 import * as os from '@/os.js';
 import { isTouchUsing } from '@/utility/touch.js';
 import { deviceKind } from '@/utility/device-kind.js';
@@ -142,11 +142,13 @@ import { checkReactionPermissions } from '@/utility/check-reaction-permissions.j
 import { prefer } from '@/preferences.js';
 import { useRouter } from '@/router.js';
 import { haptic } from '@/utility/haptic.js';
-import { VueComponent } from '@/vune/vue.js';
 import NativeMkEmojiPicker from '@/components/vune/MkEmojiPicker.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+import { getProxiedImageUrl, getStaticImageUrl } from '@/utility/media-proxy.js';
 import type { NativeEmojiPickerGroup, NativeEmojiPickerItem, NativeEmojiPickerModel, NativeEmojiPickerSection } from '@/components/vune/MkEmojiPicker.types.js';
 
 const router = useRouter();
+const NativeMkEmojiPickerHost = createVuneWebHost(NativeMkEmojiPicker);
 
 const props = withDefaults(defineProps<{
 	showPinned?: boolean;
@@ -448,13 +450,44 @@ function settings() {
 function pickerItem(value: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef): NativeEmojiPickerItem {
 	const key = getKey(value);
 	const custom = key.startsWith(':');
+	const muted = prefer.r.mutingEmojis.value.includes(key);
+	if (muted) {
+		return {
+			key,
+			disabled: !canReact(value),
+			title: custom ? key.slice(1, -1) : getEmojiName(key),
+			imageUrl: '/client-assets/unknown.png',
+		};
+	}
+
+	if (!custom) {
+		const emojiStyle = prefer.s.emojiStyle;
+		return {
+			key,
+			disabled: !canReact(value),
+			title: getEmojiName(key),
+			...(emojiStyle === 'native'
+				? { text: colorizeEmoji(key) }
+				: { imageUrl: (emojiStyle === 'twemoji' ? char2twemojiFilePath : char2fluentEmojiFilePath)(key) }),
+		};
+	}
+
+	const customEmoji = typeof value === 'object' && !('char' in value)
+		? value
+		: customEmojisMap.get(key.slice(1, -1));
+	const rawUrl = customEmoji?.url;
+	const proxiedUrl = rawUrl == null
+		? '/client-assets/dummy.png'
+		: rawUrl.startsWith('/emoji/')
+			? `${rawUrl}?fallback=1`
+			: getProxiedImageUrl(rawUrl, 'emoji', false, true);
+	const imageUrl = prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(proxiedUrl) : proxiedUrl;
 	return {
 		key,
 		disabled: !canReact(value),
-		title: custom ? key.slice(1, -1) : getEmojiName(key),
-		view: custom
-			? VueComponent(MkCustomEmoji, { name: key, normal: true, fallbackToImage: true, class: 'emoji' })
-			: VueComponent(MkEmoji, { emoji: key, normal: true, class: 'emoji' }),
+		title: key.slice(1, -1),
+		imageUrl,
+		fallbackUrl: '/client-assets/dummy.png',
 	};
 }
 
@@ -534,7 +567,17 @@ function buildNativeModel(): NativeEmojiPickerModel {
 }
 
 const nativeModel = ref<NativeEmojiPickerModel>(buildNativeModel());
-watch([q, recentlyUsedEmojis, customEmojis, emojiPickerScale, emojiPickerWidth, emojiPickerHeight], () => {
+watch([
+	q,
+	recentlyUsedEmojis,
+	customEmojis,
+	emojiPickerScale,
+	emojiPickerWidth,
+	emojiPickerHeight,
+	prefer.r.mutingEmojis,
+	() => prefer.s.emojiStyle,
+	() => prefer.s.disableShowingAnimatedImages,
+], () => {
 	nativeModel.value = buildNativeModel();
 }, { deep: true });
 

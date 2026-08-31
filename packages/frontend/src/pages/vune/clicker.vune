@@ -1,11 +1,23 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import MkClickerGame from '@/components/MkClickerGame.vue';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import { definePage } from '@/page.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui';
+import MkClickerGame from '@/components/vune/MkClickerGame.vune';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import type { PageMetadata } from '@/page.js';
 
-definePage(() => ({ title: '🍪👈', icon: 'ti ti-cookie' }));
-export default createVuneComponent(() =>
-	VueComponent(PageWithHeader, {}, { default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } }, VueComponent(MkClickerGame)) })
-);
+
+export struct VuneClickerView: View {
+	let pageMetadata: PageMetadata | null
+
+	init(pageMetadata: PageMetadata | null = null) {
+		self.pageMetadata = pageMetadata
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: pageMetadata) {
+			VStack(alignment: 'stretch', spacing: 0) { MkClickerGame() }.className('_spacer').style({ '--MI_SPACER-w': '800px' })
+		}
+	}
+}
+
+export default VuneClickerView

@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneQr from './vune/qr.vune';
+import VuneQr from './vune/qr.vune?vue-host';
 import { ref } from 'vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';

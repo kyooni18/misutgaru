@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <TransitionGroup
+	:css="prefer.s.animation"
 	tag="div"
 	:enterActiveClass="$style.transition_items_enterActive"
 	:leaveActiveClass="$style.transition_items_leaveActive"
@@ -61,6 +62,7 @@ let dropCallback: ((targetInstanceId: string) => void) | null = null;
 import { nextTick } from 'vue';
 import { getDragData, setDragData } from '@/drag-and-drop.js';
 import { genId } from '@/utility/id.js';
+import { prefer } from '@/preferences.js';
 
 const slots = defineSlots<{
 	default(props: { item: T; index: number; dragStart: (ev: DragEvent) => void }): any;

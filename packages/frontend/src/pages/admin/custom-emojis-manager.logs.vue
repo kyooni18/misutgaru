@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneEmojiLogs :logs="logs" :filteredLogs="filteredLogs" :showingSuccessLogs="showingSuccessLogs" :settings="setupGrid()" :onToggleSuccess="value => showingSuccessLogs = value"/>
+<VuneEmojiLogs :logs="logs" :filteredLogs="filteredLogs" :showingSuccessLogs="showingSuccessLogs" :settings="setupGrid()" :onToggleSuccess="(value: boolean) => showingSuccessLogs = value"/>
 </template>
 
 <script setup lang="ts">
-import VuneEmojiLogs from './vune/custom-emojis-manager.logs.vune';
+import VuneEmojiLogs from './vune/custom-emojis-manager.logs.vune?vue-host';
 import { computed, ref, toRefs } from 'vue';
 import { i18n } from '@/i18n.js';
 import { copyGridDataToClipboard } from '@/components/grid/grid-utils.js';

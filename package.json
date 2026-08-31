@@ -59,7 +59,7 @@
 		"vune:report": "node scripts/vune-migration-report.mjs",
 		"vune:check": "node scripts/check-vune.mjs packages/frontend/src && node scripts/check-vune-native.mjs packages/frontend/src",
 		"verify:integrity": "node scripts/check-repository-integrity.mjs",
-		"verify:modules": "pnpm --filter @misutgaru/core test && pnpm --dir packages/modules/o0o0o run test:focused && pnpm modules:build && node --test packages/modules/Vune/tests/vue-host-codegen.test.mjs packages/modules/Vune/tests/devtools.test.mjs packages/modules/Vune/tests/web-primitives.test.mjs packages/modules/Vune/tests/motion-planner.test.mjs packages/modules/Vune/tests/lazy-index.test.mjs packages/modules/Vune/tests/transition-lifecycle.test.mjs packages/modules/Vune/tests/presentation-primitives.test.mjs && node scripts/check-vune-native.mjs packages/frontend/src",
+		"verify:modules": "pnpm --filter @misutgaru/core test && pnpm modules:build && pnpm --dir packages/modules/Vune --filter @vune-ui/animation run test:focused && node --test packages/modules/Vune/tests/vue-host-codegen.test.mjs packages/modules/Vune/tests/devtools.test.mjs packages/modules/Vune/tests/web-primitives.test.mjs packages/modules/Vune/tests/motion-planner.test.mjs packages/modules/Vune/tests/lazy-index.test.mjs packages/modules/Vune/tests/transition-lifecycle.test.mjs packages/modules/Vune/tests/presentation-primitives.test.mjs && node scripts/check-vune-native.mjs packages/frontend/src",
 		"verify:repo": "pnpm verify:db-schema && pnpm verify:integrity && pnpm verify:modules && pnpm vune:check && pnpm --filter frontend typecheck && pnpm --filter backend typecheck",
 		"verify:full": "pnpm verify:repo && pnpm test:full && pnpm build:app",
 		"modules:build": "node scripts/build-local-modules.mjs",

@@ -1,11 +1,10 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Divider, ForEach, Group, HStack, NavigationLink, ScrollView, Text, VStack, type ViewGraphValue } from 'vune-ui';
+import { Button, Divider, ForEach, Group, HStack, NavigationLink, ScrollView, Text, VStack, type ViewGraphValue } from 'vune-ui';
 import MkEllipsis from './MkEllipsis.vune';
 import MkSwitchButton from './MkSwitchButton.vune';
 import VuneIcon from '@/vune/Icon.vune';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
-import { buttonElement } from '@/vune/native.js';
 import type { NativeMenuModel, NativeMenuRow } from './MkMenu.types.js';
 import './MkMenu.vune.scss';
 
@@ -90,21 +89,18 @@ function menuNavigationRow(row: NativeMenuRow): ViewGraphValue {
 }
 
 function menuButtonRow(row: NativeMenuRow): ViewGraphValue {
-	return buttonElement({
-		type: 'button',
-		// Native host props currently accept a string className. Passing the array
-		// directly is discarded while Vune snapshots native HTML attributes,
-		// which leaves the browser's default button styling in the menu.
-		className: itemClasses(row).join(' '),
-		role: row.kind === 'switch' ? 'menuitemcheckbox' : row.kind === 'radio' ? 'menuitemradio' : 'menuitem',
-		tabIndex: 0,
-		disabled: row.disabled,
-		'aria-checked': row.kind === 'switch' || row.kind === 'radio' ? row.checked : undefined,
-		onClick: event => activateMenuButton(row, event),
-		onMouseEnter: row.onHover,
-		onMouseMove: row.onMove,
-		onMouseLeave: row.onLeave,
-	}, MkMenuLabel(row))
+	return Button(action: {}, label: { MkMenuLabel(row) })
+		.className(itemClasses(row))
+		.withProps({
+			role: row.kind === 'switch' ? 'menuitemcheckbox' : row.kind === 'radio' ? 'menuitemradio' : 'menuitem',
+			tabIndex: 0,
+			disabled: row.disabled,
+			'aria-checked': row.kind === 'switch' || row.kind === 'radio' ? row.checked : undefined,
+			onClick: (event: PointerEvent) => activateMenuButton(row, event),
+			onMouseEnter: row.onHover,
+			onMouseMove: row.onMove,
+			onMouseLeave: row.onLeave,
+		})
 }
 
 struct MkMenuRow: View {

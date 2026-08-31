@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+
+.mk-vune-notifications-timeline {
+	container-type: inline-size;
+	width: 100%;
+	background: var(--MI_THEME-panel);
+}
+
+.mk-vune-notifications-timeline__item {
+	width: 100%;
+	border-bottom: solid 0.5px var(--MI_THEME-divider);
+}
+
+.mk-vune-notifications-timeline__item:last-child {
+	border-bottom: 0;
+}
+
+.mk-vune-notifications-timeline__content {
+	width: 100%;
+}

@@ -12,8 +12,8 @@ function note(id: string, text: string, username = 'alice'): Misskey.entities.No
 		user: {
 			id: 'user-1', username, name: username, host: null,
 			avatarUrl: null, avatarBlurhash: null, isBot: false, isCat: false,
-			emojis: {}, onlineStatus: 'unknown', badgeRoles: [],
-		} as Misskey.entities.UserLite,
+			avatarDecorations: [], emojis: {}, onlineStatus: 'unknown', badgeRoles: [],
+		} as unknown as Misskey.entities.UserLite,
 		text,
 		cw: null,
 		visibility: 'public',

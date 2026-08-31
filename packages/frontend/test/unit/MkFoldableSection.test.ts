@@ -27,7 +27,7 @@ describe('MkFoldableSection', () => {
 		expect(body?.getAttribute('aria-hidden')).toBe('true');
 		expect(body?.style.height).toBe('0px');
 		expect(body?.style.opacity).toBe('0');
-		expect(header?.querySelector('i')?.className).toContain('ti-chevron-down');
+		expect(header?.querySelector('.ti-chevron-down')).not.toBeNull();
 	});
 
 	test('measures the body after Vune content is mounted', async () => {

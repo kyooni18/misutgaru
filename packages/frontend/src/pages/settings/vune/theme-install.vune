@@ -1,21 +1,37 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
-import MkCodeEditor from '@/components/MkCodeEditor.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
+import MkCodeEditor from '@/components/vune/MkCodeEditor.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { code?: string | null; onCodeChange?: (value: string | null) => void; onPreview?: (code: string) => void; onInstall?: (code: string) => void };
-export default createVuneComponent<Props>((props) => {
-	const code = props.code ?? '';
-	const disabled = code.trim() === '';
-	return Element('div', { className: '_gaps_m' },
-		VueComponent(MkCodeEditor, { modelValue: props.code, lang: 'json5', 'onUpdate:modelValue': (value: string | null) => props.onCodeChange?.(value) }, {
-			label: () => Text(i18n.ts._theme.code),
-		}),
-		Element('div', { className: '_buttons' },
-			VueComponent(MkButton, { disabled, inline: true, onClick: () => { if (!disabled) props.onPreview?.(code); } }, { default: () => Group() { Element('i', { className: 'ti ti-eye' }); Text(i18n.ts.preview) } }),
-			VueComponent(MkButton, { disabled, primary: true, inline: true, onClick: () => { if (!disabled) props.onInstall?.(code); } }, { default: () => Group() { Element('i', { className: 'ti ti-check' }); Text(i18n.ts.install) } }),
-		),
-	);
-});
+function updateThemeCode(props: Props, value: string | null): void { props.onCodeChange?.(value); }
+function previewTheme(props: Props, code: string): void { props.onPreview?.(code); }
+function installTheme(props: Props, code: string): void { props.onInstall?.(code); }
+
+export struct VuneThemeInstallView: View {
+	let props: Props
+	let code: string
+	let disabled: boolean
+
+	init(_ props: Props) {
+		self.props = props
+		self.code = props.code ?? ''
+		self.disabled = self.code.trim() === ''
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			Text(i18n.ts._theme.code)
+			MkCodeEditor(code, onChange: { value in updateThemeCode(props, value) })
+			VStack(alignment: 'stretch', spacing: 0) {
+				MkButton(disabled: disabled, inline: true, onClick: { previewTheme(props, code) }) { Group() { VuneIcon('ti ti-eye'); Text(i18n.ts.preview) } }
+				MkButton(disabled: disabled, primary: true, inline: true, onClick: { installTheme(props, code) }) { Group() { VuneIcon('ti ti-check'); Text(i18n.ts.install) } }
+			}.className('_buttons')
+		}.className('_gaps_m')
+	}
+}
+
+export default VuneThemeInstallView

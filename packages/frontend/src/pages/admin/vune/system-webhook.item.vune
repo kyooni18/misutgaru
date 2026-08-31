@@ -1,36 +1,41 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type { entities } from 'misskey-js';
-import MkFolder from '@/components/MkFolder.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkKeyValue from '@/components/MkKeyValue.vue';
-import MkTime from '@/components/global/MkTime.vue';
+import MkFolder from '@/components/vune/MkFolder.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkKeyValue from '@/components/vune/MkKeyValue.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
+import VuneIcon from '@/vune/Icon.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
 type Props = { entity: entities.SystemWebhook; onEdit?: () => void; onDelete?: () => void };
-function statusIcon(entity: entities.SystemWebhook) {
-	if (!entity.isActive) return Element('i', { className: 'ti ti-player-pause' });
-	if (entity.latestStatus === null) return Element('i', { className: 'ti ti-circle' });
-	if ([200, 201, 204].includes(entity.latestStatus)) return Element('i', { className: 'ti ti-check', style: { color: 'var(--MI_THEME-success)' } });
-	return Element('i', { className: 'ti ti-alert-triangle', style: { color: 'var(--MI_THEME-error)' } });
+struct SystemWebhookStatusIcon: View {
+ let entity: entities.SystemWebhook
+ var body: some View {
+  Group() {
+   if (!entity.isActive) { VuneIcon('ti ti-player-pause') }
+   else if (entity.latestStatus === null) { VuneIcon('ti ti-circle') }
+   else if ([200,201,204].includes(entity.latestStatus)) { VuneIcon('ti ti-check').foregroundStyle('var(--MI_THEME-success)') }
+   else { VuneIcon('ti ti-alert-triangle').foregroundStyle('var(--MI_THEME-error)') }
+  }
+ }
 }
-export default createVuneComponent<Props>((props) => {
-	const entity = props.entity;
-	return VueComponent(MkFolder, {}, {
-		label: () => Text(entity.name || entity.url),
-		caption: () => entity.name != null && entity.name !== '' ? Text(entity.url) : Group() {},
-		icon: () => statusIcon(entity),
-		suffix: () => entity.latestSentAt ? VueComponent(MkTime, { time: entity.latestSentAt, style: { marginRight: '8px' } }) : Text('-'),
-		footer: () => Element('div', { className: '_buttons' },
-			VueComponent(MkButton, { onClick: () => props.onEdit?.() }, { default: () => Group() { Element('i', { className: 'ti ti-settings' }); Text(` ${i18n.ts.edit}`) } }),
-			VueComponent(MkButton, { danger: true, onClick: () => props.onDelete?.() }, { default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(` ${i18n.ts.delete}`) } }),
-		),
-		default: () => Element('div', { className: '_gaps' },
-			VueComponent(MkKeyValue, {}, {
-				key: () => Text('latestStatus'),
-				value: () => Text(String(entity.latestStatus ?? '-')),
-			}),
-		),
-	});
-});
+function editWebhook(props: Props): void { props.onEdit?.(); }
+function deleteWebhook(props: Props): void { props.onDelete?.(); }
+export struct VuneSystemWebhookItemView: View {
+ let props: Props
+ init(_ props: Props) { self.props = props }
+ var body: some View {
+  MkFolder(header: Group() { SystemWebhookStatusIcon(entity: props.entity); Text(props.entity.name || props.entity.url); if (props.entity.latestSentAt) { MkTimeValue(props.entity.latestSentAt) } }) {
+   VStack(alignment: 'leading', spacing: 0) {
+    if (props.entity.name) { Text(props.entity.url).opacity(0.7) }
+    MkKeyValue(oneline: true, key: Text('latestStatus'), value: Text(String(props.entity.latestStatus ?? '-')))
+    VStack(alignment: 'leading', spacing: 0) {
+     MkButton(onClick: { editWebhook(props) }) { Group() { VuneIcon('ti ti-settings'); Text(` ${i18n.ts.edit}`) } }
+     MkButton(danger: true, onClick: { deleteWebhook(props) }) { Group() { VuneIcon('ti ti-trash'); Text(` ${i18n.ts.delete}`) } }
+    }.className('_buttons')
+   }.className('_gaps')
+  }
+ }
+}
+export default VuneSystemWebhookItemView

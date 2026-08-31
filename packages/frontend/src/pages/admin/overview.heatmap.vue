@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneOverviewHeatmap :src="src" :srcDef="srcDef" :rootClass="$style.root" :onUpdateSrc="value => src = value"/>
+<VuneOverviewHeatmap :src="src" :srcDef="srcDef" :rootClass="$style.root" :onUpdateSrc="setSource"/>
 </template>
 
 <script lang="ts" setup>
-import VuneOverviewHeatmap from './vune/overview.heatmap.vune';
+import VuneOverviewHeatmap from './vune/overview.heatmap.vune?vue-host';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 
 const {
@@ -24,6 +24,10 @@ const {
 	],
 	initialValue: 'active-users',
 });
+
+function setSource(value: 'notes' | 'active-users' | 'ap-requests-inbox-received' | 'ap-requests-deliver-succeeded' | 'ap-requests-deliver-failed'): void {
+	src.value = value;
+}
 </script>
 
 <style lang="scss" module>

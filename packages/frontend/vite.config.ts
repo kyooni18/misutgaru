@@ -10,7 +10,7 @@ import { load as loadYaml } from 'js-yaml';
 import { promises as fsp } from 'fs';
 
 import locales from 'i18n';
-import meta from '../../package.json';
+import meta from '../../package.json' with { type: 'json' };
 import packageInfo from './package.json' with { type: 'json' };
 import pluginUnwindCssModuleClassName from './lib/rollup-plugin-unwind-css-module-class-name.js';
 import pluginJson5 from './lib/vite-plugin-json5.js';
@@ -20,7 +20,7 @@ import pluginWatchLocales from './lib/vite-plugin-watch-locales.js';
 import { pluginRemoveUnrefI18n } from '../frontend-builder/rollup-plugin-remove-unref-i18n.js';
 import { Features } from 'lightningcss';
 
-const configPath = path.resolve(__dirname, '../../.config', process.env.MISSKEY_CONFIG_YML ?? 'default.yml');
+const configPath = path.resolve(import.meta.dirname, '../../.config', process.env.MISSKEY_CONFIG_YML ?? 'default.yml');
 const url = process.env.NODE_ENV === 'development' ? (loadYaml(await fsp.readFile(configPath, 'utf-8')) as any).url : null;
 const host = url ? (new URL(url)).hostname : undefined;
 
@@ -45,7 +45,7 @@ function getBundleVisualizerPlugin(): PluginOption[] {
 		title: 'Misskey frontend bundle visualizer',
 		gzipSize: true,
 		brotliSize: true,
-		projectRoot: path.resolve(__dirname, '../..'),
+		projectRoot: path.resolve(import.meta.dirname, '../..'),
 	};
 	const plugins = [
 		visualizer({
@@ -183,10 +183,10 @@ export function getConfig(): UserConfig {
 		resolve: {
 			extensions,
 			alias: {
-				'@/': __dirname + '/src/',
-				'@@/': __dirname + '/../frontend-shared/',
-				'/client-assets/': __dirname + '/assets/',
-				'/static-assets/': __dirname + '/../backend/assets/',
+				'@/': import.meta.dirname + '/src/',
+				'@@/': import.meta.dirname + '/../frontend-shared/',
+				'/client-assets/': import.meta.dirname + '/assets/',
+				'/static-assets/': import.meta.dirname + '/../backend/assets/',
 				'/fluent-emoji/': '@misskey-dev/emoji-assets/fluent-emoji/',
 			},
 		},
@@ -197,7 +197,7 @@ export function getConfig(): UserConfig {
 			},
 			modules: {
 				generateScopedName(name, filename, _css): string {
-					const id = (path.relative(__dirname, filename.split('?')[0]) + '-' + name).replace(/[\\\/\.\?&=]/g, '-').replace(/(src-|vue-)/g, '');
+					const id = (path.relative(import.meta.dirname, filename.split('?')[0]) + '-' + name).replace(/[\\\/\.\?&=]/g, '-').replace(/(src-|vue-)/g, '');
 					if (process.env.NODE_ENV === 'production') {
 						return 'x' + toBase62(hash(id)).substring(0, 4);
 					} else {
@@ -261,7 +261,7 @@ export function getConfig(): UserConfig {
 				},
 			},
 			cssCodeSplit: true,
-			outDir: __dirname + '/../../built/_frontend_vite_',
+			outDir: import.meta.dirname + '/../../built/_frontend_vite_',
 			assetsDir: '.',
 			emptyOutDir: false,
 			sourcemap: process.env.NODE_ENV === 'development',

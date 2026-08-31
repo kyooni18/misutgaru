@@ -4,16 +4,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNotePreview :text="text" :files="files" :poll="poll" :useCw="useCw" :cw="cw" :user="user" :showContent="showContent" :classes="$style" :onShowContent="(value: boolean) => showContent = value"/>
+<VuneNotePreviewHost :text="text" :files="files" :poll="poll" :useCw="useCw" :cw="cw" :user="user" :showContent="showContent" :classes="$style" :onShowContent="(value: boolean) => showContent = value"/>
 </template>
 
 <script lang="ts" setup>
 import VuneNotePreview from './vune/MkNotePreview.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { PollEditorModelValue } from '@/components/MkPollEditor.types.js';
 
 const showContent = ref(false);
+
+const VuneNotePreviewHost = createVuneWebHost(VuneNotePreview);
 
 const props = defineProps<{
 	text: string;

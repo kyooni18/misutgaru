@@ -196,15 +196,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		withFiles: boolean,
 		withReplies: boolean,
 	}, me: MiLocalUser) {
-		const followees = await this.userFollowingService.getFollowees(me.id);
-
-		const mutingChannelIds = await this.channelMutingService
-			.list({ requestUserId: me.id }, { idOnly: true })
-			.then(x => x.map(x => x.id));
+		const [followees, mutingChannelIds, rawFollowingChannelIds] = await Promise.all([
+			this.userFollowingService.getFollowees(me.id),
+			this.channelMutingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id)),
+			this.channelFollowingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id)),
+		]);
 		const mutingChannelIdSet = new Set(mutingChannelIds);
-		const followingChannelIds = await this.channelFollowingService
-			.list({ requestUserId: me.id }, { idOnly: true })
-			.then(x => x.map(x => x.id).filter(x => !mutingChannelIdSet.has(x)));
+		const followingChannelIds = rawFollowingChannelIds.filter(x => !mutingChannelIdSet.has(x));
 
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
 			.andWhere(new Brackets(qb => {

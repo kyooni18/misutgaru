@@ -1,99 +1,155 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Animation, Element, Text } from 'vune-ui';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Animation, HStack, Spacer, Text, VStack, ZStack, type ViewGraphValue } from 'vune-ui';
 import { i18n } from '@/i18n.js';
+import VuneIcon from '@/vune/Icon.vune';
+import MkButton from './MkButton.vune';
 import './MkContainer.scss';
 
-type Props = {
-	showHeader: boolean;
-	thin: boolean;
-	naked: boolean;
-	foldable: boolean;
-	scrollable: boolean;
-	showBody: boolean;
-	omitted: boolean;
-	maxHeight: number | null;
-	contentHeight: number | null;
-	headerHeight: number;
-	animated: boolean;
-	class?: string;
-	style?: string | Record<string, unknown>;
-	testId?: string;
-	dataTransparent?: unknown;
-	onToggle?: () => void;
-	onShowMore?: () => void;
-};
+function ignoreContainerAction(): void {}
 
-function contentHeight(props: Props): number | null {
-	if (!props.showBody) return 0;
-	if (props.contentHeight == null) return null;
-	const height = Math.max(0, props.contentHeight);
-	return props.omitted ? Math.min(height, props.maxHeight ?? Infinity) : height;
+function resolvedContentHeight(
+	showBody: boolean,
+	contentHeight: number | null,
+	omitted: boolean,
+	maxHeight: number | null,
+): number | null {
+	if (!showBody) return 0;
+	if (contentHeight == null) return null;
+	const height = Math.max(0, contentHeight);
+	return omitted ? Math.min(height, maxHeight ?? Infinity) : height;
 }
 
-function contentView(props: Props, content: ReturnType<typeof VueSlot>) {
-	const height = contentHeight(props);
-	let body = Element('div', {
-		class: 'mk-vune-container__body',
-		'aria-hidden': !props.showBody,
-		'data-vune-container-body': true,
-		style: {
-			height: height == null ? undefined : `${height}px`,
-			opacity: props.showBody ? 1 : 0,
-			overflowY: 'clip',
-		},
-	}, Element('div', {
-		class: `mk-vune-container__content${props.omitted ? ' mk-vune-container__content--omitted' : ''}`,
-		'data-vune-container-content': true,
-		style: {
-			'--mk-vune-container-max-height': props.maxHeight == null ? undefined : `${props.maxHeight}px`,
-			maxHeight: props.omitted && props.maxHeight != null ? `${props.maxHeight}px` : undefined,
-			overflow: props.scrollable ? 'auto' : undefined,
-		},
-	}, content,
-	props.omitted ? Element('button', {
-		class: '_button mk-vune-container__fade',
-		onClick: () => props.onShowMore?.(),
-	}, Element('span', { class: 'mk-vune-container__fade-label' }, Text(i18n.ts.showMore))) : null));
+export struct MkContainer: View {
+	let showHeader: boolean
+	let thin: boolean
+	let naked: boolean
+	let foldable: boolean
+	let scrollable: boolean
+	let showBody: boolean
+	let omitted: boolean
+	let maxHeight: number | null
+	let contentHeight: number | null
+	let headerHeight: number
+	let animated: boolean
+	let className: string
+	let style: any
+	let testId: string
+	let dataTransparent: unknown
+	let onToggle: () => void
+	let onShowMore: () => void
+	let icon: ViewGraphValue
+	let header: ViewGraphValue
+	let func: ViewGraphValue
+	let content: ViewGraphValue
+	let resolvedHeight: number | null
 
-	if (props.animated) {
-		body = body.animation(Animation.easeInOut(0.5), value: `${props.showBody}:${height ?? 'auto'}:${props.omitted}`);
+	init(
+		showHeader: boolean = true,
+		thin: boolean = false,
+		naked: boolean = false,
+		foldable: boolean = false,
+		scrollable: boolean = false,
+		showBody: boolean = true,
+		omitted: boolean = false,
+		maxHeight: number | null = null,
+		contentHeight: number | null = null,
+		headerHeight: number = 0,
+		animated: boolean = false,
+		className: string = '',
+		style: any = undefined,
+		testId: string = '',
+		dataTransparent: unknown = undefined,
+		@Action onToggle: () => void = ignoreContainerAction,
+		@Action onShowMore: () => void = ignoreContainerAction,
+		icon: ViewGraphValue = null,
+		header: ViewGraphValue = null,
+		func: ViewGraphValue = null,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.showHeader = showHeader
+		self.thin = thin
+		self.naked = naked
+		self.foldable = foldable
+		self.scrollable = scrollable
+		self.showBody = showBody
+		self.omitted = omitted
+		self.maxHeight = maxHeight
+		self.contentHeight = contentHeight
+		self.headerHeight = headerHeight
+		self.animated = animated
+		self.className = className
+		self.style = style
+		self.testId = testId
+		self.dataTransparent = dataTransparent
+		self.onToggle = onToggle
+		self.onShowMore = onShowMore
+		self.icon = icon
+		self.header = header
+		self.func = func
+		self.content = content()
+		self.resolvedHeight = resolvedContentHeight(showBody, contentHeight, omitted, maxHeight)
 	}
-	return body;
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (showHeader) {
+				HStack(alignment: 'center', spacing: 8) {
+					HStack(alignment: 'center', spacing: 6) {
+						ZStack(alignment: 'center') { icon }.className('mk-vune-container__title-icon')
+						header
+					}.className('mk-vune-container__title')
+					Spacer()
+					HStack(alignment: 'center', spacing: 4) {
+						func
+						if (foldable) {
+							MkButton(transparent: true, iconOnly: true, className: 'mk-vune-container__header-button', onClick: { onToggle() }) { VuneIcon(showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down') }
+								.withProps({ 'aria-expanded': showBody })
+						}
+					}.className('mk-vune-container__header-sub')
+				}
+					.className('mk-vune-container__header')
+					.withProps({ 'data-vune-container-header': true })
+			}
+			VStack(alignment: 'leading', spacing: 0) {
+				VStack(alignment: 'leading', spacing: 0) {
+					content
+					if (omitted) {
+							MkButton(transparent: true, className: 'mk-vune-container__fade', onClick: { onShowMore() }) { Text(i18n.ts.showMore).className('mk-vune-container__fade-label') }
+					}
+				}
+					.className(['mk-vune-container__content', omitted ? 'mk-vune-container__content--omitted' : null])
+					.withProps({ 'data-vune-container-content': true })
+					.style({
+						'--mk-vune-container-max-height': maxHeight == null ? undefined : `${maxHeight}px`,
+						maxHeight: omitted && maxHeight != null ? `${maxHeight}px` : undefined,
+						overflow: scrollable ? 'auto' : undefined,
+					})
+			}
+				.className('mk-vune-container__body')
+				.withProps({ 'aria-hidden': !showBody, 'data-vune-container-body': true })
+				.style({
+					height: resolvedHeight == null ? undefined : `${resolvedHeight}px`,
+					opacity: showBody ? 1 : 0,
+					overflowY: 'clip',
+				})
+				.animation(animated ? Animation.easeInOut(0.5) : null, value: `${showBody}:${resolvedHeight ?? 'auto'}:${omitted}`)
+		}
+			.className([
+				'_panel',
+				'mk-vune-container',
+				className,
+				naked ? 'mk-vune-container--naked' : null,
+				thin ? 'mk-vune-container--thin' : null,
+				scrollable ? 'mk-vune-container--scrollable' : null,
+			])
+			.style(style ?? {})
+			.withProps({ 'data-testid': testId || undefined, 'data-transparent': dataTransparent ?? undefined })
+			.style({
+				minHeight: headerHeight > 0 ? `${headerHeight}px` : undefined,
+				flexBasis: showBody ? 'auto' : headerHeight > 0 ? `${headerHeight}px` : undefined,
+			})
+	}
 }
 
-export default createVuneComponent<Props>((props, slots) => {
-	const rootClass = [
-		'_panel',
-		'mk-vune-container',
-		props.class,
-		props.naked ? 'mk-vune-container--naked' : null,
-		props.thin ? 'mk-vune-container--thin' : null,
-		props.scrollable ? 'mk-vune-container--scrollable' : null,
-	];
-	const root = Element('div', {
-		class: rootClass.filter(Boolean).join(' '),
-		style: props.style,
-		'data-testid': props.testId,
-		'data-transparent': props.dataTransparent ?? undefined,
-	}, props.showHeader ? Element('header', {
-		class: 'mk-vune-container__header',
-		'data-vune-container-header': true,
-	}, Element('div', { class: 'mk-vune-container__title' },
-		Element('span', { class: 'mk-vune-container__title-icon' }, VueSlot(slots.icon)),
-		VueSlot(slots.header),
-	), Element('div', { class: 'mk-vune-container__header-sub' },
-		slots.func ? VueSlot(slots.func, { buttonStyleClass: 'mk-vune-container__header-button' }) : null,
-		props.foldable ? Element('button', {
-			class: '_button mk-vune-container__header-button',
-			type: 'button',
-			'aria-expanded': props.showBody,
-			onClick: () => props.onToggle?.(),
-		}, Element('i', { class: props.showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down' })) : null,
-	)) : null, contentView(props, VueSlot(slots.default)));
-
-	return root.style({
-		minHeight: props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
-		flexBasis: props.showBody ? 'auto' : props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
-	});
-});
+export default MkContainer

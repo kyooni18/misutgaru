@@ -1,25 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkPolkadots from '@/components/MkPolkadots.vue';
-import XHome from '@/pages/chat/home.home.vue';
-import XInvitations from '@/pages/chat/home.invitations.vue';
-import XJoiningRooms from '@/pages/chat/home.joiningRooms.vue';
-import XOwnedRooms from '@/pages/chat/home.ownedRooms.vue';
-import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
-type Props = { tab: string; headerActions?: PageHeaderItem[]; headerTabs?: any[]; onTabChange?: (tab: string) => void };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { tab: props.tab, actions: props.headerActions ?? [], tabs: props.headerTabs ?? [], swipable: true, 'onUpdate:tab': (value: string) => props.onTabChange?.(value) }, {
-		default: () => Element('div', {},
-			props.tab === 'home' ? VueComponent(MkPolkadots, { accented: true, height: 200, style: { marginBottom: '-200px' } }) : null,
-			Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-				props.tab === 'home' ? VueComponent(XHome)
-					: props.tab === 'invitations' ? VueComponent(XInvitations)
-						: props.tab === 'joiningRooms' ? VueComponent(XJoiningRooms)
-							: VueComponent(XOwnedRooms),
-			),
-		),
-	})
-);
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui'; import PageWithHeader from '@/components/global/vune/PageWithHeader.vune'; import MkPolkadots from '@/components/vune/MkPolkadots.vune'; import MkChatHistories from '@/components/vune/MkChatHistories.vune'; import XInvitations from './home.invitations.vune'; import XJoiningRooms from './home.joiningRooms.vune'; import XOwnedRooms from './home.ownedRooms.vune'; import type { PageHeaderItem } from '@/types/page-header.js';
+type Props={tab:string;headerActions?:PageHeaderItem[];headerTabs?:any[];onTabChange?:(tab:string)=>void;invitationsProps?:any;joiningProps?:any;ownedProps?:any}; function tab(p:Props,v:string){p.onTabChange?.(v)}
+export struct VuneHomeView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { PageWithHeader(pageMetadata:null,tab:props.tab,actions:props.headerActions??[],tabs:props.headerTabs??[],swipable:true,onTab:{v in tab(props,v)}){VStack(alignment: 'stretch', spacing: 0){if(props.tab==='home'){MkPolkadots().style({marginBottom:'-200px'})};VStack(alignment: 'stretch', spacing: 0){if(props.tab==='home'){MkChatHistories()}else if(props.tab==='invitations'&&props.invitationsProps){XInvitations(props.invitationsProps)}else if(props.tab==='joiningRooms'&&props.joiningProps){XJoiningRooms(props.joiningProps)}else if(props.ownedProps){XOwnedRooms(props.ownedProps)}}.className('_spacer').style({'--MI_SPACER-w':'700px'})}} } }
+export default VuneHomeView

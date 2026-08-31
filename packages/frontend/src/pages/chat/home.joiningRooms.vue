@@ -4,11 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneJoiningRooms :memberships="memberships" :fetching="fetching"/>
+<VuneJoiningRoomsHost :memberships="memberships" :fetching="fetching"/>
 </template>
 
 <script lang="ts" setup>
 import VuneJoiningRooms from './vune/home.joiningRooms.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+const VuneJoiningRoomsHost = createVuneWebHost(VuneJoiningRooms);
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';

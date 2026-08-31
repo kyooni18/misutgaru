@@ -1,8 +1,27 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { svgElement } from '@/vune/native.js';
+import { Canvas } from '@vune-ui/core/web-primitives';
 
 type Vars = Record<'bg'|'panel'|'fg'|'mention'|'hashtag'|'link'|'divider'|'accent'|'accentedBg'|'navBg'|'pageHeaderBg'|'success'|'warn'|'error', string>;
+
+function previewRef(theme: Vars) {
+	return (value: unknown) => {
+		if (!(value instanceof HTMLCanvasElement)) return;
+		const context = value.getContext('2d');
+		if (!context) return;
+		context.clearRect(0, 0, 200, 150);
+		context.fillStyle = theme.bg; context.fillRect(0, 0, 200, 150);
+		context.fillStyle = theme.navBg; context.fillRect(0, 0, 64, 150);
+		context.fillStyle = theme.pageHeaderBg; context.fillRect(64, 0, 136, 41);
+		context.fillStyle = theme.panel; context.fillRect(96, 65, 104, 85);
+		context.fillStyle = theme.accentedBg; context.beginPath(); context.arc(32, 83, 21, 0, Math.PI * 2); context.fill();
+		const bar = (x: number, y: number, width: number, color: string) => { context.fillStyle = color; context.fillRect(x, y, width, 6); };
+		bar(120, 88, 40, theme.fg); bar(170, 88, 20, theme.mention); bar(120, 108, 20, theme.hashtag); bar(150, 108, 40, theme.fg); bar(120, 128, 40, theme.fg); bar(170, 128, 20, theme.link);
+		context.strokeStyle = theme.divider; context.lineWidth = 0.75; context.beginPath(); context.moveTo(65, 41); context.lineTo(200, 41); context.stroke();
+		for (const [x, color] of [[140, theme.success], [160, theme.warn], [180, theme.error]] as const) { context.fillStyle = color; context.beginPath(); context.arc(x, 20, 6, 0, Math.PI * 2); context.fill(); }
+		context.fillStyle = theme.accent; context.beginPath(); context.arc(32, 32, 16, 0, Math.PI * 2); context.fill();
+	};
+}
 
 export struct MkThemePreview: View {
 	let themeVariables: Vars
@@ -12,40 +31,7 @@ export struct MkThemePreview: View {
 	}
 
 	var body: some View {
-		svgElement('svg',
-			{ viewBox: '0 0 200 150' },
-			svgElement('g', { 'fill-rule': 'evenodd' },
-				svgElement('rect', { width: '200', height: '150', fill: themeVariables.bg }),
-				svgElement('rect', { width: '64', height: '150', fill: themeVariables.navBg }),
-				svgElement('rect', { x: '64', width: '136', height: '41', fill: themeVariables.pageHeaderBg }),
-				svgElement('path', { transform: 'scale(.26458)', d: 'm439.77 247.19c-43.673 0-78.832 35.157-78.832 78.83v249.98h407.06v-328.81z', fill: themeVariables.panel }),
-			),
-			svgElement('circle', { cx: '32', cy: '83', r: '21', fill: themeVariables.accentedBg }),
-			svgElement('g', null,
-				svgElement('rect', { x: '120', y: '88', width: '40', height: '6', ry: '3', fill: themeVariables.fg }),
-				svgElement('rect', { x: '170', y: '88', width: '20', height: '6', ry: '3', fill: themeVariables.mention }),
-				svgElement('rect', { x: '120', y: '108', width: '20', height: '6', ry: '3', fill: themeVariables.hashtag }),
-				svgElement('rect', { x: '150', y: '108', width: '40', height: '6', ry: '3', fill: themeVariables.fg }),
-				svgElement('rect', { x: '120', y: '128', width: '40', height: '6', ry: '3', fill: themeVariables.fg }),
-				svgElement('rect', { x: '170', y: '128', width: '20', height: '6', ry: '3', fill: themeVariables.link }),
-			),
-			svgElement('path', { d: 'm65.498 40.892h137.7', stroke: themeVariables.divider, 'stroke-width': '0.75' }),
-			svgElement('g', { transform: 'matrix(.60823 0 0 .60823 25.45 75.755)', fill: 'none', stroke: themeVariables.accent, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2' },
-				svgElement('path', { d: 'm0 0h24v24h-24z', fill: 'none', stroke: 'none' }),
-				svgElement('path', { d: 'm5 12h-2l9-9 9 9h-2' }),
-				svgElement('path', { d: 'm5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7' }),
-				svgElement('path', { d: 'm9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6' }),
-			),
-			svgElement('g', { transform: 'matrix(.61621 0 0 .61621 25.354 117.92)', fill: 'none', stroke: themeVariables.fg, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2' },
-				svgElement('path', { d: 'm0 0h24v24h-24z', fill: 'none', stroke: 'none' }),
-				svgElement('path', { d: 'm10 5a2 2 0 1 1 4 0 7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0-2-3v-3a7 7 0 0 1 4-6' }),
-				svgElement('path', { d: 'm9 17v1a3 3 0 0 0 6 0v-1' }),
-			),
-			svgElement('circle', { cx: '32', cy: '32', r: '16', fill: themeVariables.accent }),
-			svgElement('circle', { cx: '140', cy: '20', r: '6', fill: themeVariables.success }),
-			svgElement('circle', { cx: '160', cy: '20', r: '6', fill: themeVariables.warn }),
-			svgElement('circle', { cx: '180', cy: '20', r: '6', fill: themeVariables.error }),
-		)
+		Canvas(200, 150, previewRef(themeVariables))
 	}
 }
 

@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAboutEmojis :q="q" :searchEmojis="searchEmojis" :customEmojis="customEmojis" :categories="customEmojiCategories" :canManage="!!($i && ($i.isModerator || $i.policies.canManageCustomEmojis))" :emojisClass="$style.emojis" :onQChange="value => q = value"/>
+<VuneAboutEmojis :q="q" :searchEmojis="searchEmojis" :customEmojis="customEmojis" :categories="customEmojiCategories" :canManage="!!($i && ($i.isModerator || $i.policies.canManageCustomEmojis))" :emojisClass="$style.emojis" :onQChange="(value: string) => q = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneAboutEmojis from '@/pages/vune/about-emojis.vune';
+import VuneAboutEmojis from '@/pages/vune/about-emojis.vune?vue-host';
 import { watch, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { customEmojis, customEmojiCategories } from '@/custom-emojis.js';

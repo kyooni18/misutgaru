@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { existsSync, lstatSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execa } from 'execa';
@@ -15,55 +14,6 @@ const projectRoot = resolve(_dirname, '..');
 // Keep `pnpm dev` isolated from the Docker/production configuration.
 // An explicit MISSKEY_CONFIG_YML still takes precedence for custom setups.
 process.env.MISSKEY_CONFIG_YML ??= 'dev.yml';
-
-const localFrontendPackages = [
-	['vune-ui', 'packages/modules/Vune'],
-	['@vune-ui/compiler', 'packages/modules/Vune/packages/compiler'],
-	['@vune-ui/core', 'packages/modules/Vune/packages/core'],
-	['@vune-ui/vite', 'packages/modules/Vune/packages/vite'],
-	['@vune-ui/vue', 'packages/modules/Vune/packages/vue'],
-	['@vune-ui/web', 'packages/modules/Vune/packages/web'],
-	['o0o0o', 'packages/modules/o0o0o'],
-];
-
-/**
- * Reassert the package.json local Vune/o0o0o links after rebuilding the
- * framework. This keeps dev startup deterministic even if an older install
- * left published-package symlinks behind.
- */
-function linkLocalFrontendPackages() {
-	const nodeModulesDir = resolve(projectRoot, 'packages/frontend/node_modules');
-
-	for (const [packageName, relativeSource] of localFrontendPackages) {
-		const source = resolve(projectRoot, relativeSource);
-		const target = resolve(nodeModulesDir, packageName);
-		linkLocalPackage(source, target);
-	}
-}
-
-/**
- * Create a local package link while refusing to remove a real directory.
- *
- * @param {string} source - Absolute package source path.
- * @param {string} target - Absolute symlink path.
- */
-function linkLocalPackage(source, target) {
-	if (!existsSync(source)) {
-		throw new Error(`Local package source does not exist: ${source}`);
-	}
-
-	mkdirSync(dirname(target), { recursive: true });
-	try {
-		if (!lstatSync(target).isSymbolicLink()) {
-			throw new Error(`Refusing to replace non-symlink dependency: ${target}`);
-		}
-		rmSync(target);
-	} catch (error) {
-		if (error?.code !== 'ENOENT') throw error;
-	}
-
-	symlinkSync(source, target, process.platform === 'win32' ? 'junction' : 'dir');
-}
 
 /** @type {Set<import('execa').ResultPromise>} */
 const childProcesses = new Set();
@@ -226,29 +176,13 @@ try {
 		stderr: process.stderr,
 	});
 
-	// Build the checked-out motion runtime before the frontend starts. The
-	// frontend package.json already points at local Vune/o0o0o packages; the
-	// explicit link refresh below only repairs stale installs from older trees.
-	await runChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/o0o0o'), 'run', 'build:wasm'], {
+	// Prepare the nested Vune workspace and reassert all frontend package links,
+	// including the in-tree @vune-ui/animation runtime.
+	await runChildProcess('pnpm', ['modules:build'], {
 		cwd: projectRoot,
 		stdout: process.stdout,
 		stderr: process.stderr,
 	});
-
-	// Match serve.sh exactly: link o0o0o into Vune's web package before Vune
-	// builds, so the checked-out motion runtime is included in its output.
-	linkLocalPackage(
-		resolve(projectRoot, 'packages/modules/o0o0o'),
-		resolve(projectRoot, 'packages/modules/Vune/packages/web/node_modules/o0o0o'),
-	);
-
-	await runChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/Vune'), 'run', 'build'], {
-		cwd: projectRoot,
-		stdout: process.stdout,
-		stderr: process.stderr,
-	});
-
-	linkLocalFrontendPackages();
 
 	// アセットのビルドで依存しているので一番最初に必要
 	await runChildProcess('pnpm', ['--filter', 'i18n', 'build'], {

@@ -8,7 +8,7 @@ Misutgaru is intentionally hybrid while Vue ownership is removed subtree by subt
 
 `@misutgaru-vune-compat` marks a Vune source that intentionally still crosses the Vue boundary. The current compatibility set is `MkEmojiPicker.vune` and `MkPostFormSurface.vune`.
 
-Current report: 233 Vune sources, 65 native Views, 2 explicit compatibility sources, 227 Vue placement shells.
+Current working-tree report: 298 Vune sources, all 298 native Views, 0 explicit compatibility sources, and 226 Vue SFCs that still reference Vune. Of those Vue/Vune boundaries, 108 use generated `?vue-host` modules and 118 still use direct `.vune` placement paths. The remaining pure Vue surface is 359 SFCs.
 
 ## Typed Vue placement bridge
 
@@ -32,7 +32,7 @@ The remaining low-level Misutgaru native bridge uses closed HTML/SVG tag sets an
 
 ## Motion and automatic layout animation
 
-Vune motion preserves independent CSS property ownership through o0o0o. Layout FLIP uses separate translate/scale channels so intrinsic size/position animation does not cancel a simultaneous transform animation.
+Vune motion preserves independent CSS property ownership through `@vune-ui/animation`. Layout FLIP uses separate translate/scale channels so intrinsic size/position animation does not cancel a simultaneous transform animation.
 
 Animations must preserve reduced-motion behavior, cancellation, retargeting, repeat/autoreverse semantics, and exact final values. Keep layout animation automatic at the renderer boundary rather than adding per-component FLIP code.
 
@@ -51,3 +51,5 @@ pnpm verify:modules
 ```
 
 The report intentionally measures migration facts and remaining Vue features. It does not assign migration-priority scores; component selection remains an engineering decision.
+
+The report distinguishes generated `?vue-host` placement from older direct `.vune` placement. Both count as Vue-owned migration surface; deleting a redundant `.vue` shell and importing the generated host at the real consumer lowers the Vue SFC count without pretending that the route or parent is already renderer-native.

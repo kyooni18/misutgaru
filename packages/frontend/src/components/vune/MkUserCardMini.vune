@@ -1,31 +1,44 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import MkMiniChart from '@/components/MkMiniChart.vue';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text, type ViewGraphValue } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import ComputedMiniChart from '@/vune/ComputedMiniChart.vune';
 import { acct } from '@/filters/user.js';
-import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+import './MkUserCardMini.scss';
 
 type Props = {
 	user: Misskey.entities.User;
 	chartValues?: number[] | null;
-	avatarClass: string;
-	bodyClass: string;
-	nameClass: string;
-	subClass: string;
-	chartClass: string;
+	avatarClass?: string;
+	bodyClass?: string;
+	nameClass?: string;
+	subClass?: string;
+	chartClass?: string;
+	sub?: ViewGraphValue;
 };
 
-export default createVuneComponent<Props>((props, slots) =>
-	Element('div', { style: { display: 'contents' } },
-		VueComponent(MkAvatar, { class: props.avatarClass, user: props.user, indicator: true }),
-		Element('div', { className: props.bodyClass },
-			Element('span', { className: props.nameClass }, VueComponent(MkUserName, { user: props.user })),
-			Element('span', { className: props.subClass },
-				slots.sub ? VueSlot(slots.sub) : Element('span', { className: '_monospace' }, `@${acct(props.user)}`),
-			),
-		),
-		props.chartValues ? VueComponent(MkMiniChart, { class: props.chartClass, src: props.chartValues }) : null,
-	)
-);
+export struct MkUserCardMini: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		Group() {
+			MkAvatar(props.user, indicator: true, className: props.avatarClass ?? 'mk-vune-user-card-mini__avatar'),
+			VStack(alignment: 'leading', spacing: 0) {
+				VStack(alignment: 'leading', spacing: 0) { MkUserName({ user: props.user }) }.className(props.nameClass ?? 'mk-vune-user-card-mini__name')
+				VStack(alignment: 'leading', spacing: 0) {
+					if (props.sub) { props.sub }
+					else { Text(`@${acct(props.user)}`).className('_monospace') }
+				}.className(props.subClass ?? 'mk-vune-user-card-mini__sub')
+			}.className(props.bodyClass ?? 'mk-vune-user-card-mini__body')
+			if (props.chartValues && props.chartValues.length > 0) { ComputedMiniChart(props.chartValues, gradientId: `mk-vune-user-card-${props.user.id}`, className: props.chartClass ?? 'mk-vune-user-card-mini__chart') }
+		}
+	}
+}
+
+export default MkUserCardMini

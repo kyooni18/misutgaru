@@ -40,8 +40,7 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { prefer } from '@/preferences.js';
-import { Animation } from 'vune-ui';
-import { vuneMotion } from '@/vune/motion.js';
+import { uiMotion, vuneMotion } from '@/vune/motion.js';
 
 const props = defineProps<{
 	announcement: Misskey.entities.Announcement;
@@ -84,7 +83,7 @@ function onBgClick() {
 		offset: 1,
 		transform: 'scale(1)',
 	}], {
-		animation: Animation.linear(0.1),
+		animation: uiMotion.feedback,
 		fill: 'none',
 	});
 }

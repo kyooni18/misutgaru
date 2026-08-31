@@ -1,0 +1,59 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+.lcfyofjk,
+.oxxrhrto {
+	display: flex;
+
+	> svg {
+		display: block;
+		padding: 10px;
+		width: 50%;
+
+		&:first-child {
+			padding-right: 5px;
+		}
+
+		&:last-child {
+			padding-left: 5px;
+		}
+
+		> text {
+			font-size: 4.5px;
+			fill: currentColor;
+
+			> tspan {
+				opacity: 0.5;
+			}
+		}
+	}
+}
+
+.vrvdvrys,
+.zlxnikvl,
+.zbwaqsat {
+	display: flex;
+	padding: 16px;
+
+	> .pie {
+		height: 82px;
+		flex-shrink: 0;
+		margin-right: 16px;
+	}
+
+	> .server-metric__details {
+		flex: 1;
+
+		> .server-metric__line {
+			margin: 0;
+			font-size: 0.8em;
+
+			&.server-metric__line--heading {
+				font-weight: bold;
+				margin-bottom: 4px;
+			}
+		}
+	}
+}

@@ -1,30 +1,66 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, HStack, Text } from 'vune-ui';
-import MkTooltip from '@/components/MkTooltip.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { ForEach, Group, HStack, RoundedRectangle, Text } from 'vune-ui';
+import MkTooltip from '@/components/vune/MkTooltip.vune';
 import '@/vune/phase5-migration.scss';
 
 type SeriesItem = { backgroundColor: string; borderColor: string; text: string };
 type Props = { showing: boolean; x: number; y: number; title?: string | null; series?: SeriesItem[] | null; onClosed?: () => void };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkTooltip, {
-		showing: props.showing, x: props.x, y: props.y, maxWidth: 340, direction: 'top', innerMargin: 16,
-		onClosed: () => props.onClosed?.(),
-	}, {
-		default: () => Group() {
-			if (props.title || props.series) {
-				Group() {
-					if (props.title) { Element('div', { className: 'mk-vune-tooltip-title' }, props.title) }
-					if (props.series) {
-						ForEach(props.series, key: (item: SeriesItem, index: number) => `${index}:${item.text}`) { item in
-							HStack(alignment: 'center', spacing: 0) {
-								Element('span', { className: 'mk-vune-tooltip-color', style: { background: item.backgroundColor, borderColor: item.borderColor } })
-								Text(item.text)
-							}
-						}
-					}
+
+struct ChartTooltipSeries: View {
+	let series: SeriesItem[]
+	init(_ series: SeriesItem[]) { self.series = series }
+	var body: some View {
+		Group() {
+			ForEach(series, key: (item: SeriesItem) => item.text) { item in
+				HStack(alignment: 'center', spacing: 0) {
+					RoundedRectangle(2)
+						.className('mk-vune-tooltip-color')
+						.style({ background: item.backgroundColor, borderColor: item.borderColor })
+					Text(item.text)
 				}
 			}
-		},
-	})
-);
+		}
+	}
+}
+
+struct ChartTooltipContent: View {
+	let title: string
+	let hasTitle: boolean
+	let series: SeriesItem[]
+	init(_ props: Props) {
+		self.title = props.title ?? ''
+		self.hasTitle = props.title != null
+		self.series = props.series ?? []
+	}
+	var body: some View {
+		Group() {
+			if (hasTitle) { Text(title).className('mk-vune-tooltip-title') }
+			if (series.length > 0) { ChartTooltipSeries(series) }
+		}
+	}
+}
+
+export struct MkChartTooltip: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkTooltip(
+			showing: props.showing,
+			x: props.x,
+			y: props.y,
+			maxWidth: 340,
+			direction: 'top',
+			innerMargin: 16,
+			onClosed: { props.onClosed?.() },
+		) {
+			ChartTooltipContent(props)
+		}
+	}
+}
+
+export default MkChartTooltip

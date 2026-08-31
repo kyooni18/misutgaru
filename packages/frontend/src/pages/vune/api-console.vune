@@ -1,63 +1,31 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text, VStack } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkInput from '@/components/MkInput.vue';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
+/* @misutgaru-vune-native */
+import { Group, Text, VStack } from 'vune-ui';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkInput from '@/components/vune/MkInput.vune';
+import MkTextarea from '@/components/vune/MkTextarea.vune';
+import MkSwitch from '@/components/vune/MkSwitch.vune';
 import MkEllipsis from '@/components/vune/MkEllipsis.vune';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
-type Props = {
-	body: string;
-	endpoint: string;
-	endpoints: string[];
-	sending: boolean;
-	response: string;
-	withCredential: boolean;
-	headerActions?: unknown[];
-	headerTabs?: unknown[];
-	onBody?: (value: string) => void;
-	onEndpoint?: (value: string) => void;
-	onCredential?: (value: boolean) => void;
-	onSend?: () => void;
-};
-
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => VStack(alignment: 'stretch', spacing: 0) {
-			VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-				VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-				VueComponent(MkInput, {
-					modelValue: props.endpoint,
-					datalist: props.endpoints,
-					'onUpdate:modelValue': (value: string) => props.onEndpoint?.(value),
-				}, { label: () => Text('Endpoint') })
-				VueComponent(MkTextarea, {
-					modelValue: props.body,
-					code: true,
-					'onUpdate:modelValue': (value: string) => props.onBody?.(value),
-				}, { label: () => Text('Params (JSON or JSON5)') })
-				VueComponent(MkSwitch, {
-					modelValue: props.withCredential,
-					'onUpdate:modelValue': (value: boolean) => props.onCredential?.(value),
-				}, { default: () => Text('With credential') })
-				VueComponent(MkButton, { primary: true, disabled: props.sending, onClick: () => props.onSend?.() }, {
-					default: () => props.sending
-						? MkEllipsis()
-						: Group() { Element('i', { className: 'ti ti-send' }); Text(' Send') },
-				})
-				}
-					.className('_gaps_m')
-				if (props.response) {
-					VueComponent(MkTextarea, { modelValue: props.response, code: true, readonly: true, tall: true }, {
-						label: () => Text('Response'),
-					})
-				}
-			}
-				.className('_gaps_m')
-		}
-			.className('_spacer')
-			.style({ '--MI_SPACER-w': '700px' })
-	})
-);
+import VuneIcon from '@/vune/Icon.vune';
+function setEndpoint(props: Props, value: unknown): void { props.onEndpoint?.(String(value ?? '')); }
+function setBody(props: Props, value: string): void { props.onBody?.(value); }
+function setCredential(props: Props, value: boolean): void { props.onCredential?.(value); }
+function sendRequest(props: Props): void { props.onSend?.(); }
+type Props = { body:string; endpoint:string; endpoints:string[]; sending:boolean; response:string; withCredential:boolean; headerActions?:any[]; headerTabs?:any[]; onBody?:(value:string)=>void; onEndpoint?:(value:string)=>void; onCredential?:(value:boolean)=>void; onSend?:()=>void };
+export struct VuneApiConsoleView: View {
+ let props: Props
+ init(_ props: Props) { self.props = props }
+ var body: some View {
+  PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) {
+   VStack(alignment: 'stretch', spacing: 0) {
+    MkInput(props.endpoint, datalist: props.endpoints, onChange: value => setEndpoint(props, value), label: Text('Endpoint'))
+    MkTextarea(props.body, code: true, onChange: value => setBody(props, value), label: Text('Params (JSON or JSON5)'))
+    MkSwitch(props.withCredential, onChange: value => setCredential(props, value), label: Text('With credential'))
+    MkButton(primary: true, disabled: props.sending, onClick: { sendRequest(props) }) { if (props.sending) { MkEllipsis() } else { Group() { VuneIcon('ti ti-send'); Text(' Send') } } }
+    if (props.response) { MkTextarea(props.response, code: true, readonly: true, tall: true, label: Text('Response')) }
+   }.className('_spacer _gaps_m').style({ '--MI_SPACER-w': '700px' })
+  }
+ }
+}
+export default VuneApiConsoleView

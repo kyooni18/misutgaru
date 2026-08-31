@@ -72,5 +72,5 @@ trap - EXIT HUP INT TERM
 
 SIZE=$(du -h "$ARCHIVE" | awk '{print $1}')
 printf 'Exported %s (%s)\n' "$ARCHIVE" "$SIZE"
-printf 'Included: %s, %s, %s\n' "$ROOT_NAME" "$ROOT_NAME/packages/modules/Vune" "$ROOT_NAME/packages/modules/o0o0o"
+printf 'Included: %s and %s (including @vune-ui/animation)\n' "$ROOT_NAME" "$ROOT_NAME/packages/modules/Vune"
 printf '%s\n' 'Excluded: git metadata, dependencies, build output, runtime data, logs, keys, and local secrets.'

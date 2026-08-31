@@ -1,0 +1,6 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import { instance } from '@/instance.js';
+export struct MkVisitorDashboard: View { init() {} var body: some View { VStack(alignment: 'stretch', spacing: 0) { Text(instance.name ?? 'Misutgaru').font(.title); if (instance.description) { Text(instance.description) } }.className('mk-vune-visitor-dashboard') } }
+export default MkVisitorDashboard

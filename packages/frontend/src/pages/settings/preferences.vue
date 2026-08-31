@@ -291,6 +291,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkPreferenceContainer>
 							</SearchMarker>
 
+							<SearchMarker :keywords="['attachment', 'image', 'photo', 'picture', 'media', 'thumbnail', 'hide', 'show', 'default', 'data saver']">
+								<MkPreferenceContainer k="dataSaver">
+									<MkSwitch v-model="dataSaver.media">
+										<template #label><SearchLabel>{{ i18n.ts._dataSaver._media.title }}</SearchLabel></template>
+										<template #caption><SearchText>{{ i18n.ts._dataSaver._media.description }}</SearchText></template>
+									</MkSwitch>
+								</MkPreferenceContainer>
+							</SearchMarker>
+
 							<template v-if="instance.federation !== 'none'">
 								<SearchMarker :keywords="['ticker', 'information', 'label', 'instance', 'server', 'host', 'federation']">
 									<MkPreferenceContainer k="instanceTicker">
@@ -320,6 +329,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 									>
 										<template #label><SearchLabel>{{ i18n.ts.displayOfSensitiveMedia }}</SearchLabel></template>
 									</MkSelect>
+								</MkPreferenceContainer>
+							</SearchMarker>
+
+							<SearchMarker :keywords="['cw', 'content warning', 'image', 'media', 'show', 'display']">
+								<MkPreferenceContainer k="showCwMedia">
+									<MkSwitch v-model="showCwMedia">
+										<template #label><SearchLabel>{{ i18n.ts.showCwMedia }}</SearchLabel></template>
+										<template #caption><SearchText>{{ i18n.ts.showCwMediaDescription }}</SearchText></template>
+									</MkSwitch>
 								</MkPreferenceContainer>
 							</SearchMarker>
 						</div>
@@ -928,6 +946,7 @@ const instanceTicker = prefer.model('instanceTicker');
 const highlightSensitiveMedia = prefer.model('highlightSensitiveMedia');
 const mediaListWithOneImageAppearance = prefer.model('mediaListWithOneImageAppearance');
 const showMediaListByGridInWideArea = prefer.model('showMediaListByGridInWideArea');
+const showCwMedia = prefer.model('showCwMedia');
 const reactionsDisplaySize = prefer.model('reactionsDisplaySize');
 const limitWidthOfReaction = prefer.model('limitWidthOfReaction');
 const squareAvatars = prefer.model('squareAvatars');

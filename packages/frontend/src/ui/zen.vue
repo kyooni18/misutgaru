@@ -18,7 +18,7 @@ import type { PageMetadata } from '@/page.js';
 import { provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { mainRouter } from '@/router.js';
 import { DI } from '@/di.js';
-import VuneZen from './vune/zen.vune';
+import VuneZen from './vune/zen.vune?vue-host';
 
 const isRoot = computed(() => mainRouter.currentRoute.value.name === 'index');
 

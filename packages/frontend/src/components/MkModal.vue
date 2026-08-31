@@ -58,7 +58,7 @@ import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
 import { Animation } from 'vune-ui';
-import { animateContextMenuTransition, contextMenuAnimation, contextMenuDrawerKeyframes, contextMenuRootKeyframes } from './MkContextMenu.motion.js';
+import { animateContextMenuTransition, contextMenuAnimationForPhase, contextMenuDrawerKeyframes, contextMenuRootKeyframes } from './MkContextMenu.motion.js';
 import type { ContextMenuMotionPhase } from './MkContextMenu.motion.js';
 import { animateVuneTransition } from '@/vune/motion.js';
 
@@ -209,10 +209,6 @@ function animateMenuTransition(
 	const blurTarget = bgElement == null
 		? '0px'
 		: window.getComputedStyle(bgElement).getPropertyValue('--MI-modalBgBlurTarget').trim() || '0px';
-	// Keep the expensive backdrop-filter out of the per-frame menu motion path.
-	// The panel and scrim can then stay on compositor-friendly opacity/transform
-	// tracks instead of forcing a full backdrop repaint on every frame.
-	bgElement?.style.setProperty('--MI-modalBgBlur', blurTarget);
 	let pending = 1;
 	const finish = () => {
 		pending -= 1;
@@ -225,9 +221,9 @@ function animateMenuTransition(
 	if (bgElement != null) {
 		pending += 1;
 		const backdropKeyframes = phase === 'enter'
-			? [{ opacity: 0 }, { opacity: 1 }]
-			: [{ opacity: 1 }, { opacity: 0 }];
-		void animateVuneTransition(bgElement, backdropKeyframes, contextMenuAnimation, finish);
+			? [{ opacity: 0, '--MI-modalBgBlur': '0px' }, { opacity: 1, '--MI-modalBgBlur': blurTarget }]
+			: [{ opacity: 1, '--MI-modalBgBlur': blurTarget }, { opacity: 0, '--MI-modalBgBlur': '0px' }];
+		void animateVuneTransition(bgElement, backdropKeyframes, contextMenuAnimationForPhase(phase), finish);
 	}
 }
 
@@ -381,8 +377,8 @@ const align = () => {
 
 	if (fixed.value) {
 		// 画面から横にはみ出る場合
-		if (left + width > viewportWidth) {
-			left = viewportWidth - width;
+		if (left + width > viewportWidth - MARGIN) {
+			left = viewportWidth - MARGIN - width;
 		}
 
 		const underSpace = (viewportHeight - MARGIN) - top;
@@ -405,8 +401,8 @@ const align = () => {
 		}
 	} else {
 		// 画面から横にはみ出る場合
-		if (left + width - window.scrollX > viewportWidth) {
-			left = viewportWidth - width + window.scrollX - 1;
+		if (left + width - window.scrollX > viewportWidth - MARGIN) {
+			left = viewportWidth - MARGIN - width + window.scrollX - 1;
 		}
 
 		const underSpace = (viewportHeight - MARGIN) - (top - window.scrollY);
@@ -429,7 +425,7 @@ const align = () => {
 		}
 	}
 
-	const viewportLeft = fixed.value ? 0 : window.scrollX;
+	const viewportLeft = (fixed.value ? 0 : window.scrollX) + MARGIN;
 	const viewportTop = fixed.value ? MARGIN : window.scrollY + MARGIN;
 	left = Math.max(viewportLeft, left);
 	top = Math.max(viewportTop, top);
@@ -586,7 +582,7 @@ defineExpose({
 .transition_modal_enterActive,
 .transition_modal_leaveActive {
 	> .bg {
-		transition: opacity 0.3s !important;
+		transition: opacity 0.3s, -webkit-backdrop-filter 0.3s, backdrop-filter 0.3s !important;
 	}
 
 	> .content {
@@ -728,6 +724,15 @@ defineExpose({
 	}
 }
 
+.transition_modalPopup_enterFrom,
+.transition_modalPopup_leaveTo,
+.transition_modalDrawer_enterFrom,
+.transition_modalDrawer_leaveTo {
+	> .bg {
+		--MI-modalBgBlur: 0px;
+	}
+}
+
 .root {
 	&.dialog {
 		> .content {
@@ -753,7 +758,6 @@ defineExpose({
 			position: absolute;
 			transform: scale(var(--mk-context-menu-scale));
 			transform-origin: var(--transformOrigin);
-			will-change: transform, opacity;
 
 			&.fixed {
 				position: fixed;
@@ -775,7 +779,6 @@ defineExpose({
 			left: 0;
 			right: 0;
 			margin: auto;
-			will-change: transform;
 		}
 	}
 }

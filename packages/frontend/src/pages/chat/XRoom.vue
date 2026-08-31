@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
-import XRoom from './vune/XRoom.vune';
-export default XRoom;
+import XRoomView from './vune/XRoom.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+export default createVuneWebHost(XRoomView);
 </script>

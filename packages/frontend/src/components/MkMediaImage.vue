@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkImgWithBlurhash
 			v-if="prefer.s.enableHighQualityImagePlaceholders"
 			:hash="image.blurhash"
-			:src="(prefer.s.dataSaver.media && hide) ? null : url"
+			:src="(prefer.r.dataSaver.value.media && hide) ? null : url"
 			:forceBlurhash="hide"
 			:cover="hide || cover"
 			:alt="image.comment || image.name"
@@ -30,10 +30,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:style="hide ? 'filter: brightness(0.7);' : null"
 			:class="$style.image"
 			:marker="marker"
-			loading="lazy"
 		/>
 		<div
-			v-else-if="prefer.s.dataSaver.media || hide"
+			v-else-if="prefer.r.dataSaver.value.media || hide"
 			:title="image.comment || image.name"
 			:style="hide ? 'background: #888;' : null"
 			:class="$style.image"
@@ -45,8 +44,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:title="image.comment || image.name"
 			:class="$style.image"
 			:data-marker="marker"
-			loading="lazy"
-			decoding="async"
+			loading="eager"
+			fetchpriority="high"
+			decoding="sync"
 		/>
 	</component>
 	<template v-if="hide">
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { watch, ref, computed } from 'vue';
+import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MediaComponentExposes } from '@/types/media-component.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
@@ -80,7 +80,7 @@ import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
-import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
+import { canRevealFile, useSensitiveFileVisibility } from '@/utility/sensitive-file.js';
 import { getFileMenu } from '@/utility/get-file-menu.js';
 
 const props = withDefaults(defineProps<{
@@ -90,6 +90,7 @@ const props = withDefaults(defineProps<{
 	disableImageLink?: boolean;
 	controls?: boolean;
 	marker?: string;
+	forceShow?: boolean;
 }>(), {
 	cover: false,
 	disableImageLink: false,
@@ -100,7 +101,7 @@ const emit = defineEmits<{
 	(event: 'mediaClick', ev: PointerEvent): void;
 }>();
 
-const hide = ref(true);
+const hide = useSensitiveFileVisibility(() => props.image, { forceShow: () => props.forceShow === true });
 
 const url = computed(() => (props.raw || prefer.s.loadRawImages)
 	? props.image.url
@@ -126,18 +127,6 @@ async function onClick(ev: PointerEvent) {
 		emit('mediaClick', ev);
 	}
 }
-
-// Plugin:register_note_view_interruptor may replace the file object or its
-// sensitive flag. Track only the fields that affect the initial visibility so
-// Vue does not traverse the whole DriveFile object on unrelated mutations.
-watch([
-	() => props.image,
-	() => props.image.isSensitive,
-	() => prefer.s.nsfw,
-	() => prefer.s.dataSaver.media,
-], () => {
-	hide.value = shouldHideFileByDefault(props.image);
-}, { immediate: true });
 
 function showMenu(ev: PointerEvent) {
 	os.popupMenu(getFileMenu(props.image, (newHide) => { hide.value = newHide; }), (ev.currentTarget ?? ev.target ?? undefined) as HTMLElement | undefined);

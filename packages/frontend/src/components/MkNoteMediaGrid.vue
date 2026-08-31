@@ -4,7 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNoteMediaGrid
+<VuneNoteMediaGridHost
+	:key="mediaVisibilityKey"
 	:note="note"
 	:square="square"
 	:classes="$style"
@@ -14,19 +15,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import VuneNoteMediaGrid from './vune/MkNoteMediaGrid.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import * as Misskey from 'misskey-js';
+import { prefer } from '@/preferences.js';
 import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
 
-defineProps<{
+const VuneNoteMediaGridHost = createVuneWebHost(VuneNoteMediaGrid);
+
+const props = defineProps<{
 	note: Misskey.entities.Note;
 	square?: boolean;
 }>();
 
 const showingFiles = ref<Set<string>>(new Set());
 
+// The Vune renderer receives a stable `isHiding` callback, so changing a
+// preference alone would not cause the grid to render again. Bump the key to
+// remount it with the new visibility policy and clear any stale reveals.
+const mediaVisibilityKey = computed(() => `${prefer.r.nsfw.value}:${prefer.r.dataSaver.value.media}:${prefer.r.showCwMedia.value}`);
+
+const showCwMedia = computed(() => prefer.r.showCwMedia.value);
+
+watch(mediaVisibilityKey, () => {
+	showingFiles.value = new Set();
+});
+
 function isHiding(file: Misskey.entities.DriveFile) {
+	if (showCwMedia.value && props.note.cw != null) return false;
+
 	if (shouldHideFileByDefault(file) && !showingFiles.value.has(file.id)) {
 		if (!file.isSensitive && !file.type.startsWith('image/')) {
 			return false;

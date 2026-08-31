@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
 import { getEmojiName } from '@@/js/emojilist.js';
-import MkTooltip from '@/components/MkTooltip.vue';
-import MkReactionIcon from '@/components/MkReactionIcon.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkTooltip from '@/components/vune/MkTooltip.vune';
+import MkReactionIcon from '@/components/vune/MkReactionIcon.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
 
 type Props = {
 	showing: boolean;
@@ -23,27 +23,32 @@ function reactionName(reaction: string) {
 	return trimLocal.startsWith(':') ? trimLocal : getEmojiName(reaction);
 }
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkTooltip, {
-		showing: props.showing,
-		anchorElement: props.anchorElement,
-		maxWidth: 340,
-		onClosed: () => props.onClosed?.(),
-	}, {
-		default: () => Element('div', { className: props.classes.root },
-			Element('div', { className: props.classes.reaction },
-				VueComponent(MkReactionIcon, { reaction: props.reaction, class: props.classes.reactionIcon, noStyle: true }),
-				Element('div', { className: props.classes.reactionName }, reactionName(props.reaction)),
-			),
-			Element('div', { className: props.classes.users },
-				ForEach(props.users, key: (user) => user.id) { user in
-					Element('div', { className: props.classes.user },
-						VueComponent(MkAvatar, { class: props.classes.avatar, user }),
-						VueComponent(MkUserName, { user, nowrap: true }),
-					)
-				},
-				props.count > 10 ? Element('div', { className: props.classes.more }, `+${props.count - 10}`) : null,
-			),
-		),
-	})
-);
+export struct MkReactionsViewerDetails: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkTooltip(showing: props.showing, anchorElement: props.anchorElement, maxWidth: 340, onClosed: { props.onClosed?.() }) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					MkReactionIcon(props.reaction, noStyle: true, className: props.classes.reactionIcon)
+					Text(reactionName(props.reaction)).className(props.classes.reactionName)
+				}.className(props.classes.reaction)
+				VStack(alignment: 'stretch', spacing: 0) {
+					ForEach(props.users, key: user => user.id) { user in
+						VStack(alignment: 'stretch', spacing: 0) {
+							MkAvatar(user, className: props.classes.avatar)
+							MkUserName({ user, nowrap: true })
+						}.className(props.classes.user)
+					}
+					if (props.count > 10) { Text(`+${props.count - 10}`).className(props.classes.more) }
+				}.className(props.classes.users)
+			}.className(props.classes.root)
+		}
+	}
+}
+
+export default MkReactionsViewerDetails

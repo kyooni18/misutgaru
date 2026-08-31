@@ -35,7 +35,7 @@ The Misutgaru native escape hatch remains restricted instead of returning to arb
 
 ## Motion and layout
 
-Layout FLIP projection now prefers independent CSS `translate` and `scale` channels. This lets an intrinsic size/position change animate without overwriting a simultaneous user `transform` such as rotation. Per-property animation ownership remains in o0o0o.
+Layout FLIP projection now prefers independent CSS `translate` and `scale` channels. This lets an intrinsic size/position change animate without overwriting a simultaneous user `transform` such as rotation. Per-property animation ownership now lives in Vune's `@vune-ui/animation` package.
 
 ## Backend batching
 

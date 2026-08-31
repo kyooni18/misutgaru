@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { htmlElement, svgElement } from '@/vune/native.js';
+import { HStack } from 'vune-ui';
+import { Canvas } from '@vune-ui/core/web-primitives';
 
 type Props = {
 	viewBoxX: number;
@@ -33,23 +34,30 @@ function graph(
 	label: string,
 	percent: string,
 ) {
-	return svgElement('svg', {},
-		svgElement('defs', {},
-			svgElement('linearGradient', {},
-				svgElement('stop', {}).withProps({ offset: '0%', 'stop-color': 'hsl(180, 80%, 70%)' }),
-				svgElement('stop', {}).withProps({ offset: '100%', 'stop-color': 'hsl(0, 80%, 70%)' }),
-			).withProps({ id: gradientId, x1: '0', x2: '0', y1: '1', y2: '0' }),
-			svgElement('mask', {},
-				svgElement('polygon', {}).withProps({ points: polygonPoints, fill: '#fff', 'fill-opacity': '0.5' }),
-				svgElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: '#fff', 'stroke-width': '1' }),
-				svgElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: '#fff' }),
-			).withProps({ id: maskId, x: '0', y: '0', width: viewBoxX, height: viewBoxY }),
-		),
-		svgElement('rect', { style: { stroke: 'none', fill: `url(#${gradientId})`, mask: `url(#${maskId})` } }).withProps({
-			x: '-2', y: '-2', width: viewBoxX + 4, height: viewBoxY + 4,
-		}),
-		svgElement('text', {}, `${label} `, svgElement('tspan', {}, `${percent}%`)).withProps({ x: '1', y: '5' }),
-	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
+	const parse = (points: string) => points.trim().split(/\s+/).flatMap(pair => {
+		const [x, y] = pair.split(',').map(Number);
+		return Number.isFinite(x) && Number.isFinite(y) ? [[x, y] as [number, number]] : [];
+	});
+	return Canvas(viewBoxX, viewBoxY, (node: unknown) => {
+		if (!(node instanceof HTMLCanvasElement)) return;
+		const context = node.getContext('2d');
+		if (!context) return;
+		context.clearRect(0, 0, viewBoxX, viewBoxY);
+		const gradient = context.createLinearGradient(0, viewBoxY, 0, 0);
+		gradient.addColorStop(0, 'hsl(180, 80%, 70%)'); gradient.addColorStop(1, 'hsl(0, 80%, 70%)');
+		const polygon = parse(polygonPoints);
+		if (polygon.length > 1) {
+			context.globalAlpha = 0.5; context.fillStyle = gradient; context.beginPath();
+			polygon.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y)); context.closePath(); context.fill(); context.globalAlpha = 1;
+		}
+		const line = parse(polylinePoints);
+		if (line.length > 1) {
+			context.strokeStyle = gradient; context.lineWidth = 1; context.beginPath();
+			line.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y)); context.stroke();
+		}
+		if (headX != null && headY != null) { context.fillStyle = gradient; context.beginPath(); context.arc(headX, headY, 1.5, 0, Math.PI * 2); context.fill(); }
+		context.fillStyle = 'currentColor'; context.font = '4.5px sans-serif'; context.fillText(`${label} ${percent}%`, 1, 5);
+	}).withProps({ 'data-gradient-id': gradientId, 'data-mask-id': maskId });
 }
 
 export struct CpuMem: View {
@@ -107,10 +115,10 @@ export struct CpuMem: View {
 	}
 
 	var body: some View {
-		htmlElement('div', { className: 'lcfyofjk' },
-			graph(cpuGradientId, cpuMaskId, viewBoxX, viewBoxY, cpuPolygonPoints, cpuPolylinePoints, cpuHeadX, cpuHeadY, 'CPU', cpuP),
-			graph(memGradientId, memMaskId, viewBoxX, viewBoxY, memPolygonPoints, memPolylinePoints, memHeadX, memHeadY, 'MEM', memP),
-		)
+		HStack(spacing: 0) {
+			graph(cpuGradientId, cpuMaskId, viewBoxX, viewBoxY, cpuPolygonPoints, cpuPolylinePoints, cpuHeadX, cpuHeadY, 'CPU', cpuP)
+			graph(memGradientId, memMaskId, viewBoxX, viewBoxY, memPolygonPoints, memPolylinePoints, memHeadX, memHeadY, 'MEM', memP)
+		}.className('lcfyofjk')
 	}
 }
 

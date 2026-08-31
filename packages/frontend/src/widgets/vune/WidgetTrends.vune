@@ -1,14 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Text } from 'vune-ui';
-import { TransitionGroup } from 'vue';
+/* @misutgaru-vune-native */
+import { VStack, Animation, ForEach, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkContainer from '@/components/MkContainer.vue';
-import MkLoading from '@/components/global/MkLoading.vue';
-import MkA from '@/components/global/MkA.vue';
-import MkMiniChart from '@/components/MkMiniChart.vue';
+import MkContainer from '@/components/vune/MkContainer.vune';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import MkA from '@/components/global/vune/MkA.vune';
+import ComputedMiniChart from '@/vune/ComputedMiniChart.vune';
 import { i18n } from '@/i18n.js';
-import { prefer } from '@/preferences.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	showHeader?: boolean;
@@ -16,32 +15,48 @@ type Props = {
 	stats: Misskey.entities.HashtagsTrendResponse;
 };
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkContainer, {
-		showHeader: vuneBoolean(props.showHeader, true),
-		'data-testid': 'mkw-trends',
-		class: 'mkw-trends',
-	}, {
-		icon: () => Element('i', { className: 'ti ti-hash' }),
-		header: () => Text(i18n.ts._widgets.trends),
-		default: () => Element('div', { className: 'wbrkwala' },
-			vuneBoolean(props.fetching) ? VueComponent(MkLoading) : VueComponent(TransitionGroup as any, {
-				tag: 'div',
-				name: prefer.s.animation ? 'chart' : '',
-				class: 'tags',
-			}, {
-				default: () => ForEach(props.stats, key: (stat) => stat.tag) { stat in
-					Element('div', {},
-						Element('div', { className: 'tag' },
-							VueComponent(MkA, { class: 'a', to: `/tags/${encodeURIComponent(stat.tag)}`, title: stat.tag }, {
-								default: () => Text(`#${stat.tag}`),
-							}),
-							Element('p', {}, i18n.tsx.nUsersMentioned({ n: stat.usersCount })),
-						),
-						VueComponent(MkMiniChart, { class: 'chart', src: stat.chart }),
-					)
-				},
-			}),
-		),
-	})
-);
+struct TrendRows: View {
+	let stats: Misskey.entities.HashtagsTrendResponse
+	var body: some View {
+	VStack(alignment: 'leading', spacing: 0) {
+		ForEach(stats, key: stat => stat.tag) { stat in
+			VStack(alignment: 'leading', spacing: 0) {
+				VStack(alignment: 'leading', spacing: 0) {
+					MkA(`/tags/${encodeURIComponent(stat.tag)}`, className: 'a') {
+						Text(`#${stat.tag}`)
+					}
+						.withProps({ title: stat.tag })
+					Text(i18n.tsx.nUsersMentioned({ n: stat.usersCount }))
+				}.className('tag')
+				ComputedMiniChart(stat.chart, gradientId: `mk-vune-trend-chart-${encodeURIComponent(stat.tag)}`, className: 'chart')
+			}
+		}
+	}.className('tags')
+		.animation(Animation.easeInOut(1), value: stats.map(stat => stat.tag).join(':'))
+	}
+}
+
+export struct WidgetTrends: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkContainer(
+			showHeader: props.showHeader ?? true,
+			className: 'mkw-trends',
+			testId: 'mkw-trends',
+			icon: VuneIcon('ti ti-hash'),
+			header: Text(i18n.ts._widgets.trends),
+		) {
+			VStack(alignment: 'leading', spacing: 0) {
+				if (props.fetching) { MkLoading() }
+				else { TrendRows(stats: props.stats) }
+			}.className('wbrkwala')
+		}
+	}
+}
+
+export default WidgetTrends

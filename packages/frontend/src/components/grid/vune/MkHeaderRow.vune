@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { ForEach, HStack } from 'vune-ui';
 import { GridEventEmitter } from '@/components/grid/grid.js';
-import MkHeaderCell from '@/components/grid/MkHeaderCell.vue';
-import MkNumberCell from '@/components/grid/MkNumberCell.vue';
+import MkHeaderCell from './MkHeaderCell.vune';
+import MkNumberCell from './MkNumberCell.vune';
 import type { Size } from '@/components/grid/grid.js';
 import type { GridColumn } from '@/components/grid/column.js';
 import type { GridRowSetting } from '@/components/grid/row.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '../../vune/misskey-vune.scss';
 
 type Props = {
@@ -20,26 +20,23 @@ type Props = {
 	'onChange:contentSize'?: (sender: GridColumn, size: Size) => void;
 };
 
-export default createVuneComponent<Props>((props) => {
-	const numberCell = props.gridSetting?.showNumber
-		? VueComponent(MkNumberCell, { content: '#', top: true })
-		: null;
-	const headerCell = (column: GridColumn) => VueComponent(MkHeaderCell, {
-		column,
-		bus: props.bus,
-		'onOperation:beginWidthChange': (sender: GridColumn) => props['onOperation:beginWidthChange']?.(sender),
-		'onOperation:endWidthChange': (sender: GridColumn) => props['onOperation:endWidthChange']?.(sender),
-		'onOperation:widthLargest': (sender: GridColumn) => props['onOperation:widthLargest']?.(sender),
-		'onChange:width': (sender: GridColumn, width: string) => props['onChange:width']?.(sender, width),
-		'onChange:contentSize': (sender: GridColumn, size: Size) => props['onChange:contentSize']?.(sender, size),
-	});
+export struct VuneMkHeaderRowView: View {
+	let props: Props
 
-	return HStack(alignment: 'center', spacing: 0) {
-		numberCell
-		ForEach(props.columns ?? [], key: (column) => column.index) { column in
-			headerCell(column)
-		}
+	init(_ props: Props) {
+		self.props = props
 	}
-		.className('mk_grid_tr mk-vune-grid-header-row')
-		.withProps({ 'data-grid-row': -1 });
-});
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 0) {
+			if (props.gridSetting?.showNumber) { MkNumberCell('#') }
+			ForEach(props.columns ?? [], key: (column) => column.index) { column in
+				MkHeaderCell(column)
+			}
+		}
+			.className('mk_grid_tr mk-vune-grid-header-row')
+			.withProps({ 'data-grid-row': -1 })
+	}
+}
+
+export default VuneMkHeaderRowView

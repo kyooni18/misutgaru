@@ -1,0 +1,89 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Button, ForEach, HStack, Text, ZStack } from 'vune-ui';
+import { prefer } from '@/preferences.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './MkTabs.scss';
+
+export type NativeTab = {
+	key: string;
+	onClick?: (event: PointerEvent) => void;
+	iconOnly?: boolean;
+	title: string;
+	icon?: string;
+};
+
+type TabAction = (key: string) => void;
+function ignoreTab(_key: string): void {}
+
+function activate(tab: NativeTab, event: PointerEvent, onTab: TabAction): void {
+	if (tab.onClick) {
+		event.preventDefault();
+		event.stopPropagation();
+		tab.onClick(event);
+	}
+	onTab(tab.key);
+}
+
+function activateButton(tab: NativeTab, onTab: TabAction): void {
+	// Normal tabs should use Button's native action path. This keeps tab
+	// selection working even when compatibility props are reconciled separately.
+	if (!tab.onClick) onTab(tab.key);
+}
+
+function buttonProps(tab: NativeTab, selectedTab: string, onTab: TabAction): Record<string, unknown> {
+	const props: Record<string, unknown> = {
+		type: 'button',
+		role: 'tab',
+		title: tab.title,
+		'aria-selected': tab.key === selectedTab,
+		tabIndex: tab.key === selectedTab ? 0 : -1,
+	};
+	// Tabs with a custom click callback need the PointerEvent. Only those tabs
+	// override Button's click handler; ordinary tabs retain the native action.
+	if (tab.onClick) props.onClick = (event: PointerEvent) => activate(tab, event, onTab);
+	return props;
+}
+
+export struct MkTabs: View {
+	let tabs: NativeTab[]
+	let tab: string
+	let centered: boolean
+	let tabHighlightUpper: boolean
+	let onTab: TabAction
+
+	init(
+		_ tabs: NativeTab[],
+		tab: string,
+		centered: boolean = false,
+		tabHighlightUpper: boolean = false,
+		@Action onTab: TabAction = ignoreTab,
+	) {
+		self.tabs = tabs
+		self.tab = tab
+		self.centered = centered
+		self.tabHighlightUpper = tabHighlightUpper
+		self.onTab = onTab
+	}
+
+	var body: some View {
+		ZStack(alignment: tabHighlightUpper ? 'topLeading' : 'bottomLeading') {
+			HStack(alignment: 'center', spacing: 0) {
+				ForEach(tabs, key: item => item.key) { item in
+					Button(action: { activateButton(item, onTab) }, label: {
+						HStack(alignment: 'center', spacing: 0) {
+							if (item.icon) { VuneIcon(item.icon, className: 'mk-vune-tabs__icon') }
+							if (!item.iconOnly || item.key === tab) { Text(item.title).className('mk-vune-tabs__title') }
+						}.className('mk-vune-tabs__tab-inner')
+					})
+						.className(['_button', 'mk-vune-tabs__tab', item.key === tab ? 'mk-vune-tabs__tab--active' : null, prefer.s.animation ? 'mk-vune-tabs__tab--animate' : null].filter(Boolean).join(' '))
+						.withProps(buttonProps(item, tab, onTab))
+				}
+			}.className('mk-vune-tabs__inner')
+		}
+			.className(['mk-vune-tabs', centered ? 'mk-vune-tabs--centered' : null])
+			.withProps({ role: 'tablist', 'data-highlight-upper': tabHighlightUpper ? 'true' : 'false' })
+	}
+}
+
+export default MkTabs

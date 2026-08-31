@@ -1,19 +1,32 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { queryingKey?: boolean; passwordless?: boolean; classes: Record<string,string>; onRetry?: () => void; onUseTotp?: () => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: props.classes.wrapper },
-		Element('div', { className: ['_gaps', props.classes.root] },
-			Element('div', { className: '_gaps_s' },
-				Element('div', { className: props.classes.passkeyIcon }, Element('i', { className: 'ti ti-fingerprint' })),
-				Element('div', { className: props.classes.passkeyDescription }, i18n.ts.useSecurityKey),
-			),
-			VueComponent(MkButton, { large: true, primary: true, rounded: true, disabled: vuneBoolean(props.queryingKey), style: { margin: '0 auto' }, onClick: () => props.onRetry?.() }, { default: () => Text(i18n.ts.retry) }),
-			!vuneBoolean(props.passwordless) ? VueComponent(MkButton, { transparent: true, rounded: true, disabled: vuneBoolean(props.queryingKey), style: { margin: '0 auto' }, onClick: () => props.onUseTotp?.() }, { default: () => Text(i18n.ts.useTotp) }) : null,
-		),
-	)
-);
+
+
+export struct VuneMkSigninPasskeyView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					VStack(alignment: 'stretch', spacing: 0) { VuneIcon('ti ti-fingerprint') }.className(props.classes.passkeyIcon)
+					Text(i18n.ts.useSecurityKey).className(props.classes.passkeyDescription)
+				}.className('_gaps_s')
+				MkButton(large: true, primary: true, rounded: true, disabled: !!props.queryingKey, style: { margin: '0 auto' }, onClick: { props.onRetry?.() }) { Text(i18n.ts.retry) }
+				if (!props.passwordless) { MkButton(transparent: true, rounded: true, disabled: !!props.queryingKey, style: { margin: '0 auto' }, onClick: { props.onUseTotp?.() }) { Text(i18n.ts.useTotp) } }
+			}.className(['_gaps', props.classes.root])
+		}.className(props.classes.wrapper)
+	}
+}
+
+export default VuneMkSigninPasskeyView

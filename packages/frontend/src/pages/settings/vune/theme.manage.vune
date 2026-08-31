@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text, VStack } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { Group, Text, VStack } from 'vune-ui';
 import type { Theme } from '@@/js/theme.js';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkSelect from '@/components/MkSelect.vue';
-import MkInput from '@/components/MkInput.vue';
-import MkButton from '@/components/MkButton.vue';
+import MkTextarea from '@/components/vune/MkTextarea.vune';
+import MkSelect from '@/components/vune/MkSelect.vune';
+import MkInput from '@/components/vune/MkInput.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	selectedThemeId: string | null;
@@ -18,33 +19,44 @@ type Props = {
 	onCopy?: () => void;
 	onUninstall?: () => void;
 };
+function setThemeId(props: Props, value: string | null): void { props.onThemeId?.(value); }
+function copyTheme(props: Props): void { props.onCopy?.(); }
+function uninstallTheme(props: Props): void { props.onUninstall?.(); }
 
-export default createVuneComponent<Props>((props) =>
-	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-		VueComponent(MkSelect, {
-			modelValue: props.selectedThemeId,
-			items: props.selectedThemeIdDef,
-			'onUpdate:modelValue': (value: string | null) => props.onThemeId?.(value),
-		}, { label: () => Text(i18n.ts.theme) })
-		if (props.selectedTheme != null) {
-			VueComponent(MkInput, { readonly: true, modelValue: props.selectedTheme.author }, {
-				label: () => Text(i18n.ts.author),
-			})
-			if (props.selectedTheme.desc) {
-				VueComponent(MkTextarea, { readonly: true, modelValue: props.selectedTheme.desc }, {
-					label: () => Text(i18n.ts._theme.description),
-				})
-			}
-			VueComponent(MkTextarea, { readonly: true, tall: true, modelValue: props.selectedThemeCode }, {
-				label: () => Text(i18n.ts._theme.code),
-				caption: () => Element('button', { className: '_textButton', onClick: () => props.onCopy?.() }, Text(i18n.ts.copy)),
-			})
-			if (!props.isBuiltin) {
-				VueComponent(MkButton, { danger: true, onClick: () => props.onUninstall?.() }, {
-					default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(` ${i18n.ts.uninstall}`) },
-				})
-			}
-		}
+
+
+
+export struct VuneThemeManageView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-		.className('_gaps_m')
-);
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+			MkSelect(props.selectedThemeId,
+				items: props.selectedThemeIdDef,
+				onChange: value => setThemeId(props, value as string | null),
+				label: Text(i18n.ts.theme),
+			)
+			if (props.selectedTheme != null) {
+				MkInput(props.selectedTheme.author, readonly: true, label: Text(i18n.ts.author))
+				if (props.selectedTheme.desc) {
+					MkTextarea(props.selectedTheme.desc, readonly: true, label: Text(i18n.ts._theme.description))
+				}
+				MkTextarea(props.selectedThemeCode,
+					readonly: true,
+					tall: true,
+					label: Text(i18n.ts._theme.code),
+					caption: MkButton(transparent: true, small: true, className: '_textButton', onClick: { copyTheme(props) }) { Text(i18n.ts.copy) },
+				)
+				if (!props.isBuiltin) {
+					MkButton(danger: true, onClick: { uninstallTheme(props) }) { Group() { VuneIcon('ti ti-trash'); Text(` ${i18n.ts.uninstall}`) } }
+				}
+			}
+		}.className('_gaps_m')
+	}
+}
+
+export default VuneThemeManageView

@@ -4,14 +4,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneSigninTotp :token="token" :backup="isBackupCode" :classes="$style" :onTokenChange="value => token = value" :onToggleBackup="() => isBackupCode = !isBackupCode" :onSubmit="() => emit('totpSubmitted', token)"/>
+<VuneSigninTotp :props="{
+	token,
+	backup: isBackupCode,
+	classes: $style,
+	onTokenChange: updateToken,
+	onToggleBackup: () => isBackupCode = !isBackupCode,
+	onSubmit: () => emit('totpSubmitted', token),
+}"/>
 </template>
 
 <script setup lang="ts">
-import VuneSigninTotp from './vune/MkSigninTotp.vune';
+import VuneSigninTotpView from './vune/MkSigninTotp.vune';
 import { ref } from 'vue';
 
 import { i18n } from '@/i18n.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneSigninTotp = createVuneWebHost(VuneSigninTotpView);
 
 const emit = defineEmits<{
 	(ev: 'totpSubmitted', token: string): void;
@@ -19,6 +29,10 @@ const emit = defineEmits<{
 
 const token = ref('');
 const isBackupCode = ref(false);
+
+function updateToken(value: string): void {
+	token.value = value;
+}
 </script>
 
 <style lang="scss" module>

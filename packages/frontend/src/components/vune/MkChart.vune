@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Canvas } from '@vune-ui/core/web-primitives';
+
+function chartRef(data: any) {
+	return (value: unknown) => {
+		if (!(value instanceof HTMLCanvasElement)) return;
+		const context = value.getContext('2d'); if (!context) return;
+		const values = Array.isArray(data) ? data.map(Number).filter(Number.isFinite) : [];
+		context.clearRect(0, 0, value.width, value.height);
+		if (values.length < 2) return;
+		const max = Math.max(1, ...values), min = Math.min(0, ...values), span = Math.max(1, max - min);
+		context.beginPath();
+		values.forEach((item, index) => { const x = index / (values.length - 1) * value.width; const y = value.height - ((item - min) / span * value.height); index === 0 ? context.moveTo(x, y) : context.lineTo(x, y); });
+		context.strokeStyle = 'currentColor'; context.stroke();
+	};
+}
+
+export struct MkChart: View {
+	let data: any
+	init(_ data: any = []) { self.data = data }
+	var body: some View { Canvas(480, 160, chartRef(data)).className('mk-vune-chart') }
+}
+export default MkChart

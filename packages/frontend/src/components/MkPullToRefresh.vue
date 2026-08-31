@@ -31,6 +31,7 @@ import { isHorizontalSwipeSwiping } from '@/utility/touch.js';
 import { haptic } from '@/utility/haptic.js';
 import { vuneMotion } from '@/vune/motion.js';
 import type { MotionHandle } from '@/vune/motion.js';
+import { prefer } from '@/preferences.js';
 
 const SCROLL_STOP = 10;
 const MAX_PULL_DISTANCE = Infinity;
@@ -148,7 +149,7 @@ function stopSystemMove() {
 async function moveBySystem(to: number): Promise<void> {
 	stopSystemMove();
 	const startHeight = pullDistance.value;
-	if (startHeight - to < 1) {
+	if (!prefer.s.animation || startHeight - to < 1) {
 		pullDistance.value = to;
 		return;
 	}

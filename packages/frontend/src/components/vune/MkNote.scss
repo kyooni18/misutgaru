@@ -1,0 +1,123 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+
+.mk-vune-note-native {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: flex-start !important;
+	box-sizing: border-box;
+	width: 100% !important;
+	margin: 0;
+	padding: 28px 32px;
+	gap: 14px !important;
+	font-size: 1.05em;
+	overflow-wrap: anywhere;
+	contain: content;
+	content-visibility: auto;
+	contain-intrinsic-size: 0 140px;
+}
+
+.mk-vune-note-native__avatar {
+	display: block !important;
+	flex: 0 0 58px;
+	width: 58px !important;
+	height: 58px !important;
+	margin: 0;
+}
+
+.mk-vune-note-native__avatar--sticky {
+	position: sticky !important;
+	top: calc(22px + var(--MI-stickyTop, 0px));
+	left: 0;
+}
+
+.mk-vune-note-native__main {
+	display: flex !important;
+	flex: 1 1 auto;
+	flex-direction: column !important;
+	align-items: stretch !important;
+	min-width: 0;
+	width: auto !important;
+}
+
+.mk-vune-note-native__header {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: baseline !important;
+	justify-content: flex-start !important;
+	box-sizing: border-box;
+	width: 100% !important;
+	min-width: 0;
+	margin: 0 0 4px;
+	gap: 0 !important;
+	white-space: nowrap;
+}
+
+/* MkUserName is backed by MkPlainMfm, whose native VStack defaults to
+ * full-width/column layout. A note header is an inline context, so override
+ * those stack defaults here instead of letting the name consume a whole row. */
+.mk-vune-note-native__header > .mk-vune-plain-mfm {
+	display: inline-flex !important;
+	flex: 0 1 auto;
+	flex-direction: row !important;
+	align-items: baseline !important;
+	width: auto !important;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mk-vune-note-native__cw,
+.mk-vune-note-native__text {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: stretch !important;
+	box-sizing: border-box;
+	width: 100% !important;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.mk-vune-note-native__cw {
+	overflow-wrap: anywhere;
+}
+
+.mk-vune-note-native__text {
+	line-height: 1.55;
+}
+
+.mk-vune-note-native__deleted {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 12px;
+	text-align: center;
+	border-radius: var(--MI-radius);
+	background: color-mix(in srgb, var(--MI_THEME-fg) 5%, transparent);
+}
+
+@container (max-width: 600px) {
+	.mk-vune-note-native {
+		padding: 20px 16px;
+		gap: 12px !important;
+		font-size: 1em;
+	}
+
+	.mk-vune-note-native__avatar {
+		flex-basis: 48px;
+		width: 48px !important;
+		height: 48px !important;
+	}
+}
+
+@container (max-width: 450px) {
+	.mk-vune-note-native {
+		padding: 16px 12px;
+		gap: 10px !important;
+	}
+
+	.mk-vune-note-native__avatar {
+		flex-basis: 44px;
+		width: 44px !important;
+		height: 44px !important;
+	}
+}

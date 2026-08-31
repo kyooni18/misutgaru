@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.wrapper">
 	<Transition
+		:css="prefer.s.animation"
 		mode="out-in"
 		:enterActiveClass="$style.transition_enterActive"
 		:leaveActiveClass="$style.transition_leaveActive"
@@ -121,6 +122,7 @@ import MkButton from '@/components/MkButton.vue';
 import { $i } from '@/i.js';
 import { getAccounts, getAccountWithSigninDialog, getAccountWithSignupDialog } from '@/accounts.js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { getProxiedImageUrl } from '@/utility/media-proxy.js';
 import { misskeyApi } from '@/utility/misskey-api.js';

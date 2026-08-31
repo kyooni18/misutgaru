@@ -1,35 +1,25 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Text } from 'vune-ui';
-import MkFolder from '@/components/MkFolder.vue';
-import MkPagination from '@/components/MkPagination.vue';
-import XUser from '@/components/MkUserSetupDialog.User.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Text } from 'vune-ui';
+import MkFolder from '@/components/vune/MkFolder.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
+import XUser from '@/components/vune/MkUserSetupDialog.User.vune';
 import { i18n } from '@/i18n.js';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-import '@/vune/phase6-migration.scss';
-
-type Props = {
-	pinnedUsersPaginator: IPaginator;
-	popularUsersPaginator: IPaginator;
-};
-
-function userFolder(label: string, paginator: IPaginator) {
-	return VueComponent(MkFolder, { defaultOpen: true }, {
-		label: () => Text(label),
-		default: () => VueComponent(MkPagination, { paginator }, {
-			default: (slotProps: any) => Element('div', { className: 'mk-vune-follow-setup-grid' },
-				ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
-					VueComponent(XUser, { user: item })
-				},
-			),
-		}),
-	});
+const classes={banner:'mk-vune-setup-user__banner',avatar:'mk-vune-setup-user__avatar',title:'mk-vune-setup-user__title',name:'mk-vune-setup-user__name',username:'mk-vune-setup-user__username',description:'mk-vune-setup-user__description',mfm:'mk-vune-setup-user__mfm',footer:'mk-vune-setup-user__footer'};
+struct SetupUserFolder: View {
+	let label: string
+	let paginator: IPaginator
+	var body: some View {
+		MkFolder(header: Text(label)) {
+			MkPagination(paginator) {
+				VStack(alignment: 'leading', spacing: 0) {
+					ForEach(paginator.items.value as any[], key: item => item.id) { item in XUser({ user: item, classes }) }
+				}.className('mk-vune-follow-setup-grid')
+			}
+		}
+	}
 }
-
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: '_gaps' },
-		Element('div', { style: { textAlign: 'center' } }, i18n.ts._initialAccountSetting.followUsers),
-		userFolder(i18n.ts.recommended, props.pinnedUsersPaginator),
-		userFolder(i18n.ts.popularUsers, props.popularUsersPaginator),
-	)
-);
+type Props={pinnedUsersPaginator:IPaginator;popularUsersPaginator:IPaginator};
+export struct VuneMkUserSetupDialogFollowView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { VStack(alignment: 'leading', spacing: 0){Text(i18n.ts._initialAccountSetting.followUsers).multilineTextAlignment('center');SetupUserFolder(label:i18n.ts.recommended,paginator:props.pinnedUsersPaginator);SetupUserFolder(label:i18n.ts.popularUsers,paginator:props.popularUsersPaginator)}.className('_gaps') } }
+export default VuneMkUserSetupDialogFollowView

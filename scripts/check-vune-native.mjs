@@ -29,9 +29,12 @@ candidates.sort();
 const forbidden = [
 	{ label: '@vune-ui/vue import', pattern: /from\s+['"]@vune-ui\/vue['"]/g },
 	{ label: 'legacy Vune/Vue bridge import', pattern: /from\s+['"]@\/vune\/vue\.js['"]/g },
+	{ label: 'legacy Vue host import', pattern: /from\s+['"]@\/vune\/compat-vue\.js['"]/g },
+	{ label: 'Misutgaru native HTML bridge import', pattern: /from\s+['"]@\/vune\/native\.js['"]/g },
 	{ label: 'VueComponent fallback', pattern: /\bVueComponent\s*\(/g },
 	{ label: 'VueSlot fallback', pattern: /\bVueSlot\s*\(/g },
 	{ label: 'raw Element primitive', pattern: /\bElement\s*\(/g },
+	{ label: 'non-SwiftUI Box primitive', pattern: /\bBox\s*\(/g },
 	{ label: 'unrestricted nativeElement escape hatch', pattern: /\bnativeElement\s*\(/g },
 	{ label: 'direct viewElement host construction', pattern: /\bviewElement\s*\(/g },
 	{ label: 'legacy createVuneComponent factory', pattern: /\bcreateVuneComponent\b/g },
@@ -46,8 +49,7 @@ let marked = 0;
 let failed = false;
 for (const file of candidates) {
 	const source = await readFile(file, 'utf8');
-	if (!source.includes(marker)) continue;
-	marked += 1;
+	marked += source.includes(marker) ? 1 : 0;
 	const label = path.relative(process.cwd(), file);
 	if (!/\bexport\s+struct\s+[A-Za-z_$][\w$]*(?:\s*<[^>{}]+>)?\s*:\s*View\b/.test(source)) {
 		console.error(`${label}: native Vune violation: missing exported struct ...: View`);

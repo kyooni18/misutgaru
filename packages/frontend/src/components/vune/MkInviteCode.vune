@@ -1,13 +1,14 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkFolder from '@/components/MkFolder.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import MkTime from '@/components/global/MkTime.vue';
+import MkFolder from '@/components/vune/MkFolder.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	invite: Misskey.entities.InviteCode;
@@ -17,62 +18,54 @@ type Props = {
 	onDelete?: () => void;
 	onCopy?: () => void;
 };
+function copyInvite(props: Props): void { props.onCopy?.(); }
+function deleteInvite(props: Props): void { props.onDelete?.(); }
 
-export default createVuneComponent<Props>((props) => {
-	const invite = props.invite;
-	const moderator = vuneBoolean(props.moderator);
-	const expired = vuneBoolean(props.isExpired);
+export struct VuneMkInviteCodeView: View {
+	let props: Props
+	let invite: Misskey.entities.InviteCode
+	let moderator: boolean
+	let expired: boolean
 
-	return VueComponent(MkFolder, {}, {
-		label: () => Text(invite.code),
-		suffix: () => invite.used
-			? Text(i18n.ts.used)
-			: expired
-				? Element('span', { style: { color: 'var(--MI_THEME-error)' } }, i18n.ts.expired)
-				: Element('span', { style: { color: 'var(--MI_THEME-success)' } }, i18n.ts.unused),
-		footer: () => Element('div', { className: '_buttons' },
-			!invite.used && !expired ? VueComponent(MkButton, { primary: true, rounded: true, onClick: () => props.onCopy?.() }, {
-				default: () => Group() { Element('i', { className: 'ti ti-copy' }); ` ${i18n.ts.copy}` },
-			}) : null,
-			!invite.used || moderator ? VueComponent(MkButton, { danger: true, rounded: true, onClick: () => props.onDelete?.() }, {
-				default: () => Group() { Element('i', { className: 'ti ti-trash' }); ` ${i18n.ts.delete}` },
-			}) : null,
-		),
-		default: () => Element('div', { className: props.classes.root },
-			Element('div', { className: props.classes.items },
-				Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.invitationCode),
-					Element('div', { className: '_selectableAtomic' }, invite.code),
-				),
-				moderator ? Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.inviteCodeCreator),
-					invite.createdBy ? Element('div', { className: props.classes.user },
-						VueComponent(MkAvatar, { user: invite.createdBy, class: props.classes.avatar, link: true, preview: true }),
-						VueComponent(MkUserName, { user: invite.createdBy, nowrap: false }),
-						Element('div', {}, `(${invite.createdBy.id})`),
-					) : Element('div', {}, 'system'),
-				) : null,
-				invite.used ? Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.registeredUserUsingInviteCode),
-					invite.usedBy ? Element('div', { className: props.classes.user },
-						VueComponent(MkAvatar, { user: invite.usedBy, class: props.classes.avatar, link: true, preview: true }),
-						VueComponent(MkUserName, { user: invite.usedBy, nowrap: false }),
-						moderator ? Element('div', {}, `(${invite.usedBy.id})`) : null,
-					) : Element('div', {}, `${i18n.ts.unknown} (${i18n.ts.waitingForMailAuth})`),
-				) : null,
-				invite.expiresAt && !invite.used ? Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.expirationDate),
-					Element('div', {}, VueComponent(MkTime, { time: invite.expiresAt, mode: 'absolute' })),
-				) : null,
-				invite.usedAt ? Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.inviteCodeUsedAt),
-					Element('div', {}, VueComponent(MkTime, { time: invite.usedAt, mode: 'absolute' })),
-				) : null,
-				moderator ? Element('div', {},
-					Element('div', { className: props.classes.label }, i18n.ts.createdAt),
-					Element('div', {}, VueComponent(MkTime, { time: invite.createdAt, mode: 'absolute' })),
-				) : null,
-			),
-		),
-	});
-});
+	init(_ props: Props) {
+		self.props = props
+		self.invite = props.invite
+		self.moderator = props.moderator === true
+		self.expired = props.isExpired === true
+	}
+
+	var body: some View {
+		MkFolder(header: Group() {
+			Text(invite.code).bold()
+			Text(invite.used ? i18n.ts.used : expired ? i18n.ts.expired : i18n.ts.unused)
+				.foregroundStyle(expired ? 'var(--MI_THEME-error)' : 'var(--MI_THEME-success)')
+		}) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) { Text(i18n.ts.invitationCode).className(props.classes.label); Text(invite.code).className('_selectableAtomic') }
+				if (moderator) {
+					VStack(alignment: 'stretch', spacing: 0) {
+						Text(i18n.ts.inviteCodeCreator).className(props.classes.label)
+						if (invite.createdBy) { VStack(alignment: 'stretch', spacing: 0) { MkAvatar(invite.createdBy, link: true, preview: true, className: props.classes.avatar); MkUserName({ user: invite.createdBy, nowrap: false }); Text(`(${invite.createdBy.id})`) }.className(props.classes.user) }
+						else { Text('system') }
+					}
+				}
+				if (invite.used) {
+					VStack(alignment: 'stretch', spacing: 0) {
+						Text(i18n.ts.registeredUserUsingInviteCode).className(props.classes.label)
+						if (invite.usedBy) { VStack(alignment: 'stretch', spacing: 0) { MkAvatar(invite.usedBy, link: true, preview: true, className: props.classes.avatar); MkUserName({ user: invite.usedBy, nowrap: false }); if (moderator) { Text(`(${invite.usedBy.id})`) } }.className(props.classes.user) }
+						else { Text(`${i18n.ts.unknown} (${i18n.ts.waitingForMailAuth})`) }
+					}
+				}
+				if (invite.expiresAt && !invite.used) { VStack(alignment: 'stretch', spacing: 0) { Text(i18n.ts.expirationDate).className(props.classes.label); MkTimeValue(invite.expiresAt, mode: 'absolute') } }
+				if (invite.usedAt) { VStack(alignment: 'stretch', spacing: 0) { Text(i18n.ts.inviteCodeUsedAt).className(props.classes.label); MkTimeValue(invite.usedAt, mode: 'absolute') } }
+				if (moderator) { VStack(alignment: 'stretch', spacing: 0) { Text(i18n.ts.createdAt).className(props.classes.label); MkTimeValue(invite.createdAt, mode: 'absolute') } }
+			}.className(props.classes.items)
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (!invite.used && !expired) { MkButton(primary: true, rounded: true, onClick: { copyInvite(props) }) { Group() { VuneIcon('ti ti-copy'); Text(` ${i18n.ts.copy}`) } } }
+				if (!invite.used || moderator) { MkButton(danger: true, rounded: true, onClick: { deleteInvite(props) }) { Group() { VuneIcon('ti ti-trash'); Text(` ${i18n.ts.delete}`) } } }
+			}.className('_buttons')
+		}.className(props.classes.root)
+	}
+}
+
+export default VuneMkInviteCodeView

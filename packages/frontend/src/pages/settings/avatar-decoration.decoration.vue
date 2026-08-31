@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneAvatarDecoration from './vune/avatar-decoration.decoration.vune';
+import VuneAvatarDecoration from './vune/avatar-decoration.decoration.vune?vue-host';
 import { computed } from 'vue';
 import { ensureSignin } from '@/i.js';
 

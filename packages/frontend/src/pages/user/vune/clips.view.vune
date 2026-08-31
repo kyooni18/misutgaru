@@ -1,19 +1,36 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
-import MkA from '@/components/global/MkA.vue';
-import MkPagination from '@/components/MkPagination.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
+import MkA from '@/components/global/vune/MkA.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase5-migration.scss';
 
 type Props = { paginator: IPaginator };
-export default createVuneComponent<Props>((props) => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-	VueComponent(MkPagination, { paginator: props.paginator, withControl: true }, { default: (slotProps: any) => Group() {
-		ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
-			VueComponent(MkA, { to: `/clips/${item.id}`, class: '_panel _margin mk-vune-clip' }, { default: () => Group() {
-				Element('b', {}, item.name)
-				if (item.description) { Element('div', { className: 'mk-vune-clip__description' }, item.description) }
-			} })
+function items(paginator: IPaginator): any[] { return paginator.items.value as any[]; }
+
+export struct ClipsView: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			MkPagination(props.paginator, withControl: true) {
+				Group() {
+					ForEach(items(props.paginator), key: item => item.id) { item in
+						MkA(`/clips/${item.id}`, className: '_panel _margin mk-vune-clip') {
+							Group() {
+								Text(item.name).bold()
+								if (item.description) { Text(item.description).className('mk-vune-clip__description') }
+							}
+						}
+					}
+				}
+			}
 		}
-	} }),
-));
+			.className('_spacer')
+			.style({ '--MI_SPACER-w': '700px' })
+	}
+}
+
+export default ClipsView

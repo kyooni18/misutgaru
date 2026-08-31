@@ -1,19 +1,61 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { Group, HStack, Text, VStack, type ViewGraphValue } from 'vune-ui';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './MkTip.scss';
 
-type Props = { hidden?: boolean; warn?: boolean; rootClass: string; warnClass: string; onClose?: () => void; onMenu?: (event: PointerEvent) => void };
-export default createVuneComponent<Props>((props, slots) =>
-	props.hidden ? Element('span', { style: { display: 'none' } }) : Element('div', { className: [props.rootClass, props.warn ? props.warnClass : null, '_selectable', '_gaps_s'] },
-		Element('div', { style: { fontWeight: 'bold' } }, Element('i', { className: 'ti ti-bulb' }), ` ${i18n.ts.tip}:`),
-		Element('div', {}, VueSlot(slots.default)),
-		Element('div', {},
-			VueComponent(MkButton, { inline: true, primary: true, rounded: true, small: true, onClick: () => props.onClose?.() }, {
-				default: () => Element('span', {}, Element('i', { className: 'ti ti-check' }), ` ${i18n.ts.gotIt}`),
-			}),
-			Element('button', { className: '_button', style: { padding: '8px', marginLeft: '4px' }, onClick: (event: PointerEvent) => props.onMenu?.(event) }, Element('i', { className: 'ti ti-dots' })),
-		),
-	)
-);
+function ignoreTipClose(): void {}
+function ignoreTipMenu(_event: PointerEvent): void {}
+
+export struct MkTip: View {
+	let hidden: boolean
+	let warn: boolean
+	let onClose: () => void
+	let onMenu: (event: PointerEvent) => void
+	let content: ViewGraphValue
+
+	init(
+		hidden: boolean = false,
+		warn: boolean = false,
+		@Action onClose: () => void = ignoreTipClose,
+		@Action onMenu: (event: PointerEvent) => void = ignoreTipMenu,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.hidden = hidden
+		self.warn = warn
+		self.onClose = onClose
+		self.onMenu = onMenu
+		self.content = content()
+	}
+
+	var body: some View {
+		Group() {
+			if (!hidden) {
+				VStack(alignment: 'leading', spacing: 8) {
+					HStack(alignment: 'center', spacing: 4) {
+						VuneIcon('ti ti-bulb')
+						Text(`${i18n.ts.tip}:`)
+					}.bold()
+					VStack(alignment: 'leading', spacing: 0) { content }
+					HStack(alignment: 'center', spacing: 4) {
+						MkButton(inline: true, primary: true, rounded: true, small: true, onClick: { onClose() }) {
+							Group() {
+								VuneIcon('ti ti-check')
+								Text(` ${i18n.ts.gotIt}`)
+							}
+						}
+						MkButton(transparent: true, iconOnly: true, onClick: onMenu) {
+							VuneIcon('ti ti-dots')
+						}
+							.style({ padding: '8px', marginLeft: '4px' })
+					}
+				}
+					.className(['mk-vune-tip', warn ? 'mk-vune-tip--warn' : null, '_selectable', '_gaps_s'])
+			}
+		}
+	}
+}
+
+export default MkTip

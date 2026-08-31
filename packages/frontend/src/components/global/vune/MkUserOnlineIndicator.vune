@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Circle } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { i18n } from '@/i18n.js';
+import './MkAvatar.scss';
+
+function statusText(status: Misskey.entities.User['onlineStatus']): string {
+	switch (status) {
+		case 'online': return i18n.ts.online;
+		case 'active': return i18n.ts.active;
+		case 'offline': return i18n.ts.offline;
+		default: return i18n.ts.unknown;
+	}
+}
+
+export struct MkUserOnlineIndicator: View {
+	let user: Misskey.entities.User
+	let className: string
+
+	init(_ user: Misskey.entities.User, className: string = '') {
+		self.user = user
+		self.className = className
+	}
+
+	var body: some View {
+		Circle()
+			.className(['mk-vune-online-indicator', `mk-vune-online-indicator--${user.onlineStatus}`, className])
+			.withProps({ title: statusText(user.onlineStatus) })
+			.accessibilityLabel(statusText(user.onlineStatus))
+	}
+}
+
+export default MkUserOnlineIndicator

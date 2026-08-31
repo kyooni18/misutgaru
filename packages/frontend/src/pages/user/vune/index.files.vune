@@ -1,33 +1,35 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { ForEach, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkContainer from '@/components/MkContainer.vue';
-import MkLoading from '@/components/global/MkLoading.vue';
-import MkNoteMediaGrid from '@/components/MkNoteMediaGrid.vue';
-import MkButton from '@/components/MkButton.vue';
+import MkContainer from '@/components/vune/MkContainer.vune';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import MkNoteMediaGrid from '@/components/vune/MkNoteMediaGrid.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { fetching: boolean; notes: Misskey.entities.Note[]; rootClass?: string; streamClass?: string; onShowMore?: () => void };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkContainer, {}, {
-		icon: () => Element('i', { className: 'ti ti-photo' }),
-		header: () => Text(i18n.ts.files),
-		default: () => Group() {
-			if (props.fetching) { VueComponent(MkLoading) }
-			if (!props.fetching && props.notes.length > 0) {
-				Group() {
+export struct UserIndexFiles: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		return MkContainer(icon: VuneIcon('ti ti-photo'), header: Text(i18n.ts.files)) {
+			Group() {
+				if (props.fetching) { MkLoading() }
+				if (!props.fetching && props.notes.length > 0) {
 					Group() {
-						ForEach(props.notes, key: (note: Misskey.entities.Note) => note.id) { note in
-							VueComponent(MkNoteMediaGrid, { note })
+						Group() {
+							ForEach(props.notes, key: note => note.id) { note in MkNoteMediaGrid({ note: note }) }
+						}.className(props.streamClass)
+						MkButton(rounded: true, full: true, onClick: { props.onShowMore?.() }) {
+							Group() { Text(`${i18n.ts.showMore} `); VuneIcon('ti ti-arrow-right') }
 						}
-					}.className(props.streamClass)
-					VueComponent(MkButton, { rounded: true, full: true, onClick: () => props.onShowMore?.() }, {
-						default: () => Group() { Text(`${i18n.ts.showMore} `); Element('i', { className: 'ti ti-arrow-right' }) },
-					})
-				}.className('_gaps_s')
-			}
-			if (!props.fetching && props.notes.length === 0) { Element('p', {}, i18n.ts.nothing) }
-		}.className(props.rootClass),
-	})
-);
+					}.className('_gaps_s')
+				}
+				if (!props.fetching && props.notes.length === 0) { Text(i18n.ts.nothing) }
+			}.className(props.rootClass)
+		}
+	}
+}
+export default UserIndexFiles

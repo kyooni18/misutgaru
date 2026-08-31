@@ -1,15 +1,16 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
 import * as Misskey from 'misskey-js';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkTip from '@/components/global/MkTip.vue';
-import MkResult from '@/components/global/MkResult.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkA from '@/components/global/MkA.vue';
-import MkAvatars from '@/components/MkAvatars.vue';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkTip from '@/components/global/vune/MkTip.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkA from '@/components/global/vune/MkA.vune';
+import { MkAvatarsByIds } from '@/components/vune/MkAvatars.vune';
 import { i18n } from '@/i18n.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	items: Misskey.entities.UserList[];
@@ -20,26 +21,37 @@ type Props = {
 	nUsersClass: string;
 	onCreate?: () => void;
 };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-			Element('div', { className: '_gaps' },
-				VueComponent(MkTip, { k: 'userLists' }, { default: () => Text(i18n.ts._userLists.tip) }),
-				props.items.length === 0 ? VueComponent(MkResult, { type: 'empty' }) : null,
-				VueComponent(MkButton, { primary: true, rounded: true, style: { margin: '0 auto' }, onClick: () => props.onCreate?.() }, {
-					default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.createList) },
-				}),
-				props.items.length > 0 ? Element('div', { className: '_gaps' },
-					ForEach(props.items, key: list => list.id) { list in
-						VueComponent(MkA, { class: ['_panel', props.listClass], to: `/timeline/list/${list.id}` }, {
-							default: () => Group() {
-								Element('div', { style: { marginBottom: '4px' } }, list.name, ' ', Element('span', { className: props.nUsersClass }, `(${i18n.tsx.nUsers({ n: `${list.userIds!.length}/${props.userListLimit}` })})`))
-								VueComponent(MkAvatars, { userIds: list.userIds!, limit: 10 })
-							},
-						})
-					},
-				) : null,
-			),
-		),
-	})
-);
+function createList(props: Props): void { props.onCreate?.(); }
+
+
+export struct VuneMyListsIndexView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					MkTip() { Text(i18n.ts._userLists.tip) }
+					if (props.items.length === 0) { MkResult('empty') }
+					MkButton(primary: true, rounded: true, style: { margin: '0 auto' }, onClick: { createList(props) }) { Group() { VuneIcon('ti ti-plus'); Text(i18n.ts.createList) } }
+					if (props.items.length > 0) { VStack(alignment: 'stretch', spacing: 0) {
+						ForEach(props.items, key: list => list.id) { list in
+							MkA(`/timeline/list/${list.id}`, className: `_panel ${props.listClass}`) {
+								Group() {
+									VStack(alignment: 'stretch', spacing: 0) { Text(list.name); Text(` (${i18n.tsx.nUsers({ n: `${list.userIds!.length}/${props.userListLimit}` })})`).className(props.nUsersClass) }.style({ marginBottom: '4px' })
+									MkAvatarsByIds(list.userIds!, limit: 10)
+								}
+							}
+						}
+					}.className('_gaps') }
+				}.className('_gaps')
+			}.className('_spacer').style({ '--MI_SPACER-w': '700px' })
+		}
+	}
+}
+
+export default VuneMyListsIndexView

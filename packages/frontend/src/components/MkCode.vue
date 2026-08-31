@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneCode from './vune/MkCode.vune';
+import VuneCode from './vune/MkCode.vune?vue-host';
 import { ref } from 'vue';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';

@@ -1,0 +1,122 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { NavigationLink, State, type ViewGraphValue } from 'vune-ui';
+import { mainRouter, type Router } from '@/router.js';
+import * as os from '@/os.js';
+import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
+import { i18n } from '@/i18n.js';
+import { url } from '@@/js/config.js';
+
+export type MkABehavior = 'window' | 'browser' | null;
+
+const routeRevision = State(0);
+const bumpRouteRevision = () => { routeRevision.value += 1; };
+const routersWithRouteListeners = new WeakSet<Router>();
+
+// MkA is imported by the eagerly loaded timeline route while router.ts is still
+// evaluating router.definition.ts. Registering listeners at module evaluation
+// time therefore observes an uninitialised `mainRouter` binding in the bundle.
+// Defer registration until the first initializer call, after the router module
+// has finished creating its singleton.
+function ensureRouteListeners(router: Router): void {
+	if (routersWithRouteListeners.has(router)) return;
+	routersWithRouteListeners.add(router);
+	router.addListener('change', bumpRouteRevision);
+	router.addListener('replace', bumpRouteRevision);
+}
+
+function isActive(router: Router, to: string, activeClass: string | null): boolean {
+	void routeRevision.value;
+	if (activeClass == null) return false;
+	const resolved = router.resolve(to);
+	if (resolved == null) return false;
+	if (resolved.route.path === router.current.route.path) return true;
+	if (resolved.route.name == null || router.current.route.name == null) return false;
+	return resolved.route.name === router.current.route.name;
+}
+
+function openWindow(to: string): void {
+	os.pageWindow(to);
+}
+
+function navigate(router: Router, to: string, behavior: MkABehavior, beforeNavigate: ((event: PointerEvent) => void) | undefined, event: PointerEvent): void {
+	beforeNavigate?.(event);
+	if (event.metaKey || event.altKey || event.ctrlKey) return;
+	event.preventDefault();
+	if (behavior === 'browser') {
+		window.location.href = to;
+		return;
+	}
+	if (behavior === 'window' || event.shiftKey) {
+		openWindow(to);
+		return;
+	}
+	router.pushByPath(to, null);
+}
+
+function showContextMenu(router: Router, to: string, event: PointerEvent): void {
+	const selection = window.getSelection();
+	if (selection && selection.toString() !== '') return;
+	event.preventDefault();
+	event.stopPropagation();
+	os.contextMenu([{
+		type: 'label',
+		text: to,
+	}, {
+		icon: 'ti ti-app-window',
+		text: i18n.ts.openInWindow,
+		action: () => openWindow(to),
+	}, {
+		icon: 'ti ti-player-eject',
+		text: i18n.ts.showInPage,
+		action: () => router.pushByPath(to, 'forcePage'),
+	}, { type: 'divider' }, {
+		icon: 'ti ti-external-link',
+		text: i18n.ts.openInNewTab,
+		action: () => window.open(to, '_blank', 'noopener'),
+	}, {
+		icon: 'ti ti-link',
+		text: i18n.ts.copyLink,
+		action: () => copyToClipboard(`${url}${to}`),
+	}], event);
+}
+
+export struct MkA: View {
+	let to: string
+	let activeClass: string | null
+	let behavior: MkABehavior
+	let className: any
+	let router: Router
+	let onClick: ((event: PointerEvent) => void) | undefined
+	let content: ViewGraphValue
+
+	init(
+		_ to: string,
+		activeClass: string | null = null,
+		behavior: MkABehavior = null,
+		className: any = '',
+		router: Router = mainRouter,
+		@Action onClick: ((event: PointerEvent) => void) | undefined = undefined,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.to = to
+		self.activeClass = activeClass
+		self.behavior = behavior
+		self.className = className
+		self.router = router
+		self.onClick = onClick
+		self.content = content()
+		ensureRouteListeners(router)
+	}
+
+	var body: some View {
+		return NavigationLink(to, label: { content })
+			.className([className, isActive(router, to, activeClass) ? activeClass : null])
+			.withProps({
+				onClick: (event: PointerEvent) => navigate(router, to, behavior, onClick, event),
+				onContextMenu: (event: PointerEvent) => showContextMenu(router, to, event),
+			})
+	}
+}
+
+export default MkA

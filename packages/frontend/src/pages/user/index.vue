@@ -37,7 +37,7 @@ import { serverContext, assertServerContext } from '@/server-context.js';
 const XHome = defineAsyncComponent(() => import('./home.vue'));
 const XNotes = defineAsyncComponent(() => import('./notes.vue'));
 const XFiles = defineAsyncComponent(() => import('./files.vue'));
-const XActivity = defineAsyncComponent(() => import('./activity.vue'));
+const XActivity = defineAsyncComponent(() => import('./vune/activity.vune?vue-host'));
 const XAchievements = defineAsyncComponent(() => import('./achievements.vue'));
 const XReactions = defineAsyncComponent(() => import('./reactions.vue'));
 const XClips = defineAsyncComponent(() => import('./clips.vue'));

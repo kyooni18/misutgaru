@@ -161,42 +161,51 @@ export class ChannelEntityService {
 			channels.sort((a, b) => a.id.localeCompare(b.id));
 		}
 
+		const channelIds = channels.map(channel => channel.id);
 		const bannerIds = [...new Set(channels.map(channel => channel.bannerId).filter((id): id is string => id != null))];
-		const bannerFiles = bannerIds.length > 0
-			? await this.driveFilesRepository.findBy({ id: In(bannerIds) }).then((rows: MiDriveFile[]) => new Map(rows.map((row: MiDriveFile) => [row.id, row])))
-			: new Map<MiDriveFile['id'], MiDriveFile>();
+		const bannerFilesPromise = bannerIds.length > 0
+			? this.driveFilesRepository.findBy({ id: In(bannerIds) }).then((rows: MiDriveFile[]) => new Map(rows.map((row: MiDriveFile) => [row.id, row])))
+			: Promise.resolve(new Map<MiDriveFile['id'], MiDriveFile>());
 
-		const followings = me
-			? await this.channelFollowingsRepository
+		const followingsPromise = me
+			? this.channelFollowingsRepository
 				.findBy({
 					followerId: me.id,
-					followeeId: In(channels.map(it => it.id)),
+					followeeId: In(channelIds),
 				})
 				.then(it => new Set(it.map(it => it.followeeId)))
-			: new Set<MiChannel['id']>();
+			: Promise.resolve(new Set<MiChannel['id']>());
 
-		const favorites = me
-			? await this.channelFavoritesRepository
+		const favoritesPromise = me
+			? this.channelFavoritesRepository
 				.findBy({
 					userId: me.id,
-					channelId: In(channels.map(it => it.id)),
+					channelId: In(channelIds),
 				})
 				.then(it => new Set(it.map(it => it.channelId)))
-			: new Set<MiChannel['id']>();
+			: Promise.resolve(new Set<MiChannel['id']>());
 
-		const muting = me
-			? await this.channelMutingRepository
+		const mutingPromise = me
+			? this.channelMutingRepository
 				.findBy({
 					userId: me.id,
-					channelId: In(channels.map(it => it.id)),
+					channelId: In(channelIds),
 				})
 				.then(it => new Set(it.map(it => it.channelId)))
-			: new Set<MiChannel['id']>();
+			: Promise.resolve(new Set<MiChannel['id']>());
 
 		const pinnedNoteIds = detailed ? [...new Set(channels.flatMap(channel => channel.pinnedNoteIds))] : [];
-		const pinnedNotes = pinnedNoteIds.length > 0
-			? await this.notesRepository.find({ where: { id: In(pinnedNoteIds) } }).then((rows: MiNote[]) => new Map(rows.map((row: MiNote) => [row.id, row])))
-			: new Map<MiNote['id'], MiNote>();
+		const pinnedNotesPromise = pinnedNoteIds.length > 0
+			? this.notesRepository.find({ where: { id: In(pinnedNoteIds) } }).then((rows: MiNote[]) => new Map(rows.map((row: MiNote) => [row.id, row])))
+			: Promise.resolve(new Map<MiNote['id'], MiNote>());
+
+		const [bannerFiles, followings, favorites, muting, pinnedNotes] = await Promise.all([
+			bannerFilesPromise,
+			followingsPromise,
+			favoritesPromise,
+			mutingPromise,
+			pinnedNotesPromise,
+		]);
 
 		return Promise.all(channels.map(it => this.pack(it, me, detailed, {
 			bannerFiles,

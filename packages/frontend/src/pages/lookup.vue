@@ -4,11 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneLookup :state="state" :headerActions="headerActions" :headerTabs="headerTabs" :onClose="close" :onGoToMisskey="goToMisskey"/>
+<VuneLookupHost :state="state" :headerActions="headerActions" :headerTabs="headerTabs" :onClose="close" :onGoToMisskey="goToMisskey"/>
 </template>
 
 <script lang="ts" setup>
 import VuneLookup from '@/pages/vune/lookup.vune';
+import { createPageVuneWebHost } from '@/vune/compat-vue.js';
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
@@ -16,6 +17,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { mainRouter } from '@/router.js';
+
+const VuneLookupHost = createPageVuneWebHost(VuneLookup);
 
 const state = ref<'fetching' | 'done'>('fetching');
 

@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneMyAntennasIndex from '@/pages/vune/my-antennas-index.vune';
+import VuneMyAntennasIndex from '@/pages/vune/my-antennas-index.vune?vue-host';
 import { onActivated, computed } from 'vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneTip :hidden="!!store.r.tips.value[props.k]" :warn="warn" :rootClass="$style.root" :warnClass="$style.warn" :onClose="_closeTip" :onMenu="showMenu"><slot></slot></VuneTip>
+<VuneTip :hidden="!!store.r.tips.value[props.k]" :warn="warn" :onClose="_closeTip" :onMenu="showMenu"><slot></slot></VuneTip>
 </template>
 
 <script lang="ts" setup>
-import VuneTip from './vune/MkTip.vune';
+import VuneTip from './vune/MkTip.vune?vue-host';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
 import * as os from '@/os.js';
@@ -37,19 +37,3 @@ function showMenu(ev: PointerEvent) {
 	}], ev.currentTarget ?? ev.target);
 }
 </script>
-
-<style lang="scss" module>
-.root {
-	padding: 12px 14px;
-	font-size: 90%;
-	background: var(--MI_THEME-infoBg);
-	color: var(--MI_THEME-infoFg);
-	border-radius: var(--MI-radius);
-
-	&.warn {
-		background: var(--MI_THEME-infoWarnBg);
-		color: var(--MI_THEME-infoWarnFg);
-	}
-}
-
-</style>

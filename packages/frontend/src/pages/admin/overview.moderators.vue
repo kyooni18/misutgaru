@@ -13,11 +13,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneOverviewModerators from './vune/overview.moderators.vune';
+import VuneOverviewModeratorsView from './vune/overview.moderators.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
+
+const VuneOverviewModerators = createVuneWebHost(VuneOverviewModeratorsView);
 
 const moderators = ref<Misskey.entities.UserDetailed[] | null>(null);
 const fetching = ref(true);

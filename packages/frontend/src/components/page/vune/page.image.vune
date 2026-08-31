@@ -1,24 +1,19 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import MkMediaList from '@/components/MkMediaList.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-import '@/components/vune/misskey-vune.scss';
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkDriveFileThumbnail from '@/components/vune/MkDriveFileThumbnail.vune';
 
-type Props = {
-	block: Extract<Misskey.entities.PageBlock, { type: 'image' }>;
-	page: Misskey.entities.Page;
-};
-
-export default createVuneComponent<Props>((props) => {
-	const image = props.page.attachedFiles.find(file => file.id === props.block.fileId) ?? null;
-	return Group() {
-		Element('div', { className: 'mk-vune-page-image' },
-			image ? VueComponent(MkMediaList, {
-				mediaList: [image],
-				user: props.page.user,
-				class: 'mk-vune-page-image__media-list',
-			}) : null,
-		)
+type Props = { block: Extract<Misskey.entities.PageBlock, { type: 'image' }>; page: Misskey.entities.Page };
+export struct VunePageImageView: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (props.page.attachedFiles.find(file => file.id === props.block.fileId)) {
+				MkDriveFileThumbnail(props.page.attachedFiles.find(file => file.id === props.block.fileId)!, fit: 'contain', large: true)
+			}
+		}.className('mk-vune-page-image')
 	}
-});
+}
+export default VunePageImageView

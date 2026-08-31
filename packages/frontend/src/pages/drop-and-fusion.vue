@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
+	:css="prefer.s.animation"
 	:enterActiveClass="$style.transition_zoom_enterActive"
 	:leaveActiveClass="$style.transition_zoom_leaveActive"
 	:enterFromClass="$style.transition_zoom_enterFrom"
@@ -87,6 +88,7 @@ import XGame from './drop-and-fusion.game.vue';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';

@@ -4,7 +4,7 @@
 
 import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
 import type { ComputedRef, Ref } from 'vue';
-import { LazyMeasurementIndex, lazyViewportOffset } from '@vune-ui/web';
+import { LazyMeasurementIndex, lazyViewportOffset } from '@vune-ui/web/lazy';
 import { getScrollContainer } from '@@/js/scroll.js';
 
 export interface VariableVirtualEntry<T> {

@@ -17,14 +17,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 WORKDIR /misskey
 
 COPY --link ["packages/modules/Vune/package.json", "./packages/modules/Vune/package.json"]
+COPY --link ["packages/modules/Vune/packages/animation/package.json", "./packages/modules/Vune/packages/animation/package.json"]
 COPY --link ["packages/modules/Vune/packages/compiler/package.json", "./packages/modules/Vune/packages/compiler/package.json"]
 COPY --link ["packages/modules/Vune/packages/core/package.json", "./packages/modules/Vune/packages/core/package.json"]
 COPY --link ["packages/modules/Vune/packages/vite/package.json", "./packages/modules/Vune/packages/vite/package.json"]
 COPY --link ["packages/modules/Vune/packages/vue/package.json", "./packages/modules/Vune/packages/vue/package.json"]
 COPY --link ["packages/modules/Vune/packages/web/package.json", "./packages/modules/Vune/packages/web/package.json"]
-COPY --link ["packages/modules/o0o0o/package.json", "packages/modules/o0o0o/index.d.ts", "./packages/modules/o0o0o/"]
-COPY --link ["packages/modules/o0o0o/src", "./packages/modules/o0o0o/src"]
-COPY --link ["packages/modules/o0o0o/wasm", "./packages/modules/o0o0o/wasm"]
 COPY --link ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "./"]
 COPY --link ["scripts", "./scripts"]
 COPY --link ["patches", "./patches"]
@@ -50,7 +48,8 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 
 COPY --link . ./
 
-# The root build prepares local Vune/o0o0o first, then compiles the application.
+# The root build prepares the local Vune workspace, including @vune-ui/animation,
+# before compiling the application.
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 	PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm build
 RUN rm -rf .git/

@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { Divider, Text, VStack } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
-import MkInput from '@/components/MkInput.vue';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkInput from '@/components/vune/MkInput.vune';
+import MkTextarea from '@/components/vune/MkTextarea.vune';
+import MkSwitch from '@/components/vune/MkSwitch.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = {
 	name: string;
@@ -19,32 +19,52 @@ type Props = {
 	onSave?: () => void;
 	onDelete?: () => void;
 };
+function updateRoomName(props: Props, value: unknown): void { props.onName?.(String(value ?? '')); }
+function updateRoomDescription(props: Props, value: string): void { props.onDescription?.(value); }
+function updateRoomMuted(props: Props, value: boolean): void { props.onMuted?.(value); }
+function saveRoom(props: Props): void { props.onSave?.(); }
+function deleteRoom(props: Props): void { props.onDelete?.(); }
+function editRoom(props: Props): void { props.onEdit?.(); }
+function inviteRoom(props: Props): void { props.onInvite?.(); }
+function leaveRoom(props: Props): void { props.onLeave?.(); }
 
-export default createVuneComponent<Props>((props) =>
-	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-		VueComponent(MkInput, {
-			modelValue: props.name,
-			disabled: !props.isOwner,
-			'onUpdate:modelValue': (value: string) => props.onName?.(value),
-		}, { label: () => Text(i18n.ts.name) })
-		VueComponent(MkTextarea, {
-			modelValue: props.description,
-			disabled: !props.isOwner,
-			'onUpdate:modelValue': (value: string) => props.onDescription?.(value),
-		}, { label: () => Text(i18n.ts.description) })
-		if (props.isOwner) {
-			VueComponent(MkButton, { primary: true, onClick: () => props.onSave?.() }, { default: () => Text(i18n.ts.save) })
-		}
-		Divider()
-		if (props.canDelete) {
-			VueComponent(MkButton, { danger: true, onClick: () => props.onDelete?.() }, { default: () => Text(i18n.ts._chat.deleteRoom) })
-		}
-		if (!props.isOwner) {
-			VueComponent(MkSwitch, {
-				modelValue: props.isMuted,
-				'onUpdate:modelValue': (value: boolean) => props.onMuted?.(value),
-			}, { label: () => Text(i18n.ts._chat.muteThisRoom) })
-		}
+
+
+
+export struct VuneRoomInfoView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-		.className('_gaps')
-);
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+			MkInput(props.name,
+				disabled: !props.isOwner,
+					onChange: value => updateRoomName(props, value),
+				label: Text(i18n.ts.name),
+			)
+			MkTextarea(props.description,
+				disabled: !props.isOwner,
+				onChange: value => updateRoomDescription(props, value),
+				label: Text(i18n.ts.description),
+			)
+			if (props.isOwner) {
+				MkButton(primary: true, onClick: { saveRoom(props) }) { Text(i18n.ts.save) }
+			}
+			Divider()
+			if (props.canDelete) {
+				MkButton(danger: true, onClick: { deleteRoom(props) }) { Text(i18n.ts._chat.deleteRoom) }
+			}
+			if (!props.isOwner) {
+				MkSwitch(props.isMuted,
+					onChange: value => updateRoomMuted(props, value),
+					label: Text(i18n.ts._chat.muteThisRoom),
+				)
+			}
+		}.className('_gaps')
+	}
+}
+
+export default VuneRoomInfoView

@@ -17,16 +17,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:inputsClass="$style.inputs"
 	:headerActions="headerActions"
 	:headerTabs="headerTabs"
-	:onState="value => state = value"
-	:onReporterOrigin="value => reporterOrigin = value"
-	:onTargetUserOrigin="value => targetUserOrigin = value"
+	:onState="setState"
+	:onReporterOrigin="setReporterOrigin"
+	:onTargetUserOrigin="setTargetUserOrigin"
 	:onResolved="resolved"
 />
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, markRaw } from 'vue';
-import VuneAdminAbuses from './vune/abuses.vune';
+import VuneAdminAbuses from './vune/abuses.vune?vue-host';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
@@ -68,6 +68,18 @@ const {
 });
 const searchUsername = ref('');
 const searchHost = ref('');
+
+function setState(value: 'all' | 'resolved' | 'unresolved'): void {
+	state.value = value;
+}
+
+function setReporterOrigin(value: 'local' | 'remote' | 'combined'): void {
+	reporterOrigin.value = value;
+}
+
+function setTargetUserOrigin(value: 'local' | 'remote' | 'combined'): void {
+	targetUserOrigin.value = value;
+}
 
 const paginator = markRaw(new Paginator('admin/abuse-user-reports', {
 	limit: 10,

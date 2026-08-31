@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkPostFormSurface>
 <div
-	:class="[$style.root]"
+	:class="[$style.root, { [$style.reply]: replyTargetNote }]"
 	@dragover.stop="onDragover"
 	@dragenter="onDragenter"
 	@dragleave="onDragleave"
@@ -151,7 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, useTemplateRef, onUnmounted, onBeforeUnmount } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
-import MkPostFormSurface from './vune/MkPostFormSurface.vune';
+import MkPostFormSurface from './vune/MkPostFormSurface.vune?vue-host';
 import insertTextAtCursor from 'insert-text-at-cursor';
 import { toASCII } from 'punycode.js';
 import { host, url } from '@@/js/config.js';
@@ -1603,6 +1603,11 @@ defineExpose({
 	container-type: inline-size;
 }
 
+.reply {
+	padding: 0 12px;
+	box-sizing: border-box;
+}
+
 //#region header
 .header {
 	z-index: 1000;
@@ -1845,6 +1850,7 @@ html[data-color-scheme=light] .preview {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.cwOuter,
 	.optionalSectionActive {
 		transition: none;
 	}
@@ -1961,6 +1967,10 @@ html[data-color-scheme=light] .preview {
 }
 
 @container (max-width: 500px) {
+	.reply {
+		padding: 0 8px;
+	}
+
 	.headerRight {
 		font-size: .9em;
 	}

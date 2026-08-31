@@ -37,6 +37,30 @@ The shared block-I/O policy and buffered/vector writers remain the preferred pat
 
 CI should gate deterministic behavior such as query/fetch counts, cache ownership, property ownership, and committed work rather than noisy wall-clock timings. `scripts/benchmark-regressions.mjs` follows that rule for the motion/DOM path and reports time only for observation.
 
+The frontend E2E performance suite also carries structural idle budgets. It samples Chromium `Performance` counters after the page settles and rejects runaway style recalculation/layout work, while keeping absolute CPU timing out of CI because it is machine-dependent. The long-timeline case separately verifies that virtualization keeps mounted rows bounded after repeated pagination.
+
+## Frontend idle work
+
+Decorative motion must stop being work when it is not visible. Timeline notes use a shared intersection/document-visibility activity policy so animated MFM and other CSS descendants are paused outside the viewport. The welcome timeline and federation strip are intentionally non-autoplay surfaces; they no longer keep a logged-out tab in a permanent CSS animation cycle.
+
+`MkAnimBg` is visibility-aware, renders one static frame for reduced-motion users, and caps its decorative WebGL animation at 30 fps by delaying the next animation-frame request instead of waking on every 120/144 Hz display frame.
+
+On the August 30, 2026 local Chromium production-build sample used to investigate idle CPU, the original five-second visitor-page process measurement was about 10.7% of one CPU core in the renderer and 5.6% in the GPU process. Across two settled post-change samples the renderer measured 2.61–3.63% and the GPU process 1.75–2.37%. The final exact-build sample recorded zero style recalculations, zero layouts, and zero running/infinite Web Animations during the five-second window. These process percentages are diagnostic observations, not portable CI thresholds.
+
+## Timeline hot paths
+
+Normalized note entities are reused directly on the ordinary render path. A defensive deep clone is now paid only when a `note_view_interruptor` plugin actually needs an isolated mutable copy.
+
+Realtime note capture uses one stream dispatcher plus reference-counted note IDs instead of one `noteUpdated` listener per mounted note. Duplicate mounts therefore share `sr`/`un` ownership and a stream event does not fan out through every recent note component.
+
+Prepared-note/MFM worker prefetch follows the virtualized visible range with a small look-behind and forward window instead of repeatedly scanning the oldest retained notes. Relative timestamps likewise subscribe to progressively slower shared clocks as they age, avoiding a ten-second reactive wakeup for every old timestamp.
+
+## Vune integration
+
+Vue-hosted native Vune compatibility components reuse one compiled compatibility root per host type rather than defining a fresh View constructor for every mounted instance. Hosts with no pass-through attributes also skip redundant legacy-attribute synchronization during Vue updates.
+
+Native Web boundary invalidations, including collection fallback invalidations, share the parent-first boundary batch. Vune DevTools exposes runtime counters for boundary invalidations/flushes/updates, compiled patches, reconcile passes, root requests/passes/escalations, and collection fallbacks so hot Misutgaru screens can distinguish direct compiler work from generic/root fallback work.
+
 
 ## Runtime diagnostics
 

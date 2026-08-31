@@ -14,13 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:smtpPass="smtpPass"
 	:footerClass="$style.footer"
 	:headerTabs="headerTabs"
-	:onEnableEmail="value => enableEmail = value"
-	:onEmail="value => email = value"
-	:onSmtpSecure="value => smtpSecure = value"
-	:onSmtpHost="value => smtpHost = value"
-	:onSmtpPort="value => smtpPort = value"
-	:onSmtpUser="value => smtpUser = value"
-	:onSmtpPass="value => smtpPass = value"
+	:onEnableEmail="(value: boolean) => enableEmail = value"
+	:onEmail="(value: string) => email = value"
+	:onSmtpSecure="(value: boolean) => smtpSecure = value"
+	:onSmtpHost="(value: string) => smtpHost = value"
+	:onSmtpPort="(value: number) => smtpPort = value"
+	:onSmtpUser="(value: string) => smtpUser = value"
+	:onSmtpPass="(value: string) => smtpPass = value"
 	:onSave="save"
 	:onTest="testEmail"
 />
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import VuneEmailSettings from './vune/email-settings.vune';
+import VuneEmailSettings from './vune/email-settings.vune?vue-host';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance, instance } from '@/instance.js';

@@ -74,7 +74,7 @@ import XApRequests from './overview.ap-requests.vue';
 import XUsers from './overview.users.vue';
 import XActiveUsers from './overview.active-users.vue';
 import XStats from './overview.stats.vue';
-import XRetention from './overview.retention.vue';
+import XRetention from './vune/overview.retention.vune?vue-host';
 import XModerators from './overview.moderators.vue';
 import XHeatmap from './overview.heatmap.vue';
 import type { InstanceForPie } from './overview.pie.vue';

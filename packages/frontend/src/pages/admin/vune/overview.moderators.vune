@@ -1,13 +1,28 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach } from 'vune-ui';
 import * as Misskey from 'misskey-js';
-import MkA from '@/components/global/MkA.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-export default createVuneComponent<{ users: Misskey.entities.UserDetailed[]; rootClass: string }>((props) =>
-	Element('div', { className: [props.rootClass, '_panel'] },
-		ForEach(props.users, key: user => user.id) { user in
-			VueComponent(MkA, { class: 'user', to: `/admin/user/${user.id}` }, { default: () => VueComponent(MkAvatar, { user, class: 'avatar', indicator: true }) })
-		},
-	)
-);
+import MkA from '@/components/global/vune/MkA.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+
+export struct OverviewModerators: View {
+	let users: Misskey.entities.UserDetailed[]
+	let rootClass: string
+
+	init(_ users: Misskey.entities.UserDetailed[], rootClass: string) {
+		self.users = users
+		self.rootClass = rootClass
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(users, key: user => user.id) { user in
+				MkA(`/admin/user/${user.id}`, className: 'user') {
+					MkAvatar(user, indicator: true, className: 'avatar')
+				}
+			}
+		}.className([rootClass, '_panel'])
+	}
+}
+
+export default OverviewModerators

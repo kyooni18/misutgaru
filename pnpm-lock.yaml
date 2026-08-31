@@ -164,13 +164,8 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.10)(@vitest/coverage-v8@4.1.10)(happy-dom@20.11.2(bufferutil@4.1.0)(utf-8-validate@6.0.6))(msw@2.15.0(@types/node@26.2.0)(typescript@6.0.2))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.48.0)(tsx@4.23.12))
 
-  packages/misutgaru-core: {}
-
   packages/backend:
     dependencies:
-      '@misutgaru/core':
-        specifier: workspace:*
-        version: link:../misutgaru-core
       '@aws-sdk/client-s3':
         specifier: 3.1107.0
         version: 3.1107.0
@@ -207,6 +202,9 @@ importers:
       '@misskey-dev/summaly':
         specifier: 5.5.1
         version: 5.5.1
+      '@misutgaru/core':
+        specifier: workspace:*
+        version: link:../misutgaru-core
       '@napi-rs/canvas':
         specifier: 1.0.5
         version: 1.0.5
@@ -632,9 +630,6 @@ importers:
 
   packages/frontend:
     dependencies:
-      '@misutgaru/core':
-        specifier: workspace:*
-        version: link:../misutgaru-core
       '@analytics/google-analytics':
         specifier: 1.1.0
         version: 1.1.0
@@ -650,6 +645,9 @@ importers:
       '@misskey-dev/tagcanvas-es':
         specifier: 0.1.2
         version: 0.1.2
+      '@misutgaru/core':
+        specifier: workspace:*
+        version: link:../misutgaru-core
       '@sentry/vue':
         specifier: 10.70.0
         version: 10.70.0(vue@3.5.41(typescript@6.0.3))
@@ -665,12 +663,15 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 6.0.8
         version: 6.0.8(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.48.0)(tsx@4.23.12))(vue@3.5.41(typescript@6.0.3))
+      '@vune-ui/animation':
+        specifier: link:../modules/Vune/packages/animation
+        version: link:../modules/Vune/packages/animation
       '@vune-ui/core':
         specifier: link:../modules/Vune/packages/core
         version: link:../modules/Vune/packages/core
       '@vune-ui/vue':
         specifier: link:../modules/Vune/packages/vue
-        version: link:../modules/Vune/packages/vue(vue@3.5.41(typescript@6.0.3))
+        version: link:../modules/Vune/packages/vue
       '@vune-ui/web':
         specifier: link:../modules/Vune/packages/web
         version: link:../modules/Vune/packages/web
@@ -761,9 +762,6 @@ importers:
       misskey-reversi:
         specifier: workspace:*
         version: link:../misskey-reversi
-      o0o0o:
-        specifier: link:../modules/o0o0o
-        version: link:../modules/o0o0o
       punycode.js:
         specifier: 2.3.1
         version: 2.3.1
@@ -1421,6 +1419,8 @@ importers:
       nodemon:
         specifier: 3.1.14
         version: 3.1.14
+
+  packages/misutgaru-core: {}
 
   packages/sw:
     dependencies:
@@ -4380,23 +4380,6 @@ packages:
       '@vue/server-renderer':
         optional: true
 
-  '@vune-ui/compiler@0.1.20':
-    resolution: {integrity: sha512-3lC9eWxPlyGuQ/PM4VjrFHcBD11hIxRHCUCfQdpM4cGAxYrg9ip4C+f9qKVO83Ez5R+9BxGh+dLUSebINgGZZQ==}
-
-  '@vune-ui/core@0.1.20':
-    resolution: {integrity: sha512-ENIcKghIdCqxFnd+y4Hs8mt+9SV7D4S3XQTf2asg36hO6v9vY60YNyEMz1qtQShb+pZhJNlia+bzHBthy9OMOA==}
-
-  '@vune-ui/vite@0.1.20':
-    resolution: {integrity: sha512-WzbJwZ1Xrb5XgiVo2dXFgR+yxklg+DnKfP5iptDiPd1cIDQYyhab8Od9j5deCvD5a+UY37ABbPXN+1gobnxP2Q==}
-
-  '@vune-ui/vue@0.1.20':
-    resolution: {integrity: sha512-Ug1T60m5Jhhtjew1vQBmQBuFa5cnzfa8wktqMCGbscyYP0JsqHI1yMLDQu4sJu+G48XeeH8WHEiqy87jPB0scA==}
-    peerDependencies:
-      vue: '>=3.4 <4'
-
-  '@vune-ui/web@0.1.20':
-    resolution: {integrity: sha512-uhhl6md2VVK7tIp1MsPE7qohbGZVKFVMthzDxlCdnRmWx4JPw4Kg2UMvFJclqdYIPJb/RIZToIfB/aCH/Cxwiw==}
-
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
 
@@ -7200,10 +7183,6 @@ packages:
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
 
-  o0o0o@0.2.2:
-    resolution: {integrity: sha512-8F3k1f2M/F2P5LE+/SLYKPx+pExl7xshQFtvK18Yo4qJDZ+LN6ZVXdg/xTm7PcY11kTCFBj6Fa7RPT9hgenK1Q==}
-    engines: {node: '>=20'}
-
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
@@ -8422,7 +8401,7 @@ packages:
     engines: {node: '>= 0.4'}
 
   storybook-addon-misskey-theme@https://codeload.github.com/misskey-dev/storybook-addon-misskey-theme/tar.gz/cf583db098365b2ccc81a82f63ca9c93bc32b640:
-    resolution: {gitHosted: true, tarball: https://codeload.github.com/misskey-dev/storybook-addon-misskey-theme/tar.gz/cf583db098365b2ccc81a82f63ca9c93bc32b640}
+    resolution: {gitHosted: true, integrity: sha512-QaH1uZSlApQ2CZPkHfhmNm89I92L02s3MdbUPG66TmAyqMaqzxd/AvobORBjtTZ0ymUSa3ii482dRXi+fFb19w==, tarball: https://codeload.github.com/misskey-dev/storybook-addon-misskey-theme/tar.gz/cf583db098365b2ccc81a82f63ca9c93bc32b640}
     version: 0.0.0
     peerDependencies:
       '@storybook/blocks': ^7.0.0-rc.4
@@ -12686,27 +12665,6 @@ snapshots:
     optionalDependencies:
       '@vue/server-renderer': 3.5.41
 
-  '@vune-ui/compiler@0.1.20':
-    dependencies:
-      '@vune-ui/core': 0.1.20
-      typescript: 5.9.3
-
-  '@vune-ui/core@0.1.20': {}
-
-  '@vune-ui/vite@0.1.20':
-    dependencies:
-      '@vune-ui/compiler': 0.1.20
-
-  '@vune-ui/vue@0.1.20(vue@3.5.41(typescript@6.0.3))':
-    dependencies:
-      '@vune-ui/core': 0.1.20
-      vue: 3.5.41(typescript@6.0.3)
-
-  '@vune-ui/web@0.1.20':
-    dependencies:
-      '@vune-ui/core': 0.1.20
-      o0o0o: 0.2.2
-
   '@webcontainer/env@1.1.1': {}
 
   '@xmldom/xmldom@0.9.10':
@@ -16131,8 +16089,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-
-  o0o0o@0.2.2: {}
 
   object-assign@4.1.1: {}
 

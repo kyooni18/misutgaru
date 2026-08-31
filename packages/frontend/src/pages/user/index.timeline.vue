@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneUserTimeline :tab="tab" :featuredPaginator="featuredPaginator" :notesPaginator="notesPaginator" :tabClass="$style.tab" :timelineClass="$style.tl" :onTabChange="value => tab = value"/>
+<VuneUserTimeline :tab="tab" :featuredPaginator="featuredPaginator" :notesPaginator="notesPaginator" :tabClass="$style.tab" :timelineClass="$style.tl" :onTabChange="(value: 'featured' | 'notes' | 'all' | 'files') => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneUserTimeline from './vune/index.timeline.vune';
+import VuneUserTimeline from './vune/index.timeline.vune?vue-host';
 import { ref, computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
 import { Paginator } from '@/utility/paginator.js';

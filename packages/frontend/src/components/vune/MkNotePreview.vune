@@ -1,38 +1,42 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import Mfm from '@/components/global/MkMfm.js';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import MkCwButton from '@/components/MkCwButton.vue';
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkMfm from '@/components/global/vune/MkMfm.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkCwButton from '@/components/vune/MkCwButton.vune';
 import type { PollEditorModelValue } from '@/components/MkPollEditor.types.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
-type Props = {
-	text: string;
-	files: Misskey.entities.DriveFile[];
-	poll?: PollEditorModelValue;
-	useCw: boolean;
-	cw: string | null;
-	user: Misskey.entities.User;
-	showContent?: boolean;
-	classes: Record<string, string>;
-	onShowContent?: (value: boolean) => void;
-};
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: props.classes.root },
-		VueComponent(MkAvatar, { class: props.classes.avatar, user: props.user }),
-		Element('div', { className: props.classes.main },
-			Element('div', { className: props.classes.header }, VueComponent(MkUserName, { user: props.user, nowrap: true })),
-			Element('div', {},
-				props.useCw ? Element('p', { className: props.classes.cw },
-					props.cw ? VueComponent(Mfm as any, { text: props.cw, author: props.user, nyaize: 'respect', i: props.user, style: { marginRight: '8px' } }) : null,
-					VueComponent(MkCwButton, { modelValue: props.showContent, text: props.text.trim(), files: props.files, poll: props.poll, style: { margin: '4px 0' }, 'onUpdate:modelValue': (value: boolean) => props.onShowContent?.(value) }),
-				) : null,
-				Element('div', { style: { display: !props.useCw || props.showContent ? '' : 'none' } },
-					VueComponent(Mfm as any, { text: props.text.trim(), author: props.user, nyaize: 'respect', i: props.user }),
-				),
-			),
-		),
-	)
-);
+type Props = { text: string; files: Misskey.entities.DriveFile[]; poll?: PollEditorModelValue; useCw: boolean; cw: string | null; user: Misskey.entities.User; showContent?: boolean; classes: Record<string, string>; onShowContent?: (value: boolean) => void };
+export struct MkNotePreview: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		return VStack(alignment: 'stretch', spacing: 0) {
+			MkAvatar(props.user, className: props.classes.avatar)
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) { MkUserName({ user: props.user, nowrap: true }) }.className(props.classes.header)
+				VStack(alignment: 'stretch', spacing: 0) {
+					if (props.useCw) {
+						VStack(alignment: 'stretch', spacing: 0) {
+							if (props.cw) { MkMfm({ text: props.cw, author: props.user, nyaize: 'respect' }) }
+								MkCwButton(
+									props.showContent ?? false,
+									text: props.text.trim(),
+									files: props.files,
+									poll: props.poll,
+									onChange: { value in
+										props.onShowContent?.(value)
+									},
+								)
+						}.className(props.classes.cw)
+					}
+					VStack(alignment: 'stretch', spacing: 0) { MkMfm({ text: props.text.trim(), author: props.user, nyaize: 'respect' }) }
+						.style({ display: !props.useCw || props.showContent ? '' : 'none' })
+				}
+			}.className(props.classes.main)
+		}.className(props.classes.root)
+	}
+}
+export default MkNotePreview

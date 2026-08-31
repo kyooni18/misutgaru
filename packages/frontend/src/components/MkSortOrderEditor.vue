@@ -4,8 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneSortOrderEditor
-	:currentOrders="currentOrders"
+<NativeSortOrderEditor
+	:currentOrders="nativeOrders"
 	:classes="$style"
 	:onToggle="onToggleSortOrderButtonClicked"
 	:onAdd="onAddSortOrderButtonClicked"
@@ -14,11 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script setup lang="ts" generic="T extends string">
-import { toRefs } from 'vue';
-import VuneSortOrderEditor from './vune/MkSortOrderEditor.vune';
+import { computed, toRefs } from 'vue';
+import MkSortOrderEditor from './vune/MkSortOrderEditor.vune';
 import type { MenuItem } from '@/types/menu.js';
 import type { SortOrder } from '@/components/MkSortOrderEditor.define.js';
 import * as os from '@/os.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const NativeSortOrderEditor = createVuneWebHost(MkSortOrderEditor);
 
 const emit = defineEmits<{
 	(ev: 'update', sortOrders: SortOrder<T>[]): void;
@@ -30,6 +33,7 @@ const props = defineProps<{
 }>();
 
 const { currentOrders } = toRefs(props);
+const nativeOrders = computed(() => currentOrders.value.map(order => ({ ...order })));
 
 function onToggleSortOrderButtonClicked(order: SortOrder<T>) {
 	switch (order.direction) {
@@ -86,18 +90,26 @@ function emitOrder(sortOrders: SortOrder<T>[]) {
 }
 
 .sortOrderAddButton {
-	display: flex;
+	display: inline-flex;
 	justify-content: center;
 	align-items: center;
-	box-sizing: border-box;
-	min-width: 2.0em;
-	min-height: 2.0em;
-	max-width: 2.0em;
-	max-height: 2.0em;
-	padding: 8px;
+	padding: var(--MI-button-padding-y-small);
 	margin-left: auto;
-	border-radius: 9999px;
-	background-color: var(--MI_THEME-buttonBg);
+	border: thin solid var(--MI-button-border);
+	border-radius: calc(1em + var(--MI-button-padding-y-small));
+	background: var(--MI-button-surface);
+	box-shadow: var(--MI-button-shadow);
+	transition: background var(--MI-motion-duration-fast) var(--MI-motion-ease-standard), border-color var(--MI-motion-duration-fast) var(--MI-motion-ease-standard), box-shadow var(--MI-motion-duration-fast) var(--MI-motion-ease-standard);
+
+	&:hover {
+		background: var(--MI-button-surface-hover);
+		border-color: var(--MI-button-border-hover);
+	}
+
+	&:active {
+		background: var(--MI-button-surface-pressed);
+		box-shadow: var(--MI-button-shadow-pressed);
+	}
 }
 
 .sortOrderTag {

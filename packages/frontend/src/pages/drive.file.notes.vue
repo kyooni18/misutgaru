@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref, computed, markRaw } from 'vue';
 import { i18n } from '@/i18n.js';
-import VuneDriveFileNotes from './vune/drive.file.notes.view.vune';
+import VuneDriveFileNotes from './vune/drive.file.notes.view.vune?vue-host';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

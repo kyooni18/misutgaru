@@ -10,13 +10,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import { Animation } from 'vune-ui';
 import MkFolderPage from './vune/MkFolderPage.vune';
+import type { MotionHandle } from '@/vune/motion.js';
 import { claimZIndex } from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { vuneMotion } from '@/vune/motion.js';
-import type { MotionHandle } from '@/vune/motion.js';
+import { uiMotion, vuneMotion } from '@/vune/motion.js';
 
 const props = withDefaults(defineProps<{ pageId: number }>(), { pageId: 0 });
 const emit = defineEmits<{ (_: 'closed'): void }>();
@@ -40,12 +39,12 @@ async function closePage() {
 	const { bg, content } = elements();
 	if (prefer.s.animation && bg && content) {
 		const fade = vuneMotion.animateElement(bg, [{ opacity: 1 }, { opacity: 0 }], {
-			animation: Animation.linear(0.3), fill: 'forwards',
+			animation: uiMotion.backdrop, fill: 'forwards',
 		});
 		const slide = vuneMotion.animateElement(content, [
 			{ transform: 'translateX(0)' },
 			{ transform: 'translateX(100%)' },
-		], { animation: Animation.easeOut(0.3), fill: 'forwards' });
+		], { animation: uiMotion.drawer, fill: 'forwards' });
 		motions.push(fade, slide);
 		await Promise.all([fade.finished, slide.finished]);
 	}
@@ -57,12 +56,12 @@ onMounted(async () => {
 	const { bg, content } = elements();
 	if (!prefer.s.animation || !bg || !content) return;
 	const fade = vuneMotion.animateElement(bg, [{ opacity: 0 }, { opacity: 1 }], {
-		animation: Animation.linear(0.3), fill: 'both',
+		animation: uiMotion.backdrop, fill: 'both',
 	});
 	const slide = vuneMotion.animateElement(content, [
 		{ transform: 'translateX(100%)' },
 		{ transform: 'translateX(0)' },
-	], { animation: Animation.easeOut(0.3), fill: 'both' });
+	], { animation: uiMotion.drawer, fill: 'both' });
 	motions.push(fade, slide);
 });
 

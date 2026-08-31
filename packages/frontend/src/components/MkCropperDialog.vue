@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<template #header>{{ i18n.ts.cropImage }}</template>
 	<div class="mk-cropper-dialog" :style="`--vw: 100%; --vh: 100%;`">
-		<Transition name="fade">
+		<Transition name="fade" :css="prefer.s.animation">
 			<div v-if="loading" class="loading">
 				<MkLoading/>
 			</div>
@@ -35,6 +35,7 @@ import Cropper from 'cropperjs';
 import tinycolor from 'tinycolor2';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import { themeManager } from '@/theme.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 
 const props = defineProps<{

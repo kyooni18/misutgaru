@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneExplore :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="value => tab = value"/>
+<VuneExplore :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="(value: string) => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneExplore from '@/pages/vune/explore.vune';
+import VuneExplore from '@/pages/vune/explore.vune?vue-host';
 import { computed, ref } from 'vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';

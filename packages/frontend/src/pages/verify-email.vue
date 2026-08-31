@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-mail-check"></i>
 			</div>
 			<Transition
+				:css="prefer.s.animation"
 				mode="out-in"
 				:enterActiveClass="$style.transition_enterActive"
 				:leaveActiveClass="$style.transition_leaveActive"
@@ -45,6 +46,7 @@ import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { prefer } from '@/preferences.js';
 
 const submitting = ref(false);
 const succeeded = ref(false);

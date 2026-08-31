@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneUserCardMini from './vune/MkUserCardMini.vune';
+import VuneUserCardMini from './vune/MkUserCardMini.vune?vue-host';
 import * as Misskey from 'misskey-js';
 import { onMounted, ref } from 'vue';
 import { misskeyApiGet } from '@/utility/misskey-api.js';

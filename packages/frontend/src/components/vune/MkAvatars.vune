@@ -1,26 +1,57 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, State, Text, type StateRef } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import '@/vune/phase6-migration.scss';
 
-type Props = { users: Misskey.entities.UserLite[]; limit: number };
+export struct MkAvatars: View {
+	let users: Misskey.entities.UserLite[]
+	let limit: number
 
-export default createVuneComponent<Props>((props) => {
-	const visible = props.users.slice(0, props.limit);
-	return Element('div', {},
-		ForEach(visible, key: (user) => user.id) { user in
-			Element('div', { className: 'mk-vune-avatars__item' },
-				VueComponent(MkAvatar, {
-					class: 'mk-vune-avatars__avatar',
-					user,
-					indicator: true,
-					link: true,
-					preview: true,
-				}),
-			)
-		},
-		props.users.length > props.limit ? Element('div', { className: 'mk-vune-avatars__more' }, '...') : null,
-	);
-});
+	init(_ users: Misskey.entities.UserLite[], limit: number) {
+		self.users = users
+		self.limit = limit
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(users, key: user => user.id) { user in
+				if (users.indexOf(user) < limit) {
+					VStack(alignment: 'stretch', spacing: 0) {
+						MkAvatar(user, indicator: true, link: true, preview: true, className: 'mk-vune-avatars__avatar')
+					}
+						.className('mk-vune-avatars__item')
+				}
+			}
+			if (users.length > limit) { Text('...').className('mk-vune-avatars__more') }
+		}
+	}
+}
+
+const avatarIdCaches = new Map<string, StateRef<Misskey.entities.UserLite[] | null>>();
+function avatarIdState(userIds: string[]) {
+	const key = userIds.join(':');
+	let state = avatarIdCaches.get(key);
+	if (!state) { state = State<Misskey.entities.UserLite[] | null>(null); avatarIdCaches.set(key, state); }
+	return { key, state };
+}
+function loadAvatarIds(userIds: string[]) {
+	const cache = avatarIdState(userIds);
+	return (element: HTMLElement | null) => {
+		if (!element || cache.state.value != null || userIds.length === 0) return;
+		void misskeyApi('users/show', { userIds }).then(users => { cache.state.value = users; });
+	};
+}
+export struct MkAvatarsByIds: View {
+	let userIds: string[]
+	let limit: number
+	init(_ userIds: string[], limit: number = Infinity) { self.userIds = userIds; self.limit = limit }
+	var body: some View {
+		return VStack(alignment: 'stretch', spacing: 0) { MkAvatars(avatarIdState(userIds).state.value ?? [], limit: limit) }
+			.elementRef(loadAvatarIds(userIds))
+	}
+}
+
+export default MkAvatars

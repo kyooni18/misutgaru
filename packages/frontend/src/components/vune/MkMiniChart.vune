@@ -1,6 +1,49 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { svgElement } from '@/vune/native.js';
+import { Canvas } from '@vune-ui/core/web-primitives';
+
+function parsePoints(value: string): Array<[number, number]> {
+	return value.trim().split(/\s+/).flatMap(pair => {
+		const [x, y] = pair.split(',').map(Number);
+		return Number.isFinite(x) && Number.isFinite(y) ? [[x, y] as [number, number]] : [];
+	});
+}
+
+function chartRef(viewBoxX: number, viewBoxY: number, color: string, polygonPoints: string, polylinePoints: string, headX: number | null | undefined, headY: number | null | undefined) {
+	return (value: unknown) => {
+		if (!(value instanceof HTMLCanvasElement)) return;
+		const context = value.getContext('2d');
+		if (!context) return;
+		context.clearRect(0, 0, viewBoxX, viewBoxY);
+		const polygon = parsePoints(polygonPoints);
+		if (polygon.length > 1) {
+			const gradient = context.createLinearGradient(0, viewBoxY, 0, 0);
+			gradient.addColorStop(0, 'transparent');
+			gradient.addColorStop(1, color);
+			context.globalAlpha = 0.65;
+			context.fillStyle = gradient;
+			context.beginPath();
+			polygon.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y));
+			context.closePath();
+			context.fill();
+			context.globalAlpha = 1;
+		}
+		const line = parsePoints(polylinePoints);
+		if (line.length > 1) {
+			context.strokeStyle = color;
+			context.lineWidth = 2;
+			context.beginPath();
+			line.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y));
+			context.stroke();
+		}
+		if (headX != null && headY != null) {
+			context.fillStyle = color;
+			context.beginPath();
+			context.arc(headX, headY, 3, 0, Math.PI * 2);
+			context.fill();
+		}
+	};
+}
 
 export struct MkMiniChart: View {
 	let viewBoxX: number
@@ -36,27 +79,10 @@ export struct MkMiniChart: View {
 	}
 
 	var body: some View {
-		svgElement('svg',
-			{
-				className,
-				// A viewBox-only SVG has an auto-sized intrinsic box. Keep the
-				// mini chart compact even when a legacy parent's `.chart` rule
-				// is not loaded across the Vune compatibility boundary.
-				style: { height: '30px', overflow: 'visible' },
-				viewBox: `0 0 ${viewBoxX} ${viewBoxY}`,
-			},
-			svgElement('defs',
-				null,
-				svgElement('linearGradient',
-					{ id: gradientId, x1: '0', x2: '0', y1: '1', y2: '0' },
-					svgElement('stop', { offset: '0%', 'stop-color': color, 'stop-opacity': '0' }),
-					svgElement('stop', { offset: '100%', 'stop-color': color, 'stop-opacity': '0.65' }),
-				),
-			),
-			svgElement('polygon', { points: polygonPoints, style: `stroke: none; fill: url(#${gradientId});` }),
-			svgElement('polyline', { points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '2' }),
-			svgElement('circle', { cx: headX ?? undefined, cy: headY ?? undefined, r: '3', fill: color }),
-		)
+		Canvas(viewBoxX, viewBoxY, chartRef(viewBoxX, viewBoxY, color, polygonPoints, polylinePoints, headX, headY))
+			.className(className ?? '')
+			.style({ height: '30px', overflow: 'visible' })
+			.withProps({ 'data-gradient-id': gradientId })
 	}
 }
 

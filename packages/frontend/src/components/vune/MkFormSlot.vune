@@ -1,14 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, type ViewGraphValue } from 'vune-ui';
 import './misskey-vune.scss';
 
-export default createVuneComponent((_props, slots) =>
-	Group() {
-		Element('div', null,
-			Element('div', { className: 'mk-vune-form-slot__label' }, VueSlot(slots.label)),
-			Element('div', null, VueSlot(slots.default)),
-			Element('div', { className: 'mk-vune-form-slot__caption' }, VueSlot(slots.caption)),
-		)
+export struct MkFormSlot: View {
+	let label: ViewGraphValue
+	let caption: ViewGraphValue
+	let content: ViewGraphValue
+
+	init(
+		label: ViewGraphValue = null,
+		caption: ViewGraphValue = null,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.label = label
+		self.caption = caption
+		self.content = content()
 	}
-);
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			VStack(alignment: 'leading', spacing: 0) { label }.className('mk-vune-form-slot__label')
+			VStack(alignment: 'leading', spacing: 0) { content }
+			VStack(alignment: 'leading', spacing: 0) { caption }.className('mk-vune-form-slot__caption')
+		}
+	}
+}
+
+export default MkFormSlot

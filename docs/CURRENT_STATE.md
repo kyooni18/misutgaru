@@ -2,7 +2,7 @@
 
 Checkpoint date: 2026-08-28.
 
-Misutgaru is a Misskey `2026.8.0-alpha.0` fork with a hybrid Vue/Vune frontend, an embedded Vune/o0o0o framework source checkout, backend runtime optimizations, and fork-specific thread, translation, and push behavior.
+Misutgaru is a Misskey `2026.8.0-alpha.0` fork with a hybrid Vue/Vune frontend, an embedded Vune framework source checkout with `@vune-ui/animation`, backend runtime optimizations, and fork-specific thread, translation, and push behavior.
 
 ## Repository health
 
@@ -14,8 +14,8 @@ Direct Vune framework dependencies are pinned to this checkout with local `link:
 - no unresolved merge markers remain in the active tree;
 - all three shipped example YAML configs parse;
 - `scripts/check-vune-native.mjs` passes for every native-marked Vune source;
-- all 233 frontend `.vune` sources transform with the current local Vune compiler;
-- the delivered source archive includes the Vune and o0o0o module source rather than empty submodule directories;
+- all 234 frontend `.vune` sources transform with the current local Vune compiler;
+- the delivered source archive includes Vune and its in-tree `@vune-ui/animation` package rather than an empty framework submodule directory;
 - Docker builds Vune from source instead of requiring a prebuilt `packages/modules/Vune/dist` directory.
 
 The final dependency-backed root `pnpm verify:full` still needs to be run in a normal networked checkout. The artifact workspace used for this pass could not reach the npm registry and did not contain the root pnpm virtual store.
@@ -37,19 +37,24 @@ The exhaustive source/config inventory currently contains 3446 rows in the local
 
 Run `pnpm vune:report` to refresh these values.
 
+Working-tree frontend checkpoint: 2026-08-31. This is newer than the repository-wide 2026-08-28 verification checkpoint above.
+
 | Metric | Current value |
 | --- | ---: |
-| Vue SFC compatibility surface | 594 |
-| Vune source components | 233 |
-| Native Vune components | 65 |
-| Explicit compatibility Vune shells | 2 |
-| Legacy Vue placement shells using Vune | 228 |
-| SwiftUI-syntax Vune files | 145 |
-| Vune files using `ForEach` | 62 |
-| Native share of Vune sources | 27.9% |
-| Legacy-shell coverage of Vue SFCs | 38.4% |
+| Vue SFC compatibility surface | 585 |
+| Vune source components | 298 |
+| Native Vune components | 298 |
+| Explicit compatibility Vune shells | 0 |
+| Vue SFCs referencing Vune | 226 |
+| Generated `?vue-host` placements | 108 |
+| Direct `.vune` placements | 118 |
+| Pure Vue SFCs | 359 |
+| SwiftUI-syntax Vune files | 260 |
+| Vune files using `ForEach` | 85 |
+| Native share of Vune sources | 100.0% |
+| Vune-backed share of Vue SFCs | 38.6% |
 
-Inside the 65 native sources, the current report shows zero `VueComponent`, `VueSlot`, raw `Element`, and `.vue` dependency fallbacks. `MkEmojiPicker.vune` and `MkPostFormSurface.vune` are explicitly classified as compatibility sources instead of inflating the native count.
+All 298 Vune sources currently satisfy the native boundary and the report shows zero `VueComponent`, `VueSlot`, raw `Element`, and `.vue` dependency fallbacks. NIRAX routing is now split into a renderer-neutral `nirax-core.ts` plus the existing Vue ref/lifecycle binding in `nirax.ts`. Route-only Vue shells for `/ads`, `/preview`, `/clicker`, and `/games`, plus five additional generated-host placement shells, have been removed; their consumers load `.vune?vue-host` modules directly while the application root remains Vue-owned.
 
 ## Framework/runtime improvements in this checkpoint
 
@@ -67,10 +72,10 @@ Fork-specific translation contracts and thread-window defaults have started movi
 
 ## Verification performed in this workspace
 
-- o0o0o focused motion suite: 75 passed, 0 failed (the complete 115-test module suite remains available via `pnpm --dir packages/modules/o0o0o run test:full`);
+- `@vune-ui/animation` full motion suite: 116 passed, 0 failed (`pnpm --dir packages/modules/Vune --filter @vune-ui/animation run test:full`);
 - focused Vune compiler/web/runtime smoke suite: 31 passed, 0 failed (the complete non-browser package suite remains available via `pnpm --dir packages/modules/Vune run test:full`);
-- native Vune boundary: 65 files passed;
-- Vune source transform sweep: 233 passed, 0 failed;
+- native Vune boundary: 76 files passed;
+- Vune source transform sweep: 234 passed, 0 failed;
 - `@misutgaru/core` translation contract test passed;
 - deterministic `BatchLoader` runtime harness passed;
 - actual cache implementation race harness passed 5 generation/mutation cases across KV and single-value caches;

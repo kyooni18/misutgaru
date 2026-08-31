@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div :class="$style.embedCodeGenRoot">
 		<Transition
+			:css="prefer.s.animation"
 			mode="out-in"
 			:enterActiveClass="$style.transition_x_enterActive"
 			:leaveActiveClass="$style.transition_x_leaveActive"
@@ -91,6 +92,7 @@ import { embedRouteWithScrollbar } from '@@/js/embed-page.js';
 import type { EmbeddableEntity, EmbedParams } from '@@/js/embed-page.js';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkPreviewWithControls from '@/components/MkPreviewWithControls.vue';
+import { prefer } from '@/preferences.js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';

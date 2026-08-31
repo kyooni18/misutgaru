@@ -1,0 +1,118 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Binding, HStack, TextField, VStack, ZStack, type ViewGraphValue } from 'vune-ui';
+import './MkFormControls.scss';
+
+type InputValue = string | number | null | undefined;
+type InputAction = (value: string | number | null) => void;
+
+function ignoreInputChange(_value: string | number | null): void {}
+
+function inputString(value: InputValue): string {
+	return value == null ? '' : String(value);
+}
+
+function inputValue(type: string, value: string): string | number | null {
+	if (type !== 'number') return value;
+	if (value === '') return null;
+	const number = Number(value);
+	return Number.isFinite(number) ? number : value;
+}
+
+function makeInputCommit(type: string, debounce: boolean, onChange: InputAction): (next: string) => void {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	return (next: string) => {
+		const resolved = inputValue(type, next);
+		if (!debounce) {
+			onChange(resolved);
+			return;
+		}
+		if (timer !== undefined) clearTimeout(timer);
+		timer = setTimeout(() => onChange(resolved), 250);
+	};
+}
+
+export struct MkInput: View {
+	let value: InputValue
+	let type: string
+	let placeholder: string
+	let disabled: boolean
+	let readonly: boolean
+	let required: boolean
+	let autofocus: boolean
+	let autocomplete: string | undefined
+	let pattern: string | undefined
+	let inputmode: string | undefined
+	let spellcheck: boolean | undefined
+	let debounce: boolean
+	let className: string
+	let style: any
+	let onChange: InputAction
+	let label: ViewGraphValue
+	let prefix: ViewGraphValue
+	let suffix: ViewGraphValue
+	let caption: ViewGraphValue
+	let commit: (next: string) => void
+
+	init(
+		_ value: InputValue,
+		type: string = 'text',
+		placeholder: string = '',
+		disabled: boolean = false,
+		readonly: boolean = false,
+		required: boolean = false,
+		autofocus: boolean = false,
+		autocomplete: string | undefined = undefined,
+		pattern: string | undefined = undefined,
+		inputmode: string | undefined = undefined,
+		spellcheck: boolean | undefined = undefined,
+		debounce: boolean = false,
+		className: string = '',
+		style: any = undefined,
+		@Action onChange: InputAction = ignoreInputChange,
+		label: ViewGraphValue = null,
+		prefix: ViewGraphValue = null,
+		suffix: ViewGraphValue = null,
+		caption: ViewGraphValue = null,
+	) {
+		self.value = value
+		self.type = type
+		self.placeholder = placeholder
+		self.disabled = disabled
+		self.readonly = readonly
+		self.required = required
+		self.autofocus = autofocus
+		self.autocomplete = autocomplete
+		self.pattern = pattern
+		self.inputmode = inputmode
+		self.spellcheck = spellcheck
+		self.debounce = debounce
+		self.className = className
+		self.style = style
+		self.onChange = onChange
+		self.label = label
+		self.prefix = prefix
+		self.suffix = suffix
+		self.caption = caption
+		self.commit = makeInputCommit(type, debounce, onChange)
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (label) { VStack(alignment: 'leading', spacing: 0) { label }.className('mk-vune-field__label') }
+			HStack(alignment: 'center', spacing: 0) {
+				if (prefix) { ZStack(alignment: 'center') { prefix }.className('mk-vune-field__prefix') }
+				TextField(Binding(() => inputString(value), commit), placeholder)
+					.className('mk-vune-field__input')
+					.withProps({ type, disabled, readonly, required, autofocus, autocomplete, pattern, inputmode, spellcheck })
+				if (suffix) { ZStack(alignment: 'center') { suffix }.className('mk-vune-field__suffix') }
+			}.className('mk-vune-field__shell')
+			if (caption) { VStack(alignment: 'leading', spacing: 0) { caption }.className('mk-vune-field__caption') }
+		}
+			.className(['mk-vune-field', disabled ? 'mk-vune-field--disabled' : null, className])
+			.style(style ?? {})
+			.withProps({ role: 'group' })
+	}
+}
+
+export default MkInput

@@ -1,0 +1,53 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Binding, HStack, Switch, VStack, type ViewGraphValue } from 'vune-ui';
+import { prefer } from '@/preferences.js';
+
+type SwitchAction = (value: boolean) => void;
+function ignoreSwitchChange(_value: boolean): void {}
+
+export struct MkSwitch: View {
+	let value: boolean
+	let disabled: boolean
+	let className: string
+	let style: any
+	let onChange: SwitchAction
+	let label: ViewGraphValue
+	let caption: ViewGraphValue
+
+	init(
+		_ value: boolean,
+		disabled: boolean = false,
+		className: string = '',
+		style: any = undefined,
+		@Action onChange: SwitchAction = ignoreSwitchChange,
+		label: ViewGraphValue = null,
+		caption: ViewGraphValue = null,
+	) {
+		self.value = value
+		self.disabled = disabled
+		self.className = className
+		self.style = style
+		self.onChange = onChange
+		self.label = label
+		self.caption = caption
+	}
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 8) {
+			Switch(Binding(() => value, (next: boolean) => { if (!disabled) onChange(next) }), {
+				size: 22,
+				animation: prefer.s.animation ? undefined : null,
+			})
+				.withProps({ disabled })
+			VStack(alignment: 'leading', spacing: 0) {
+				if (label) { VStack(alignment: 'leading', spacing: 0) { label }.className('mk-vune-switch-field__label') }
+				if (caption) { VStack(alignment: 'leading', spacing: 0) { caption }.className('mk-vune-switch-field__caption') }
+			}
+		}
+			.className(['mk-vune-switch-field', disabled ? 'mk-vune-field--disabled' : null, className])
+			.style(style)
+	}
+}
+
+export default MkSwitch

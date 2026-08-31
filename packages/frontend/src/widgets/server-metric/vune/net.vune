@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { htmlElement, svgElement } from '@/vune/native.js';
+import { HStack } from 'vune-ui';
+import { Canvas } from '@vune-ui/core/web-primitives';
 import bytes from '@/filters/bytes.js';
 
 type Props = {
@@ -29,12 +30,29 @@ function graph(
 	label: string,
 	recent: number,
 ) {
-	return svgElement('svg', {},
-		svgElement('polygon', {}).withProps({ points: polygonPoints, fill: color, 'fill-opacity': '0.5' }),
-		svgElement('polyline', {}).withProps({ points: polylinePoints, fill: 'none', stroke: color, 'stroke-width': '1' }),
-		svgElement('circle', {}).withProps({ cx: headX, cy: headY, r: '1.5', fill: color }),
-		svgElement('text', {}, `${label} `, svgElement('tspan', {}, bytes(recent))).withProps({ x: '1', y: '5' }),
-	).withProps({ viewBox: `0 0 ${viewBoxX} ${viewBoxY}` });
+	const parse = (points: string) => points.trim().split(/\s+/).flatMap(pair => {
+		const [x, y] = pair.split(',').map(Number);
+		return Number.isFinite(x) && Number.isFinite(y) ? [[x, y] as [number, number]] : [];
+	});
+	return Canvas(viewBoxX, viewBoxY, (node: unknown) => {
+		if (!(node instanceof HTMLCanvasElement)) return;
+		const context = node.getContext('2d');
+		if (!context) return;
+		context.clearRect(0, 0, viewBoxX, viewBoxY);
+		const polygon = parse(polygonPoints);
+		if (polygon.length > 1) {
+			context.globalAlpha = 0.5; context.fillStyle = color; context.beginPath();
+			polygon.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y));
+			context.closePath(); context.fill(); context.globalAlpha = 1;
+		}
+		const line = parse(polylinePoints);
+		if (line.length > 1) {
+			context.strokeStyle = color; context.lineWidth = 1; context.beginPath();
+			line.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y)); context.stroke();
+		}
+		if (headX != null && headY != null) { context.fillStyle = color; context.beginPath(); context.arc(headX, headY, 1.5, 0, Math.PI * 2); context.fill(); }
+		context.fillStyle = 'currentColor'; context.font = '4.5px sans-serif'; context.fillText(`${label} ${bytes(recent)}`, 1, 5);
+	});
 }
 
 export struct Net: View {
@@ -80,10 +98,10 @@ export struct Net: View {
 	}
 
 	var body: some View {
-		htmlElement('div', { className: 'oxxrhrto' },
-			graph(viewBoxX, viewBoxY, inPolygonPoints, inPolylinePoints, inHeadX, inHeadY, '#94a029', 'NET rx', inRecent),
-			graph(viewBoxX, viewBoxY, outPolygonPoints, outPolylinePoints, outHeadX, outHeadY, '#ff9156', 'NET tx', outRecent),
-		)
+		HStack(spacing: 0) {
+			graph(viewBoxX, viewBoxY, inPolygonPoints, inPolylinePoints, inHeadX, inHeadY, '#94a029', 'NET rx', inRecent)
+			graph(viewBoxX, viewBoxY, outPolygonPoints, outPolylinePoints, outHeadX, outHeadY, '#ff9156', 'NET tx', outRecent)
+		}.className('oxxrhrto')
 	}
 }
 

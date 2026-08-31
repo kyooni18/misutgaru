@@ -4,15 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneExploreRoles :roles="roles" :loading="loading"/>
+<VuneExploreRoles :props="{ roles, loading }"/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneExploreRoles from './vune/explore-roles.view.vune';
-import { i18n } from '@/i18n.js';
+import VuneExploreRolesView from './vune/explore-roles.view.vune';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneExploreRoles = createVuneWebHost(VuneExploreRolesView);
 
 const roles = ref<Misskey.entities.Role[] | null>(null);
 const loading = ref(true);

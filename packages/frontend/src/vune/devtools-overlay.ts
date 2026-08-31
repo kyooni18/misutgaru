@@ -6,7 +6,7 @@ import {
 	resetVuneDevtools,
 	setVuneDevtoolsEnabled,
 	subscribeVuneDevtools,
-} from '@vune-ui/web';
+} from '@vune-ui/web/devtools';
 
 const storageKey = 'misutgaru:vune-devtools';
 let installed = false;
@@ -46,7 +46,9 @@ export function installVuneDevtools(): void {
 			const indent = '&nbsp;'.repeat(depthOf(boundary.key) * 2);
 			return `<tr><td>${indent}${escape(boundary.name)}</td><td>${boundary.renderCount}</td><td>${average.toFixed(2)}</td><td>${boundary.maxDurationMs.toFixed(2)}</td><td>${boundary.dependencyCount}</td><td>${boundary.nodeCount}</td><td>${boundary.mode}</td><td><button data-inspect="${escape(boundary.key)}">inspect</button></td></tr>`;
 		}).join('');
-		panel.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><strong style="font-size:13px">Vune DevTools</strong><span style="opacity:.65">rev ${snapshot.revision} · ${snapshot.boundaries.length} boundaries</span><span style="flex:1"></span><button data-action="reset">reset</button><button data-action="close">close</button></div><table style="width:100%;border-collapse:collapse"><thead><tr><th>View</th><th>renders</th><th>avg ms</th><th>max ms</th><th>deps</th><th>nodes</th><th>mode</th><th></th></tr></thead><tbody>${rows}</tbody></table><div style="opacity:.55;margin-top:7px">Ctrl/⌘ + Shift + V toggles this panel</div>`;
+		const runtime = snapshot.runtime;
+		const runtimeSummary = `inv ${runtime.boundaryInvalidations} · flush ${runtime.boundaryFlushes} · local ${runtime.boundaryUpdates} · compiled ${runtime.compiledPatches} · reconcile ${runtime.reconcilePasses} · root ${runtime.rootPasses}/${runtime.rootRequests} · escalate ${runtime.rootEscalations} · collection fallback ${runtime.collectionFallbacks}`;
+		panel.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><strong style="font-size:13px">Vune DevTools</strong><span style="opacity:.65">rev ${snapshot.revision} · ${snapshot.boundaries.length} boundaries</span><span style="flex:1"></span><button data-action="reset">reset</button><button data-action="close">close</button></div><div style="opacity:.72;margin:0 4px 8px;white-space:normal">${runtimeSummary}</div><table style="width:100%;border-collapse:collapse"><thead><tr><th>View</th><th>renders</th><th>avg ms</th><th>max ms</th><th>deps</th><th>nodes</th><th>mode</th><th></th></tr></thead><tbody>${rows}</tbody></table><div style="opacity:.55;margin-top:7px">Ctrl/⌘ + Shift + V toggles this panel</div>`;
 		for (const cell of panel.querySelectorAll('td,th')) (cell as HTMLElement).style.cssText = 'text-align:left;padding:3px 5px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;';
 		for (const button of panel.querySelectorAll('button')) (button as HTMLElement).style.cssText = 'font:inherit;color:inherit;background:rgba(255,255,255,.08);border:0;border-radius:6px;padding:3px 7px;cursor:pointer;';
 	};

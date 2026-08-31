@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<div v-if="showing" ref="rootEl" :class="[$style.root, { [$style.maximized]: maximized }]">
 		<div :class="$style.body" class="_shadow" @pointerdown="onBodyPointerDown" @keydown="onKeydown">
-			<div ref="headerEl" :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
+			<div ref="headerEl" class="_materialBar" :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
 				<span :class="$style.headerLeft">
 					<template v-if="!minimized">
 						<button v-for="button in buttonsLeft" v-tooltip="button.title" class="_button" :class="[$style.headerButton, { [$style.highlighted]: button.highlighted }]" @click="button.onClick"><i :class="button.icon"></i></button>
@@ -58,8 +58,7 @@ import { elementContains } from '@/utility/element-contains.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
+import { animateSurfaceTransition } from '@/vune/motion.js';
 
 type WindowButton = {
 	title: string;
@@ -77,10 +76,7 @@ function enter(element: Element, done: () => void) {
 		return;
 	}
 	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
-	animateVuneTransition(element, [
-		{ opacity: 0, transform: 'scale(0.9)' },
-		{ opacity: 1, transform: 'scale(1)' },
-	], Animation.easeOut(0.2), () => {
+	animateSurfaceTransition(element, 'enter', () => {
 		if (element instanceof HTMLElement) element.style.pointerEvents = '';
 		done();
 	});
@@ -92,10 +88,7 @@ function leave(element: Element, done: () => void) {
 		return;
 	}
 	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
-	animateVuneTransition(element, [
-		{ opacity: 1, transform: 'scale(1)' },
-		{ opacity: 0, transform: 'scale(0.9)' },
-	], Animation.easeIn(0.2), () => {
+	animateSurfaceTransition(element, 'leave', () => {
 		if (element instanceof HTMLElement) element.style.pointerEvents = '';
 		done();
 	});
@@ -679,6 +672,8 @@ defineExpose({
 
 .header {
 	--height: 39px;
+	--vune-material-surface: var(--MI_THEME-windowHeader);
+	--vune-material-fallback-background: var(--MI_THEME-windowHeader);
 
 	display: flex;
 	position: relative;
@@ -686,9 +681,6 @@ defineExpose({
 	flex-shrink: 0;
 	user-select: none;
 	height: var(--height);
-	background: var(--MI_THEME-windowHeader);
-	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
-	backdrop-filter: var(--MI-blur, blur(15px));
 	//border-bottom: solid 1px var(--MI_THEME-divider);
 	font-size: 90%;
 	font-weight: bold;

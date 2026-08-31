@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Image, Text } from 'vune-ui';
+import MkA from '@/components/global/vune/MkA.vune';
+
+export struct MkGalleryPostPreview: View {
+	let post: any
+	let className: string
+	init(_ post: any, className: string = '') { self.post = post; self.className = className }
+	var body: some View {
+		MkA(`/gallery/${post.id}`, className: ['mk-vune-gallery-post-preview', className]) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (post.files?.[0]?.thumbnailUrl || post.files?.[0]?.url) { Image(post.files[0].thumbnailUrl ?? post.files[0].url, { alt: post.title ?? '' }).withProps({ loading: 'eager', fetchpriority: 'high', decoding: 'sync' }).className('mk-vune-gallery-post-preview__image') }
+				Text(post.title ?? '').bold()
+				if (post.description) { Text(post.description).lineLimit(2) }
+			}
+		}
+	}
+}
+
+export default MkGalleryPostPreview

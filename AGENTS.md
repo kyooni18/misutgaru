@@ -13,7 +13,7 @@ The phase journals under `docs/archive` are history only. Their Vune counts, dep
 
 ## Current validation boundary
 
-At the 2026-08-28 source checkpoint, active merge markers are resolved, the native Vune boundary passes for 65 files, and the delivered source archive contains the Vune/o0o0o module sources. The remaining handoff gate is dependency-backed: run `pnpm verify:full` in a normal networked checkout before describing a release as fully typechecked, test-complete, and production-build validated.
+At the 2026-08-28 source checkpoint, active merge markers are resolved, the native Vune boundary passes for 65 files, and the delivered source archive contains the Vune framework source including `@vune-ui/animation`. The remaining handoff gate is dependency-backed: run `pnpm verify:full` in a normal networked checkout before describing a release as fully typechecked, test-complete, and production-build validated.
 
 ## Fork-specific rules
 

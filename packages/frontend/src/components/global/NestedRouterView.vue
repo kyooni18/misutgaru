@@ -17,8 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { inject, provide, ref, shallowRef } from 'vue';
 import type { Router } from '@/router.js';
 import type { PathResolvedResult } from '@/lib/nirax.js';
-import MkLoadingPage from '@/pages/_loading_.vue';
+import MkLoadingPage from '@/pages/vune/_loading_.vune?vue-host';
 import { DI } from '@/di.js';
+import { resolveVueRouteTarget } from '@/vune/route-target-vue.js';
 
 const props = defineProps<{
 	router?: Router;
@@ -46,14 +47,14 @@ function resolveNested(current: PathResolvedResult, d = 0): PathResolvedResult |
 }
 
 const current = resolveNested(router.current)!;
-const currentPageComponent = shallowRef('component' in current.route ? current.route.component : MkLoadingPage);
+const currentPageComponent = shallowRef('component' in current.route ? resolveVueRouteTarget(current.route.component) : MkLoadingPage);
 const currentPageProps = ref(current.props);
 const key = ref(router.getCurrentFullPath());
 
 router.useListener('change', ({ resolved }) => {
 	const current = resolveNested(resolved);
 	if (current == null || 'redirect' in current.route) return;
-	currentPageComponent.value = current.route.component;
+	currentPageComponent.value = resolveVueRouteTarget(current.route.component);
 	currentPageProps.value = current.props;
 	key.value = router.getCurrentFullPath();
 });

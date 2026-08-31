@@ -1,0 +1,62 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Group, VStack, Image } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkImgWithBlurhash from './MkImgWithBlurhash.vune';
+import { prefer } from '@/preferences.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './MkDriveFileThumbnail.scss';
+
+function kind(file: Misskey.entities.DriveFile): string {
+	if (file.type.startsWith('image/')) return 'image';
+	if (file.type.startsWith('video/')) return 'video';
+	if (file.type === 'audio/midi') return 'midi';
+	if (file.type.startsWith('audio/')) return 'audio';
+	if (file.type.endsWith('/csv')) return 'csv';
+	if (file.type.endsWith('/pdf')) return 'pdf';
+	if (file.type.startsWith('text/')) return 'textfile';
+	if (['application/zip','application/x-cpio','application/x-bzip','application/x-bzip2','application/java-archive','application/x-rar-compressed','application/x-tar','application/gzip','application/x-7z-compressed'].includes(file.type)) return 'archive';
+	return 'unknown';
+}
+function icon(value: string): string {
+	if (value === 'image') return 'ti ti-photo'; if (value === 'video') return 'ti ti-video'; if (value === 'audio' || value === 'midi') return 'ti ti-file-music';
+	if (value === 'csv' || value === 'pdf' || value === 'textfile') return 'ti ti-file-text'; if (value === 'archive') return 'ti ti-file-zip'; return 'ti ti-file';
+}
+struct DriveThumbnailContent: View {
+	let file: Misskey.entities.DriveFile
+	let fit: 'cover'|'contain'
+	let forceBlurhash: boolean
+	let highQuality: boolean
+	let fileKind: string
+	let available: boolean
+	init(_ file: Misskey.entities.DriveFile, fit: 'cover'|'contain', forceBlurhash: boolean, highQuality: boolean) {
+		self.file = file; self.fit = fit; self.forceBlurhash = forceBlurhash; self.highQuality = highQuality
+		self.fileKind = kind(file)
+		self.available = file.thumbnailUrl != null && (self.fileKind === 'image' || self.fileKind === 'video')
+	}
+	var body: some View {
+		Group() {
+			if (available && highQuality) { MkImgWithBlurhash(src: file.thumbnailUrl, hash: file.blurhash ?? null, alt: file.name, title: file.name, className: 'mk-vune-drive-thumb__thumbnail', cover: fit !== 'contain', forceBlurhash: forceBlurhash) }
+			else if (available && file.thumbnailUrl) { Image(file.thumbnailUrl, { alt: file.name }).withProps({ title: file.name, loading: 'eager', fetchpriority: 'high', decoding: 'sync' }).className('mk-vune-drive-thumb__thumbnail').style({ objectFit: fit }) }
+			else { VuneIcon(icon(fileKind), className: 'mk-vune-drive-thumb__icon') }
+		}
+	}
+}
+export struct MkDriveFileThumbnail: View {
+	let file: Misskey.entities.DriveFile
+	let fit: 'cover'|'contain'
+	let highlightWhenSensitive: boolean
+	let forceBlurhash: boolean
+	let large: boolean
+	let className: string
+	init(_ file: Misskey.entities.DriveFile, fit: 'cover'|'contain' = 'cover', highlightWhenSensitive: boolean = false, forceBlurhash: boolean = false, large: boolean = false, className: string = '') {
+		self.file=file; self.fit=fit; self.highlightWhenSensitive=highlightWhenSensitive; self.forceBlurhash=forceBlurhash; self.large=large; self.className=className
+	}
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			DriveThumbnailContent(file, fit: fit, forceBlurhash: forceBlurhash, highQuality: prefer.s.enableHighQualityImagePlaceholders)
+			if (file.thumbnailUrl && kind(file) === 'video') { VuneIcon('ti ti-video', className: 'mk-vune-drive-thumb__icon-sub') }
+		}.className(['_panel','mk-vune-drive-thumb',highlightWhenSensitive && file.isSensitive ? 'mk-vune-drive-thumb--sensitive':null,large?'mk-vune-drive-thumb--large':null,className])
+	}
+}
+export default MkDriveFileThumbnail

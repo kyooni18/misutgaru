@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { htmlElement } from '@/vune/native.js';
+import { HStack, Text, VStack } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
 import Pie from './pie.vune';
+import VuneIcon from '@/vune/Icon.vune';
 
 export struct Cpu: View {
 	let usage: number
@@ -14,14 +15,17 @@ export struct Cpu: View {
 	}
 
 	var body: some View {
-		htmlElement('div', { className: 'vrvdvrys' },
-			Pie(usage).className('pie'),
-			htmlElement('div', {},
-				htmlElement('p', {}, htmlElement('i', { className: 'ti ti-cpu' }), 'CPU'),
-				htmlElement('p', {}, `${meta.cpu.cores} Logical cores`),
-				htmlElement('p', {}, meta.cpu.model),
-			),
-		)
+		VStack(alignment: 'stretch', spacing: 0) {
+			Pie(usage).className('pie')
+			VStack(alignment: 'leading', spacing: 0) {
+				HStack(alignment: 'center', spacing: 4) {
+					VuneIcon('ti ti-cpu')
+					Text('CPU')
+				}.className(['server-metric__line', 'server-metric__line--heading'])
+				Text(`${meta.cpu.cores} Logical cores`).className('server-metric__line')
+				Text(meta.cpu.model).className('server-metric__line')
+			}.className('server-metric__details')
+		}.className('vrvdvrys')
 	}
 }
 

@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import Mfm from '@/components/global/MkMfm.js';
-import MkA from '@/components/global/MkA.vue';
-import MkAcct from '@/components/global/MkAcct.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import MkFollowButton from '@/components/MkFollowButton.vue';
+import MkMfm from '@/components/global/vune/MkMfm.vune';
+import MkA from '@/components/global/vune/MkA.vune';
+import MkAcct from '@/components/global/vune/MkAcct.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkFollowButton from '@/components/vune/MkFollowButton.vune';
 import number from '@/filters/number.js';
 import { userPage } from '@/filters/user.js';
 import * as signIn from '@/i.js';
@@ -14,62 +15,52 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { isFollowersVisibleForMe, isFollowingVisibleForMe } from '@/utility/isFfVisibleForMe.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase6-migration.scss';
 
 type Props = { user: Misskey.entities.UserDetailed };
 
-function statusItem(user: Misskey.entities.UserDetailed, label: string, value: number, path: string) {
-	return VueComponent(MkA, {
-		class: 'mk-vune-user-info__status-item',
-		to: userPage(user, path),
-	}, {
-		default: () => Group() {
-			Element('p', { className: 'mk-vune-user-info__status-label' }, label)
-			Element('span', { className: 'mk-vune-user-info__status-value' }, number(value))
-		},
-	});
+struct UserInfoStatusItem: View {
+	let user: Misskey.entities.UserDetailed
+	let label: string
+	let value: number
+	let path: string
+	var body: some View {
+		MkA(userPage(user, path), className: 'mk-vune-user-info__status-item') {
+			Group() {
+				Text(label).className('mk-vune-user-info__status-label')
+				Text(number(value)).className('mk-vune-user-info__status-value')
+			}
+		}
+	}
 }
 
-export default createVuneComponent<Props>((props) => {
-	const user = props.user;
-	const bannerUrl = user.bannerUrl
-		? (prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(user.bannerUrl) : user.bannerUrl)
-		: undefined;
-
-	return Element('div', { className: '_panel mk-vune-user-info' },
-		Element('div', {
-			className: 'mk-vune-user-info__banner',
-			style: { backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined },
-		}),
-		VueComponent(MkA, { to: userPage(user) }, {
-			default: () => VueComponent(MkAvatar, {
-				class: 'mk-vune-user-info__avatar',
-				user,
-				indicator: true,
-			}),
-		}),
-		Element('div', { className: 'mk-vune-user-info__title' },
-			VueComponent(MkA, { class: 'mk-vune-user-info__name', to: userPage(user) }, {
-				default: () => VueComponent(MkUserName, { user, nowrap: false }),
-			}),
-			Element('p', { className: 'mk-vune-user-info__username' }, VueComponent(MkAcct, { user })),
-		),
-		(signIn.$i && signIn.$i.id !== user.id && user.isFollowed)
-			? Element('span', { className: 'mk-vune-user-info__followed' }, i18n.ts.followsYou)
-			: null,
-		Element('div', { className: 'mk-vune-user-info__description' },
-			user.description
-				? Element('div', { className: 'mk-vune-user-info__mfm' }, VueComponent(Mfm as any, { text: user.description, author: user }))
-				: Element('span', { style: { opacity: .7 } }, i18n.ts.noAccountDescription),
-		),
-		Element('div', { className: 'mk-vune-user-info__status' },
-			statusItem(user, i18n.ts.notes, user.notesCount, 'notes'),
-			isFollowingVisibleForMe(user) ? statusItem(user, i18n.ts.following, user.followingCount, 'following') : null,
-			isFollowersVisibleForMe(user) ? statusItem(user, i18n.ts.followers, user.followersCount, 'followers') : null,
-		),
-		user.id !== signIn.$i?.id
-			? VueComponent(MkFollowButton, { class: 'mk-vune-user-info__follow', user, mini: true })
-			: null,
-	);
-});
+export struct MkUserInfo: View {
+	let props: Props
+	let bannerUrl: string | undefined
+	init(_ props: Props) {
+		self.props = props
+		self.bannerUrl = props.user.bannerUrl ? (prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(props.user.bannerUrl) : props.user.bannerUrl) : undefined
+	}
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			VStack(alignment: 'leading', spacing: 0).className('mk-vune-user-info__banner').style({ backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined })
+			MkA(userPage(props.user)) { MkAvatar(props.user, indicator: true, className: 'mk-vune-user-info__avatar') }
+			VStack(alignment: 'leading', spacing: 0) {
+				MkA(userPage(props.user), className: 'mk-vune-user-info__name') { MkUserName({ user: props.user, nowrap: false }) }
+				VStack(alignment: 'leading', spacing: 0) { MkAcct(props.user) }.className('mk-vune-user-info__username')
+			}.className('mk-vune-user-info__title')
+			if (signIn.$i && signIn.$i.id !== props.user.id && props.user.isFollowed) { Text(i18n.ts.followsYou).className('mk-vune-user-info__followed') }
+			VStack(alignment: 'leading', spacing: 0) {
+				if (props.user.description) { VStack(alignment: 'leading', spacing: 0) { MkMfm({ text: props.user.description, author: props.user }) }.className('mk-vune-user-info__mfm') }
+				else { Text(i18n.ts.noAccountDescription).opacity(0.7) }
+			}.className('mk-vune-user-info__description')
+			VStack(alignment: 'leading', spacing: 0) {
+				UserInfoStatusItem(user: props.user, label: i18n.ts.notes, value: props.user.notesCount, path: 'notes')
+				if (isFollowingVisibleForMe(props.user)) { UserInfoStatusItem(user: props.user, label: i18n.ts.following, value: props.user.followingCount, path: 'following') }
+				if (isFollowersVisibleForMe(props.user)) { UserInfoStatusItem(user: props.user, label: i18n.ts.followers, value: props.user.followersCount, path: 'followers') }
+			}.className('mk-vune-user-info__status')
+			if (props.user.id !== signIn.$i?.id) { MkFollowButton({ user: props.user, className: 'mk-vune-user-info__follow' }) }
+		}.className('_panel mk-vune-user-info')
+	}
+}
+export default MkUserInfo

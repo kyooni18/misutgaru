@@ -1,11 +1,19 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { Group } from 'vune-ui';
-import MkRetentionHeatmap from '@/components/MkRetentionHeatmap.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkHeatmap from '@/components/vune/MkHeatmap.vune';
 import '@/vune/phase5-migration.scss';
 
-export default createVuneComponent(() =>
-	Group() {
-		VueComponent(MkRetentionHeatmap)
-	}.className(['_panel', 'mk-vune-retention'])
-);
+
+
+export struct VuneOverviewRetentionView: View {
+	init() {}
+
+	var body: some View {
+		Group() {
+			MkHeatmap()
+		}.className(['_panel', 'mk-vune-retention'])
+	}
+}
+
+export default VuneOverviewRetentionView

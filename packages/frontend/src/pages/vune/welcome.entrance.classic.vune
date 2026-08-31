@@ -1,13 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Image, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import XTimeline from '@/pages/welcome.timeline.vue';
-import MkMarqueeText from '@/components/MkMarqueeText.vue';
 import MkFeaturedPhotos from '@/components/vune/MkFeaturedPhotos.vune';
-import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
-import MkA from '@/components/global/MkA.vue';
+import MkVisitorDashboard from '@/components/vune/MkVisitorDashboard.vune';
+import MkA from '@/components/global/vune/MkA.vune';
 import misskeysvg from '/client-assets/misskey.svg';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = {
 	meta: unknown;
@@ -16,37 +14,33 @@ type Props = {
 	getInstanceIcon: (instance: Misskey.entities.FederationInstance) => string;
 };
 
-export default createVuneComponent<Props>((props) => {
-	if (!props.meta) return Group() {};
-	return Element('div', { className: props.classes.root },
-		MkFeaturedPhotos().className(props.classes.bg),
-		VueComponent(XTimeline, { class: props.classes.tl }),
-		Element('div', { className: props.classes.shape1 }),
-		Element('div', { className: props.classes.shape2 }),
-		Element('div', { className: props.classes.logoWrapper },
-			Element('div', { className: props.classes.poweredBy }, 'Powered by'),
-			Element('img', { src: misskeysvg, className: props.classes.misskey, alt: 'Misskey' }),
-		),
-		Element('div', { className: props.classes.contents }, VueComponent(MkVisitorDashboard)),
-		props.instances && props.instances.length > 0 ? Element('div', { className: props.classes.federation },
-			VueComponent(MkMarqueeText, { duration: 40 }, {
-				default: () => Group() {
-					ForEach(props.instances ?? [], key: (instance) => instance.id) { instance in
-						VueComponent(MkA, {
-							class: props.classes.federationInstance,
-							to: `/instance-info/${instance.host}`,
-							behavior: 'window',
-						}, {
-							default: () => Group() {
-								if (instance.iconUrl) {
-									Element('img', { className: props.classes.federationInstanceIcon, src: props.getInstanceIcon(instance), alt: '' })
+export struct VuneWelcomeEntranceClassicView: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		Group() {
+			if (props.meta) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					MkFeaturedPhotos().className(props.classes.bg)
+					VStack(alignment: 'stretch', spacing: 0).className(props.classes.shape1)
+					VStack(alignment: 'stretch', spacing: 0).className(props.classes.shape2)
+					VStack(alignment: 'stretch', spacing: 0) {
+						Text('Powered by').className(props.classes.poweredBy)
+						Image(misskeysvg, { alt: 'Misskey' }).className(props.classes.misskey)
+					}.className(props.classes.logoWrapper)
+					VStack(alignment: 'stretch', spacing: 0) { MkVisitorDashboard() }.className(props.classes.contents)
+					if (props.instances && props.instances.length > 0) {
+						VStack(alignment: 'stretch', spacing: 0) {
+							ForEach(props.instances, key: instance => instance.id) { instance in
+								MkA(`/instance-info/${instance.host}`, behavior: 'window', className: props.classes.federationInstance) {
+									if (instance.iconUrl) { Image(props.getInstanceIcon(instance), { alt: '' }).className(props.classes.federationInstanceIcon) }
+									Text(instance.host).className('_monospace')
 								}
-								Element('span', { className: '_monospace' }, instance.host)
-							},
-						})
+							}
+						}.className(props.classes.federationTrack)
 					}
-				},
-			}),
-		) : null,
-	);
-});
+				}.className(props.classes.root)
+			}
+		}
+	}}
+export default VuneWelcomeEntranceClassicView

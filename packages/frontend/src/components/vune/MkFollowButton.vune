@@ -1,0 +1,70 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Button, HStack, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import VuneIcon from '@/vune/Icon.vune';
+import { i18n } from '@/i18n.js';
+import { followButtonController } from './follow-button-controller.js';
+import type { FollowButtonController } from './follow-button-controller.js';
+import './MkFollowButton.scss';
+
+type Props = { user: Misskey.entities.UserDetailed; full?: boolean; large?: boolean; className?: string; onUpdateUser?: (user: Misskey.entities.UserDetailed) => void };
+
+function followLabel(controller: FollowButtonController, locked: boolean): string {
+	if (controller.wait.value) return i18n.ts.processing;
+	if (controller.isFollowing.value) return i18n.ts.unfollow;
+	if (controller.pending.value) return i18n.ts.followRequestPending;
+	return locked ? i18n.ts.followRequest : i18n.ts.follow;
+}
+
+function followIcon(controller: FollowButtonController): string {
+	if (controller.isFollowing.value) return 'ti ti-minus';
+	if (controller.pending.value) return 'ti ti-hourglass-empty';
+	return 'ti ti-plus';
+}
+
+function followStateClass(controller: FollowButtonController): string {
+	if (controller.isFollowing.value) return 'mk-vune-follow-button--unfollow';
+	if (controller.pending.value) return 'mk-vune-follow-button--pending';
+	return 'mk-vune-follow-button--follow';
+}
+
+export struct MkFollowButton: View {
+	let props: Props
+	let controller: FollowButtonController
+
+	init(_ props: Props) {
+		self.props = props
+		self.controller = followButtonController(props.user)
+	}
+
+	var body: some View {
+		Button(action: {
+			void controller.click(props.user, props.onUpdateUser)
+		}, label: {
+			HStack(alignment: 'center', spacing: '.52em') {
+				if (props.full) {
+					Text(followLabel(controller, props.user.isLocked === true))
+						.className('mk-vune-follow-button__text')
+				}
+				if (controller.wait.value) {
+					MkLoading(em: true, colored: false)
+				} else {
+					VuneIcon(followIcon(controller))
+				}
+			}
+		})
+			.className([
+				'_button',
+				'mk-vune-follow-button',
+				followStateClass(controller),
+				controller.wait.value ? 'mk-vune-follow-button--wait' : null,
+				props.full ? 'mk-vune-follow-button--full' : null,
+				props.large ? 'mk-vune-follow-button--large' : null,
+				props.className,
+			])
+			.disabled(controller.wait.value)
+	}
+}
+export default MkFollowButton

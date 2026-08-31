@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { ForEach, Group, NavigationLink } from 'vune-ui';
+import { VStack, ForEach, Group, NavigationLink, Text } from 'vune-ui';
 import * as signIn from '@/i.js';
-import { htmlElement } from '@/vune/native.js';
+import VuneIcon from '@/vune/Icon.vune';
 import '@/vune/phase5-migration.scss';
 
 function iconClass(icon: string) {
@@ -17,27 +17,22 @@ function iconStyle(icon: string) {
 	if (icon === 'success') return { color: 'var(--MI_THEME-success)' };
 	return {};
 }
-function announcementsView() {
-	if (!signIn.$i) return Group() {};
-	let announcements = signIn.$i.unreadAnnouncements.filter(x => x.display === 'banner');
-	return Group() {
-		ForEach(announcements, key: (announcement: any) => announcement.id) { announcement in
-			NavigationLink(`/announcements/${announcement.id}`, label: {
-				htmlElement('span', {},
-					htmlElement('span', { className: 'mk-vune-announcement__icon' }, htmlElement('i', { className: iconClass(announcement.icon), style: iconStyle(announcement.icon) })),
-					htmlElement('span', { className: 'mk-vune-announcement__title' }, announcement.title),
-					htmlElement('span', { className: 'mk-vune-announcement__body' }, announcement.text),
-				)
-			}).className('mk-vune-announcement')
-		}
-	}.className('mk-vune-announcements');
-	}
-
 export struct Announcements: View {
-	init() {}
+	let announcements: any[]
+	init() { self.announcements = signIn.$i ? signIn.$i.unreadAnnouncements.filter(x => x.display === 'banner') : [] }
 
 	var body: some View {
-		return announcementsView();
+		VStack(alignment: 'leading', spacing: 0) {
+		ForEach(announcements, key: (announcement: any) => announcement.id) { announcement in
+			NavigationLink(`/announcements/${announcement.id}`, label: {
+				VStack(alignment: 'leading', spacing: 0) {
+					VStack(alignment: 'leading', spacing: 0) { VuneIcon(iconClass(announcement.icon)).style(iconStyle(announcement.icon)) }.className('mk-vune-announcement__icon')
+					Text(announcement.title).className('mk-vune-announcement__title')
+					Text(announcement.text).className('mk-vune-announcement__body')
+				}
+			}).className('mk-vune-announcement')
+		}
+	}.className('mk-vune-announcements')
 	}
 }
 
