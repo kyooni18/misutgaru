@@ -176,9 +176,9 @@ if ($i) {
 .transition_menuDrawerBg_enterActive,
 .transition_menuDrawerBg_leaveActive {
 	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
-		-webkit-backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1),
-		backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: opacity var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized),
+		-webkit-backdrop-filter var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized),
+		backdrop-filter var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized);
 }
 .transition_menuDrawerBg_enterFrom,
 .transition_menuDrawerBg_leaveTo {
@@ -190,7 +190,7 @@ if ($i) {
 .transition_menuDrawer_leaveActive {
 	opacity: 1;
 	transform: translateX(0);
-	transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: transform var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized), opacity var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized);
 }
 .transition_menuDrawer_enterFrom,
 .transition_menuDrawer_leaveTo {
@@ -201,9 +201,9 @@ if ($i) {
 .transition_widgetsDrawerBg_enterActive,
 .transition_widgetsDrawerBg_leaveActive {
 	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
-		-webkit-backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1),
-		backdrop-filter 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: opacity var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized),
+		-webkit-backdrop-filter var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized),
+		backdrop-filter var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized);
 }
 .transition_widgetsDrawerBg_enterFrom,
 .transition_widgetsDrawerBg_leaveTo {
@@ -215,7 +215,7 @@ if ($i) {
 .transition_widgetsDrawer_leaveActive {
 	opacity: 1;
 	transform: translateX(0);
-	transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: transform var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized), opacity var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized);
 }
 .transition_widgetsDrawer_enterFrom,
 .transition_widgetsDrawer_leaveTo {
@@ -226,7 +226,7 @@ if ($i) {
 .transition_notification_move,
 .transition_notification_enterActive,
 .transition_notification_leaveActive {
-	transition: opacity 0.3s, transform 0.3s !important;
+	transition: opacity var(--MI-motion-duration-slow) var(--MI-motion-ease-standard), transform var(--MI-motion-duration-slow) var(--MI-motion-ease-emphasized) !important;
 }
 .transition_notification_enterFrom {
 	opacity: 0;

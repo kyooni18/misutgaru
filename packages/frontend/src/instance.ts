@@ -54,7 +54,10 @@ if (providedMeta != null && providedAt > cachedAt) {
 
 // TODO: instanceをリアクティブにするかは再考の余地あり
 
-export const instance: Misskey.entities.MetaDetailed = reactive(cachedMeta ?? {});
+// The shell intentionally starts before metadata is guaranteed to be present;
+// fetchInstance() hydrates this stable reactive object in place. Keep that
+// runtime behavior while making the temporary empty state explicit to TS.
+export const instance = reactive(cachedMeta ?? {} as Misskey.entities.MetaDetailed) as Misskey.entities.MetaDetailed;
 
 export async function fetchInstance(force = false): Promise<Misskey.entities.MetaDetailed> {
 	if (!force) {

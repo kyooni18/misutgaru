@@ -1,55 +1,66 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkInfo from '@/components/MkInfo.vue';
-import MkNote from '@/components/MkNote.vue';
-import MkPostForm from '@/components/MkPostForm.vue';
-import MkFormSection from '@/components/form/section.vue';
+import MkInfo from '@/components/vune/MkInfo.vune';
+import MkNote from '@/components/vune/MkNote.vune';
+import MkPostForm from '@/components/vune/MkPostForm.vune';
+import MkFormSection from '@/components/vune/MkFormSection.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 import '@/vune/phase6-migration.scss';
 
 type Props = { exampleCWNote: Misskey.entities.Note };
 
-function visibilityRow(icon: string, title: string, description: string) {
-	return Element('div', {},
-		Element('i', { className: icon }),
-		' ',
-		Element('b', {}, title),
-		` … ${description}`,
-	);
+struct VisibilityTutorialRow: View {
+	let icon: string
+	let title: string
+	let description: string
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) { VuneIcon(icon); Text(' '); Text(title).bold(); Text(` … ${description}`) }
+	}
 }
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: '_gaps' },
-		Element('div', { style: { textAlign: 'center', padding: '0 16px' } }, i18n.ts._initialTutorial._postNote.description1),
-		VueComponent(MkPostForm, { class: 'mk-vune-tutorial-example', mock: true, autofocus: false }),
-		VueComponent(MkFormSection, {}, {
-			label: () => Text(i18n.ts.visibility),
-			default: () => Element('div', { className: '_gaps' },
-				Element('div', {}, i18n.ts._initialTutorial._postNote._visibility.description),
-				visibilityRow('ti ti-world', i18n.ts._visibility.public, i18n.ts._initialTutorial._postNote._visibility.public),
-				visibilityRow('ti ti-home', i18n.ts._visibility.home, i18n.ts._initialTutorial._postNote._visibility.home),
-				visibilityRow('ti ti-lock', i18n.ts._visibility.followers, i18n.ts._initialTutorial._postNote._visibility.followers),
-				Element('div', { className: '_gaps_s' },
-					visibilityRow('ti ti-mail', i18n.ts._visibility.specified, i18n.ts._initialTutorial._postNote._visibility.direct),
-					VueComponent(MkInfo, { warn: true }, {
-						default: () => Group() {
-							Element('b', {}, i18n.ts._initialTutorial._postNote._visibility.doNotSendConfidencialOnDirect1)
-							` ${i18n.ts._initialTutorial._postNote._visibility.doNotSendConfidencialOnDirect2}`
-						},
-					}),
-				),
-				visibilityRow('ti ti-rocket-off', i18n.ts._visibility.disableFederation, i18n.ts._initialTutorial._postNote._visibility.localOnly),
-			),
-		}),
-		VueComponent(MkFormSection, {}, {
-			label: () => Text(i18n.ts._initialTutorial._postNote._cw.title),
-			default: () => Element('div', { className: '_gaps' },
-				Element('div', {}, i18n.ts._initialTutorial._postNote._cw.description),
-				VueComponent(MkNote, { class: 'mk-vune-tutorial-example', note: props.exampleCWNote, mock: true }),
-				Element('div', {}, i18n.ts._initialTutorial._postNote._cw.useCases),
-			),
-		}),
-	)
-);
+
+
+export struct VuneMkTutorialDialogPostNoteView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			Text(i18n.ts._initialTutorial._postNote.description1).multilineTextAlignment('center').padding({ horizontal: 16 })
+			MkPostForm(mock: true, autofocus: false, className: 'mk-vune-tutorial-example')
+			MkFormSection(label: Text(i18n.ts.visibility)) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(i18n.ts._initialTutorial._postNote._visibility.description)
+					VisibilityTutorialRow(icon: 'ti ti-world', title: i18n.ts._visibility.public, description: i18n.ts._initialTutorial._postNote._visibility.public)
+					VisibilityTutorialRow(icon: 'ti ti-home', title: i18n.ts._visibility.home, description: i18n.ts._initialTutorial._postNote._visibility.home)
+					VisibilityTutorialRow(icon: 'ti ti-lock', title: i18n.ts._visibility.followers, description: i18n.ts._initialTutorial._postNote._visibility.followers)
+					VStack(alignment: 'stretch', spacing: 0) {
+						VisibilityTutorialRow(icon: 'ti ti-mail', title: i18n.ts._visibility.specified, description: i18n.ts._initialTutorial._postNote._visibility.direct)
+						MkInfo(warn: true) {
+							Group() {
+								Text(i18n.ts._initialTutorial._postNote._visibility.doNotSendConfidencialOnDirect1).bold()
+								Text(` ${i18n.ts._initialTutorial._postNote._visibility.doNotSendConfidencialOnDirect2}`)
+							}
+						}
+					}.className('_gaps_s')
+					VisibilityTutorialRow(icon: 'ti ti-rocket-off', title: i18n.ts._visibility.disableFederation, description: i18n.ts._initialTutorial._postNote._visibility.localOnly)
+				}.className('_gaps')
+			}
+			MkFormSection(label: Text(i18n.ts._initialTutorial._postNote._cw.title)) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(i18n.ts._initialTutorial._postNote._cw.description)
+					MkNote(props.exampleCWNote, className: 'mk-vune-tutorial-example')
+					Text(i18n.ts._initialTutorial._postNote._cw.useCases)
+				}.className('_gaps')
+			}
+		}.className('_gaps')
+	}
+}
+
+export default VuneMkTutorialDialogPostNoteView

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkA :to="`/gallery/${post.id}`" class="ttasepnz _panel" tabindex="-1" @pointerenter="enterHover" @pointerleave="leaveHover">
 	<div class="thumbnail">
-		<Transition>
+		<Transition :css="prefer.s.animation">
 			<MkImgWithBlurhash
 				class="img layered"
 				:transition="safe ? null : {
@@ -17,7 +17,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:src="post.files?.[0]?.thumbnailUrl"
 				:hash="post.files?.[0]?.blurhash"
 				:forceBlurhash="!show"
-				loading="lazy"
 			/>
 		</Transition>
 	</div>
@@ -43,7 +42,7 @@ const props = defineProps<{
 }>();
 
 const hover = ref(false);
-const safe = computed(() => prefer.s.nsfw === 'ignore' || prefer.s.nsfw === 'respect' && !props.post.isSensitive);
+const safe = computed(() => prefer.r.nsfw.value === 'ignore' || prefer.r.nsfw.value === 'respect' && !props.post.isSensitive);
 const show = computed(() => safe.value || hover.value);
 
 function enterHover(): void {

@@ -149,19 +149,20 @@ export class DriveFolderEntityService {
 
 			const ids = [...folderMap.keys()];
 			if (ids.length > 0) {
-				const folderCounts = await this.driveFoldersRepository.createQueryBuilder('folder')
-					.select('folder.parentId', 'parentId')
-					.addSelect('COUNT(*)', 'count')
-					.where('folder.parentId IN (:...ids)', { ids })
-					.groupBy('folder.parentId')
-					.getRawMany<{ parentId: string; count: string }>();
-
-				const fileCounts = await this.driveFilesRepository.createQueryBuilder('file')
-					.select('file.folderId', 'folderId')
-					.addSelect('COUNT(*)', 'count')
-					.where('file.folderId IN (:...ids)', { ids })
-					.groupBy('file.folderId')
-					.getRawMany<{ folderId: string; count: string }>();
+				const [folderCounts, fileCounts] = await Promise.all([
+					this.driveFoldersRepository.createQueryBuilder('folder')
+						.select('folder.parentId', 'parentId')
+						.addSelect('COUNT(*)', 'count')
+						.where('folder.parentId IN (:...ids)', { ids })
+						.groupBy('folder.parentId')
+						.getRawMany<{ parentId: string; count: string }>(),
+					this.driveFilesRepository.createQueryBuilder('file')
+						.select('file.folderId', 'folderId')
+						.addSelect('COUNT(*)', 'count')
+						.where('file.folderId IN (:...ids)', { ids })
+						.groupBy('file.folderId')
+						.getRawMany<{ folderId: string; count: string }>(),
+				]);
 
 				foldersCountMap = new Map(folderCounts.map(row => [row.parentId, Number(row.count)]));
 				filesCountMap = new Map(fileCounts.map(row => [row.folderId, Number(row.count)]));

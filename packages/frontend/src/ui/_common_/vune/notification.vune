@@ -1,21 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import XNotification from '@/components/MkNotification.vue';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
 import { Material } from '@/vune/material.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-import '@/vune/phase5-migration.scss';
-
-type Props = { notification: Misskey.entities.Notification };
-export default createVuneComponent<Props>((props) =>
-	Group() {
-		MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
-			VueComponent(XNotification, {
-				notification: props.notification,
-				full: false,
-				class: 'notification',
-			})
-		}
-	}.className('mk-vune-notification-shell')
-);
+type Props={notification:Misskey.entities.Notification};
+export struct VuneNotificationView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { MaterialSurface(Material.regular,opaqueBackground:'var(--MI_THEME-bg)',animated:true){VStack(alignment: 'stretch', spacing: 0){if((props.notification as any).user){MkAvatar((props.notification as any).user,className:'notification__avatar')}Text((props.notification as any).type??'notification');if((props.notification as any).createdAt){MkTimeValue((props.notification as any).createdAt)}}.className('notification')}.className('mk-vune-notification-shell') } }
+export default VuneNotificationView

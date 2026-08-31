@@ -1,20 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueSlot, vuneBoolean } from '@/vune/vue.js';
-import '@/vune/phase6-migration.scss';
-
-type Props = { showDeckNav?: boolean; onGoToDeck?: () => void };
-
-export default createVuneComponent<Props>((props, slots) =>
-	Element('div', {},
-		Element('div', { className: 'mk-vune-zen__contents' },
-			vuneBoolean(props.showDeckNav, false) ? Element('button', {
-				className: '_buttonPrimary mk-vune-zen__deck-nav',
-				onClick: () => props.onGoToDeck?.(),
-			}, Text(i18n.ts.goToDeck)) : null,
-			Element('div', { className: 'mk-vune-zen__route' }, VueSlot(slots.router)),
-		),
-		VueSlot(slots.common),
-	)
-);
+/* @misutgaru-vune-native */
+import { VStack, Text, type ViewGraphValue } from 'vune-ui'; import MkButton from '@/components/vune/MkButton.vune'; import { i18n } from '@/i18n.js';
+type Props={showDeckNav?:boolean;onGoToDeck?:()=>void}; function deck(props:Props){props.onGoToDeck?.()}
+export struct VuneZenView: View { let props:Props; let router:ViewGraphValue; let common:ViewGraphValue; init(_ props:Props,@ViewBuilder router:()=>ViewGraphValue,@ViewBuilder common:()=>ViewGraphValue){self.props=props;self.router=router();self.common=common()} var body:some View { VStack(alignment: 'stretch', spacing: 0){VStack(alignment: 'stretch', spacing: 0){if(props.showDeckNav){MkButton(primary:true,className:'mk-vune-zen__deck-nav',onClick:{deck(props)}){Text(i18n.ts.goToDeck)}};VStack(alignment: 'stretch', spacing: 0){router}.className('mk-vune-zen__route')}.className('mk-vune-zen__contents');common} } }
+export default VuneZenView

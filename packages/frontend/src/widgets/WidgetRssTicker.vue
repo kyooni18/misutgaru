@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkEllipsis/>
 		</div>
 		<div v-else>
-			<Transition :name="$style.change" mode="default" appear>
+			<Transition :name="$style.change" mode="default" appear :css="prefer.s.animation">
 				<MkMarqueeText :key="key" :duration="widgetProps.duration" :reverse="widgetProps.reverse">
 					<span v-for="item in items" :key="item.link" :class="$style.item">
 						<a :href="item.link" rel="nofollow noopener" target="_blank" :title="item.title">{{ item.title }}</a><span :class="$style.divider"></span>
@@ -33,6 +33,7 @@ import { url as base } from '@@/js/config.js';
 import { useInterval } from '@@/js/use-interval.js';
 import { tryParseUrl } from '@@/js/url.js';
 import { useWidgetPropsManager } from './widget.js';
+import { prefer } from '@/preferences.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import MkMarqueeText from '@/components/MkMarqueeText.vue';

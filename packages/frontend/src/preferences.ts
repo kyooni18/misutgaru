@@ -5,7 +5,7 @@
 
 import { BroadcastChannel } from 'broadcast-channel';
 import { createVisibilityAwareInterval } from '@@/js/interval.js';
-import type { StorageProvider } from '@/preferences/manager.js';
+import type { PossiblyNonNormalizedPreferencesProfile, StorageProvider } from '@/preferences/manager.js';
 import { cloudBackup } from '@/preferences/utility.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { isSameScope, PreferencesManager } from '@/preferences/manager.js';
@@ -17,14 +17,29 @@ import { TAB_ID } from '@/tab-id.js';
 // クラウド同期用グループ名
 const syncGroup = 'default';
 
+function isStoredPreferencesProfile(value: unknown): value is PossiblyNonNormalizedPreferencesProfile {
+	if (value == null || typeof value !== 'object' || Array.isArray(value)) return false;
+	const profile = value as Record<string, unknown>;
+	const preferences = profile.preferences;
+	return profile.type === 'main'
+		&& typeof profile.id === 'string'
+		&& typeof profile.version === 'string'
+		&& typeof profile.modifiedAt === 'number'
+		&& Number.isFinite(profile.modifiedAt)
+		&& typeof profile.name === 'string'
+		&& preferences != null
+		&& typeof preferences === 'object'
+		&& !Array.isArray(preferences);
+}
+
 const io: StorageProvider = {
-	load: () => {
+	load: (): PossiblyNonNormalizedPreferencesProfile | null => {
 		const savedProfileRaw = miLocalStorage.getItem('preferences');
 		if (savedProfileRaw == null) return null;
 
 		try {
 			const parsed = JSON.parse(savedProfileRaw) as unknown;
-			return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+			return isStoredPreferencesProfile(parsed) ? parsed : null;
 		} catch (error) {
 			console.warn('[preferences] Ignoring invalid cached preferences', error);
 			return null;

@@ -1,37 +1,57 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Text } from 'vune-ui';
 import type { SortOrder } from '@/components/MkSortOrderEditor.define.js';
-import MkTagItem from '@/components/MkTagItem.vue';
-import MkButton from '@/components/MkButton.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import MkTagItem from '@/components/vune/MkTagItem.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 
-type Props = {
-	currentOrders: SortOrder<string>[];
-	classes: Record<string, string>;
-	onToggle?: (order: SortOrder<string>) => void;
-	onAdd?: (ev: PointerEvent) => void;
-	onRemove?: (order: SortOrder<string>) => void;
-};
+type SortOrderAction = (order: SortOrder<string>) => void;
+type AddAction = (event: PointerEvent) => void;
+type StyleClasses = Record<string, string>;
 
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: props.classes.sortOrderArea },
-		Element('div', { className: props.classes.sortOrderAreaTags },
-			ForEach(props.currentOrders, key: (order) => order.key) { order in
-				VueComponent(MkTagItem, {
-					iconClass: order.direction === '+' ? 'ti ti-arrow-up' : 'ti ti-arrow-down',
-					exButtonIconClass: 'ti ti-x',
-					content: order.key,
-					class: props.classes.sortOrderTag,
-					onClick: () => props.onToggle?.(order),
-					onExButtonClick: () => props.onRemove?.(order),
-				})
-			},
-		),
-		VueComponent(MkButton, {
-			class: props.classes.sortOrderAddButton,
-			onClick: (ev: PointerEvent) => props.onAdd?.(ev),
-		}, {
-			default: () => Element('span', { className: 'ti ti-plus' }),
-		}),
-	)
-);
+function ignoreSortOrderAction(_order: SortOrder<string>): void {}
+function ignoreAddAction(_event: PointerEvent): void {}
+
+export struct MkSortOrderEditor: View {
+	let currentOrders: SortOrder<string>[]
+	let classes: StyleClasses
+	let onToggle: SortOrderAction
+	let onAdd: AddAction
+	let onRemove: SortOrderAction
+
+	init(
+		_ currentOrders: SortOrder<string>[],
+		classes: StyleClasses,
+		@Action onToggle: SortOrderAction = ignoreSortOrderAction,
+		@Action onAdd: AddAction = ignoreAddAction,
+		@Action onRemove: SortOrderAction = ignoreSortOrderAction,
+	) {
+		self.currentOrders = currentOrders
+		self.classes = classes
+		self.onToggle = onToggle
+		self.onAdd = onAdd
+		self.onRemove = onRemove
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				ForEach(currentOrders, key: order => order.key) { order in
+					MkTagItem(
+						order.key,
+						icon: order.direction === '+' ? 'ti ti-arrow-up' : 'ti ti-arrow-down',
+						extraIcon: 'ti ti-x',
+						onClick: { onToggle(order) },
+						onExtra: { onRemove(order) },
+					)
+						.className(classes.sortOrderTag)
+				}
+			}.className(classes.sortOrderAreaTags)
+			MkButton(className: classes.sortOrderAddButton, onClick: onAdd) {
+				Text('').className('ti ti-plus').withProps({ 'aria-hidden': true })
+			}
+		}.className(classes.sortOrderArea)
+	}
+}
+
+export default MkSortOrderEditor

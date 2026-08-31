@@ -1,25 +1,34 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { ForEach, Group } from 'vune-ui';
-import * as Misskey from 'misskey-js';
+import type * as Misskey from 'misskey-js';
 import type { IPaginator, ExtractorFunction } from '@/utility/paginator.js';
-import MkUserInfo from '@/components/MkUserInfo.vue';
-import MkPagination from '@/components/MkPagination.vue';
-import MkResult from '@/components/global/MkResult.vue';
+import MkUserInfo from '@/components/vune/MkUserInfo.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase5-migration.scss';
 
 type Props = { paginator: IPaginator; noGap?: boolean; extractor?: ExtractorFunction<any, Misskey.entities.UserDetailed> };
-export default createVuneComponent<Props>((props) => {
+type UserRow = { key: string; user: Misskey.entities.UserDetailed };
+
+function rows(props: Props): UserRow[] {
 	const extractor = props.extractor ?? ((item: any) => item as Misskey.entities.UserDetailed);
-	return VueComponent(MkPagination, { paginator: props.paginator }, {
-		empty: () => VueComponent(MkResult, { type: 'empty', text: i18n.ts.noUsers }),
-		default: (slotProps: any) => Group() {
-			Group() {
-				ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
-					VueComponent(MkUserInfo, { user: extractor(item) })
-				}
-			}.className('mk-vune-user-list')
-		},
+	return (props.paginator.items.value as any[]).map((item, index) => {
+		const user = extractor(item);
+		return { key: user.id || String(index), user };
 	});
-});
+}
+
+export struct MkUserList: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		return MkPagination(props.paginator, empty: MkResult('empty', text: i18n.ts.noUsers)) {
+			Group() {
+				ForEach(rows(props), key: row => row.key) { row in MkUserInfo({ user: row.user }) }
+			}.className(['mk-vune-user-list', props.noGap ? 'mk-vune-user-list--no-gap' : null])
+		}
+	}
+}
+export default MkUserList

@@ -39,6 +39,7 @@ const rootEl = useTemplateRef('rootEl');
 const showing = ref(true);
 
 const zIndex = ref<number>(os.claimZIndex('high'));
+const VIEWPORT_MARGIN = 16;
 
 function close() {
 	showing.value = false;
@@ -76,8 +77,8 @@ onMounted(() => {
 	const viewportLeft = window.scrollX;
 	const viewportTop = window.scrollY;
 	// clientWidth/clientHeight already exclude classic scrollbars, unlike innerWidth.
-	const viewportRight = viewportLeft + window.document.documentElement.clientWidth;
-	const viewportBottom = viewportTop + window.document.documentElement.clientHeight;
+	const viewportRight = viewportLeft + window.document.documentElement.clientWidth - VIEWPORT_MARGIN;
+	const viewportBottom = viewportTop + window.document.documentElement.clientHeight - VIEWPORT_MARGIN;
 	let opensLeft = false;
 	let opensUp = false;
 
@@ -91,8 +92,8 @@ onMounted(() => {
 		opensUp = true;
 	}
 
-	left = Math.max(viewportLeft, left);
-	top = Math.max(viewportTop, top);
+	left = Math.max(viewportLeft + VIEWPORT_MARGIN, left);
+	top = Math.max(viewportTop + VIEWPORT_MARGIN, top);
 
 	root.style.top = `${top}px`;
 	root.style.left = `${left}px`;
@@ -117,7 +118,6 @@ function onMousedown(evt: MouseEvent) {
 	position: absolute;
 	transform: scale(var(--mk-context-menu-scale));
 	transform-origin: left top;
-	will-change: transform, opacity;
 
 	:global(.vune-material--animated) {
 		animation: none;

@@ -4,14 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneFollowList :type="type" :followingPaginator="followingPaginator" :followersPaginator="followersPaginator"/>
+<VuneFollowListHost :type="type" :followingPaginator="followingPaginator" :followersPaginator="followersPaginator"/>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
 import VuneFollowList from './vune/follow-list.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { Paginator } from '@/utility/paginator.js';
+
+const VuneFollowListHost = createVuneWebHost(VuneFollowList, { deepProps: ['followingPaginator', 'followersPaginator'] });
 
 const props = defineProps<{
 	user: Misskey.entities.User;

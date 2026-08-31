@@ -1,63 +1,16 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkResult from '@/components/global/MkResult.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkPagination from '@/components/MkPagination.vue';
-import MkInviteCode from '@/components/MkInviteCode.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
+import MkInviteCode from '@/components/vune/MkInviteCode.vune';
+import VuneIcon from '@/vune/Icon.vune';
 import { i18n } from '@/i18n.js';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
-
-type Props = {
-	showInvites?: boolean;
-	resetCycle?: string | null;
-	inviteLimit: number;
-	currentInviteLimit?: number | null;
-	paginator: IPaginator;
-	onCreate?: () => void;
-	onDeleted?: (id: string) => void;
-};
-
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, {}, {
-		default: () => !vuneBoolean(props.showInvites) ? Element('div', {
-			className: '_spacer',
-			style: { '--MI_SPACER-w': '1200px' },
-		}, VueComponent(MkResult, { type: 'empty' })) : Element('div', {
-			className: '_spacer',
-			style: { '--MI_SPACER-w': '800px' },
-		},
-			Element('div', { className: '_gaps_m', style: { textAlign: 'center' } },
-				props.resetCycle && props.inviteLimit
-					? Element('div', {}, i18n.tsx.inviteLimitResetCycle({ time: props.resetCycle, limit: props.inviteLimit }))
-					: null,
-				VueComponent(MkButton, {
-					inline: true,
-					primary: true,
-					rounded: true,
-					disabled: props.currentInviteLimit !== null && props.currentInviteLimit !== undefined && props.currentInviteLimit <= 0,
-					onClick: () => props.onCreate?.(),
-				}, {
-					default: () => Group() {
-						Element('i', { className: 'ti ti-user-plus' })
-						` ${i18n.ts.createInviteCode}`
-					},
-				}),
-				props.currentInviteLimit !== null && props.currentInviteLimit !== undefined
-					? Element('div', {}, i18n.tsx.createLimitRemaining({ limit: props.currentInviteLimit }))
-					: null,
-				VueComponent(MkPagination, { paginator: props.paginator }, {
-					default: (slotProps: any) => Element('div', { className: '_gaps_s' },
-						ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
-							VueComponent(MkInviteCode, {
-								invite: item,
-								onDeleted: (id: string) => props.onDeleted?.(id),
-							})
-						},
-					),
-				}),
-			),
-		),
-	})
-);
+type Props={showInvites?:boolean;resetCycle?:string|null;inviteLimit:number;currentInviteLimit?:number|null;paginator:IPaginator;onCreate?:()=>void;onDeleted?:(id:string)=>void};
+const classes={root:'mk-vune-invite-code',items:'mk-vune-invite-code__items',label:'mk-vune-invite-code__label',avatar:'mk-vune-invite-code__avatar',user:'mk-vune-invite-code__user'};
+function createInvite(props:Props){props.onCreate?.()}
+export struct VuneInviteView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { PageWithHeader(pageMetadata:null){if(!props.showInvites){VStack(alignment: 'stretch', spacing: 0){MkResult('empty')}.className('_spacer').style({'--MI_SPACER-w':'1200px'})}else{VStack(alignment: 'stretch', spacing: 0){if(props.resetCycle&&props.inviteLimit){Text(i18n.tsx.inviteLimitResetCycle({time:props.resetCycle,limit:props.inviteLimit}))};MkButton(inline:true,primary:true,rounded:true,disabled:props.currentInviteLimit!=null&&props.currentInviteLimit<=0,onClick:{createInvite(props)}){Group(){VuneIcon('ti ti-user-plus');Text(` ${i18n.ts.createInviteCode}`)}};if(props.currentInviteLimit!=null){Text(i18n.tsx.createLimitRemaining({limit:props.currentInviteLimit}))};MkPagination(props.paginator){VStack(alignment: 'stretch', spacing: 0){ForEach(props.paginator.items.value as any[],key:item=>item.id){item in MkInviteCode({invite:item,classes})}}.className('_gaps_s')}}.className('_spacer _gaps_m').style({'--MI_SPACER-w':'800px',textAlign:'center'})}} } }
+export default VuneInviteView

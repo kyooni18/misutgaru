@@ -1,28 +1,45 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, HStack } from 'vune-ui';
-import { createVuneComponent, VueSlot, vuneBoolean } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { HStack, VStack, type ViewGraphValue } from 'vune-ui';
+import { i18n } from '@/i18n.js';
+import VuneIcon from '@/vune/Icon.vune';
+import MkButton from './MkButton.vune';
 import './misskey-vune.scss';
 
-type Props = {
-	warn?: boolean;
-	closable?: boolean;
-	onClose?: () => void;
-};
+function ignoreInfoClose(): void {}
 
-export default createVuneComponent<Props>((props, slots) =>
-	HStack(alignment: 'center', spacing: 0) {
-		Element('i', {
-			className: `${vuneBoolean(props.warn) ? 'ti ti-alert-triangle' : 'ti ti-info-circle'} mk-vune-info__icon`,
-		})
-		Element('div', { className: 'mk-vune-info__content' }, VueSlot(slots.default))
-		if (vuneBoolean(props.closable)) {
-			Element('button', {
-				className: '_button mk-vune-info__close',
-				type: 'button',
-				onClick: () => props.onClose?.(),
-			}, Element('i', { className: 'ti ti-x' }))
-		}
+export struct MkInfo: View {
+	let warn: boolean
+	let closable: boolean
+	let onClose: () => void
+	let content: ViewGraphValue
+
+	init(
+		warn: boolean = false,
+		closable: boolean = false,
+		@Action onClose: () => void = ignoreInfoClose,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.warn = warn
+		self.closable = closable
+		self.onClose = onClose
+		self.content = content()
 	}
-		.style({ justifyContent: 'flex-start' })
-		.className(['_selectable', 'mk-vune-info', vuneBoolean(props.warn) ? 'mk-vune-info--warn' : null])
-);
+
+	var body: some View {
+		HStack(alignment: 'center', spacing: 0) {
+			VuneIcon(warn ? 'ti ti-alert-triangle' : 'ti ti-info-circle', className: 'mk-vune-info__icon')
+			VStack(alignment: 'leading', spacing: 0) { content }.className('mk-vune-info__content')
+			if (closable) {
+				MkButton(transparent: true, iconOnly: true, className: 'mk-vune-info__close', onClick: { onClose() }) {
+					VuneIcon('ti ti-x')
+				}
+					.accessibilityLabel(i18n.ts.close)
+			}
+		}
+			.style({ justifyContent: 'flex-start' })
+			.className(['_selectable', 'mk-vune-info', warn ? 'mk-vune-info--warn' : null])
+	}
+}
+
+export default MkInfo

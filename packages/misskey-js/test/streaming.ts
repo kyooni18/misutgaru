@@ -1,8 +1,59 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import WS from 'vitest-websocket-mock';
 import Stream from '../src/streaming.js';
 
 describe('Streaming', () => {
+	test('backs off when the server is unreachable', async () => {
+		vi.useFakeTimers();
+		let attempts = 0;
+		let stream: Stream | undefined;
+
+		class FailingWebSocket extends EventTarget {
+			public static readonly CONNECTING = 0;
+			public static readonly OPEN = 1;
+			public static readonly CLOSING = 2;
+			public static readonly CLOSED = 3;
+
+			public binaryType: BinaryType = 'blob';
+			public bufferedAmount = 0;
+			public extensions = '';
+			public protocol = '';
+			public readyState = FailingWebSocket.CONNECTING;
+			public readonly url: string;
+
+			constructor(url: string) {
+				super();
+				this.url = url;
+				attempts++;
+				setTimeout(() => {
+					this.readyState = FailingWebSocket.CLOSED;
+					this.dispatchEvent(new Event('close'));
+				}, 0);
+			}
+
+			public send(): void {}
+
+			public close(): void {
+				this.readyState = FailingWebSocket.CLOSED;
+			}
+		}
+
+		try {
+			stream = new Stream('https://misskey.test', null, {
+				WebSocket: FailingWebSocket,
+			});
+
+			await vi.advanceTimersByTimeAsync(0);
+			expect(attempts).toBe(1);
+
+			await vi.advanceTimersByTimeAsync(999);
+			expect(attempts).toBe(1);
+		} finally {
+			stream?.close();
+			vi.useRealTimers();
+		}
+	});
+
 	test('useChannel', async () => {
 		const server = new WS('wss://misskey.test/streaming');
 		const stream = new Stream('https://misskey.test', { token: 'TOKEN' });

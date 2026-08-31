@@ -11,9 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="[$style.root, { [$style.inline]: inline, [$style.primary]: primary, [$style.gradate]: gradate, [$style.danger]: danger, [$style.rounded]: rounded, [$style.full]: full, [$style.small]: small, [$style.large]: large, [$style.transparent]: transparent, [$style.asLike]: asLike, [$style.iconOnly]: iconOnly, [$style.wait]: wait, [$style.active]: active }]"
 	v-bind="cProps"
 	@click="emit('click', $event)"
-	@mousedown="onMousedown"
 >
-	<div ref="ripples" :class="$style.ripples" :data-children-class="$style.ripple"></div>
 	<div :class="$style.content">
 		<slot></slot>
 	</div>
@@ -62,7 +60,6 @@ const emit = defineEmits<{
 }>();
 
 const el = useTemplateRef('el');
-const ripples = useTemplateRef('ripples');
 
 const component = computed(() => {
 	if (props.type === 'a') return 'a';
@@ -87,84 +84,66 @@ onMounted(() => {
 		});
 	}
 });
-
-function distance(p: { x: number; y: number }, q: { x: number; y: number }): number {
-	return Math.hypot(p.x - q.x, p.y - q.y);
-}
-
-function calcCircleScale(boxW: number, boxH: number, circleCenterX: number, circleCenterY: number): number {
-	const origin = { x: circleCenterX, y: circleCenterY };
-	const dist1 = distance({ x: 0, y: 0 }, origin);
-	const dist2 = distance({ x: boxW, y: 0 }, origin);
-	const dist3 = distance({ x: 0, y: boxH }, origin);
-	const dist4 = distance({ x: boxW, y: boxH }, origin);
-	return Math.max(dist1, dist2, dist3, dist4) * 2;
-}
-
-function onMousedown(evt: MouseEvent): void {
-	if (evt.button !== 0 || props.disabled || props.wait) return;
-	const target = evt.currentTarget as HTMLElement | null;
-	if (target == null || ripples.value == null) return;
-
-	const rect = target.getBoundingClientRect();
-	const ripple = window.document.createElement('div');
-	ripple.classList.add(ripples.value.dataset.childrenClass!);
-	ripple.style.top = (evt.clientY - rect.top - 1).toString() + 'px';
-	ripple.style.left = (evt.clientX - rect.left - 1).toString() + 'px';
-
-	const circleCenterX = evt.clientX - rect.left;
-	const circleCenterY = evt.clientY - rect.top;
-	const scale = calcCircleScale(target.clientWidth, target.clientHeight, circleCenterX, circleCenterY);
-	ripple.style.setProperty('--ripple-scale', String(scale / 2));
-	ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
-	ripples.value.appendChild(ripple);
-}
 </script>
 
 <style lang="scss" module>
 .root {
-	position: relative;
-	z-index: 1; // 他コンポーネントのbox-shadowに隠されないようにするため
+	--mk-button-padding-y: var(--MI-button-padding-y);
+	--mk-button-padding-x: var(--MI-button-padding-x);
+
 	display: block;
-	min-width: 100px;
 	width: max-content;
-	padding: 7px 14px;
+	padding: var(--mk-button-padding-y) var(--mk-button-padding-x);
 	text-align: center;
-	font-weight: normal;
+	font-weight: var(--MI-button-font-weight);
 	font-size: 95%;
-	box-shadow: none;
+	line-height: 1.15;
+	box-shadow: var(--MI-button-shadow);
 	text-decoration: none;
-	background: var(--MI_THEME-buttonBg);
-	border-radius: 5px;
+	background: var(--MI-button-surface);
+	border: thin solid var(--MI-button-border);
+	border-radius: var(--MI-button-radius);
 	overflow: clip;
 	box-sizing: border-box;
-	transition: background 0.1s ease;
+	transition:
+		background var(--MI-motion-duration-fast) var(--MI-motion-ease-standard),
+		border-color var(--MI-motion-duration-fast) var(--MI-motion-ease-standard),
+		box-shadow var(--MI-motion-duration-fast) var(--MI-motion-ease-standard),
+		color var(--MI-motion-duration-fast) var(--MI-motion-ease-standard),
+		opacity var(--MI-motion-duration-fast) var(--MI-motion-ease-standard);
 
 	&:hover {
 		text-decoration: none;
 	}
 
 	&:not(:disabled):hover {
-		background: var(--MI_THEME-buttonHoverBg);
+		background: var(--MI-button-surface-hover);
+		border-color: var(--MI-button-border-hover);
+		box-shadow: 0 0.18em 0.55em color-mix(in srgb, var(--MI_THEME-shadow) 10%, transparent), inset 0 0.04em 0 color-mix(in srgb, var(--MI_THEME-fg) 5%, transparent);
 	}
 
 	&:not(:disabled):active {
-		background: var(--MI_THEME-buttonHoverBg);
+		background: var(--MI-button-surface-pressed);
+		border-color: var(--MI-button-border-hover);
+		box-shadow: var(--MI-button-shadow-pressed);
 	}
 
 	&.iconOnly {
-		padding: 7px;
-		min-width: auto;
+		padding-inline: var(--mk-button-padding-y);
 	}
 
 	&.small {
+		--mk-button-padding-y: var(--MI-button-padding-y-small);
+		--mk-button-padding-x: var(--MI-button-padding-x-small);
+
 		font-size: 90%;
-		padding: 6px 12px;
 	}
 
 	&.large {
+		--mk-button-padding-y: var(--MI-button-padding-y-large);
+		--mk-button-padding-x: var(--MI-button-padding-x-large);
+
 		font-size: 100%;
-		padding: 8px 16px;
 	}
 
 	&.full {
@@ -172,96 +151,136 @@ function onMousedown(evt: MouseEvent): void {
 	}
 
 	&.rounded {
-		border-radius: 999px;
+		border-radius: calc(1em + var(--mk-button-padding-y));
 	}
 
 	&.primary {
-		font-weight: bold;
-		color: var(--MI_THEME-fgOnAccent) !important;
-		background: var(--MI_THEME-accent);
+		color: var(--MI_THEME-accent) !important;
+		background: var(--MI-button-accent-surface);
+		border-color: color-mix(in srgb, var(--MI_THEME-accent) 10%, transparent);
+		box-shadow: none;
 
 		&:not(:disabled):hover {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+			background: var(--MI-button-accent-surface-hover);
+			border-color: color-mix(in srgb, var(--MI_THEME-accent) 16%, transparent);
+			box-shadow: none;
 		}
 
 		&:not(:disabled):active {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+			background: var(--MI-button-accent-surface-pressed);
+			box-shadow: var(--MI-button-shadow-pressed);
 		}
 	}
 
 	&.asLike {
-		background: rgba(255, 86, 125, 0.07);
-		color: #ff002f;
+		color: var(--MI_THEME-love);
+		background: color-mix(in srgb, var(--MI_THEME-love) 10%, transparent);
+		border-color: color-mix(in srgb, var(--MI_THEME-love) 8%, transparent);
 
 		&:not(:disabled):hover {
-			background: rgba(255, 74, 116, 0.11);
+			background: color-mix(in srgb, var(--MI_THEME-love) 16%, transparent);
+			border-color: color-mix(in srgb, var(--MI_THEME-love) 14%, transparent);
 		}
 
 		&:not(:disabled):active {
-			background: rgba(224, 57, 96, 0.125);
-		}
-
-		> .ripples {
-			> .ripple {
-				background: rgba(255, 60, 106, 0.15);
-			}
+			background: color-mix(in srgb, var(--MI_THEME-love) 22%, transparent);
 		}
 
 		&.primary {
-			background: rgb(241 97 132);
+			color: var(--MI_THEME-love) !important;
+			background: color-mix(in srgb, var(--MI_THEME-love) 18%, transparent);
+			border-color: color-mix(in srgb, var(--MI_THEME-love) 10%, transparent);
+			box-shadow: none;
 
 			&:not(:disabled):hover {
-				background: rgb(241 92 128);
+				background: color-mix(in srgb, var(--MI_THEME-love) 24%, transparent);
+				border-color: color-mix(in srgb, var(--MI_THEME-love) 16%, transparent);
+				box-shadow: none;
 			}
 
 			&:not(:disabled):active {
-				background: rgb(241 92 128);
+				background: color-mix(in srgb, var(--MI_THEME-love) 30%, transparent);
+				box-shadow: var(--MI-button-shadow-pressed);
 			}
 		}
 	}
 
 	&.transparent {
 		background: transparent;
-	}
-
-	&.gradate {
-		font-weight: bold;
-		color: var(--MI_THEME-fgOnAccent) !important;
-		background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+		border-color: transparent;
+		box-shadow: none;
 
 		&:not(:disabled):hover {
-			background: linear-gradient(90deg, hsl(from var(--MI_THEME-buttonGradateA) h s calc(l + 5)), hsl(from var(--MI_THEME-buttonGradateB) h s calc(l + 5)));
+			background: var(--MI-button-surface-hover);
+			border-color: transparent;
+			box-shadow: none;
 		}
 
 		&:not(:disabled):active {
-			background: linear-gradient(90deg, hsl(from var(--MI_THEME-buttonGradateA) h s calc(l + 5)), hsl(from var(--MI_THEME-buttonGradateB) h s calc(l + 5)));
+			background: var(--MI-button-surface-pressed);
+			box-shadow: none;
+		}
+	}
+
+	&.gradate {
+		color: var(--MI_THEME-fg) !important;
+		background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 18%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 18%, transparent));
+		border-color: color-mix(in srgb, var(--MI_THEME-buttonGradateA) 10%, transparent);
+		box-shadow: none;
+
+		&:not(:disabled):hover {
+			background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 24%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 24%, transparent));
+			box-shadow: none;
+		}
+
+		&:not(:disabled):active {
+			background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 30%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 30%, transparent));
+			box-shadow: var(--MI-button-shadow-pressed);
 		}
 	}
 
 	&.danger {
-		font-weight: bold;
 		color: var(--MI_THEME-error);
+		background: color-mix(in srgb, var(--MI_THEME-error) 10%, transparent);
+		border-color: color-mix(in srgb, var(--MI_THEME-error) 8%, transparent);
+
+		&:not(:disabled):hover {
+			background: color-mix(in srgb, var(--MI_THEME-error) 16%, transparent);
+			border-color: color-mix(in srgb, var(--MI_THEME-error) 14%, transparent);
+		}
+
+		&:not(:disabled):active {
+			background: color-mix(in srgb, var(--MI_THEME-error) 22%, transparent);
+		}
 
 		&.primary {
-			color: #fff;
-			background: var(--MI_THEME-error);
+			color: var(--MI_THEME-error) !important;
+			background: color-mix(in srgb, var(--MI_THEME-error) 18%, transparent);
+			border-color: color-mix(in srgb, var(--MI_THEME-error) 10%, transparent);
+			box-shadow: none;
 
 			&:not(:disabled):hover {
-				background: hsl(from var(--MI_THEME-error) h s calc(l + 10));
+				background: color-mix(in srgb, var(--MI_THEME-error) 24%, transparent);
+				border-color: color-mix(in srgb, var(--MI_THEME-error) 16%, transparent);
+				box-shadow: none;
 			}
 
 			&:not(:disabled):active {
-				background: hsl(from var(--MI_THEME-error) h s calc(l - 10));
+				background: color-mix(in srgb, var(--MI_THEME-error) 30%, transparent);
+				box-shadow: var(--MI-button-shadow-pressed);
 			}
 		}
 	}
 
-	&.active {
+	&.active:not(.primary):not(.gradate):not(.danger):not(.asLike) {
 		color: var(--MI_THEME-accent) !important;
+		background: var(--MI-button-accent-surface);
+		border-color: color-mix(in srgb, var(--MI_THEME-accent) 10%, transparent);
 	}
 
 	&:disabled {
-		opacity: 0.5;
+		opacity: 0.45;
+		box-shadow: none;
 	}
 
 	&.wait {
@@ -269,70 +288,22 @@ function onMousedown(evt: MouseEvent): void {
 	}
 
 	&:focus-visible {
-		outline-offset: 2px;
+		outline: 0.12em solid var(--MI_THEME-focus);
+		outline-offset: 0.12em;
 	}
 
 	&.inline {
 		display: inline-block;
 		width: auto;
-		min-width: 100px;
-	}
-
-	&.primary > .ripples > .ripple {
-		background: rgba(0, 0, 0, 0.15);
-	}
-}
-
-.ripples {
-	position: absolute;
-	z-index: 0;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	border-radius: 6px;
-	overflow: clip;
-	pointer-events: none;
-}
-
-.ripple {
-	position: absolute;
-	width: 2px;
-	height: 2px;
-	border-radius: 100%;
-	background: rgba(0, 0, 0, 0.1);
-	opacity: 0;
-	transform: scale(1);
-	will-change: transform, opacity;
-	animation: ripple 1.2s cubic-bezier(0,.5,0,1) forwards;
-}
-
-@keyframes ripple {
-	0% {
-		opacity: 1;
-		transform: scale(1);
-	}
-
-	42% {
-		opacity: 1;
-		transform: scale(var(--ripple-scale));
-	}
-
-	100% {
-		opacity: 0;
-		transform: scale(var(--ripple-scale));
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.ripple {
-		animation-duration: 0.01ms;
 	}
 }
 
 .content {
-	position: relative;
-	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45em;
+	min-width: 0;
 	pointer-events: none;
 }
 </style>

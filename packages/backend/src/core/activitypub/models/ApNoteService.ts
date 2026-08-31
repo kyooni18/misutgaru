@@ -232,7 +232,8 @@ export class ApNoteService {
 		const files: MiDriveFile[] = [];
 
 		for (const attach of toArray(note.attachment)) {
-			attach.sensitive ??= note.sensitive;
+			// A note-level sensitive flag represents a content warning. Only an
+			// attachment's own flag should mark that media as sensitive.
 			const file = await this.apImageService.resolveImage(actor, attach);
 			if (file) files.push(file);
 		}

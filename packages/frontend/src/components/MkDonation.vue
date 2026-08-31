@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneDonation from './vune/MkDonation.vune';
+import VuneDonation from './vune/MkDonation.vune?vue-host';
 import * as os from '@/os.js';
 import { miLocalStorage } from '@/local-storage.js';
 

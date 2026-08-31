@@ -20,6 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div style="overflow-x: clip;">
 		<Transition
+			:css="prefer.s.animation"
 			mode="out-in"
 			:enterActiveClass="$style.transition_x_enterActive"
 			:leaveActiveClass="$style.transition_x_leaveActive"
@@ -154,6 +155,7 @@ import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkButton from '@/components/MkButton.vue';
 import XNote from '@/components/MkTutorialDialog.Note.vue';
 import XTimeline from '@/components/MkTutorialDialog.Timeline.vue';
+import { prefer } from '@/preferences.js';
 import XPostNote from '@/components/MkTutorialDialog.PostNote.vue';
 import XSensitive from '@/components/MkTutorialDialog.Sensitive.vue';
 import MkAnimBg from '@/components/MkAnimBg.vue';

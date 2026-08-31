@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import MkTooltip from '@/components/MkTooltip.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Text } from 'vune-ui';
+import MkTooltip from '@/components/vune/MkTooltip.vune';
 import '../../vune/misskey-vune.scss';
 
 type Props = {
@@ -11,15 +11,23 @@ type Props = {
 	onClosed?: () => void;
 };
 
-export default createVuneComponent<Props>((props) =>
-	Group() {
-		VueComponent(MkTooltip, {
+export struct MkCellTooltip: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkTooltip(
 			showing: props.showing,
 			anchorElement: props.anchorElement,
 			maxWidth: 250,
-			onClosed: () => props.onClosed?.(),
-		}, {
-			default: () => Element('div', { className: 'mk-vune-grid-cell-tooltip' }, props.content ?? ''),
-		})
+			onClosed: { props.onClosed?.() },
+		) {
+			Text(props.content ?? '').className('mk-vune-grid-cell-tooltip')
+		}
 	}
-);
+}
+
+export default MkCellTooltip

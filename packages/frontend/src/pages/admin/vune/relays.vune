@@ -1,44 +1,46 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import SearchMarker from '@/components/global/SearchMarker.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import SearchMarker from '@/components/global/vune/SearchMarker.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import VuneIcon from '@/vune/Icon.vune';
 import { i18n } from '@/i18n.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
 type Relay = Misskey.entities.AdminRelaysListResponse[number];
-type Props = {
-	relays: Relay[];
-	headerActions?: PageHeaderItem[];
-	headerTabs?: unknown[];
-	iconClass: string;
-	onRemove?: (inbox: string) => void;
-};
-
-function relayIcon(relay: Relay, iconClass: string) {
-	if (relay.status === 'accepted') return Element('i', { className: ['ti ti-check', iconClass], style: { color: 'var(--MI_THEME-success)' } });
-	if (relay.status === 'rejected') return Element('i', { className: ['ti ti-ban', iconClass], style: { color: 'var(--MI_THEME-error)' } });
-	return Element('i', { className: ['ti ti-clock', iconClass] });
+type Props = { relays: Relay[]; headerActions?: PageHeaderItem[]; headerTabs?: any[]; iconClass:string; onRemove?:(inbox:string)=>void };
+function removeRelay(props: Props, inbox: string): void { props.onRemove?.(inbox); }
+struct RelayStatusIcon: View {
+ let relay: Relay
+ let className: string
+ var body: some View {
+  Group() {
+   if (relay.status === 'accepted') { VuneIcon(`ti ti-check ${className}`).foregroundStyle('var(--MI_THEME-success)') }
+   else if (relay.status === 'rejected') { VuneIcon(`ti ti-ban ${className}`).foregroundStyle('var(--MI_THEME-error)') }
+   else { VuneIcon(`ti ti-clock ${className}`) }
+  }
+ }
 }
-
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
-			VueComponent(SearchMarker, { path: '/admin/relays', label: i18n.ts.relays, keywords: ['relays'], icon: 'ti ti-planet' }, {
-				default: () => Element('div', { className: '_gaps' },
-					ForEach(props.relays, key: (relay) => relay.inbox) { relay in
-						Element('div', { className: 'relaycxt _panel', style: { padding: '16px' } },
-							Element('div', {}, relay.inbox),
-							Element('div', { style: { margin: '8px 0' } }, relayIcon(relay, props.iconClass), Element('span', {}, i18n.ts._relayStatus[relay.status])),
-							VueComponent(MkButton, { class: 'button', inline: true, danger: true, onClick: () => props.onRemove?.(relay.inbox) }, {
-								default: () => Group() { Element('i', { className: 'ti ti-trash' }); Text(i18n.ts.remove) },
-							}),
-						)
-					},
-				),
-			}),
-		),
-	})
-);
+export struct VuneRelaysView: View {
+ let props: Props
+ init(_ props: Props) { self.props = props }
+ var body: some View {
+  PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) {
+   VStack(alignment: 'leading', spacing: 0) {
+    SearchMarker() {
+     VStack(alignment: 'leading', spacing: 0) {
+      ForEach(props.relays, key: relay => relay.inbox) { relay in
+       VStack(alignment: 'leading', spacing: 0) {
+        Text(relay.inbox)
+        VStack(alignment: 'leading', spacing: 0) { RelayStatusIcon(relay: relay, className: props.iconClass); Text(i18n.ts._relayStatus[relay.status]) }
+        MkButton(inline: true, danger: true, onClick: { removeRelay(props, relay.inbox) }) { Group() { VuneIcon('ti ti-trash'); Text(i18n.ts.remove) } }
+       }.className('_panel').padding(16)
+      }
+     }.className('_gaps')
+    }
+   }.className('_spacer').style({ '--MI_SPACER-w': '800px' })
+  }
+ }
+}
+export default VuneRelaysView

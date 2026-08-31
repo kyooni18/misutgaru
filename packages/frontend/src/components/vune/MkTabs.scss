@@ -1,0 +1,55 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-tabs {
+	--height: 40px;
+	display: block;
+	position: relative;
+	margin: 0;
+	height: var(--height);
+	font-size: 85%;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+}
+.mk-vune-tabs--centered { text-align: center; }
+.mk-vune-tabs__inner { display: inline-flex; align-items: stretch; height: var(--height); white-space: nowrap; }
+.mk-vune-tabs__tab {
+	display: inline-flex;
+	position: relative;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	height: 100%;
+	padding: 0 10px;
+	margin: 0;
+	font: inherit;
+	font-weight: normal;
+	line-height: inherit;
+	color: inherit;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	opacity: .7;
+}
+.mk-vune-tabs__tab:hover, .mk-vune-tabs__tab--active { opacity: 1; }
+.mk-vune-tabs__tab--animate { transition: opacity .2s ease; }
+.mk-vune-tabs__tab-inner { display: flex; align-items: center; }
+.mk-vune-tabs__icon + .mk-vune-tabs__title { padding-left: 4px; }
+.mk-vune-tabs__title { overflow: hidden; }
+.mk-vune-tabs__tab::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 3px;
+	background: var(--MI_THEME-accent);
+	border-radius: 999px;
+	pointer-events: none;
+	opacity: 0;
+	transform: scaleX(.55);
+}
+.mk-vune-tabs[data-highlight-upper='true'] .mk-vune-tabs__tab::after { top: 0; bottom: auto; }
+.mk-vune-tabs__tab--active::after { opacity: 1; transform: scaleX(1); }
+.mk-vune-tabs__tab--animate::after { transition: opacity .15s ease, transform .15s ease; }
+@container (max-width: 450px) { .mk-vune-tabs { font-size: 80%; } }

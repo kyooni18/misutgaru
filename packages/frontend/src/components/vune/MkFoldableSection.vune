@@ -1,65 +1,76 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Animation, Element, Group } from 'vune-ui';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Animation, Button, HStack, Rectangle, Spacer, VStack, type ViewGraphValue } from 'vune-ui';
+import VuneIcon from '@/vune/Icon.vune';
 import './MkFoldableSection.scss';
 
-type Props = {
-	showBody: boolean;
-	parentBg: string | null;
-	contentHeight: number;
-	headerHeight: number;
-	animated: boolean;
-	onToggle?: () => void;
-	class?: string;
-};
+function ignoreFoldableToggle(): void {}
 
-function contentView(props: Props, content: ReturnType<typeof VueSlot>) {
-	let body = Element('div', {
-		className: 'mk-vune-foldable-section__body',
-		'data-vune-foldable-body': true,
-		'aria-hidden': !props.showBody,
-		style: {
-			height: props.showBody ? `${Math.max(0, props.contentHeight)}px` : '0px',
-			opacity: props.showBody ? 1 : 0,
-			overflowY: 'clip',
-		},
-	}, Element('div', {
-		'data-vune-foldable-content': true,
-		style: { minHeight: '0' },
-	}, content));
+export struct MkFoldableSection: View {
+	let showBody: boolean
+	let parentBg: string | null
+	let contentHeight: number
+	let headerHeight: number
+	let animated: boolean
+	let className: string
+	let onToggle: () => void
+	let header: ViewGraphValue
+	let content: ViewGraphValue
 
-	if (props.animated) {
-		body = body.animation(Animation.easeInOut(0.5), value: `${props.showBody}:${props.contentHeight}`);
+	init(
+		showBody: boolean,
+		parentBg: string | null,
+		contentHeight: number,
+		headerHeight: number,
+		animated: boolean = true,
+		className: string = '',
+		@Action onToggle: () => void = ignoreFoldableToggle,
+		header: ViewGraphValue = null,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.showBody = showBody
+		self.parentBg = parentBg
+		self.contentHeight = contentHeight
+		self.headerHeight = headerHeight
+		self.animated = animated
+		self.className = className
+		self.onToggle = onToggle
+		self.header = header
+		self.content = content()
 	}
 
-	return body;
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			HStack(alignment: 'center', spacing: 8) {
+				VStack(alignment: 'leading', spacing: 0) { header }.className('mk-vune-foldable-section__title')
+				Rectangle().className('mk-vune-foldable-section__divider')
+				Spacer()
+				Button(action: { onToggle() }, label: { VuneIcon(showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down') })
+					.className(['_button', 'mk-vune-foldable-section__button'])
+					.withProps({ 'aria-expanded': showBody })
+			}
+				.className(['mk-vune-foldable-section__header', '_button'])
+				.withProps({ 'data-vune-foldable-header': true, onClick: onToggle })
+			VStack(alignment: 'leading', spacing: 0) {
+				VStack(alignment: 'leading', spacing: 0) { content }
+					.withProps({ 'data-vune-foldable-content': true })
+					.style({ minHeight: '0' })
+			}
+				.className('mk-vune-foldable-section__body')
+				.withProps({ 'data-vune-foldable-body': true, 'aria-hidden': !showBody })
+				.style({
+					height: showBody ? `${Math.max(0, contentHeight)}px` : '0px',
+					opacity: showBody ? 1 : 0,
+					overflowY: 'clip',
+				})
+				.animation(animated ? Animation.easeInOut(0.5) : null, value: `${showBody}:${contentHeight}`)
+		}
+			.className(['mk-vune-foldable-section', className])
+			.style({
+				'--mk-vune-parent-bg': parentBg ?? 'var(--bg)',
+				minHeight: headerHeight > 0 ? `${headerHeight}px` : undefined,
+			})
+	}
 }
 
-export default createVuneComponent<Props>((props, slots) =>
-	Group() {
-		Element('div', {
-			className: ['mk-vune-foldable-section', props.class],
-			style: {
-				'--mk-vune-parent-bg': props.parentBg ?? 'var(--bg)',
-				minHeight: props.headerHeight > 0 ? `${props.headerHeight}px` : undefined,
-			},
-		},
-			Element('header', {
-			className: ['mk-vune-foldable-section__header', '_button'],
-			'data-vune-foldable-header': true,
-			onClick: () => props.onToggle?.(),
-		},
-			Element('div', { className: 'mk-vune-foldable-section__title' },
-				Element('div', {}, VueSlot(slots.header)),
-			),
-			Element('div', { className: 'mk-vune-foldable-section__divider' }),
-			Element('button', {
-				className: ['_button', 'mk-vune-foldable-section__button'],
-				type: 'button',
-				'aria-expanded': props.showBody,
-			}, Element('i', { className: props.showBody ? 'ti ti-chevron-up' : 'ti ti-chevron-down' })),
-		),
-		contentView(props, VueSlot(slots.default)),
-		)
-	}
-);
+export default MkFoldableSection

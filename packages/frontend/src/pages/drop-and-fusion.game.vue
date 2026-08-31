@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-if="readyGo === 'ready'" :class="$style.readyGo_bg">
 			</div>
 			<Transition
+				:css="prefer.s.animation"
 				:enterActiveClass="$style.transition_zoom_enterActive"
 				:leaveActiveClass="$style.transition_zoom_leaveActive"
 				:enterFromClass="$style.transition_zoom_enterFrom"
@@ -43,6 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<div class="_woodenFrameInner" :class="$style.stock" style="text-align: center;">
 						<TransitionGroup
+							:css="prefer.s.animation"
 							:enterActiveClass="$style.transition_stock_enterActive"
 							:leaveActiveClass="$style.transition_stock_leaveActive"
 							:enterFromClass="$style.transition_stock_enterFrom"
@@ -60,6 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<img v-else src="/client-assets/drop-and-fusion/frame-light.svg" :class="$style.mainFrameImg"/>
 				<canvas ref="canvasEl" :class="$style.canvas"></canvas>
 				<Transition
+					:css="prefer.s.animation"
 					:enterActiveClass="$style.transition_combo_enterActive"
 					:leaveActiveClass="$style.transition_combo_leaveActive"
 					:enterFromClass="$style.transition_combo_enterFrom"
@@ -71,6 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="!isGameOver && !replaying && readyGo !== 'ready'" :class="$style.dropperContainer" :style="{ left: dropperX + 'px' }">
 					<!--<img v-if="currentPick" src="/client-assets/drop-and-fusion/dropper.png" :class="$style.dropper" :style="{ left: dropperX + 'px' }"/>-->
 					<Transition
+						:css="prefer.s.animation"
 						:enterActiveClass="$style.transition_picked_enterActive"
 						:leaveActiveClass="$style.transition_picked_leaveActive"
 						:enterFromClass="$style.transition_picked_enterFrom"
@@ -194,6 +198,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, onDeactivated, onMounted, onUnmounted, ref, shallowRef, watch, useTemplateRef } from 'vue';
 import * as Matter from 'matter-js';
 import * as Misskey from 'misskey-js';
+import { prefer } from '@/preferences.js';
 import { DropAndFusionGame } from 'misskey-bubble-game';
 import { useInterval } from '@@/js/use-interval.js';
 import { apiUrl } from '@@/js/config.js';
@@ -212,7 +217,6 @@ import { $i } from '@/i.js';
 import * as sound from '@/utility/sound.js';
 import MkRange from '@/components/MkRange.vue';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
-import { prefer } from '@/preferences.js';
 
 type FrontendMonoDefinition = {
 	id: string;

@@ -10,6 +10,7 @@ import type { IImageStreamable } from '@/core/ImageProcessingService.js';
 import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
+import type { HttpRequestService } from '@/core/HttpRequestService.js';
 import { VideoProcessingService } from '@/core/VideoProcessingService.js';
 import { attachStreamCleanup, handleRangeRequest, setFileResponseHeaders, getSafeContentType, needsCleanup } from './FileServerUtils.js';
 import type { FileServerFileResolver } from './FileServerFileResolver.js';
@@ -21,6 +22,7 @@ export class FileServerDriveHandler {
 		private fileResolver: FileServerFileResolver,
 		private assetsPath: string,
 		private videoProcessingService: VideoProcessingService,
+		private httpRequestService: HttpRequestService,
 	) {}
 
 	public async handle(request: FastifyRequest<{ Params: { key: string } }>, reply: FastifyReply) {
@@ -40,6 +42,19 @@ export class FileServerDriveHandler {
 		}
 
 		try {
+			if (file.kind === 'remote-link') {
+				if (file.fileRole === 'webpublic' && file.mime === 'image/svg+xml') {
+					reply.header('Cache-Control', 'max-age=31536000, immutable');
+
+					const url = new URL(`${this.config.mediaProxy}/svg.webp`);
+					url.searchParams.set('url', file.url);
+
+					return await reply.redirect(url.toString(), 301);
+				}
+
+				return await this.streamRemoteFile(request, reply, file);
+			}
+
 			if (file.kind === 'remote') {
 				let image: IImageStreamable | null = null;
 
@@ -76,16 +91,24 @@ export class FileServerDriveHandler {
 					}
 				}
 
-				image ??= {
-					data: handleRangeRequest(reply, request.headers.range as string | undefined, file.file.size, file.path),
-					ext: file.ext,
-					type: file.mime,
-				};
+				if (image == null) {
+					image = {
+						data: handleRangeRequest(reply, request.headers.range as string | undefined, file.file.size, file.path),
+						ext: file.ext,
+						type: file.mime,
+					};
+
+					// handleRangeRequest owns Content-Length for partial responses.
+					// Overwriting it with the full size makes browsers wait forever for
+					// bytes that are not part of the 206 response.
+					if (request.headers.range == null) {
+						reply.header('Content-Length', file.file.size);
+					}
+				}
 
 				attachStreamCleanup(image.data, file.cleanup);
 
 				reply.header('Content-Type', getSafeContentType(image.type));
-				reply.header('Content-Length', file.file.size);
 				reply.header('Cache-Control', 'max-age=31536000, immutable');
 				reply.header('Content-Disposition',
 					contentDisposition(
@@ -112,5 +135,41 @@ export class FileServerDriveHandler {
 			if (file.kind === 'remote') file.cleanup();
 			throw e;
 		}
+	}
+
+	private async streamRemoteFile(
+		request: FastifyRequest<{ Params: { key: string } }>,
+		reply: FastifyReply,
+		file: Extract<Awaited<ReturnType<FileServerFileResolver['resolveFileByAccessKey']>>, { kind: 'remote-link' }>,
+	) {
+		const headers: Record<string, string> = {
+			'Accept-Encoding': 'identity',
+		};
+		if (request.headers.range != null) headers.Range = request.headers.range;
+		const ifRange = request.headers['if-range'];
+		if (typeof ifRange === 'string') headers['If-Range'] = ifRange;
+
+		const response = await this.httpRequestService.send(file.url, {
+			method: 'GET',
+			headers,
+			// Media may legitimately take longer than ordinary API fetches while
+			// still making progress. The request remains bounded and size-limited.
+			timeout: 5 * 60 * 1000,
+			size: this.config.maxFileSize,
+		}, {
+			throwErrorWhenResponseNotOk: false,
+		});
+
+		reply.code(response.status);
+		reply.header('Content-Type', getSafeContentType(file.mime));
+		reply.header('Cache-Control', 'max-age=31536000, immutable');
+		reply.header('Content-Disposition', contentDisposition('inline', file.filename));
+
+		for (const header of ['content-range', 'accept-ranges', 'content-length'] as const) {
+			const value = response.headers.get(header);
+			if (value != null) reply.header(header, value);
+		}
+
+		return response.body;
 	}
 }

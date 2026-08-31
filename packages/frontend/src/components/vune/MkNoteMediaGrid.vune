@@ -1,70 +1,55 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, State, Text, type StateRef } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkA from '@/components/global/MkA.vue';
-import MkDriveFileThumbnail from '@/components/MkDriveFileThumbnail.vue';
+import MkA from '@/components/global/vune/MkA.vune';
+import MkDriveFileThumbnail from '@/components/vune/MkDriveFileThumbnail.vune';
 import { notePage } from '@/filters/note.js';
 import bytes from '@/filters/bytes.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
+import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
+import './MkNoteMediaGrid.scss';
 
-type Props = {
-	note: Misskey.entities.Note;
-	square?: boolean;
-	classes: Record<string, string>;
-	isHiding: (file: Misskey.entities.DriveFile) => boolean;
-	onReveal?: (file: Misskey.entities.DriveFile) => void;
-};
-
-function sensitiveLabel(file: Misskey.entities.DriveFile) {
-	const detail = prefer.s.dataSaver.media && file.size
-		? (file.isSensitive ? ` (${bytes(file.size)})` : bytes(file.size))
-		: (file.isSensitive ? '' : i18n.ts.image);
-	return Element('div', {},
-		Element('div', {},
-			Element('i', { className: file.isSensitive ? 'ti ti-eye-exclamation' : 'ti ti-photo' }),
-			` ${file.isSensitive ? i18n.ts.sensitive : ''}${detail}`,
-		),
-		Element('div', {}, i18n.ts.clickToShow),
-	);
+type Props = { note: Misskey.entities.Note; square?: boolean; classes?: Record<string,string>; isHiding?: (file: Misskey.entities.DriveFile) => boolean; onReveal?: (file: Misskey.entities.DriveFile) => void };
+const revealed = new Map<string, StateRef<Set<string>>>();
+const defaultClasses = { filePreview: 'mk-vune-note-media-grid__preview', square: 'mk-vune-note-media-grid__square', file: 'mk-vune-note-media-grid__file', sensitive: 'mk-vune-note-media-grid__sensitive' };
+function revealState(noteId: string) { let state = revealed.get(noteId); if (!state) { state = State(new Set<string>()); revealed.set(noteId, state); } return state; }
+function defaultIsHiding(note: Misskey.entities.Note, file: Misskey.entities.DriveFile): boolean {
+	if (prefer.r.showCwMedia.value && note.cw != null) return false;
+	if (!shouldHideFileByDefault(file) || revealState(note.id).value.has(file.id)) return false;
+	return file.isSensitive || file.type.startsWith('image/');
 }
-
-export default createVuneComponent<Props>((props) => {
-	const square = vuneBoolean(props.square, false);
-	return Group() {
-		ForEach(props.note.files, key: (file) => file.id) { file in
-			if (props.isHiding(file)) {
-				Element('div', {
-					className: [props.classes.filePreview, square ? props.classes.square : null],
-					'data-scroll-anchor': `${props.note.id}:${file.id}`,
-					onClick: () => props.onReveal?.(file),
-				},
-					VueComponent(MkDriveFileThumbnail, {
-						file,
-						fit: 'cover',
-						highlightWhenSensitive: prefer.s.highlightSensitiveMedia,
-						forceBlurhash: true,
-						large: true,
-						class: props.classes.file,
-					}),
-					Element('div', { className: props.classes.sensitive }, sensitiveLabel(file)),
-				)
-			} else {
-				VueComponent(MkA, {
-					class: [props.classes.filePreview, square ? props.classes.square : null],
-					'data-scroll-anchor': `${props.note.id}:${file.id}`,
-					to: notePage(props.note),
-				}, {
-					default: () => VueComponent(MkDriveFileThumbnail, {
-						file,
-						fit: 'cover',
-						highlightWhenSensitive: prefer.s.highlightSensitiveMedia,
-						large: true,
-						class: props.classes.file,
-					}),
-				})
-			}
-		}
+async function defaultReveal(note: Misskey.entities.Note, file: Misskey.entities.DriveFile): Promise<void> {
+	if (!(await canRevealFile(file))) return;
+	const state = revealState(note.id); const next = new Set(state.value); next.add(file.id); state.value = next;
+}
+function sensitiveLabel(file: Misskey.entities.DriveFile) {
+	const detail = prefer.s.dataSaver.media && file.size ? (file.isSensitive ? ` (${bytes(file.size)})` : bytes(file.size)) : (file.isSensitive ? '' : i18n.ts.image);
+	return VStack(alignment: 'stretch', spacing: 0) {
+		VStack(alignment: 'stretch', spacing: 0) { VuneIcon(file.isSensitive ? 'ti ti-eye-exclamation' : 'ti ti-photo'); Text(` ${file.isSensitive ? i18n.ts.sensitive : ''}${detail}`) }
+		Text(i18n.ts.clickToShow)
 	};
-});
+}
+function fileView(props: Props, file: Misskey.entities.DriveFile) {
+	const classes = props.classes ?? defaultClasses;
+	const isHiding = props.isHiding ? props.isHiding(file) : defaultIsHiding(props.note, file);
+	const className = [classes.filePreview, props.square ? classes.square : null];
+	const thumb = MkDriveFileThumbnail(file, fit: 'cover', highlightWhenSensitive: prefer.s.highlightSensitiveMedia, forceBlurhash: isHiding, large: true, className: classes.file);
+	if (isHiding) {
+		return VStack(alignment: 'stretch', spacing: 0) {
+			thumb
+			VStack(alignment: 'stretch', spacing: 0) { sensitiveLabel(file) }.className(classes.sensitive)
+		}.className(className).withProps({ 'data-scroll-anchor': `${props.note.id}:${file.id}`, onClick: () => { if (props.onReveal) props.onReveal(file); else void defaultReveal(props.note, file); } });
+	}
+	return MkA(notePage(props.note), className: className) { thumb }.withProps({ 'data-scroll-anchor': `${props.note.id}:${file.id}` });
+}
+export struct MkNoteMediaGrid: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		return Group() { ForEach(props.note.files, key: file => file.id) { file in fileView(props, file) } }
+	}
+}
+export default MkNoteMediaGrid

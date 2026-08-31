@@ -1,52 +1,26 @@
-<!--
-SPDX-FileCopyrightText: syuilo and misskey-project
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <template>
-<VuneKeyValue :copy="copy" :oneline="oneline" :rootClass="$style.root" :onelineClass="$style.oneline" :keyClass="$style.key" :valueClass="$style.value">
-	<template #key><slot name="key"></slot></template>
-	<template #value><slot name="value"></slot></template>
-</VuneKeyValue>
+<div class="mk-vune-key-value" :class="{ 'mk-vune-key-value--oneline': oneline }">
+	<div class="mk-vune-key-value__key"><slot name="key"></slot></div>
+	<div class="_selectable mk-vune-key-value__value">
+		<slot name="value"></slot>
+		<button v-if="copy" class="_textButton mk-vune-key-value__copy" type="button" :title="i18n.ts.copy" @click="copyToClipboard(copy)">
+			<i class="ti ti-copy" aria-hidden="true"></i>
+		</button>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneKeyValue from './vune/MkKeyValue.vune';
-import { } from 'vue';
+import { i18n } from '@/i18n.js';
+import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
+import './vune/misskey-vune.scss';
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
 	copy?: string | null;
 	oneline?: boolean;
 }>(), {
 	copy: null,
 	oneline: false,
 });
-
 </script>
-
-<style lang="scss" module>
-.root {
-	&.oneline {
-		display: flex;
-
-		.key {
-			width: 30%;
-			font-size: 1em;
-			padding: 0 8px 0 0;
-		}
-
-		.value {
-			width: 70%;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-	}
-}
-
-.key {
-	font-size: 0.85em;
-	padding: 0 0 0.25em 0;
-	opacity: 0.75;
-}
-</style>

@@ -10,18 +10,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import VuneMediaBanner from './vune/MkMediaBanner.vune';
 import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
-import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
+import { canRevealFile, useSensitiveFileVisibility } from '@/utility/sensitive-file.js';
 
 const NativeMediaBanner = createVuneWebHost(VuneMediaBanner);
 
 const props = defineProps<{
 	media: Misskey.entities.DriveFile;
+	forceShow?: boolean;
 }>();
 
-const hide = ref(shouldHideFileByDefault(props.media));
+const hide = useSensitiveFileVisibility(() => props.media, { forceShow: () => props.forceShow === true });
 
 async function reveal() {
 	if (!(await canRevealFile(props.media))) {

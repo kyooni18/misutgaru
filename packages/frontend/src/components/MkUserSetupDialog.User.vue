@@ -5,15 +5,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div v-adaptive-bg class="_panel" style="position: relative;">
-	<VuneUserSetupUser :user="user" :isFollowing="isFollowing" :classes="$style" :onFollow="follow"/>
+	<VuneUserSetupUserHost :user="user" :isFollowing="isFollowing" :classes="$style" :onFollow="follow"/>
 </div>
 </template>
 
 <script lang="ts" setup>
 import VuneUserSetupUser from './vune/MkUserSetupDialog.User.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
+
+const VuneUserSetupUserHost = createVuneWebHost(VuneUserSetupUser);
 
 const props = defineProps<{
 	user: Misskey.entities.UserDetailed;

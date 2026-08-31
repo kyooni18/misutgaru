@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:label="fx.uiDefinition.name"
 	:params="layer.params"
 	:paramDefs="fx.uiDefinition.params"
-	:onUpdateParams="value => layer.params = value"
+	:onUpdateParams="(value: ImageEffectorLayer['params']) => layer.params = value"
 	:onDelete="() => emit('del')"
 	:onSwapUp="() => emit('swapUp')"
 	:onSwapDown="() => emit('swapDown')"
@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script setup lang="ts">
 import type { ImageEffectorLayer } from '@/utility/image-effector/ImageEffector.js';
-import VuneImageEffectorLayer from './vune/MkImageEffectorDialog.Layer.vune';
+import VuneImageEffectorLayer from './vune/MkImageEffectorDialog.Layer.vune?vue-host';
 import { FXS } from '@/utility/image-effector/fxs.js';
 
 const layer = defineModel<ImageEffectorLayer>('layer', { required: true });

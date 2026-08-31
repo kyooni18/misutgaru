@@ -15,16 +15,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:hostDisabled="paginator.computedParams?.value?.origin === 'local'"
 	:headerActions="headerActions"
 	:headerTabs="headerTabs"
-	:onOrigin="value => origin = value"
-	:onHost="value => searchHost = value"
-	:onUserId="value => userId = value"
-	:onMimeType="value => type = value"
+	:onOrigin="setOrigin"
+	:onHost="(value: string) => searchHost = value"
+	:onUserId="(value: string) => userId = value"
+	:onMimeType="(value: string | null) => type = value"
 />
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw, ref } from 'vue';
-import VuneAdminFiles from './vune/files.vune';
+import VuneAdminFiles from './vune/files.vune?vue-host';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
 import { lookupFile } from '@/utility/admin-lookup.js';
@@ -48,6 +48,11 @@ const type = ref<string | null>(null);
 const searchHost = ref('');
 const userId = ref('');
 const viewMode = ref<'grid' | 'list'>('grid');
+
+function setOrigin(value: 'local' | 'remote' | 'combined'): void {
+	origin.value = value;
+}
+
 const paginator = markRaw(new Paginator('admin/drive/files', {
 	limit: 10,
 	computedParams: computed(() => ({

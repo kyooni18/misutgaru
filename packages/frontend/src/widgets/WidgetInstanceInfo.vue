@@ -8,9 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { useWidgetPropsManager } from './widget.js';
-import VuneWidgetInstanceInfo from './vune/WidgetInstanceInfo.vune';
+import VuneWidgetInstanceInfoView from './vune/WidgetInstanceInfo.vune';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneWidgetInstanceInfo = createVuneWebHost(VuneWidgetInstanceInfoView);
 
 const name = 'instanceInfo';
 const widgetPropsDef = {} satisfies FormWithDefault;

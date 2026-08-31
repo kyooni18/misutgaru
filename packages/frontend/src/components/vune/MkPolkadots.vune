@@ -1,27 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Rectangle } from 'vune-ui';
-import './misskey-vune.scss';
+import { Circle, HStack } from 'vune-ui';
 
 export struct MkPolkadots: View {
-	let accented: boolean
-	let revered: boolean
-	let height: number
-
-	init(accented: boolean = false, revered: boolean = false, height: number = 200) {
-		self.accented = accented
-		self.revered = revered
-		self.height = height
-	}
-
+	init() {}
 	var body: some View {
-		Rectangle()
-			.className([
-				'mk-vune-polkadots',
-				accented ? 'mk-vune-polkadots--accented' : null,
-				revered ? 'mk-vune-polkadots--revered' : null,
-			])
-			.style({ height: `${height}px` })
+		HStack(spacing: 6) { Circle().frame(width: 6, height: 6); Circle().frame(width: 6, height: 6); Circle().frame(width: 6, height: 6) }
+			.className('mk-vune-polkadots')
 	}
 }
 

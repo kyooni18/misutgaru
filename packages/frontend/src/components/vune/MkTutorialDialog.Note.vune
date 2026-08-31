@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkNote from '@/components/MkNote.vue';
+import MkNote from '@/components/vune/MkNote.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	phase: 'aboutNote' | 'howToReact';
@@ -14,52 +16,48 @@ type Props = {
 	onRemoveReaction?: (emoji: string) => void;
 };
 
-function guide(icon: string, label: string, text: string) {
-	return Element('div', {},
-		Element('i', { className: icon }),
-		' ',
-		Element('b', {}, label),
-		` … ${text}`,
-	);
+function react(props: Props, emoji: string): void { props.onReaction?.(emoji); }
+
+struct TutorialNoteGuide: View {
+	let icon: string
+	let label: string
+	let text: string
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) { VuneIcon(icon); Text(' '); Text(label).bold(); Text(` … ${text}`) }
+	}
 }
 
-export default createVuneComponent<Props>((props) => {
-	if (props.phase === 'aboutNote') {
-		return Element('div', { className: '_gaps' },
-			Element('div', { style: { textAlign: 'center', padding: '0 16px' } }, i18n.ts._initialTutorial._note.description),
-			VueComponent(MkNote, {
-				class: props.classes.exampleNoteRoot,
-				style: 'pointer-events: none;',
-				note: props.exampleNote,
-				mock: true,
-			}),
-			Element('div', { className: '_gaps_s' },
-				guide('ti ti-arrow-back-up', i18n.ts.reply, i18n.ts._initialTutorial._note.reply),
-				guide('ti ti-repeat', i18n.ts.renote, i18n.ts._initialTutorial._note.renote),
-				guide('ti ti-plus', i18n.ts.reaction, i18n.ts._initialTutorial._note.reaction),
-				guide('ti ti-dots', i18n.ts.menu, i18n.ts._initialTutorial._note.menu),
-			),
-		);
+export struct VuneMkTutorialDialogNoteView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
 
-	return Element('div', { className: '_gaps' },
-		Element('div', { style: { textAlign: 'center', padding: '0 16px' } }, i18n.ts._initialTutorial._reaction.description),
-		Element('div', {}, i18n.ts._initialTutorial._reaction.letsTryReacting),
-		VueComponent(MkNote, {
-			class: props.classes.exampleNoteRoot,
-			note: props.exampleNote,
-			mock: true,
-			onReaction: (emoji: string) => props.onReaction?.(emoji),
-			onRemoveReaction: (emoji: string) => props.onRemoveReaction?.(emoji),
-		}),
-		vuneBoolean(props.onceReacted) ? Element('div', {},
-			Element('b', { style: { color: 'var(--MI_THEME-accent)' } },
-				Element('i', { className: 'ti ti-check' }),
-				` ${i18n.ts._initialTutorial.wellDone}`,
-			),
-			` ${i18n.ts._initialTutorial._reaction.reactNotification}`,
-			Element('br'),
-			Text(i18n.ts._initialTutorial._reaction.reactDone),
-		) : null,
-	);
-});
+	var body: some View {
+		Group() {
+			if (props.phase === 'aboutNote') {
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(i18n.ts._initialTutorial._note.description).multilineTextAlignment('center').padding({ horizontal: 16 })
+					MkNote(props.exampleNote, className: props.classes.exampleNoteRoot).allowsHitTesting(false)
+					VStack(alignment: 'stretch', spacing: 0) {
+						TutorialNoteGuide(icon: 'ti ti-arrow-back-up', label: i18n.ts.reply, text: i18n.ts._initialTutorial._note.reply)
+						TutorialNoteGuide(icon: 'ti ti-repeat', label: i18n.ts.renote, text: i18n.ts._initialTutorial._note.renote)
+						TutorialNoteGuide(icon: 'ti ti-plus', label: i18n.ts.reaction, text: i18n.ts._initialTutorial._note.reaction)
+						TutorialNoteGuide(icon: 'ti ti-dots', label: i18n.ts.menu, text: i18n.ts._initialTutorial._note.menu)
+					}.className('_gaps_s')
+				}.className('_gaps')
+			} else {
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(i18n.ts._initialTutorial._reaction.description).multilineTextAlignment('center').padding({ horizontal: 16 })
+					Text(i18n.ts._initialTutorial._reaction.letsTryReacting)
+					MkNote(props.exampleNote, className: props.classes.exampleNoteRoot)
+					MkButton(primary: true, inline: true, onClick: { react(props, '👍') }) { Text('👍') }
+					if (props.onceReacted === true) { VStack(alignment: 'stretch', spacing: 0) { Group() { VuneIcon('ti ti-check'); Text(` ${i18n.ts._initialTutorial.wellDone}`).bold() }.foregroundStyle('var(--MI_THEME-accent)'); Text(` ${i18n.ts._initialTutorial._reaction.reactNotification}`); Text(i18n.ts._initialTutorial._reaction.reactDone) } }
+				}.className('_gaps')
+			}
+		}
+	}
+}
+
+export default VuneMkTutorialDialogNoteView

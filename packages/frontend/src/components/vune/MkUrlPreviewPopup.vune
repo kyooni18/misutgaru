@@ -1,15 +1,27 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import MkUrlPreview from '@/components/MkUrlPreview.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, Link, Text } from 'vune-ui';
 import './MkUrlPreviewPopup.scss';
 
 type Props = { url: string; zIndex: number; top: number; left: number };
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkUrlPreview, {
-		class: '_popup _shadow mk-vune-url-preview-popup',
-		url: props.url,
-		showActions: false,
-		style: { zIndex: props.zIndex, top: `${props.top}px`, left: `${props.left}px` },
-	})
-);
+
+
+export struct VuneMkUrlPreviewPopupView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			Text(props.url).className('mk-vune-url-preview-popup__url')
+			Link('Open link', props.url).withProps({ target: '_blank', rel: 'noopener noreferrer' })
+		}
+			.className('_popup _shadow mk-vune-url-preview-popup')
+			.style({ zIndex: props.zIndex, top: `${props.top}px`, left: `${props.left}px` })
+	}
+}
+
+export default VuneMkUrlPreviewPopupView

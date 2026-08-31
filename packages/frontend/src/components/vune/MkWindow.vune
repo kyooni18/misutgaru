@@ -1,0 +1,27 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Button, HStack, Spacer, VStack, type ViewGraphValue } from 'vune-ui';
+import VuneIcon from '@/vune/Icon.vune';
+
+function closeWindow(action: (() => void) | undefined): void { action?.(); }
+
+export struct MkWindow: View {
+	let title: ViewGraphValue
+	let content: ViewGraphValue
+	let onClosed: (() => void) | undefined
+	init(title: ViewGraphValue = null, @Action onClosed: (() => void) | undefined = undefined, @ViewBuilder content: () => ViewGraphValue) {
+		self.title = title; self.content = content(); self.onClosed = onClosed
+	}
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			HStack(alignment: 'center', spacing: 8) {
+				title
+				Spacer()
+				Button(action: { closeWindow(onClosed) }, label: { VuneIcon('ti ti-x') }).className('_button')
+			}.className('mk-vune-window__header')
+			VStack(alignment: 'leading', spacing: 0) { content }.className('mk-vune-window__body')
+		}.className('_panel mk-vune-window')
+	}
+}
+
+export default MkWindow

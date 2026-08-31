@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneAdminFile from './vune/admin-file.vune';
+import VuneAdminFile from './vune/admin-file.vune?vue-host';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
@@ -30,10 +30,10 @@ function _fetch_() {
 }
 
 const file = ref<Misskey.entities.DriveFile | null>(null);
+
 function onResolved(result: { file: Misskey.entities.DriveFile }) {
 	file.value = result.file;
 }
-
 
 definePage(() => ({
 	title: file.value ? `${i18n.ts.file}: ${file.value.name}` : i18n.ts.file,

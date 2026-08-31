@@ -32,4 +32,4 @@ The current Vune pass keeps generated typed Vue hosts, boundary-local dependency
 
 ## Validation boundary
 
-The source workspace can run DB fingerprints, repository integrity, o0o0o Node tests, local Vune compiler/web checks, Vune source transforms and parser-level checks without registry access. A fresh dependency-backed `pnpm verify:full`, full Vitest tree and production application build still require a normal networked checkout.
+The source workspace can run DB fingerprints, repository integrity, `@vune-ui/animation` Node tests, local Vune compiler/web checks, Vune source transforms and parser-level checks without registry access. A fresh dependency-backed `pnpm verify:full`, full Vitest tree and production application build still require a normal networked checkout.

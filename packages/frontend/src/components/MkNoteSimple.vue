@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNoteSimple :note="note" :showContent="showContent" :useStickyIcons="prefer.s.useStickyIcons" :classes="$style" :onShowContent="value => showContent = value"/>
+<VuneNoteSimple :note="note" :showContent="showContent" :showCwMedia="prefer.r.showCwMedia.value" :useStickyIcons="prefer.s.useStickyIcons" :classes="$style" :onShowContent="(value: boolean) => showContent = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneNoteSimple from './vune/MkNoteSimple.vune';
+import VuneNoteSimple from './vune/MkNoteSimple.vune?vue-host';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { prefer } from '@/preferences.js';

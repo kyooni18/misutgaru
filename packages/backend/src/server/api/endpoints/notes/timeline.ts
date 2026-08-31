@@ -140,15 +140,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	}
 
 	private async getFromDb(ps: { untilId: string | null; sinceId: string | null; limit: number; includeMyRenotes: boolean; includeRenotedMyNotes: boolean; includeLocalRenotes: boolean; withFiles: boolean; withRenotes: boolean; }, me: MiLocalUser) {
-		const followees = await this.userFollowingService.getFollowees(me.id);
-
-		const mutingChannelIds = await this.channelMutingService
-			.list({ requestUserId: me.id }, { idOnly: true })
-			.then(x => x.map(x => x.id));
+		const [followees, mutingChannelIds, rawFollowingChannelIds] = await Promise.all([
+			this.userFollowingService.getFollowees(me.id),
+			this.channelMutingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id)),
+			this.channelFollowingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id)),
+		]);
 		const mutingChannelIdSet = new Set(mutingChannelIds);
-		const followingChannelIds = await this.channelFollowingService
-			.list({ requestUserId: me.id }, { idOnly: true })
-			.then(x => x.map(x => x.id).filter(x => !mutingChannelIdSet.has(x)));
+		const followingChannelIds = rawFollowingChannelIds.filter(x => !mutingChannelIdSet.has(x));
 
 		//#region Construct query
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)

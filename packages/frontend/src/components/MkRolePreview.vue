@@ -4,27 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkA :to="forModeration ? `/admin/roles/${role.id}` : `/roles/${role.id}`" :class="$style.root" tabindex="-1" :style="{ '--color': role.color }">
-	<template v-if="forModeration">
-		<i v-if="'isPublic' in role && role.isPublic" class="ti ti-world" :class="$style.icon" style="color: var(--MI_THEME-success)"></i>
-		<i v-else class="ti ti-lock" :class="$style.icon" style="color: var(--MI_THEME-warn)"></i>
-	</template>
-	<div v-adaptive-bg class="_panel" :class="$style.body">
-		<NativeRolePreviewBody :role="role" :detailed="detailed" :classes="$style"/>
-	</div>
-</MkA>
+<NativeRolePreview :role="role" :forModeration="forModeration" :detailed="detailed"/>
 </template>
 
 <script lang="ts" setup>
-import VuneRolePreviewBody from './vune/MkRolePreviewBody.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { } from 'vue';
 import * as Misskey from 'misskey-js';
-import { i18n } from '@/i18n.js';
+import VuneRolePreview from './vune/MkRolePreview.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 
-const NativeRolePreviewBody = createVuneWebHost(VuneRolePreviewBody);
+const NativeRolePreview = createVuneWebHost(VuneRolePreview);
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
 	role: Misskey.entities.Role | Misskey.entities.IResponse['roles'][number];
 	forModeration: boolean;
 	detailed?: boolean;
@@ -32,48 +22,3 @@ const props = withDefaults(defineProps<{
 	detailed: true,
 });
 </script>
-
-<style lang="scss" module>
-.root {
-	display: flex;
-	align-items: center;
-}
-
-.icon {
-	margin: 0 12px;
-}
-
-.body {
-	display: block;
-	padding: 16px 20px;
-	flex: 1;
-	border-left: solid 6px var(--color);
-}
-
-.bodyTitle {
-	display: flex;
-}
-
-.bodyIcon {
-	margin-right: 8px;
-}
-
-.bodyBadge {
-	height: 1.3em;
-	vertical-align: -20%;
-}
-
-.bodyName {
-	font-weight: bold;
-}
-
-.bodyUsers {
-	margin-left: auto;
-	opacity: 0.7;
-}
-
-.bodyDescription {
-	opacity: 0.7;
-	font-size: 85%;
-}
-</style>

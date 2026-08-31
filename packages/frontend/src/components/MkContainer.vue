@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<template #icon><slot name="icon"></slot></template>
 	<template #header><slot name="header"></slot></template>
-	<template #func="slotProps"><slot name="func" v-bind="slotProps"></slot></template>
+	<template #func><slot name="func" buttonStyleClass="mk-vune-container__header-button"></slot></template>
 	<slot></slot>
 </VuneContainer>
 </template>
@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import { prefer } from '@/preferences.js';
-import VuneContainer from '@/components/vune/MkContainer.vune';
+import VuneContainer from '@/components/vune/MkContainer.vune?vue-host';
 
 const props = withDefaults(defineProps<{
 	showHeader?: boolean;

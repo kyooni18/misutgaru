@@ -7,18 +7,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root">
 	<Transition :name="prefer.s.animation ? '_transition_zoom' : ''" mode="out-in">
 		<MkLoading v-if="fetching"/>
-		<VuneOverviewUsers v-else :users="newUsers ?? []"/>
+		<VuneOverviewUsersHost v-else :users="newUsers ?? []"/>
 	</Transition>
 </div>
 </template>
 
 <script lang="ts" setup>
 import VuneOverviewUsers from './vune/overview.users.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
+
+const VuneOverviewUsersHost = createVuneWebHost(VuneOverviewUsers);
 
 const newUsers = ref<Misskey.entities.UserDetailed[] | null>(null);
 const fetching = ref(true);

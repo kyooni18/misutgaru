@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	v-if="!hardMuted && !hideByPlugin && muted === false"
 	ref="rootEl"
 	v-hotkey="keymap"
-	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender }]"
+	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender, [$style.animationPaused]: !animationActive }]"
 	tabindex="0"
 >
 	<MkNoteSub v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote?.reply ?? null" :class="$style.replyTo"/>
@@ -68,6 +68,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					/>
 					<MkCwButton v-model="showContent" :text="appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll" style="margin: 4px 0;"/>
 				</p>
+				<div v-if="showCwMedia && appearNote.cw != null && !showContent && appearNote.files && appearNote.files.length > 0" style="margin-top: 8px;">
+					<MkMediaList ref="galleryEl" :mediaList="appearNote.files" :user="appearNote.user" :forceShow="true"/>
+				</div>
 				<div v-show="appearNote.cw == null || showContent" :class="[{ [$style.contentCollapsed]: collapsed }]">
 					<div :class="$style.text">
 						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
@@ -97,7 +100,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 						</div>
 					</div>
-					<div v-if="appearNote.files && appearNote.files.length > 0" style="margin-top: 8px;">
+					<div v-if="(!showCwMedia || appearNote.cw == null || showContent) && appearNote.files && appearNote.files.length > 0" style="margin-top: 8px;">
 						<MkMediaList ref="galleryEl" :mediaList="appearNote.files" :user="appearNote.user"/>
 					</div>
 					<MkPoll
@@ -168,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
 					<i class="ti ti-paperclip"></i>
 				</button>
-				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()">
+				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()" @click.stop>
 					<i class="ti ti-dots"></i>
 				</button>
 			</footer>
@@ -235,6 +238,7 @@ import MkCwButton from '@/components/MkCwButton.vue';
 import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
+import { useAnimationActivity } from '@/composables/use-animation-activity.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -267,6 +271,7 @@ const renoteTime = useTemplateRef('renoteTime');
 const reactButton = useTemplateRef('reactButton');
 const clipButton = useTemplateRef('clipButton');
 const galleryEl = useTemplateRef('galleryEl');
+const animationActive = useAnimationActivity(rootEl, { rootMargin: '320px 0px' });
 
 // コンポーサブルの呼び出し
 const {
@@ -287,6 +292,7 @@ const {
 	isLong,
 	showTicker,
 	canRenote,
+	menuShowing,
 
 	renote,
 	reply,
@@ -318,9 +324,11 @@ provide(DI.mfmEmojiReactCallback, reactViaMfmEmoji);
 
 // MkNote固有
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
+const showCwMedia = computed(() => prefer.r.showCwMedia.value);
 
 function onPostClick(ev: MouseEvent) {
 	if (ev.defaultPrevented) return;
+	if (menuShowing.value) return;
 	if (!(ev.target instanceof HTMLElement)) return;
 	const interactive = ev.target.closest('a, button, input, textarea, select, img, video, audio, canvas, [role="button"]');
 	if (interactive != null && interactive !== ev.currentTarget) return;
@@ -330,7 +338,7 @@ function onPostClick(ev: MouseEvent) {
 }
 
 function openThread() {
-	if (props.mock) return;
+	if (props.mock || menuShowing.value) return;
 
 	os.threadWindow(appearNote);
 }
@@ -479,6 +487,11 @@ const keymap = {
 	// Transitionが完了するのを待ってからskipRenderを付与すれば解決しそうだけどパフォーマンス的な影響が不明
 	content-visibility: auto;
 	contain-intrinsic-size: 0 150px;
+}
+
+.animationPaused,
+.animationPaused * {
+	animation-play-state: paused !important;
 }
 
 .tip {

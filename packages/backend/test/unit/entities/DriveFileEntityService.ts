@@ -17,6 +17,8 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { genAidx } from '@/misc/id/aidx.js';
 import { secureRndstr } from '@/misc/secure-rndstr.js';
+import type { Config } from '@/config.js';
+import type { MiMeta } from '@/models/Meta.js';
 
 const describeBenchmark = process.env.RUN_BENCHMARKS === '1' ? describe : describe.skip;
 
@@ -27,6 +29,8 @@ describe('DriveFileEntityService', () => {
 	let driveFilesRepository: DriveFilesRepository;
 	let driveFoldersRepository: DriveFoldersRepository;
 	let usersRepository: UsersRepository;
+	let config: Config;
+	let meta: MiMeta;
 	let idCounter = 0;
 
 	const userEntityServiceMock = {
@@ -117,6 +121,8 @@ describe('DriveFileEntityService', () => {
 		driveFilesRepository = app.get<DriveFilesRepository>(DI.driveFilesRepository);
 		driveFoldersRepository = app.get<DriveFoldersRepository>(DI.driveFoldersRepository);
 		usersRepository = app.get<UsersRepository>(DI.usersRepository);
+		config = app.get<Config>(DI.config);
+		meta = app.get<MiMeta>(DI.meta);
 	});
 
 	beforeEach(() => {
@@ -149,6 +155,40 @@ describe('DriveFileEntityService', () => {
 			const packed = await service.pack(file, { detail: true, self: true }) as any;
 			expect(packed.folder?.id).toBe(child.id);
 			expect(packed.folder?.parent?.id).toBe(folder.id);
+		});
+	});
+
+	describe('remote public URL', () => {
+		test('external image proxy is only used for images, while linked video stays on the local range-capable file proxy', async () => {
+			const file = await createFile(null, null);
+			const original = {
+				mediaProxy: config.mediaProxy,
+				externalMediaProxyEnabled: config.externalMediaProxyEnabled,
+				proxyRemoteFiles: meta.proxyRemoteFiles,
+			};
+
+			try {
+				config.mediaProxy = 'https://media-proxy.example';
+				config.externalMediaProxyEnabled = true;
+				meta.proxyRemoteFiles = true;
+
+				const remoteBase = {
+					...file,
+					userHost: 'remote.example',
+					uri: 'https://remote.example/media',
+					url: 'https://remote.example/media',
+					isLink: true,
+					webpublicAccessKey: 'webpublic-key',
+				};
+
+				expect(service.getPublicUrl({ ...remoteBase, type: 'image/png' })).toContain('https://media-proxy.example/image.webp');
+				expect(service.getPublicUrl({ ...remoteBase, type: 'video/mp4' })).toBe(`${config.url}/files/webpublic-key`);
+				expect(service.getPublicUrl({ ...remoteBase, type: 'audio/mpeg', webpublicAccessKey: null, accessKey: 'original-key' })).toBe(`${config.url}/files/original-key`);
+			} finally {
+				config.mediaProxy = original.mediaProxy;
+				config.externalMediaProxyEnabled = original.externalMediaProxyEnabled;
+				meta.proxyRemoteFiles = original.proxyRemoteFiles;
+			}
 		});
 	});
 

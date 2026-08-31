@@ -19,6 +19,13 @@ function paginator(maxItems = 8) {
 }
 
 describe('Paginator identity merging', () => {
+	test('finds paging extrema without depending on retained item order', () => {
+		const p = paginator();
+		p.items.value = [note('2'), note('9'), note('1'), note('5')];
+		expect((p as unknown as { getNewestId: () => string | undefined }).getNewestId()).toBe('9');
+		expect((p as unknown as { getOldestId: () => string | undefined }).getOldestId()).toBe('1');
+	});
+
 	test('deduplicates both existing IDs and duplicates inside one prepended batch', () => {
 		const p = paginator();
 		p.items.value = [note('3'), note('2')];

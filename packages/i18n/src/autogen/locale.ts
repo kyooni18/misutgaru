@@ -1461,6 +1461,14 @@ export interface Locale extends ILocale {
      */
     "displayOfSensitiveMedia": string;
     /**
+     * CW付きノートのメディアを常に表示
+     */
+    "showCwMedia": string;
+    /**
+     * CW付きノートを展開しなくても、添付された画像や動画を表示します。本文や投票などは引き続き隠されます。
+     */
+    "showCwMediaDescription": string;
+    /**
      * サーバーとの接続が失われたとき
      */
     "whenServerDisconnected": string;
@@ -11826,11 +11834,11 @@ export interface Locale extends ILocale {
     "_dataSaver": {
         "_media": {
             /**
-             * メディアの読み込みを無効化
+             * タイムラインのメディアをデフォルトで隠す
              */
             "title": string;
             /**
-             * 画像・動画が自動で読み込まれるのを防止します。隠れている画像・動画はタップすると読み込まれます。
+             * タイムラインの画像・動画・音声が自動で読み込まれるのを防止します。隠れているメディアはクリックすると読み込まれます。
              */
             "description": string;
         };

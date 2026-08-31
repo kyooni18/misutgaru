@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* SPDX-License-Identifier: AGPL-3.0-only */
 import { performance } from 'node:perf_hooks';
-import { bindMotionStyles, flushDomCommits, ownStyleAnimation, cancelStyleAnimations } from '../packages/modules/o0o0o/src/dom/index.js';
-import { motionValue } from '../packages/modules/o0o0o/src/index.js';
+import { bindMotionStyles, flushDomCommits, ownStyleAnimation, cancelStyleAnimations } from '../packages/modules/Vune/packages/animation/src/dom/index.js';
+import { motionValue } from '../packages/modules/Vune/packages/animation/src/index.js';
 
 function fakeElement() {
 	return {

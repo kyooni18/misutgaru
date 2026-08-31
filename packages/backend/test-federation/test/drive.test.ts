@@ -147,6 +147,32 @@ describe('Drive', () => {
 			});
 		});
 
+		describe('note-level CW does not mark otherwise safe attachments', () => {
+			let alice: LoginUser, bob: LoginUser;
+
+			beforeAll(async () => {
+				[alice, bob] = await Promise.all([
+					createAccount('a.test'),
+					createAccount('b.test'),
+				]);
+			});
+
+			test('A CW note keeps a non-sensitive attachment non-sensitive', async () => {
+				const file = await uploadFile('a.test', alice);
+				const note = (await alice.client.request('notes/create', {
+					text: 'content behind a warning',
+					cw: 'content warning',
+					fileIds: [file.id],
+				})).createdNote;
+
+				const noteInB = await resolveRemoteNote('a.test', note.id, bob);
+				assert(noteInB.files != null);
+				strictEqual(noteInB.cw, 'content warning');
+				strictEqual(noteInB.files.length, 1);
+				strictEqual(noteInB.files[0].isSensitive, false);
+			});
+		});
+
 		/** @see https://github.com/misskey-dev/misskey/issues/12208 */
 		describe('isSensitive is federated in replying', () => {
 			let alice: LoginUser, bob: LoginUser;

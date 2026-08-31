@@ -18,6 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<Mfm v-if="note.cw != ''" style="margin-right: 8px;" :text="note.cw" :author="note.user" :nyaize="'respect'"/>
 					<MkCwButton v-model="showContent" :text="note.text" :files="note.files" :poll="note.poll"/>
 				</p>
+				<div v-if="showCwMedia && note.cw != null && !showContent && note.files && note.files.length > 0" style="margin-top: 8px;">
+					<MkMediaList :mediaList="note.files" :user="note.user" :forceShow="true"/>
+				</div>
 				<div v-show="note.cw == null || showContent">
 					<MkSubNoteContent :class="$style.text" :note="note"/>
 				</div>
@@ -43,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkSubNoteContent from '@/components/MkSubNoteContent.vue';
@@ -51,6 +54,7 @@ import MkCwButton from '@/components/MkCwButton.vue';
 import { notePage } from '@/filters/note.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { userPage } from '@/filters/user.js';
 import { checkWordMute } from '@/utility/check-word-mute.js';
@@ -68,6 +72,7 @@ const props = withDefaults(defineProps<{
 const muted = ref(props.note && $i ? checkWordMute(props.note, $i, $i.mutedWords) : false);
 
 const showContent = ref(false);
+const showCwMedia = computed(() => prefer.r.showCwMedia.value);
 const replies = ref<Misskey.entities.Note[]>([]);
 
 if (props.detail && props.note) {

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader :actions="headerActions" :tabs="headerTabs">
 	<div class="_spacer" style="--MI_SPACER-w: 1000px;">
-		<Transition name="fade" mode="out-in">
+		<Transition name="fade" mode="out-in" :css="prefer.s.animation">
 			<VuneFollowState :user="user" :error="error" type="following" :onRetry="fetchUser"/>
 		</Transition>
 	</div>
@@ -14,12 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import VuneFollowState from './vune/follow-state.vune';
+import VuneFollowState from './vune/follow-state.vune?vue-host';
 import { computed, watch, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{
 	acct: string;

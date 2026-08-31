@@ -41,6 +41,14 @@ export type FileResolveResult =
 		ext: string | null;
 		path: string;
 		cleanup: () => void;
+	}
+	| {
+		kind: 'remote-link';
+		fileRole: 'webpublic' | 'original';
+		file: MiDriveFile;
+		filename: string;
+		url: string;
+		mime: string;
 	};
 
 export class FileServerFileResolver {
@@ -85,6 +93,21 @@ export class FileServerFileResolver {
 
 		if (!file.storedInternal) {
 			if (!(file.isLink && file.uri)) return { kind: 'unavailable' };
+
+			// Original/webpublic remote files can be streamed from the origin on
+			// demand. Downloading the entire object here defeats HTTP Range and
+			// makes video/audio metadata requests fetch the whole remote file.
+			if (!isThumbnail) {
+				return {
+					kind: 'remote-link',
+					url: file.uri,
+					fileRole: isWebpublic ? 'webpublic' : 'original',
+					file,
+					filename: file.name,
+					mime: this.fileInfoService.fixMime(file.type),
+				};
+			}
+
 			const result = await this.downloadAndDetectTypeFromUrl(file.uri);
 			const { kind: _kind, ...downloaded } = result;
 			file.size = (await fs.promises.stat(downloaded.path)).size;	// DB file.sizeは正確とは限らないので

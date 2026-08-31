@@ -54,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps_m">
 							<MkSwitch :modelValue="instance.openaiTranslationAvailable" disabled>
-								<template #label><SearchLabel>{{ i18n.ts.enable }}</SearchLabel></template>
+									<template #label><SearchText>{{ i18n.ts.enable }}</SearchText></template>
 							</MkSwitch>
 							<MkInfo>Configure <code>OPENAI_API_KEY</code>, <code>OPENAI_BASE_URL</code>, and <code>OPENAI_TRANSLATION_MODEL</code> in the server environment, then restart the backend.</MkInfo>
 						</div>

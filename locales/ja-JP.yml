@@ -362,6 +362,8 @@ rename: "名前を変更"
 avatar: "アイコン"
 banner: "バナー"
 displayOfSensitiveMedia: "センシティブなメディアの表示"
+showCwMedia: "CW付きノートのメディアを常に表示"
+showCwMediaDescription: "CW付きノートを展開しなくても、添付された画像や動画を表示します。本文や投票などは引き続き隠されます。"
 whenServerDisconnected: "サーバーとの接続が失われたとき"
 disconnectedFromServer: "サーバーから切断されました"
 reload: "リロード"
@@ -3143,8 +3145,8 @@ _externalResourceInstaller:
 
 _dataSaver:
   _media:
-    title: "メディアの読み込みを無効化"
-    description: "画像・動画が自動で読み込まれるのを防止します。隠れている画像・動画はタップすると読み込まれます。"
+    title: "タイムラインのメディアをデフォルトで隠す"
+    description: "タイムラインの画像・動画・音声が自動で読み込まれるのを防止します。隠れているメディアはクリックすると読み込まれます。"
   _avatar:
     title: "アイコン画像のアニメーションを無効化"
     description: "アイコン画像のアニメーションが停止します。アニメーション画像は通常の画像よりファイルサイズが大きいことがあるので、データ通信量をさらに削減できます。"

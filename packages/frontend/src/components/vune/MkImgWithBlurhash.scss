@@ -1,0 +1,6 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-img-blurhash { position:relative; width:100%; height:100%; }
+.mk-vune-img-blurhash__canvas,.mk-vune-img-blurhash__img { display:block; width:100%; height:100%; transition:opacity .3s ease; }
+.mk-vune-img-blurhash__canvas { object-fit:contain; }
+.mk-vune-img-blurhash__img { object-fit:contain; position:absolute; inset:0; }
+.mk-vune-img-blurhash--cover > .mk-vune-img-blurhash__canvas,.mk-vune-img-blurhash--cover > .mk-vune-img-blurhash__img { object-fit:cover; }

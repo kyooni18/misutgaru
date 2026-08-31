@@ -10,7 +10,7 @@ The source is currently an active migration checkpoint rather than a drop-in van
 - [Source map](docs/SOURCE_MAP.md)
 - [Vune migration](docs/VUNE.md)
 
-Git checkouts should initialize submodules recursively because Vune and o0o0o are tracked under `packages/modules`. The 2026-08-28 handoff archive includes those module sources directly so it remains inspectable without a second download. See the current-state and verification documents before treating a build as release-validated.
+Git checkouts should initialize submodules recursively because Vune is tracked under `packages/modules`. Its animation runtime is included inside that checkout as `@vune-ui/animation`. The 2026-08-28 handoff archive includes the framework sources directly so it remains inspectable without a second download. See the current-state and verification documents before treating a build as release-validated.
 
 Misutgaru remains licensed under the repository licenses and retains upstream Misskey attribution. General upstream contribution rules still apply unless this fork documents a stricter local rule.
 

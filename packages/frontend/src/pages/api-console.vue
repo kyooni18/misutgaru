@@ -13,16 +13,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:withCredential="withCredential"
 	:headerActions="headerActions"
 	:headerTabs="headerTabs"
-	:onBody="value => body = value"
-	:onEndpoint="value => { endpoint = value; onEndpointChange(); }"
-	:onCredential="value => withCredential = value"
+	:onBody="(value: string) => body = value"
+	:onEndpoint="(value: string) => { endpoint = value; onEndpointChange(); }"
+	:onCredential="(value: boolean) => withCredential = value"
 	:onSend="send"
 />
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import VuneApiConsole from './vune/api-console.vune';
+import VuneApiConsole from './vune/api-console.vune?vue-host';
 import JSON5 from 'json5';
 import type { Endpoints } from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';

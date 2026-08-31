@@ -1,0 +1,113 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { ForEach, HStack, Spacer, Text, VStack, ZStack } from 'vune-ui';
+import type { PageMetadata } from '@/page.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
+import MkAvatar from './MkAvatar.vune';
+import MkUserName from './MkUserName.vune';
+import MkTabs, { type NativeTab } from '@/components/vune/MkTabs.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import { $i as currentUser } from '@/i.js';
+import { getAccountMenu } from '@/accounts.js';
+import * as os from '@/os.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './MkPageHeader.scss';
+
+type TabAction = (key: string) => void;
+function ignoreTab(_key: string): void {}
+
+function scrollHeaderTop(event: PointerEvent): void {
+	const root = (event.currentTarget as HTMLElement | null)?.closest<HTMLElement>('.mk-vune-page-header');
+	const scroller = root?.closest<HTMLElement>('._pageScrollable, ._pageScrollableReversed');
+	if (scroller) scroller.scrollTo({ top: 0, behavior: 'smooth' });
+}
+async function openAccountMenu(event: PointerEvent): Promise<void> {
+	const menu = await getAccountMenu({ withExtraOperation: true });
+	os.popupMenu(menu, event.currentTarget ?? event.target);
+}
+
+export struct MkPageHeader: View {
+	let pageMetadata: PageMetadata | null
+	let tabs: NativeTab[]
+	let tab: string
+	let actions: PageHeaderItem[]
+	let thin: boolean
+	let hideTitle: boolean
+	let canOmitTitle: boolean
+	let displayMyAvatar: boolean
+	let onTab: TabAction
+
+	init(
+		pageMetadata: PageMetadata | null,
+		tabs: NativeTab[] = [],
+		tab: string = '',
+		actions: PageHeaderItem[] = [],
+		thin: boolean = false,
+		hideTitle: boolean = false,
+		canOmitTitle: boolean = false,
+		displayMyAvatar: boolean = false,
+		@Action onTab: TabAction = ignoreTab,
+	) {
+		self.pageMetadata = pageMetadata
+		self.tabs = tabs
+		self.tab = tab
+		self.actions = actions
+		self.thin = thin
+		self.hideTitle = hideTitle
+		self.canOmitTitle = canOmitTitle
+		self.displayMyAvatar = displayMyAvatar
+		self.onTab = onTab
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			HStack(alignment: 'center', spacing: 0) {
+				if (displayMyAvatar && currentUser && !thin) {
+					MkButton(transparent: true, iconOnly: true, className: 'mk-vune-page-header__my-avatar', onClick: { event in
+						void openAccountMenu(event)
+					}) {
+						MkAvatar(currentUser, className: 'mk-vune-page-header__avatar')
+					}
+				}
+				if (pageMetadata && !(hideTitle || (canOmitTitle && tabs.length > 0))) {
+					HStack(alignment: 'center', spacing: 8) {
+						if (pageMetadata.avatar) {
+							ZStack(alignment: 'center') { MkAvatar(pageMetadata.avatar, indicator: true, className: 'mk-vune-page-header__title-avatar') }
+								.className('mk-vune-page-header__title-avatar-container')
+						}
+						if (!pageMetadata.avatar && pageMetadata.icon) { VuneIcon(pageMetadata.icon, className: 'mk-vune-page-header__title-icon') }
+						VStack(alignment: 'leading', spacing: 0) {
+							if (pageMetadata.userName) { MkUserName({ user: pageMetadata.userName, nowrap: true }) }
+							else { Text(pageMetadata.title ?? '').className('_nowrap') }
+							if (pageMetadata.subtitle) { Text(pageMetadata.subtitle).className('mk-vune-page-header__subtitle') }
+						}.className('_nowrap mk-vune-page-header__title')
+					}
+						.className('mk-vune-page-header__title-container')
+						.withProps({ onClick: scrollHeaderTop })
+				}
+				if (tabs.length > 0) {
+					VStack(alignment: 'leading', spacing: 0) { MkTabs(tabs, tab: tab, onTab: onTab) }.className('mk-vune-page-header__tabs mk-vune-page-header__tabs--upper')
+				}
+				Spacer()
+				if (actions.length > 0) {
+					HStack(alignment: 'center', spacing: 4) {
+						ForEach(actions, key: (action, index) => `${index}:${action.icon}:${action.text ?? ''}`) { action in
+							MkButton(
+								transparent: true,
+								iconOnly: true,
+								className: ['mk-vune-page-header__button', action.highlighted ? 'mk-vune-page-header__button--highlighted' : '', action.danger ? 'mk-vune-page-header__button--danger' : ''].filter(Boolean).join(' '),
+								onClick: action.handler,
+							) {
+								VuneIcon(action.icon)
+							}
+								.withProps({ title: action.text ?? '', onClick: action.handler })
+						}
+					}.className('mk-vune-page-header__buttons')
+				}
+			}.className('mk-vune-page-header__upper')
+			if (tabs.length > 0) { VStack(alignment: 'leading', spacing: 0) { MkTabs(tabs, tab: tab, onTab: onTab) }.className('mk-vune-page-header__lower') }
+		}.className(['_materialBar', 'mk-vune-page-header', thin ? 'mk-vune-page-header--thin' : null, hideTitle ? 'mk-vune-page-header--hide-title' : null])
+	}
+}
+
+export default MkPageHeader

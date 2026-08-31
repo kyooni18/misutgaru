@@ -5,19 +5,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div ref="rootEl" :class="$style.root">
-	<button :class="$style.item" class="_button" @click="drawerMenuShowing = true">
+	<VuneMobileFooterMaterial/>
+
+	<button :class="$style.item" class="_button" :aria-label="i18n.ts.menu" @click="drawerMenuShowing = true">
 		<div :class="$style.itemInner">
 			<i :class="$style.itemIcon" class="ti ti-menu-2"></i><span v-if="menuIndicated" :class="$style.itemIndicator" class="_blink"><i class="_indicatorCircle"></i></span>
 		</div>
 	</button>
 
-	<button :class="$style.item" class="_button" @click="mainRouter.push('/')">
+	<button :class="$style.item" class="_button" :aria-label="i18n.ts.timeline" @click="mainRouter.push('/')">
 		<div :class="$style.itemInner">
 			<i :class="$style.itemIcon" class="ti ti-home"></i>
 		</div>
 	</button>
 
-	<button :class="$style.item" class="_button" @click="mainRouter.push('/my/notifications')">
+	<button :class="$style.item" class="_button" :aria-label="i18n.ts.notifications" @click="mainRouter.push('/my/notifications')">
 		<div :class="$style.itemInner">
 			<i :class="$style.itemIcon" class="ti ti-bell"></i>
 			<span v-if="$i?.hasUnreadNotification" :class="$style.itemIndicator" class="_blink">
@@ -26,13 +28,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 	</button>
 
-	<button :class="$style.item" class="_button" @click="widgetsShowing = true">
+	<button :class="$style.item" class="_button" :aria-label="i18n.ts.widgets" @click="widgetsShowing = true">
 		<div :class="$style.itemInner">
 			<i :class="$style.itemIcon" class="ti ti-apps"></i>
 		</div>
 	</button>
 
-	<button :class="[$style.item, $style.post]" class="_button" @click="os.post()">
+	<button :class="[$style.item, $style.post]" class="_button" :aria-label="i18n.ts.note" @click="os.post()">
 		<div :class="$style.itemInner">
 			<i :class="$style.itemIcon" class="ti ti-pencil"></i>
 		</div>
@@ -41,8 +43,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, useTemplateRef, watch } from 'vue';
+import VuneMobileFooterMaterial from './vune/mobile-footer-material.vune?vue-host';
 import { $i } from '@/i.js';
+import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { mainRouter } from '@/router.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -60,14 +64,10 @@ const menuIndicated = computed(() => {
 	return false;
 });
 
-const rootElHeight = ref(0);
-
 watch(rootEl, () => {
 	if (rootEl.value) {
-		rootElHeight.value = rootEl.value.offsetHeight;
 		window.document.body.style.setProperty('--MI-minBottomSpacing', 'var(--MI-minBottomSpacingMobile)');
 	} else {
-		rootElHeight.value = 0;
 		window.document.body.style.setProperty('--MI-minBottomSpacing', '0px');
 	}
 }, {
@@ -77,28 +77,26 @@ watch(rootEl, () => {
 
 <style lang="scss" module>
 .root {
-	position: relative;
-	z-index: 1;
-	padding-bottom: env(safe-area-inset-bottom, 0px);
+	position: fixed;
+	left: 50%;
+	right: auto;
+	bottom: max(var(--MI-margin), env(safe-area-inset-bottom, 0px));
+	z-index: 100;
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-	width: 100%;
+	width: min(340px, calc(100% - (var(--MI-margin) * 2)));
+	margin: 0;
+	padding: 4px 6px;
 	box-sizing: border-box;
-	background: var(--MI_THEME-navBg);
+	transform: translateX(-50%);
 	color: var(--MI_THEME-navFg);
-	border-top: solid 0.5px var(--MI_THEME-divider);
 }
 
 .item {
-	padding: 12px 0;
-
-	&:first-child {
-		padding-left: 12px;
-	}
-
-	&:last-child {
-		padding-right: 12px;
-	}
+	position: relative;
+	z-index: 1;
+	min-width: 0;
+	padding: 8px 0;
 
 	&.post {
 		.itemInner {

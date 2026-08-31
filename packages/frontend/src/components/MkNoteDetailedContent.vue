@@ -44,6 +44,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		/>
 		<MkCwButton v-model="showContent" :text="appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll"/>
 	</p>
+	<div v-if="showCwMedia && appearNote.cw != null && !showContent && appearNote.files && appearNote.files.length > 0">
+		<MkMediaList ref="galleryEl" :mediaList="appearNote.files" :user="appearNote.user" :forceShow="true"/>
+	</div>
 	<div v-show="appearNote.cw == null || showContent">
 		<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 		<MkA v-if="appearNote.replyId" :class="$style.noteReplyTarget" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
@@ -72,7 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</div>
 		</div>
-		<div v-if="appearNote.files && appearNote.files.length > 0">
+		<div v-if="(!showCwMedia || appearNote.cw == null || showContent) && appearNote.files && appearNote.files.length > 0">
 			<MkMediaList ref="galleryEl" :mediaList="appearNote.files" :user="appearNote.user"/>
 		</div>
 		<MkPoll
@@ -95,11 +98,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject, useTemplateRef } from 'vue';
+import { computed, inject, useTemplateRef } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import type { ReactiveNoteData } from '@/composables/use-note-capture.js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import { userPage } from '@/filters/user.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { DI } from '@/di.js';
@@ -123,6 +127,7 @@ defineProps<{
 }>();
 
 const showContent = defineModel<boolean>('showContent', { required: true });
+const showCwMedia = computed(() => prefer.r.showCwMedia.value);
 const inChannel = inject(DI.inChannel, null);
 const galleryEl = useTemplateRef<{ openGallery: () => void }>('galleryEl');
 

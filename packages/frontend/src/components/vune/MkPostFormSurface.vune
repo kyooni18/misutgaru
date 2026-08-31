@@ -1,24 +1,36 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-compat */
-import { VStack } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, type ViewGraphValue } from 'vune-ui';
 import MaterialSurface from '@/vune/MaterialSurface.vune';
 import { Material } from '@/vune/material.js';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
 
-type Props = {
-	class?: string;
-	style?: string | Record<string, unknown>;
-};
+/** Material-backed shell shared by native and legacy post-form placement. */
+export struct MkPostFormSurface: View {
+	let className: string
+	let style: any
+	let content: ViewGraphValue
 
-/** Material-backed shell for the legacy post form while its controls migrate. */
-export default createVuneComponent<Props>((props, slots) =>
-	MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
-		VStack(spacing: 0) {
-			VueSlot(slots.default)
-		}
-			.style({ width: '100%', minWidth: 0, alignItems: 'stretch' })
+	init(
+		className: string = '',
+		style: any = undefined,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.className = className
+		self.style = style
+		self.content = content()
 	}
-		.className(['mk-vune-post-form-surface', props.class])
-		.style({ width: '100%', minWidth: 0, alignSelf: 'stretch' })
-		.withProps({ style: props.style }),
-);
+
+	var body: some View {
+		MaterialSurface(Material.regular, opaqueBackground: 'var(--MI_THEME-bg)', animated: true) {
+			VStack(spacing: 0) {
+				content
+			}
+				.style({ width: '100%', minWidth: 0, alignItems: 'stretch' })
+		}
+			.className(['mk-vune-post-form-surface', className])
+			.style({ width: '100%', minWidth: 0, alignSelf: 'stretch' })
+			.withProps({ style })
+	}
+}
+
+export default MkPostFormSurface

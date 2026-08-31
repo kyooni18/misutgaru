@@ -751,35 +751,36 @@ export class UserEntityService implements OnModuleInit {
 
 		const isDetailed = (options?.schema ?? 'UserLite') !== 'UserLite';
 		if (isDetailed) {
-			profilesMap = await this.userProfilesRepository.findBy({ userId: In(_userIds) })
-				.then(profiles => new Map(profiles.map(p => [p.userId, p])));
-
 			const meId = me ? me.id : null;
-			if (_userIds.length > 0) {
-				pinNotes = await this.userNotePiningsRepository.createQueryBuilder('pin')
+			const [profiles, pinsNotes, memos, relations] = await Promise.all([
+				this.userProfilesRepository.findBy({ userId: In(_userIds) }),
+				_userIds.length > 0
+					? this.userNotePiningsRepository.createQueryBuilder('pin')
 					.where('pin.userId IN (:...userIds)', { userIds: _userIds })
 					.innerJoinAndSelect('pin.note', 'note')
 					.getMany()
-					.then(pinsNotes => {
-						const map = new Map<MiUser['id'], MiUserNotePining[]>();
-						for (const note of pinsNotes) {
-							const notes = map.get(note.userId) ?? [];
-							notes.push(note);
-							map.set(note.userId, notes);
-						}
-						for (const [, notes] of map.entries()) {
-							// pack側ではDESCで取得しているので、それに合わせて降順に並び替えておく
-							notes.sort((a, b) => b.id.localeCompare(a.id));
-						}
-						return map;
-					});
-			}
-			if (meId && _userIds.length > 0) {
-				userMemos = await this.userMemosRepository.findBy({ userId: meId, targetUserId: In(_userIds) })
-					.then(memos => new Map(memos.map(memo => [memo.targetUserId, memo.memo])));
+					: Promise.resolve([]),
+				meId && _userIds.length > 0
+					? this.userMemosRepository.findBy({ userId: meId, targetUserId: In(_userIds) })
+					: Promise.resolve([]),
+				meId && _userIds.length > 0
+					? this.getRelations(meId, _userIds)
+					: Promise.resolve(new Map<MiUser['id'], UserRelation>()),
+			]);
 
-				userRelations = await this.getRelations(meId, _userIds);
+			profilesMap = new Map(profiles.map(profile => [profile.userId, profile]));
+			pinNotes = new Map<MiUser['id'], MiUserNotePining[]>();
+			for (const note of pinsNotes) {
+				const notes = pinNotes.get(note.userId) ?? [];
+				notes.push(note);
+				pinNotes.set(note.userId, notes);
 			}
+			for (const [, notes] of pinNotes.entries()) {
+				// pack側ではDESCで取得しているので、それに合わせて降順に並び替えておく
+				notes.sort((a, b) => b.id.localeCompare(a.id));
+			}
+			userMemos = new Map(memos.map(memo => [memo.targetUserId, memo.memo]));
+			userRelations = relations;
 
 			const pinnedPageIds = [...new Set([...profilesMap.values()].map(profile => profile.pinnedPageId).filter((pageId): pageId is string => pageId != null))];
 			if (pinnedPageIds.length > 0) {

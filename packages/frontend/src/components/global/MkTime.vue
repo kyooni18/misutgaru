@@ -14,7 +14,7 @@ import isChromatic from 'chromatic/isChromatic';
 import { computed } from 'vue';
 import { i18n } from '@/i18n.js';
 import { dateTimeFormat } from '@@/js/intl-const.js';
-import { useLowresTime } from '@/composables/use-lowres-time.js';
+import { useAdaptiveLowresTime } from '@/composables/use-lowres-time.js';
 
 const VuneTimeHost = createVuneWebHost(VuneTime);
 
@@ -46,7 +46,7 @@ const _time = props.time == null ? NaN : getDateSafe(props.time).getTime();
 const invalid = Number.isNaN(_time);
 const absolute = !invalid ? dateTimeFormat.format(_time) : i18n.ts._ago.invalid;
 
-const actualNow = useLowresTime();
+const actualNow = useAdaptiveLowresTime(_time);
 const now = computed(() => (props.origin ? props.origin.getTime() : actualNow.value));
 
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss

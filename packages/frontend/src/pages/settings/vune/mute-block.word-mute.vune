@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text, VStack } from 'vune-ui';
-import MkTextarea from '@/components/MkTextarea.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { Group, Text, VStack } from 'vune-ui';
+import MkTextarea from '@/components/vune/MkTextarea.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	mutedWords: string;
@@ -12,30 +13,35 @@ type Props = {
 	onSave?: () => void;
 };
 
-export default createVuneComponent<Props>((props) =>
-	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-		VueComponent(MkTextarea, {
-			modelValue: props.mutedWords,
-			'onUpdate:modelValue': (value: string) => props.onChange?.(value),
-		}, {
-			default: () => Text(i18n.ts._wordMute.muteWords),
-			caption: () => Group() {
-				Text(i18n.ts._wordMute.muteWordsDescription)
-				Element('br')
-				Text(i18n.ts._wordMute.muteWordsDescription2)
-			},
-		})
-		VueComponent(MkButton, {
-			primary: true,
-			inline: true,
-			disabled: !props.changed,
-			onClick: () => props.onSave?.(),
-		}, {
-			default: () => Group() {
-				Element('i', { className: 'ti ti-device-floppy' })
-				Text(` ${i18n.ts.save}`)
-			},
-		})
+
+
+export struct VuneMuteBlockWordMuteView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-		.className('_gaps_m')
-);
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+			MkTextarea(props.mutedWords,
+				onChange: { value in props.onChange?.(value) },
+				label: Text(i18n.ts._wordMute.muteWords),
+				caption: Text(`${i18n.ts._wordMute.muteWordsDescription}\n${i18n.ts._wordMute.muteWordsDescription2}`).style({ whiteSpace: 'pre-line' }),
+			)
+			MkButton(
+				primary: true,
+				inline: true,
+				disabled: !props.changed,
+				onClick: { props.onSave?.() },
+			) {
+				Group() {
+					VuneIcon('ti ti-device-floppy')
+					Text(` ${i18n.ts.save}`)
+				}
+			}
+		}.className('_gaps_m')
+	}
+}
+
+export default VuneMuteBlockWordMuteView

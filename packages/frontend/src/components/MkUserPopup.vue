@@ -71,8 +71,7 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
+import { animateSurfaceTransition } from '@/vune/motion.js';
 
 const props = defineProps<{
 	showing: boolean;
@@ -97,10 +96,7 @@ function enter(element: Element, done: () => void) {
 		done();
 		return;
 	}
-	animateVuneTransition(element, [
-		{ opacity: 0, transform: 'scale(0.9)' },
-		{ opacity: 1, transform: 'scale(1)' },
-	], Animation.easeOut(0.15), done);
+	animateSurfaceTransition(element, 'enter', done);
 }
 
 function leave(element: Element, done: () => void) {
@@ -108,10 +104,7 @@ function leave(element: Element, done: () => void) {
 		done();
 		return;
 	}
-	animateVuneTransition(element, [
-		{ opacity: 1, transform: 'scale(1)' },
-		{ opacity: 0, transform: 'scale(0.9)' },
-	], Animation.easeIn(0.15), done);
+	animateSurfaceTransition(element, 'leave', done);
 }
 
 function showMenu(ev: PointerEvent) {

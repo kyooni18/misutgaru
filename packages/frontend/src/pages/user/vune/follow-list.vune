@@ -1,22 +1,28 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
-import MkUserInfo from '@/components/MkUserInfo.vue';
-import MkPagination from '@/components/MkPagination.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach } from 'vune-ui';
+import MkUserInfo from '@/components/vune/MkUserInfo.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = { type: 'following' | 'followers'; followingPaginator: IPaginator; followersPaginator: IPaginator };
-export default createVuneComponent<Props>((props) => {
-	const paginator = props.type === 'following' ? props.followingPaginator : props.followersPaginator;
-	return Element('div', {},
-		VueComponent(MkPagination, { paginator, withControl: true }, {
-			default: (slotProps: any) => Group() {
-				Element('div', { className: 'mk-vune-follow-users' }, Group() {
-					ForEach(slotProps.items ?? [], key: (item: any) => (props.type === 'following' ? item.followee : item.follower)?.id ?? item.id) { item in
-						VueComponent(MkUserInfo, { user: props.type === 'following' ? item.followee : item.follower })
-					}
-				})
-			},
-		}),
-	);
-});
+type Row = { key: string; user: any };
+function rows(props: Props, paginator: IPaginator): Row[] {
+	return (paginator.items.value as any[]).map((item, index) => {
+		const user = props.type === 'following' ? item.followee : item.follower;
+		return { key: user?.id ?? item.id ?? String(index), user };
+	}).filter(row => row.user != null);
+}
+export struct FollowList: View {
+	let props: Props
+	let paginator: IPaginator
+	init(_ props: Props) { self.props = props; self.paginator = props.type === 'following' ? props.followingPaginator : props.followersPaginator }
+	var body: some View {
+		MkPagination(paginator, withControl: true) {
+			VStack(alignment: 'leading', spacing: 0) {
+				ForEach(rows(props, paginator), key: row => row.key) { row in MkUserInfo({ user: row.user }) }
+			}.className('mk-vune-follow-users')
+		}
+	}
+}
+export default FollowList

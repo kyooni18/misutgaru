@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { htmlElement } from '@/vune/native.js';
+import { VStack, Image, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkMiniChart from './MkMiniChart.vune';
+import ComputedMiniChart from '@/vune/ComputedMiniChart.vune';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import '@/vune/phase6-migration.scss';
 
@@ -17,32 +17,6 @@ function getInstanceIcon(instance: Misskey.entities.FederationInstance): string 
 		?? '/client-assets/dummy.png';
 }
 
-function miniChart(values: number[], instanceId: string) {
-	let viewBoxX = 50;
-	let viewBoxY = 50;
-	let stats = values.slice().reverse();
-	let peak = Math.max.apply(null, stats) || 1;
-	let step = stats.length > 1 ? viewBoxX / (stats.length - 1) : 0;
-	let points = stats.map((value, index) => [
-		index * step,
-		(1 - (value / peak)) * viewBoxY,
-	]);
-	let polylinePoints = points.map(xy => `${xy[0]},${xy[1]}`).join(' ');
-	let polygonPoints = `0,${viewBoxY} ${polylinePoints} ${viewBoxX},${viewBoxY}`;
-	let head = points.at(-1);
-	return MkMiniChart(
-		viewBoxX: viewBoxX,
-		viewBoxY: viewBoxY,
-		gradientId: `mk-vune-instance-chart-${instanceId}`,
-		color: 'var(--MI_THEME-accent)',
-		polygonPoints: polygonPoints,
-		polylinePoints: polylinePoints,
-		headX: head?.[0],
-		headY: head?.[1],
-		className: 'mk-vune-instance-mini__chart',
-	);
-}
-
 export struct MkInstanceCardMini: View {
 	let instance: Misskey.entities.FederationInstance
 	let chartValues: number[] | null | undefined
@@ -53,27 +27,26 @@ export struct MkInstanceCardMini: View {
 	}
 
 	var body: some View {
-		htmlElement('div', { style: { display: 'contents' } },
-			htmlElement('div', {
-				className: [
+		VStack(alignment: 'leading', spacing: 0) {
+			Image(getInstanceIcon(instance), { alt: '' })
+				.className('mk-vune-instance-mini__icon')
+				.withProps({ loading: 'lazy' })
+			VStack(alignment: 'leading', spacing: 0) {
+				Text(instance.name ?? instance.host).className('mk-vune-instance-mini__host')
+				VStack(alignment: 'leading', spacing: 0) {
+					Text(instance.host).bold()
+					Text(` / ${instance.softwareName || '?'} ${instance.softwareVersion}`)
+				}.className('mk-vune-instance-mini__sub _monospace')
+			}.className('mk-vune-instance-mini__body')
+			if (chartValues && chartValues.length > 0) { ComputedMiniChart(chartValues, gradientId: `mk-vune-instance-chart-${instance.id}`, className: 'mk-vune-instance-mini__chart') }
+		}
+			.className([
 					'mk-vune-instance-mini',
 					instance.isNotResponding ? 'mk-vune-instance-mini--yellow' : null,
 					instance.isBlocked ? 'mk-vune-instance-mini--red' : null,
 					instance.isSuspended ? 'mk-vune-instance-mini--gray' : null,
 					instance.isSilenced ? 'mk-vune-instance-mini--blue' : null,
-				],
-			},
-				htmlElement('img', { className: 'mk-vune-instance-mini__icon', src: getInstanceIcon(instance), alt: '', loading: 'lazy' }),
-				htmlElement('div', { className: 'mk-vune-instance-mini__body' },
-					htmlElement('span', { className: 'mk-vune-instance-mini__host' }, instance.name ?? instance.host),
-					htmlElement('span', { className: 'mk-vune-instance-mini__sub _monospace' },
-						htmlElement('b', {}, instance.host),
-						` / ${instance.softwareName || '?'} ${instance.softwareVersion}`,
-					),
-				),
-				chartValues && chartValues.length > 0 ? miniChart(chartValues, instance.id) : null,
-			),
-		)
+				])
 	}
 }
 

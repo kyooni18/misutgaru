@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneChatHome :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="value => tab = value"/>
+<VuneChatHome :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="(value: string) => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneChatHome from './vune/home.vune';
+import VuneChatHome from './vune/home.vune?vue-host';
 import { computed, ref } from 'vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

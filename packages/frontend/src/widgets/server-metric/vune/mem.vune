@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { htmlElement } from '@/vune/native.js';
+import { HStack, Text, VStack } from 'vune-ui';
 import Pie from './pie.vune';
 import bytes from '@/filters/bytes.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 export struct Mem: View {
 	let usage: number
@@ -18,15 +19,18 @@ export struct Mem: View {
 	}
 
 	var body: some View {
-		htmlElement('div', { className: 'zlxnikvl' },
-			Pie(usage).className('pie'),
-			htmlElement('div', {},
-				htmlElement('p', {}, htmlElement('i', { className: 'ti ti-section' }), 'RAM'),
-				htmlElement('p', {}, `Total: ${bytes(total, 1)}`),
-				htmlElement('p', {}, `Used: ${bytes(used, 1)}`),
-				htmlElement('p', {}, `Free: ${bytes(free, 1)}`),
-			),
-		)
+		VStack(alignment: 'stretch', spacing: 0) {
+			Pie(usage).className('pie')
+			VStack(alignment: 'leading', spacing: 0) {
+				HStack(alignment: 'center', spacing: 4) {
+					VuneIcon('ti ti-section')
+					Text('RAM')
+				}.className(['server-metric__line', 'server-metric__line--heading'])
+				Text(`Total: ${bytes(total, 1)}`).className('server-metric__line')
+				Text(`Used: ${bytes(used, 1)}`).className('server-metric__line')
+				Text(`Free: ${bytes(free, 1)}`).className('server-metric__line')
+			}.className('server-metric__details')
+		}.className('zlxnikvl')
 	}
 }
 

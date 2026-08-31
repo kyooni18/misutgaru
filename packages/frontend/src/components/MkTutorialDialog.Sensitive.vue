@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script setup lang="ts">
 import * as Misskey from 'misskey-js';
 import { ref, reactive } from 'vue';
-import VuneTutorialSensitive from './vune/MkTutorialDialog.Sensitive.vune';
+import VuneTutorialSensitive from './vune/MkTutorialDialog.Sensitive.vune?vue-host';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 

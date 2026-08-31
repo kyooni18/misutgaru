@@ -4,18 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneOnlineUsers :onlineUsersCount="onlineUsersCount" :transparent="widgetProps.transparent" :classes="$style"/>
+<NativeOnlineUsers :onlineUsersCount="onlineUsersCount" :transparent="widgetProps.transparent" :classes="$style"/>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneOnlineUsers from './vune/WidgetOnlineUsers.vune';
+import WidgetOnlineUsers from './vune/WidgetOnlineUsers.vune';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { useInterval } from '@@/js/use-interval.js';
 import { i18n } from '@/i18n.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const NativeOnlineUsers = createVuneWebHost(WidgetOnlineUsers);
 
 const name = 'onlineUsers';
 

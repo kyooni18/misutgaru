@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-sticky-container__body {
+	position: relative;
+	z-index: 0;
+}
+.mk-vune-sticky-container__header {
+	position: sticky;
+	top: var(--MI-stickyTop, 0px);
+	z-index: 1;
+}
+.mk-vune-sticky-container__footer {
+	position: sticky;
+	bottom: var(--MI-stickyBottom, 0px);
+	z-index: 1;
+}

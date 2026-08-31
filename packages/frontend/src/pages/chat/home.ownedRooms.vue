@@ -4,13 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneOwnedRooms :fetching="fetching" :rooms="rooms"/>
+<VuneOwnedRoomsHost :fetching="fetching" :rooms="rooms"/>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import VuneOwnedRooms from './vune/home.ownedRooms.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+const VuneOwnedRoomsHost = createVuneWebHost(VuneOwnedRooms);
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const fetching = ref(true);

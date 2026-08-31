@@ -1,0 +1,70 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { Binding, TextEditor, VStack, type ViewGraphValue } from 'vune-ui';
+import './MkFormControls.scss';
+
+type TextareaAction = (value: string) => void;
+function ignoreTextareaChange(_value: string): void {}
+
+export struct MkTextarea: View {
+	let value: string
+	let placeholder: string
+	let disabled: boolean
+	let readonly: boolean
+	let required: boolean
+	let tall: boolean
+	let code: boolean
+	let rows: number
+	let className: string
+	let style: any
+	let onChange: TextareaAction
+	let label: ViewGraphValue
+	let caption: ViewGraphValue
+
+	init(
+		_ value: string | null | undefined,
+		placeholder: string = '',
+		disabled: boolean = false,
+		readonly: boolean = false,
+		required: boolean = false,
+		tall: boolean = false,
+		code: boolean = false,
+		rows: number = 4,
+		className: string = '',
+		style: any = undefined,
+		@Action onChange: TextareaAction = ignoreTextareaChange,
+		label: ViewGraphValue = null,
+		caption: ViewGraphValue = null,
+	) {
+		self.value = value ?? ''
+		self.placeholder = placeholder
+		self.disabled = disabled
+		self.readonly = readonly
+		self.required = required
+		self.tall = tall
+		self.code = code
+		self.rows = rows
+		self.className = className
+		self.style = style
+		self.onChange = onChange
+		self.label = label
+		self.caption = caption
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (label) { VStack(alignment: 'leading', spacing: 0) { label }.className('mk-vune-field__label') }
+			VStack(alignment: 'leading', spacing: 0) {
+				TextEditor(Binding(() => value, onChange), placeholder, rows)
+					.className(['mk-vune-field__textarea', tall ? 'mk-vune-field__textarea--tall' : null, code ? 'mk-vune-field__textarea--code' : null])
+					.withProps({ disabled, readonly, required })
+			}.className('mk-vune-field__shell')
+			if (caption) { VStack(alignment: 'leading', spacing: 0) { caption }.className('mk-vune-field__caption') }
+		}
+			.className(['mk-vune-field', disabled ? 'mk-vune-field--disabled' : null, className])
+			.style(style)
+			.withProps({ role: 'group' })
+	}
+}
+
+export default MkTextarea

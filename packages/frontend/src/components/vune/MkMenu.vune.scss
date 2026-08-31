@@ -7,8 +7,8 @@
 	// disappear behind the row's overflow clip.
 	width: max-content;
 	min-width: 200px;
-	max-width: calc(100vw - 16px);
-	max-height: calc(100dvh - 16px);
+	max-width: calc(100vw - 32px);
+	max-height: calc(100dvh - 32px);
 	overflow: hidden;
 	border-radius: 12px;
 	corner-shape: round;
@@ -28,7 +28,7 @@
 	box-sizing: border-box;
 	width: max-content;
 	min-width: 200px;
-	max-width: calc(100vw - 16px);
+	max-width: calc(100vw - 32px);
 	padding: 8px 0;
 	overflow: auto;
 	overscroll-behavior: contain;
@@ -291,13 +291,13 @@
 
 @media (max-width: 600px) {
 	.mk-vune-menu-surface:not(.mk-vune-menu-surface--drawer) {
-		min-width: min(200px, calc(100vw - 16px));
-		max-width: calc(100vw - 16px);
+		min-width: min(200px, calc(100vw - 32px));
+		max-width: calc(100vw - 32px);
 		width: max-content;
 	}
 
 	.mk-vune-menu:not(.mk-vune-menu--drawer) {
-		min-width: min(200px, calc(100vw - 16px));
+		min-width: min(200px, calc(100vw - 32px));
 		width: max-content;
 	}
 }

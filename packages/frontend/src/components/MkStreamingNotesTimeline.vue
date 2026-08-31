@@ -92,6 +92,7 @@ import { clearPreparedNoteCache, prefetchPreparedNotes } from '@/utility/prepare
 import { Paginator } from '@/utility/paginator.js';
 import { normalizeNoteEntity, evictNormalizedNote } from '@/utility/normalized-entity-cache.js';
 import { useVariableVirtualList } from '@/composables/use-variable-virtual-list.js';
+import { prefetchNoteMedia } from '@/utility/media-prefetch.js';
 import type { VariableVirtualEntry } from '@/composables/use-variable-virtual-list.js';
 
 const props = withDefaults(defineProps<{
@@ -228,6 +229,7 @@ const timelineItems = computed(() => paginator.items.value.slice());
 const {
 	enabled: virtualizationEnabled,
 	entries: virtualEntries,
+	range: virtualRange,
 	beforeSize,
 	afterSize,
 	observeRow: observeVirtualRow,
@@ -256,8 +258,27 @@ function setVirtualRow(el: Element | ComponentPublicInstance | null, entry: Vari
 	observeVirtualRow(element, entry);
 }
 
-watch(timelineItems, notes => {
-	prefetchPreparedNotes(notes);
+const preparedPrefetchItems = computed(() => {
+	const notes = timelineItems.value;
+	if (!virtualizationEnabled.value) return notes.slice(0, 96);
+	// Follow the actual viewport rather than repeatedly preparing the oldest
+	// retained notes. A small look-behind plus a larger forward window keeps
+	// scrolls warm without filling the worker/cache with off-screen MFM.
+	const start = Math.max(0, virtualRange.value.start - 4);
+	const end = Math.min(notes.length, virtualRange.value.end + 24);
+	return notes.slice(start, end);
+});
+
+watch(preparedPrefetchItems, notes => {
+	prefetchPreparedNotes(notes, notes.length);
+}, { immediate: true, deep: false });
+
+const mediaPrefetchItems = computed(() => {
+	return timelineItems.value;
+});
+
+watch(mediaPrefetchItems, notes => {
+	prefetchNoteMedia(notes);
 }, { immediate: true, deep: false });
 
 onMounted(() => {

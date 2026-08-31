@@ -18,13 +18,19 @@ export function useChartTooltip(opts: { position: 'top' | 'middle' } = { positio
 		borderColor: string;
 		text: string;
 	}[] | null>(null);
-	const { dispose: disposeTooltipComponent } = os.popup(MkChartTooltip, {
-		showing: tooltipShowing,
-		x: tooltipX,
-		y: tooltipY,
-		title: tooltipTitle,
-		series: tooltipSeries,
-	}, {});
+	let disposeTooltipComponent: (() => void) | null = null;
+
+	function ensureTooltipComponent() {
+		if (disposeTooltipComponent != null) return;
+		const { dispose } = os.popup(MkChartTooltip, {
+			showing: tooltipShowing,
+			x: tooltipX,
+			y: tooltipY,
+			title: tooltipTitle,
+			series: tooltipSeries,
+		}, {});
+		disposeTooltipComponent = dispose;
+	}
 
 	function windowTouchendHandler() {
 		tooltipShowing.value = false;
@@ -34,7 +40,8 @@ export function useChartTooltip(opts: { position: 'top' | 'middle' } = { positio
 
 	onUnmounted(() => {
 		window.removeEventListener('touchend', windowTouchendHandler);
-		disposeTooltipComponent();
+		disposeTooltipComponent?.();
+		disposeTooltipComponent = null;
 	});
 
 	onDeactivated(() => {
@@ -56,13 +63,15 @@ export function useChartTooltip(opts: { position: 'top' | 'middle' } = { positio
 
 		const rect = context.chart.canvas.getBoundingClientRect();
 
-		tooltipShowing.value = true;
 		tooltipX.value = rect.left + window.scrollX + context.tooltip.caretX;
 		if (opts.position === 'top') {
 			tooltipY.value = rect.top + window.scrollY;
 		} else if (opts.position === 'middle') {
 			tooltipY.value = rect.top + window.scrollY + context.tooltip.caretY;
 		}
+
+		ensureTooltipComponent();
+		tooltipShowing.value = true;
 	}
 
 	return {

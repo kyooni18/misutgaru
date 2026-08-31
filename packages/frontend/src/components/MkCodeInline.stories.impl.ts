@@ -8,7 +8,7 @@
 import type { StoryObj } from '@storybook/vue3';
 import MkCodeInline from './MkCodeInline.vue';
 export const Default = {
-	render(args) {
+	render(args: Record<string, unknown>) {
 		return {
 			components: {
 				MkCodeInline,
@@ -18,14 +18,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkCodeInline v-bind="props"/>',
+			template: '<MkCodeInline v-bind="args"/>',
 		};
 	},
 	args: {

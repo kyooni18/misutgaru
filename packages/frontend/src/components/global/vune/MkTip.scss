@@ -1,0 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+.mk-vune-tip {
+	padding: 12px 14px;
+	font-size: 90%;
+	background: var(--MI_THEME-infoBg);
+	color: var(--MI_THEME-infoFg);
+	border-radius: var(--MI-radius);
+}
+
+.mk-vune-tip--warn {
+	background: var(--MI_THEME-infoWarnBg);
+	color: var(--MI_THEME-infoWarnFg);
+}

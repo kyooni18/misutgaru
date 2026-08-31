@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneExploreFeatured :tab="tab" :notesPaginator="paginatorForNotes" :pollsPaginator="paginatorForPolls" :onTabChange="value => tab = value"/>
+<VuneExploreFeatured :tab="tab" :notesPaginator="paginatorForNotes" :pollsPaginator="paginatorForPolls" :onTabChange="(value: 'notes' | 'polls') => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneExploreFeatured from './vune/explore.featured.vune';
+import VuneExploreFeatured from './vune/explore.featured.vune?vue-host';
 import { markRaw, ref } from 'vue';
 import { Paginator } from '@/utility/paginator.js';
 

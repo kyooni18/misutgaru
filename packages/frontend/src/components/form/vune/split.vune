@@ -1,11 +1,23 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Grid, type ViewGraphValue } from 'vune-ui';
+import '@/components/vune/misskey-vune.scss';
 
-type Props = { minWidth?: number; rootClass: string };
-export default createVuneComponent<Props>((props, slots) =>
-	Element('div', {
-		className: props.rootClass,
-		style: { gridTemplateColumns: `repeat(auto-fill, minmax(${props.minWidth ?? 210}px, 1fr))` },
-	}, VueSlot(slots.default))
-);
+export struct FormSplit: View {
+	let minWidth: number
+	let content: ViewGraphValue
+
+	init(minWidth: number = 210, @ViewBuilder content: () => ViewGraphValue) {
+		self.minWidth = minWidth
+		self.content = content()
+	}
+
+	var body: some View {
+		Grid({ columns: `repeat(auto-fill, minmax(${minWidth}px, 1fr))` }) {
+			content
+		}
+			.className('mk-vune-form-split')
+	}
+}
+
+export default FormSplit

@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-pagination__controls {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.mk-vune-pagination__control-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.mk-vune-pagination__order {
+	flex: 1;
+	margin-right: 6px;
+}
+.mk-vune-pagination__more {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}

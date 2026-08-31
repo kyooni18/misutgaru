@@ -11,7 +11,7 @@ Baseline: the supplied `misskey-develop` source at package version `2026.8.0-alp
 | Added | 741 |
 | Removed | 2 |
 
-The added count is intentionally larger than the original fork snapshot because the handoff tree includes the checked-out Vune and o0o0o framework sources plus fork-owned tests/tooling instead of empty submodule directories.
+The added count is intentionally larger than the original fork snapshot because the handoff tree includes the checked-out Vune framework source, including `@vune-ui/animation`, plus fork-owned tests/tooling instead of an empty framework submodule directory.
 
 ## Frontend/framework changes
 
@@ -22,7 +22,7 @@ The added count is intentionally larger than the original fork snapshot because 
 | Web renderer | boundary-local State invalidation, parent-first dirty-boundary batching, compiled direct-patch paths |
 | Native semantics | additional graph-first browser primitives and restricted raw-host escape paths |
 | DevTools | opt-in Vune boundary render/dependency/node profiling in development builds |
-| Motion/layout | o0o0o per-property ownership plus intrinsic layout FLIP on independent translate/scale channels |
+| Motion/layout | `@vune-ui/animation` per-property ownership plus intrinsic layout FLIP on independent translate/scale channels |
 | Material | reusable translucent tiers/accessibility fallbacks |
 | Thread window | resizable in-app detailed note thread flow |
 | Translation UI | main translation plus bounded per-image translation/description results |

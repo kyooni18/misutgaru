@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+.mk-vune-achievements__root { display:grid; grid-template-columns:repeat(auto-fill,min(380px,100%)); gap:12px; place-content:center; }
+.mk-vune-achievements__achievement { display:flex; padding:16px; }
+.mk-vune-achievements__achievement--locked { opacity:.5; }
+.mk-vune-achievements__icon { flex-shrink:0; margin-right:12px; }
+@keyframes mk-vune-achievements-shine { from { translate:-30px; } to { translate:-130px; } }
+.mk-vune-achievements__icon-frame { position:relative; width:58px; height:58px; padding:6px; border-radius:100%; box-sizing:border-box; pointer-events:none; user-select:none; filter:drop-shadow(0 2px 2px #00000044); box-shadow:0 1px 0 #ffffff88 inset; overflow:clip; }
+.mk-vune-achievements__icon-frame--bronze { background:linear-gradient(0deg,#703827,#d37566); }
+.mk-vune-achievements__icon-frame--silver { background:linear-gradient(0deg,#7c7c7c,#e1e1e1); }
+.mk-vune-achievements__icon-frame--gold { background:linear-gradient(0deg,rgba(255,182,85,1) 0%,rgba(233,133,0,1) 49%,rgba(255,243,93,1) 51%,rgba(255,187,25,1) 100%); }
+.mk-vune-achievements__icon-frame--platinum { background:linear-gradient(0deg,rgba(154,154,154,1) 0%,rgba(226,226,226,1) 49%,#fff 51%,rgba(195,195,195,1) 100%); }
+.mk-vune-achievements__icon-frame--gold::before,.mk-vune-achievements__icon-frame--platinum::before { content:''; display:block; position:absolute; top:30px; width:200px; height:8px; rotate:-45deg; translate:-30px; background:#ffffff88; animation:mk-vune-achievements-shine 2s infinite; }
+.mk-vune-achievements__icon-frame--platinum::before { background:#ffffffee; }
+.mk-vune-achievements__icon-inner { position:relative; width:100%; height:100%; border-radius:100%; box-shadow:0 1px 0 #ffffff88 inset; }
+.mk-vune-achievements__icon-img { width:calc(100% - 12px); height:calc(100% - 12px); position:absolute; inset:0; margin:auto; filter:drop-shadow(0 1px 2px #000000aa); }
+.mk-vune-achievements__body { flex:1; min-width:0; }
+.mk-vune-achievements__header { margin-bottom:8px; display:flex; }
+.mk-vune-achievements__title { font-weight:bold; }
+.mk-vune-achievements__time { margin-left:auto; font-size:85%; opacity:.7; }
+.mk-vune-achievements__description { font-size:85%; }
+.mk-vune-achievements__flavor { opacity:.7; transform:skewX(-15deg); font-size:85%; margin-top:8px; }

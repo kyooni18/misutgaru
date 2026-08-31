@@ -1,14 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Text } from 'vune-ui';
-import { TransitionGroup } from 'vue';
+/* @misutgaru-vune-native */
+import { VStack, Animation, ForEach, Image, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkContainer from '@/components/MkContainer.vue';
-import MkLoading from '@/components/global/MkLoading.vue';
-import MkA from '@/components/global/MkA.vue';
-import MkMiniChart from '@/components/MkMiniChart.vue';
+import MkContainer from '@/components/vune/MkContainer.vune';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import MkA from '@/components/global/vune/MkA.vune';
+import ComputedMiniChart from '@/vune/ComputedMiniChart.vune';
 import { i18n } from '@/i18n.js';
-import { prefer } from '@/preferences.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	showHeader?: boolean;
@@ -18,34 +17,51 @@ type Props = {
 	getInstanceIcon: (instance: Misskey.entities.FederationInstance) => string;
 };
 
-export default createVuneComponent<Props>((props) => {
-	const rows = props.instances.map((instance, index) => ({ instance, index }));
-	return VueComponent(MkContainer, {
-		showHeader: vuneBoolean(props.showHeader, true),
-		'data-testid': 'mkw-federation',
-		class: 'mkw-federation',
-	}, {
-		icon: () => Element('i', { className: 'ti ti-whirl' }),
-		header: () => Text(i18n.ts._widgets.federation),
-		default: () => Element('div', { className: 'wbrkwalb' },
-			vuneBoolean(props.fetching) ? VueComponent(MkLoading) : VueComponent(TransitionGroup as any, {
-				tag: 'div',
-				name: prefer.s.animation ? 'chart' : '',
-				class: 'instances',
-			}, {
-				default: () => ForEach(rows, key: (row) => row.instance.id) { row in
-					Element('div', { className: 'instance' },
-						Element('img', { src: props.getInstanceIcon(row.instance), alt: '' }),
-						Element('div', { className: 'body' },
-							VueComponent(MkA, { class: 'a', to: `/instance-info/${row.instance.host}`, behavior: 'window', title: row.instance.host }, {
-								default: () => Text(row.instance.host),
-							}),
-							Element('p', {}, `${row.instance.softwareName || '?'} ${row.instance.softwareVersion ?? ''}`),
-						),
-						props.charts[row.index] ? VueComponent(MkMiniChart, { class: 'chart', src: props.charts[row.index].requests.received }) : null,
-					)
-				},
-			}),
-		),
-	});
-});
+struct FederationRows: View {
+	let props: Props
+	let rows: Array<{ instance: Misskey.entities.FederationInstance; index: number }>
+	init(_ props: Props) { self.props = props; self.rows = props.instances.map((instance, index) => ({ instance, index })) }
+	var body: some View {
+	VStack(alignment: 'leading', spacing: 0) {
+		ForEach(rows, key: row => row.instance.id) { row in
+			VStack(alignment: 'leading', spacing: 0) {
+				Image(props.getInstanceIcon(row.instance), { alt: '' }).withProps({ loading: 'lazy' })
+				VStack(alignment: 'leading', spacing: 0) {
+					MkA(`/instance-info/${row.instance.host}`, behavior: 'window', className: 'a') {
+						Text(row.instance.host)
+					}
+						.withProps({ title: row.instance.host })
+					Text(`${row.instance.softwareName || '?'} ${row.instance.softwareVersion ?? ''}`)
+				}.className('body')
+				ComputedMiniChart(props.charts[row.index]?.requests.received ?? [], gradientId: `mk-vune-federation-chart-${row.index}-${row.instance.id}`, className: 'chart')
+			}.className('instance')
+		}
+	}.className('instances')
+		.animation(Animation.easeInOut(1), value: props.instances.map(instance => instance.id).join(':'))
+	}
+}
+
+export struct WidgetFederation: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkContainer(
+			showHeader: props.showHeader ?? true,
+			className: 'mkw-federation',
+			testId: 'mkw-federation',
+			icon: VuneIcon('ti ti-whirl'),
+			header: Text(i18n.ts._widgets.federation),
+		) {
+			VStack(alignment: 'leading', spacing: 0) {
+				if (props.fetching) { MkLoading() }
+				else { FederationRows(props) }
+			}.className('wbrkwalb')
+		}
+	}
+}
+
+export default WidgetFederation

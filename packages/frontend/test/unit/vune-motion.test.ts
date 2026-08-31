@@ -5,7 +5,7 @@
 
 import { afterEach, assert, describe, test, vi } from 'vitest';
 import { Animation } from 'vune-ui';
-import { VuneMotionEngine } from '@/vune/motion.js';
+import { surfaceMotionAnimation, surfaceScaleKeyframes, uiMotion, VuneMotionEngine } from '@/vune/motion.js';
 
 const nativeAnimation = () => {
 	const finished = new Promise<void>(() => {});
@@ -135,7 +135,9 @@ describe('VuneMotionEngine', () => {
 		const element = document.createElement('div');
 		const engine = new VuneMotionEngine();
 		const animations: Array<{ cancel: ReturnType<typeof vi.fn> }> = [];
-		Object.defineProperty(element, 'animate', {
+		const prototype = Object.getPrototypeOf(element) as HTMLElement;
+		const originalAnimate = Object.getOwnPropertyDescriptor(prototype, 'animate');
+		Object.defineProperty(prototype, 'animate', {
 			configurable: true,
 			value: vi.fn(() => {
 				const animation = nativeAnimation();
@@ -143,20 +145,43 @@ describe('VuneMotionEngine', () => {
 				return animation;
 			}),
 		});
+		try {
+			engine.animateElement(element, [
+				{ opacity: 0, transform: 'translateX(0px)', easing: 'linear' },
+				{ opacity: 1, transform: 'translateX(10px)', easing: 'linear' },
+			], { animation: Animation.linear(0.5) });
+			assert.strictEqual(animations.length, 2);
 
-		engine.animateElement(element, [
-			{ opacity: 0, transform: 'translateX(0px)', easing: 'linear' },
-			{ opacity: 1, transform: 'translateX(10px)', easing: 'linear' },
-		], { animation: Animation.linear(0.5) });
-		assert.strictEqual(animations.length, 2);
+			engine.animateElement(element, [
+				{ opacity: 1, easing: 'linear' },
+				{ opacity: 0, easing: 'linear' },
+			], { animation: Animation.linear(0.5) });
 
-		engine.animateElement(element, [
-			{ opacity: 1, easing: 'linear' },
-			{ opacity: 0, easing: 'linear' },
-		], { animation: Animation.linear(0.5) });
+			assert.strictEqual(animations.length, 3);
+			assert.strictEqual(animations[0].cancel.mock.calls.length, 1);
+			assert.strictEqual(animations[1].cancel.mock.calls.length, 0);
+		} finally {
+			if (originalAnimate) Object.defineProperty(prototype, 'animate', originalAnimate);
+			else delete (prototype as { animate?: unknown }).animate;
+		}
+	});
+});
 
-		assert.strictEqual(animations.length, 3);
-		assert.strictEqual(animations[0].cancel.mock.calls.length, 1);
-		assert.strictEqual(animations[1].cancel.mock.calls.length, 0);
+describe('Misutgaru motion vocabulary', () => {
+	test('uses one semantic animation pair for transient surfaces', () => {
+		assert.strictEqual(surfaceMotionAnimation('enter'), uiMotion.surfaceEnter);
+		assert.strictEqual(surfaceMotionAnimation('leave'), uiMotion.surfaceLeave);
+		assert.strictEqual(uiMotion.surfaceEnter.descriptor.kind, 'spring');
+		assert.strictEqual(uiMotion.surfaceLeave.descriptor.kind, 'easeIn');
+	});
+
+	test('builds symmetric surface scale keyframes', () => {
+		const enter = surfaceScaleKeyframes('enter', 0.95);
+		const leave = surfaceScaleKeyframes('leave', 0.95);
+		assert.deepStrictEqual(enter, [
+			{ opacity: 0, transform: 'scale(0.95)' },
+			{ opacity: 1, transform: 'scale(1)' },
+		]);
+		assert.deepStrictEqual(leave, [...enter].reverse());
 	});
 });

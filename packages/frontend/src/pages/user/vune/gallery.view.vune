@@ -1,16 +1,29 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
-import MkGalleryPostPreview from '@/components/MkGalleryPostPreview.vue';
-import MkPagination from '@/components/MkPagination.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group } from 'vune-ui';
+import MkGalleryPostPreview from '@/components/vune/MkGalleryPostPreview.vune';
+import MkPagination from '@/components/vune/MkPagination.vune';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase5-migration.scss';
 
 type Props = { paginator: IPaginator };
-export default createVuneComponent<Props>((props) => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-	VueComponent(MkPagination, { paginator: props.paginator, withControl: true }, { default: (slotProps: any) => Group() {
-		ForEach(slotProps.items ?? [], key: (post: any) => post.id) { post in
-			VueComponent(MkGalleryPostPreview, { post: post, class: 'post' })
-		}
-	}.className('mk-vune-gallery-grid') }),
-));
+
+
+export struct VuneGalleryView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			MkPagination(props.paginator, withControl: true) {
+				Group() { ForEach(props.paginator.items.value as any[], key: (post: any) => post.id) { post in MkGalleryPostPreview(post, className: 'post') } }
+					.className('mk-vune-gallery-grid')
+			}
+		}.className('_spacer').style({ '--MI_SPACER-w': '700px' })
+	}
+}
+
+export default VuneGalleryView

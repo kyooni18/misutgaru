@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <span v-if="!fetching" :class="$style.root">
 	<template v-if="display === 'marquee'">
 		<Transition
+			:css="prefer.s.animation"
 			:enterActiveClass="$style.transition_change_enterActive"
 			:leaveActiveClass="$style.transition_change_leaveActive"
 			:enterFromClass="$style.transition_change_enterFrom"
@@ -37,6 +38,7 @@ import { useInterval } from '@@/js/use-interval.js';
 import MkMarqueeText from '@/components/MkMarqueeText.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
+import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
 	display?: 'marquee' | 'oneByOne';

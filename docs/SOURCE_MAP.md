@@ -9,7 +9,7 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 | `packages/misutgaru-core` | fork-owned contracts/helpers that should not live in upstream-shaped implementation files |
 | `packages/sw` | service worker and Web Push lifecycle |
 | `packages/modules/Vune` | checked-out Vune framework/compiler/web renderer source |
-| `packages/modules/o0o0o` | shared motion engine and DOM property ownership source |
+| `packages/modules/Vune/packages/animation` | `@vune-ui/animation` shared motion engine and DOM property ownership source |
 | `scripts` | repository checks, local module build, source inventory, upstream delta and regression benchmark |
 
 ## Vune/compiler/runtime
@@ -27,6 +27,8 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 | `packages/frontend/src/vune/compat-vue.ts` | transitional Vue placement host consuming compiler plans |
 | `packages/frontend/src/vune/motion.ts` | thin compatibility re-export of the shared Vune Web element-motion engine |
 | `packages/frontend/src/vune/devtools-overlay.ts` | development-only in-app Vune profiler panel |
+| `packages/frontend/src/lib/nirax-core.ts` | renderer-neutral route matching, redirects, navigation state and events |
+| `packages/frontend/src/lib/nirax.ts` | Vue binding for NIRAX refs and lifecycle-scoped listeners |
 | `packages/frontend/src/components/MkNoteDetailed.vue` | note detail layout, thread context and optional additional sections |
 | `packages/frontend/src/components/MkNoteDetailedContent.vue` | reusable detailed note avatar, author metadata and content renderer |
 | `packages/frontend/src/components/MkNoteDetailedControls.vue` | reusable detailed note timestamp, reactions and action controls |

@@ -4,11 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetUserList :showHeader="widgetProps.showHeader" :listId="widgetProps.listId" :list="list" :users="users" :fetching="fetching" :rootClass="$style.root" :onChooseList="chooseList" :onConfigure="configure"/>
+<VuneWidgetUserListHost :showHeader="widgetProps.showHeader" :listId="widgetProps.listId" :list="list" :users="users" :fetching="fetching" :rootClass="$style.root" :onChooseList="chooseList" :onConfigure="configure"/>
 </template>
 
 <script lang="ts" setup>
 import VuneWidgetUserList from './vune/WidgetUserList.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+const VuneWidgetUserListHost = createVuneWebHost(VuneWidgetUserList);
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useWidgetPropsManager } from './widget.js';

@@ -1,44 +1,170 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Button, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkContainer from '@/components/MkContainer.vue';
-import XCpuMemory from '@/widgets/server-metric/cpu-mem.vue';
-import XNet from '@/widgets/server-metric/net.vue';
-import XCpu from '@/widgets/server-metric/cpu.vue';
-import XMemory from '@/widgets/server-metric/mem.vue';
-import XDisk from '@/widgets/server-metric/disk.vue';
+import MkContainer from '@/components/vune/MkContainer.vune';
+import CpuMem from './cpu-mem.vune';
+import Net from './net.vune';
+import Cpu from './cpu.vune';
+import Mem from './mem.vune';
+import Disk from './disk.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
+import './server-metric.scss';
 
-type Props = {
-	showHeader?: boolean;
-	transparent?: boolean;
-	view: number;
-	connection: unknown;
-	meta?: Misskey.entities.ServerInfoResponse | null;
-	onToggleView?: () => void;
-};
+type ToggleAction = () => void;
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkContainer, {
-		showHeader: vuneBoolean(props.showHeader, true),
-		naked: vuneBoolean(props.transparent, false),
-	}, {
-		icon: () => Element('i', { className: 'ti ti-server' }),
-		header: () => Text(i18n.ts._widgets.serverMetric),
-		func: (slotProps: any) => Element('button', {
-			className: ['_button', slotProps.buttonStyleClass],
-			onClick: () => props.onToggleView?.(),
-		}, Element('i', { className: 'ti ti-selector' })),
-		default: () => props.meta ? Element('div', {
-			'data-testid': 'mkw-serverMetric',
-			className: 'mkw-serverMetric',
-		},
-			props.view === 0 ? VueComponent(XCpuMemory, { connection: props.connection, meta: props.meta }) :
-			props.view === 1 ? VueComponent(XNet, { connection: props.connection, meta: props.meta }) :
-			props.view === 2 ? VueComponent(XCpu, { connection: props.connection, meta: props.meta }) :
-			props.view === 3 ? VueComponent(XMemory, { connection: props.connection, meta: props.meta }) :
-			props.view === 4 ? VueComponent(XDisk, { meta: props.meta }) : Group() {},
-		) : Group() {},
-	})
-);
+function ignoreToggle(): void {}
+
+function cpuMemView(
+	stats: Misskey.entities.ServerStats[],
+	meta: Misskey.entities.ServerInfoResponse,
+	cpuGradientId: string,
+	cpuMaskId: string,
+	memGradientId: string,
+	memMaskId: string,
+) {
+	const viewBoxX = 50;
+	const viewBoxY = 30;
+	const cpuPoints = stats.map((stat, index) => [viewBoxX - ((stats.length - 1) - index), (1 - stat.cpu) * viewBoxY]);
+	const memPoints = stats.map((stat, index) => [viewBoxX - ((stats.length - 1) - index), (1 - (stat.mem.active / meta.mem.total)) * viewBoxY]);
+	const cpuPolyline = cpuPoints.map(point => `${point[0]},${point[1]}`).join(' ');
+	const memPolyline = memPoints.map(point => `${point[0]},${point[1]}`).join(' ');
+	const cpuPolygon = `${viewBoxX - Math.max(0, stats.length - 1)},${viewBoxY} ${cpuPolyline} ${viewBoxX},${viewBoxY}`;
+	const memPolygon = `${viewBoxX - Math.max(0, stats.length - 1)},${viewBoxY} ${memPolyline} ${viewBoxX},${viewBoxY}`;
+	const latest = stats.at(-1);
+	const cpuHead = cpuPoints.at(-1);
+	const memHead = memPoints.at(-1);
+
+	return CpuMem(
+		viewBoxX,
+		viewBoxY,
+		cpuGradientId,
+		cpuMaskId,
+		memGradientId,
+		memMaskId,
+		cpuPolyline,
+		memPolyline,
+		cpuPolygon,
+		memPolygon,
+		latest ? (latest.cpu * 100).toFixed(0) : '',
+		latest ? (latest.mem.active / meta.mem.total * 100).toFixed(0) : '',
+		cpuHead?.[0],
+		cpuHead?.[1],
+		memHead?.[0],
+		memHead?.[1],
+	);
+}
+
+function netView(stats: Misskey.entities.ServerStats[]) {
+	const viewBoxX = 50;
+	const viewBoxY = 30;
+	const inPeak = Math.max(1024 * 64, ...stats.map(stat => stat.net.rx));
+	const outPeak = Math.max(1024 * 64, ...stats.map(stat => stat.net.tx));
+	const inPoints = stats.map((stat, index) => [viewBoxX - ((stats.length - 1) - index), (1 - (stat.net.rx / inPeak)) * viewBoxY]);
+	const outPoints = stats.map((stat, index) => [viewBoxX - ((stats.length - 1) - index), (1 - (stat.net.tx / outPeak)) * viewBoxY]);
+	const inPolyline = inPoints.map(point => `${point[0]},${point[1]}`).join(' ');
+	const outPolyline = outPoints.map(point => `${point[0]},${point[1]}`).join(' ');
+	const inPolygon = `${viewBoxX - Math.max(0, stats.length - 1)},${viewBoxY} ${inPolyline} ${viewBoxX},${viewBoxY}`;
+	const outPolygon = `${viewBoxX - Math.max(0, stats.length - 1)},${viewBoxY} ${outPolyline} ${viewBoxX},${viewBoxY}`;
+	const latest = stats.at(-1);
+	const inHead = inPoints.at(-1);
+	const outHead = outPoints.at(-1);
+
+	return Net(
+		viewBoxX,
+		viewBoxY,
+		inPolygon,
+		outPolygon,
+		inPolyline,
+		outPolyline,
+		latest?.net.rx ?? 0,
+		latest?.net.tx ?? 0,
+		inHead?.[0],
+		inHead?.[1],
+		outHead?.[0],
+		outHead?.[1],
+	);
+}
+
+function metricView(
+	view: number,
+	stats: Misskey.entities.ServerStats[],
+	meta: Misskey.entities.ServerInfoResponse,
+	cpuGradientId: string,
+	cpuMaskId: string,
+	memGradientId: string,
+	memMaskId: string,
+) {
+	const latest = stats.at(-1);
+	const memoryUsed = latest?.mem.active ?? 0;
+	switch (view) {
+		case 0:
+			return cpuMemView(stats, meta, cpuGradientId, cpuMaskId, memGradientId, memMaskId);
+		case 1:
+			return netView(stats);
+		case 2:
+			return Cpu(latest?.cpu ?? 0, meta);
+		case 3:
+			return Mem(memoryUsed / meta.mem.total, meta.mem.total, memoryUsed, meta.mem.total - memoryUsed);
+		case 4:
+			return Disk(meta.fs.used / meta.fs.total, meta.fs.total, meta.fs.used, meta.fs.total - meta.fs.used);
+		default:
+			return null;
+	}
+}
+
+export struct ServerMetric: View {
+	let showHeader: boolean
+	let transparent: boolean
+	let view: number
+	let stats: Misskey.entities.ServerStats[]
+	let meta: Misskey.entities.ServerInfoResponse | null
+	let cpuGradientId: string
+	let cpuMaskId: string
+	let memGradientId: string
+	let memMaskId: string
+	let onToggleView: ToggleAction
+
+	init(
+		view: number,
+		stats: Misskey.entities.ServerStats[],
+		meta: Misskey.entities.ServerInfoResponse | null,
+		cpuGradientId: string,
+		cpuMaskId: string,
+		memGradientId: string,
+		memMaskId: string,
+		showHeader: boolean = true,
+		transparent: boolean = false,
+		@Action onToggleView: ToggleAction = ignoreToggle,
+	) {
+		self.view = view
+		self.stats = stats
+		self.meta = meta
+		self.cpuGradientId = cpuGradientId
+		self.cpuMaskId = cpuMaskId
+		self.memGradientId = memGradientId
+		self.memMaskId = memMaskId
+		self.showHeader = showHeader
+		self.transparent = transparent
+		self.onToggleView = onToggleView
+	}
+
+	var body: some View {
+		MkContainer(
+			showHeader: showHeader,
+			naked: transparent,
+			icon: VuneIcon('ti ti-server'),
+			header: Text(i18n.ts._widgets.serverMetric),
+			func: Button(action: { onToggleView() }, label: { VuneIcon('ti ti-selector') }).className('_button mk-vune-container__header-button'),
+		) {
+			if (meta) {
+				VStack(alignment: 'stretch', spacing: 0) { metricView(view, stats, meta, cpuGradientId, cpuMaskId, memGradientId, memMaskId) }
+					.className('mkw-serverMetric')
+					.withProps({ 'data-testid': 'mkw-serverMetric' })
+			}
+		}
+	}
+}
+
+export default ServerMetric

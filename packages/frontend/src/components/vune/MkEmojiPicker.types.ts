@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { ViewGraphValue } from 'vune-ui';
-
 export interface NativeEmojiPickerItem {
 	key: string;
 	disabled: boolean;
 	title: string;
-	view: ViewGraphValue;
+	imageUrl?: string;
+	text?: string;
+	fallbackUrl?: string;
 }
 
 export interface NativeEmojiPickerSection {

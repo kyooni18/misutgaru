@@ -10,13 +10,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import { Animation } from 'vune-ui';
 import MkToast from './vune/MkToast.vune';
+import type { MotionHandle } from '@/vune/motion.js';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { vuneMotion } from '@/vune/motion.js';
-import type { MotionHandle } from '@/vune/motion.js';
+import { uiMotion, vuneMotion } from '@/vune/motion.js';
 
 const props = defineProps<{ message: string }>();
 const emit = defineEmits<{ (ev: 'closed'): void }>();
@@ -40,7 +39,7 @@ async function closeToast() {
 		motion = vuneMotion.animateElement(target, [
 			{ opacity: 1, transform: 'translateY(0)' },
 			{ opacity: 0, transform: 'translateY(-100%)' },
-		], { animation: Animation.easeInOut(0.3), fill: 'forwards' });
+		], { animation: uiMotion.surfaceLeave, fill: 'forwards' });
 		await motion.finished;
 	}
 	emit('closed');
@@ -53,7 +52,7 @@ onMounted(async () => {
 		motion = vuneMotion.animateElement(target, [
 			{ opacity: 0, transform: 'translateY(-100%)' },
 			{ opacity: 1, transform: 'translateY(0)' },
-		], { animation: Animation.easeInOut(0.3), fill: 'both' });
+		], { animation: uiMotion.surfaceEnter, fill: 'both' });
 	}
 	timer = window.setTimeout(() => { void closeToast(); }, 4000);
 });

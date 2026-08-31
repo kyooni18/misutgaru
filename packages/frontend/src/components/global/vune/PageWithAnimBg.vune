@@ -1,16 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
-import MkAnimBg from '@/components/MkAnimBg.vue';
-import { createVuneComponent, VueComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { Circle, ForEach, ScrollView, VStack, ZStack, type ViewGraphValue } from 'vune-ui';
 import '@/components/vune/misskey-vune.scss';
 
-export default createVuneComponent((_props, slots) =>
-	Group() {
-		Element('div', null,
-			VueComponent(MkAnimBg, { style: { position: 'absolute' } }),
-			Element('div', { className: ['_pageScrollable', 'mk-vune-page-anim-bg__body'] },
-				VueSlot(slots.default),
-			),
-		)
+const dots = Array.from({ length: 18 }, (_, index) => index);
+
+export struct VunePageWithAnimBgView: View {
+	let content: ViewGraphValue
+	init(@ViewBuilder content: () => ViewGraphValue) { self.content = content() }
+
+	var body: some View {
+		ZStack(alignment: 'center') {
+			ZStack(alignment: 'center') {
+				ForEach(dots, key: index => index) { index in
+					Circle()
+						.frame(width: 32 + (index % 5) * 12, height: 32 + (index % 5) * 12)
+						.opacity(0.08 + (index % 4) * 0.03)
+						.offset(x: ((index * 79) % 300) - 150, y: ((index * 47) % 240) - 120)
+				}
+			}.className('mk-vune-page-anim-bg__background').allowsHitTesting(false)
+			ScrollView('vertical') {
+				VStack(alignment: 'leading', spacing: 0) { content }
+			}
+				.className(['_pageScrollable', 'mk-vune-page-anim-bg__body'])
+		}
 	}
-);
+}
+
+export default VunePageWithAnimBgView

@@ -1,31 +1,42 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Group, Image, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkA from '@/components/global/MkA.vue';
-import MediaImage from '@/components/MkMediaImage.vue';
+import MkA from '@/components/global/vune/MkA.vune';
 import { userName } from '@/filters/user.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 import '@/vune/phase5-migration.scss';
 
 type Props = { page: Misskey.entities.Page };
-export default createVuneComponent<Props>((props) => {
-	const page = props.page;
-	const summary = page.summary ? (page.summary.length > 85 ? page.summary.slice(0, 85) + '…' : page.summary) : null;
-	return VueComponent(MkA, { to: `/@${page.user.username}/pages/${page.name}`, class: 'mk-vune-page-preview' }, {
-		default: () => Group() {
-			if (page.eyeCatchingImage) {
-				Element('div', { className: 'mk-vune-page-preview__thumb' },
-					VueComponent(MediaImage, { image: page.eyeCatchingImage, disableImageLink: true, controls: false, cover: true, style: { width: '100%', height: '100%' } }),
-				)
+
+export struct VuneMkPagePreviewView: View {
+	let page: Misskey.entities.Page
+	let summary: string | null
+
+	init(_ props: Props) {
+		self.page = props.page
+		self.summary = props.page.summary ? (props.page.summary.length > 85 ? props.page.summary.slice(0, 85) + '…' : props.page.summary) : null
+	}
+
+	var body: some View {
+		MkA(`/@${page.user.username}/pages/${page.name}`, className: 'mk-vune-page-preview') {
+			Group() {
+				if (page.eyeCatchingImage) {
+					VStack(alignment: 'stretch', spacing: 0) {
+						Image(page.eyeCatchingImage.thumbnailUrl ?? page.eyeCatchingImage.url, { alt: page.title })
+							.style({ width: '100%', height: '100%', objectFit: 'cover' })
+					}.className('mk-vune-page-preview__thumb')
+				}
+				VStack(alignment: 'stretch', spacing: 0) {
+					Text(page.title).font(.title2).bold().withProps({ title: page.title })
+					if (summary) { Text(summary).className('mk-vune-page-preview__summary').withProps({ title: page.summary ?? '' }) }
+					VStack(alignment: 'stretch', spacing: 0) {
+						if (page.user.avatarUrl) { Image(page.user.avatarUrl, { alt: '' }).className('mk-vune-page-preview__avatar') }
+						Text(userName(page.user)).className('mk-vune-page-preview__user')
+					}.className('mk-vune-page-preview__footer')
+				}
 			}
-			Element('article', {},
-				Element('header', {}, Element('h1', { title: page.title }, page.title)),
-				summary ? Element('p', { className: 'mk-vune-page-preview__summary', title: page.summary ?? '' }, summary) : null,
-				Element('footer', {},
-					page.user.avatarUrl ? Element('img', { className: 'mk-vune-page-preview__avatar', src: page.user.avatarUrl }) : null,
-					Element('p', { className: 'mk-vune-page-preview__user' }, userName(page.user)),
-				),
-			)
-		},
-	});
-});
+		}
+	}
+}
+
+export default VuneMkPagePreviewView

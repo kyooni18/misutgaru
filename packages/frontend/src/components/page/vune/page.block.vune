@@ -1,23 +1,34 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { Group } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
 import XText from './page.text.vune';
 import XSection from './page.section.vune';
 import XImage from './page.image.vune';
-import XNote from '../page.note.vue';
+import XNote from './page.note.vune';
 import XDynamic from './page.dynamic.vune';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = { block: Misskey.entities.PageBlock; h: number; page: Misskey.entities.Page };
-export default createVuneComponent<Props>((props) => {
-	const common = { key: props.block.id, page: props.page, block: props.block, h: props.h };
-	switch (props.block.type) {
-		case 'text': return VueComponent(XText, common);
-		case 'section': return VueComponent(XSection, common);
-		case 'image': return VueComponent(XImage, common);
-		case 'note': return VueComponent(XNote, common);
-		case 'button': case 'if': case 'textarea': case 'post': case 'canvas': case 'numberInput': case 'textInput': case 'switch': case 'radioButton': case 'counter':
-			return VueComponent(XDynamic, common);
-		default: return Group() {};
+function isDynamicBlock(type: string): boolean {
+	return type === 'button' || type === 'if' || type === 'textarea' || type === 'post' || type === 'canvas' || type === 'numberInput' || type === 'textInput' || type === 'switch' || type === 'radioButton' || type === 'counter';
+}
+
+export struct VunePageBlockView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-});
+
+	var body: some View {
+		Group() {
+			if (props.block.type === 'text') { XText({ key: props.block.id, page: props.page, block: props.block, h: props.h }) }
+			else if (props.block.type === 'section') { XSection({ key: props.block.id, page: props.page, block: props.block, h: props.h }) }
+			else if (props.block.type === 'image') { XImage({ key: props.block.id, page: props.page, block: props.block, h: props.h }) }
+			else if (props.block.type === 'note') { XNote({ key: props.block.id, page: props.page, block: props.block, h: props.h }) }
+			else if (isDynamicBlock(props.block.type)) { XDynamic({ key: props.block.id, page: props.page, block: props.block, h: props.h }) }
+		}
+	}
+}
+
+export default VunePageBlockView

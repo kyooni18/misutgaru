@@ -74,7 +74,7 @@ const frontendPackage = await readJson('packages/frontend/package.json');
 const backendPackage = await readJson('packages/backend/package.json');
 const misutgaruCorePackage = await requirePackage('packages/misutgaru-core', '@misutgaru/core');
 const vunePackage = await requirePackage('packages/modules/Vune', 'vune-ui');
-const motionPackage = await requirePackage('packages/modules/o0o0o', 'o0o0o');
+const animationPackage = await requirePackage('packages/modules/Vune/packages/animation', '@vune-ui/animation');
 const dbInvariant = await readJson('scripts/db-schema-invariant.json');
 if (dbInvariant) {
 	if (dbInvariant.scope?.migrations !== 'packages/backend/migration/**') failures.push('DB invariant must fingerprint the vanilla migration tree');
@@ -119,10 +119,10 @@ if (rootPackage && vunePackage) {
 	if (compilerLink !== 'link:packages/modules/Vune/packages/compiler') failures.push('root @vune-ui/compiler must link the checked-out local Vune compiler');
 }
 
-if (frontendPackage && vunePackage && motionPackage) {
+if (frontendPackage && vunePackage && animationPackage) {
 	if (frontendPackage.dependencies?.['vune-ui'] !== 'link:../modules/Vune') failures.push('frontend vune-ui must use the checked-out local module');
-	if (frontendPackage.dependencies?.['o0o0o'] !== 'link:../modules/o0o0o') failures.push('frontend o0o0o must use the checked-out local module');
 	const localVuneLinks = {
+		'@vune-ui/animation': 'link:../modules/Vune/packages/animation',
 		'@vune-ui/core': 'link:../modules/Vune/packages/core',
 		'@vune-ui/vue': 'link:../modules/Vune/packages/vue',
 		'@vune-ui/web': 'link:../modules/Vune/packages/web',
@@ -143,6 +143,7 @@ try {
 	const lockfile = await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8');
 	for (const expected of [
 		'specifier: link:packages/modules/Vune/packages/compiler',
+		'specifier: link:../modules/Vune/packages/animation',
 		'specifier: link:../modules/Vune/packages/core',
 		'specifier: link:../modules/Vune/packages/vue',
 		'specifier: link:../modules/Vune/packages/web',
@@ -157,11 +158,12 @@ try {
 
 for (const relative of [
 	'packages/modules/Vune/pnpm-lock.yaml',
+	'packages/modules/Vune/packages/animation/package.json',
+	'packages/modules/Vune/packages/animation/index.d.ts',
+	'packages/modules/Vune/packages/animation/src/index.js',
 	'packages/modules/Vune/packages/core/package.json',
 	'packages/modules/Vune/packages/compiler/package.json',
 	'packages/modules/Vune/packages/web/package.json',
-	'packages/modules/o0o0o/index.d.ts',
-	'packages/modules/o0o0o/src/index.js',
 ]) {
 	try {
 		const info = await stat(path.join(root, relative));
@@ -174,7 +176,7 @@ for (const relative of [
 try {
 	const dockerfile = await readFile(path.join(root, 'Dockerfile'), 'utf8');
 	const dockerignore = await readFile(path.join(root, '.dockerignore'), 'utf8');
-	if (!rootPackage?.scripts?.build?.includes('pnpm modules:build')) failures.push('root build must prepare local Vune/o0o0o before the application build');
+	if (!rootPackage?.scripts?.build?.includes('pnpm modules:build')) failures.push('root build must prepare the local Vune workspace before the application build');
 	if (!dockerfile.includes('pnpm build')) failures.push('Dockerfile must invoke the root build so local framework preparation cannot be skipped');
 	const prebuiltVuneCopy = dockerfile.split('\n').some(line => line.trimStart().startsWith('COPY ') && !line.includes('--from=') && line.includes('packages/modules/Vune/dist'));
 	if (prebuiltVuneCopy) failures.push('Dockerfile must not require prebuilt packages/modules/Vune/dist from the source context');

@@ -16,6 +16,7 @@ import {
 } from '@vune-ui/vue';
 import { initializersOf } from 'vune-ui';
 import type { ViewConstructor, ViewGraphValue } from 'vune-ui';
+import { prefer } from '@/preferences.js';
 
 /** Vue leaves bare boolean attributes as an empty string when there is no runtime prop schema. */
 export function vuneBoolean(value: unknown, defaultValue = false): boolean {
@@ -38,6 +39,7 @@ export function createVuneComponent<Props extends Record<string, unknown> = Reco
 		setup(_props, { attrs, slots }) {
 			return () => h(VuneView, {
 				render: () => body(attrs as Props, slots),
+				disablesAnimations: !prefer.s.animation,
 			});
 		},
 	});

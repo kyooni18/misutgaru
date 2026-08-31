@@ -1,11 +1,28 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import MkSuspense from '@/components/global/MkSuspense.vue';
-import XRoot from '@/pages/gallery/edit.root.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import MkSuspense from '@/components/global/vune/MkSuspense.vune';
+import MkInput from '@/components/vune/MkInput.vune';
 
 type Props = { fetcher: () => Promise<unknown> };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkSuspense, { p: props.fetcher }, {
-		default: (slotProps: any) => VueComponent(XRoot, { post: slotProps.result }),
-	})
-);
+
+
+export struct VuneGalleryEditView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkSuspense(props.fetcher) { result in
+			VStack(alignment: 'stretch', spacing: 0) {
+				Text('Gallery post').font(.title2).bold()
+				MkInput(result?.title ?? '', readonly: true, label: Text('Title'))
+				if (result?.description) { Text(result.description) }
+			}.className('_gaps_m')
+		}
+	}
+}
+
+export default VuneGalleryEditView

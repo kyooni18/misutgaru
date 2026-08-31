@@ -1,0 +1,12 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Button, Text } from 'vune-ui';
+export struct MkAbuseReport: View {
+	let report: any
+	let onResolved: ((id: string) => void) | undefined
+	init(_ report: any, @Action onResolved: ((id: string) => void) | undefined = undefined) { self.report = report; self.onResolved = onResolved }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) { Text(String(report?.comment ?? report?.id ?? '')); if (!report?.resolved) { Button('Resolve') { onResolved?.(String(report?.id ?? '')) } } }.className('_panel mk-vune-abuse-report')
+	}
+}
+export default MkAbuseReport

@@ -1,28 +1,38 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, type ViewGraphValue } from 'vune-ui';
 import MkLoading from '@/components/global/vune/MkLoading.vune';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+import './MkPreviewWithControls.scss';
 
-type Props = {
-	previewLoading?: boolean;
-	animation?: boolean;
-	rootClass: string;
-	containerClass: string;
-	previewClass: string;
-	animatedBgClass: string;
-	previewContentClass: string;
-	previewLoadingClass: string;
-	controlsClass: string;
-};
+export struct MkPreviewWithControls: View {
+	let previewLoading: boolean
+	let animation: boolean
+	let preview: ViewGraphValue
+	let controls: ViewGraphValue
 
-export default createVuneComponent<Props>((props, slots) =>
-	Element('div', { className: props.rootClass },
-		Element('div', { className: props.containerClass },
-			Element('div', { className: [props.previewClass, props.animation ? props.animatedBgClass : null] },
-				Element('div', { className: props.previewContentClass }, VueSlot(slots.preview)),
-				props.previewLoading ? Element('div', { className: props.previewLoadingClass }, MkLoading()) : null,
-			),
-			Element('div', { className: props.controlsClass }, VueSlot(slots.controls)),
-		),
-	)
-);
+	init(
+		previewLoading: boolean = false,
+		animation: boolean = false,
+		preview: ViewGraphValue,
+		controls: ViewGraphValue,
+	) {
+		self.previewLoading = previewLoading
+		self.animation = animation
+		self.preview = preview
+		self.controls = controls
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					VStack(alignment: 'stretch', spacing: 0) { preview }.className('mk-vune-preview-controls__preview-content')
+					if (previewLoading) { VStack(alignment: 'stretch', spacing: 0) { MkLoading() }.className('mk-vune-preview-controls__loading') }
+				}.className(['mk-vune-preview-controls__preview', animation ? 'mk-vune-preview-controls__preview--animated' : null])
+				VStack(alignment: 'stretch', spacing: 0) { controls }.className('mk-vune-preview-controls__controls')
+			}.className('mk-vune-preview-controls__container')
+		}.className('mk-vune-preview-controls')
+	}
+}
+
+export default MkPreviewWithControls

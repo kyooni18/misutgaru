@@ -1,9 +1,6 @@
-<!--
-SPDX-FileCopyrightText: syuilo and misskey-project
-SPDX-License-Identifier: AGPL-3.0-only
--->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <script lang="ts">
 import MkUserInfo from './vune/MkUserInfo.vune';
-
-export default MkUserInfo;
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+export default createVuneWebHost(MkUserInfo);
 </script>

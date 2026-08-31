@@ -1,26 +1,36 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group } from 'vune-ui';
 import * as Misskey from 'misskey-js';
-import XBlock from '@/components/page/page.block.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import XBlock from '@/components/page/vune/page.block.vune';
 import '@/components/vune/misskey-vune.scss';
 
 type Props = {
 	page: Misskey.entities.Page;
 };
 
-export default createVuneComponent<Props>((props) =>
-	Group() {
-		Element('div', {
-			className: [
+
+
+export struct VunePageView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		Group() {
+			VStack(alignment: 'stretch', spacing: 0) {
+				ForEach(props.page.content ?? [], key: (child) => child.id) { child in
+					XBlock({ page: props.page, block: child, h: 2 })
+				}
+			}.className([
 				'_gaps',
 				props.page.alignCenter ? 'mk-vune-page__center' : null,
 				props.page.font === 'serif' ? 'mk-vune-page__serif' : null,
-			],
-		},
-			ForEach(props.page.content ?? [], key: (child) => child.id) { child in
-				VueComponent(XBlock, { page: props.page, block: child, h: 2 })
-			},
-		)
+			])
+		}
 	}
-);
+}
+
+export default VunePageView

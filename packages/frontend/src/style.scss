@@ -12,6 +12,30 @@
 	--MI-radius: 16px;
 	--MI-marginFull: 16px;
 	--MI-marginHalf: 10px;
+	--MI-motion-duration-fast: 160ms;
+	--MI-motion-duration-normal: 220ms;
+	--MI-motion-duration-slow: 300ms;
+	--MI-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+	--MI-motion-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+	--MI-motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+	--MI-button-radius: 0.9em;
+	--MI-button-padding-y: 0.68em;
+	--MI-button-padding-x: 1.16em;
+	--MI-button-padding-y-small: 0.52em;
+	--MI-button-padding-x-small: 0.92em;
+	--MI-button-padding-y-large: 0.78em;
+	--MI-button-padding-x-large: 1.3em;
+	--MI-button-font-weight: 600;
+	--MI-button-surface: color-mix(in srgb, var(--MI_THEME-fg) 6%, transparent);
+	--MI-button-surface-hover: color-mix(in srgb, var(--MI_THEME-fg) 10%, transparent);
+	--MI-button-surface-pressed: color-mix(in srgb, var(--MI_THEME-fg) 14%, transparent);
+	--MI-button-accent-surface: color-mix(in srgb, var(--MI_THEME-accent) 18%, transparent);
+	--MI-button-accent-surface-hover: color-mix(in srgb, var(--MI_THEME-accent) 24%, transparent);
+	--MI-button-accent-surface-pressed: color-mix(in srgb, var(--MI_THEME-accent) 30%, transparent);
+	--MI-button-border: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+	--MI-button-border-hover: color-mix(in srgb, var(--MI_THEME-fg) 12%, transparent);
+	--MI-button-shadow: 0 0.12em 0.42em color-mix(in srgb, var(--MI_THEME-shadow) 8%, transparent), inset 0 0.04em 0 color-mix(in srgb, var(--MI_THEME-fg) 4%, transparent);
+	--MI-button-shadow-pressed: inset 0 0.08em 0.2em color-mix(in srgb, var(--MI_THEME-shadow) 8%, transparent);
 	// Modal backdrops keep the existing blur preference, but no longer add a
 	// dark scrim. The value is updated by boot/common.ts when the preference
 	// changes and is also the target used by the drawer transitions.
@@ -25,6 +49,14 @@
 
 	@media (max-width: 500px) {
 		--MI-margin: var(--MI-marginHalf);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--MI-motion-duration-fast: 0ms;
+		--MI-motion-duration-normal: 0ms;
+		--MI-motion-duration-slow: 0ms;
 	}
 }
 
@@ -337,33 +369,39 @@ rt {
 	&:disabled {
 		cursor: default;
 	}
+
+	&:focus-visible {
+		outline: 0.12em solid var(--MI_THEME-focus);
+		outline-offset: 0.12em;
+	}
 }
 
 ._buttonPrimary {
 	@extend ._button;
-	color: var(--MI_THEME-fgOnAccent);
-	background: var(--MI_THEME-accent);
+	font-weight: var(--MI-button-font-weight);
+	color: var(--MI_THEME-accent);
+	background: var(--MI-button-accent-surface);
 
 	&:not(:disabled):hover {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+		background: var(--MI-button-accent-surface-hover);
 	}
 
 	&:not(:disabled):active {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l - 5));
+		background: var(--MI-button-accent-surface-pressed);
 	}
 }
 
 ._buttonGradate {
 	@extend ._buttonPrimary;
-	color: var(--MI_THEME-fgOnAccent);
-	background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+	color: var(--MI_THEME-fg);
+	background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 18%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 18%, transparent));
 
 	&:not(:disabled):hover {
-		background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+		background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 24%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 24%, transparent));
 	}
 
 	&:not(:disabled):active {
-		background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+		background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-buttonGradateA) 30%, transparent), color-mix(in srgb, var(--MI_THEME-buttonGradateB) 30%, transparent));
 	}
 }
 
@@ -442,6 +480,7 @@ rt {
 
 ._popup {
 	@extend .vune-material;
+	@extend .vune-material--regular;
 	--vune-material-surface: var(--MI_THEME-popup);
 	border-radius: var(--MI-radius);
 	contain: content;
@@ -449,9 +488,19 @@ rt {
 
 ._acrylic {
 	@extend .vune-material;
+	@extend .vune-material--thin;
 	--vune-material-surface: var(--MI_THEME-panel);
-	--vune-material-opacity: 50%;
-	--vune-material-blur-target: 15px;
+}
+
+/* Persistent chrome uses the same Material renderer as transient surfaces,
+ * but without popup borders/radii. Components only provide the surface color. */
+._materialBar {
+	@extend .vune-material;
+	@extend .vune-material--bar;
+	--vune-material-radius: 0px;
+	background: transparent !important;
+	border: 0;
+	box-shadow: none;
 }
 
 ._formLinksGrid {

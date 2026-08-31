@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Box } from 'vune-ui';
+import { VStack } from 'vune-ui';
 import MkResult from '@/components/global/vune/MkResult.vune';
 import { i18n } from '@/i18n.js';
 
 export struct NotFoundPage: View {
 	var body: some View {
-		Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
 			MkResult('notFound', text: i18n.ts.notFoundDescription)
 		}
 			.className('mk-vune-not-found')

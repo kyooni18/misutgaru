@@ -1,15 +1,24 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
 import { Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkDrive from '@/components/MkDrive.vue';
-import MkWindow from '@/components/MkWindow.vue';
+import MkDrive from '@/components/vune/MkDrive.vune';
+import MkWindow from '@/components/vune/MkWindow.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = { initialFolder?: Misskey.entities.DriveFolder | null; onClosed?: () => void };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(MkWindow, { canResize: true, onClosed: () => props.onClosed?.() }, {
-		header: () => Text(i18n.ts.drive),
-		default: () => VueComponent(MkDrive, { initialFolder: props.initialFolder ?? null }),
-	})
-);
+
+
+export struct VuneMkDriveWindowView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		MkWindow(title: Text(i18n.ts.drive), onClosed: props.onClosed) { MkDrive(initialFolder: props.initialFolder ?? null) }
+	}
+}
+
+export default VuneMkDriveWindowView

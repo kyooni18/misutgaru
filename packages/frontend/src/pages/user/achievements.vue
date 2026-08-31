@@ -4,15 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneUserAchievements :user="user" :withDescription="$i != null && (props.user.id === $i.id)"/>
+<VuneUserAchievementsHost :user="user" :withDescription="$i != null && (props.user.id === $i.id)"/>
 </template>
 
 <script lang="ts" setup>
 import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 import * as Misskey from 'misskey-js';
 import VuneUserAchievements from './vune/achievements.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { $i } from '@/i.js';
+
+const VuneUserAchievementsHost = createVuneWebHost(VuneUserAchievements);
 
 const props = defineProps<{
 	user: Misskey.entities.User;

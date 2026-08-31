@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Animation, Box, Text } from 'vune-ui';
+import { VStack, Animation, Text } from 'vune-ui';
 
 export struct MkPlusOneEffect: View {
 	let x: number
@@ -30,7 +30,7 @@ export struct MkPlusOneEffect: View {
 	}
 
 	var body: some View {
-		Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
 			Text(`+${value}`)
 				.className(['text', up ? 'up' : null])
 				.style(up ? { transform: `translateY(-50px) rotateZ(${angle})` } : {})

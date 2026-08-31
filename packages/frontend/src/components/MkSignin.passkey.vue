@@ -8,13 +8,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script setup lang="ts">
-import VuneSigninPasskey from './vune/MkSigninPasskey.vune';
+import VuneSigninPasskeyView from './vune/MkSigninPasskey.vune';
 import { ref, onMounted } from 'vue';
 import { startAuthentication } from '@simplewebauthn/browser';
 
 import { i18n } from '@/i18n.js';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 
 import type { PublicKeyCredentialRequestOptionsJSON, AuthenticationResponseJSON } from '@simplewebauthn/browser';
+
+const VuneSigninPasskey = createVuneWebHost(VuneSigninPasskeyView);
 
 const props = defineProps<{
 	credentialRequest: PublicKeyCredentialRequestOptionsJSON;

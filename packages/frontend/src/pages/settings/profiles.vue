@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import VuneProfiles from './vune/profiles.vune';
+import VuneProfiles from './vune/profiles.vune?vue-host';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { deleteCloudBackup, listCloudBackups } from '@/preferences/utility.js';

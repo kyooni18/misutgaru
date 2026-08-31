@@ -6,7 +6,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import fastifyStatic from '@fastify/static';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { describe, expect, test, beforeAll, afterAll, afterEach } from 'vitest';
 import sharp from 'sharp';
 import { DataSource, type Repository } from 'typeorm';
@@ -29,17 +29,42 @@ const dummySize = fs.statSync(dummyPath).size;
 const dummyBuffer = fs.readFileSync(dummyPath);
 const svgBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"></svg>', 'utf8');
 const textBuffer = Buffer.from('dummy text', 'utf8');
+const videoBuffer = Buffer.from('0123456789abcdef', 'utf8');
+const audioBuffer = Buffer.from('fedcba9876543210', 'utf8');
 
 async function createRemoteFileServer() {
 	const flatPngBuffer = await sharp({
 		create: { width: 8, height: 8, channels: 3, background: { r: 0, g: 0, b: 0 } },
 	}).png().toBuffer();
 	const server = Fastify();
+	let lastRange: string | undefined;
 
-	server.get('/dummy.png', async (_request, reply) => {
-		reply.header('Content-Type', 'image/png');
-		reply.header('Content-Length', String(dummyBuffer.length));
-		return reply.send(dummyBuffer);
+	function sendFile(request: FastifyRequest, reply: FastifyReply, buffer: Buffer, type: string) {
+		lastRange = request.headers.range;
+		const range = request.headers.range;
+		if (range != null) {
+			const match = /^bytes=(\d+)-(\d*)$/.exec(range);
+			if (match != null) {
+				const start = Number(match[1]);
+				const end = match[2] === '' ? buffer.length - 1 : Math.min(Number(match[2]), buffer.length - 1);
+				const body = buffer.subarray(start, end + 1);
+				reply.code(206);
+				reply.header('Content-Range', `bytes ${start}-${end}/${buffer.length}`);
+				reply.header('Accept-Ranges', 'bytes');
+				reply.header('Content-Type', type);
+				reply.header('Content-Length', String(body.length));
+				return reply.send(body);
+			}
+		}
+
+		reply.header('Accept-Ranges', 'bytes');
+		reply.header('Content-Type', type);
+		reply.header('Content-Length', String(buffer.length));
+		return reply.send(buffer);
+	}
+
+	server.get('/dummy.png', async (request, reply) => {
+		return sendFile(request, reply, dummyBuffer, 'image/png');
 	});
 
 	server.get('/dummy.svg', async (_request, reply) => {
@@ -60,6 +85,14 @@ async function createRemoteFileServer() {
 		return reply.send(flatPngBuffer);
 	});
 
+	server.get('/dummy.mp4', async (request, reply) => {
+		return sendFile(request, reply, videoBuffer, 'video/mp4');
+	});
+
+	server.get('/dummy.mp3', async (request, reply) => {
+		return sendFile(request, reply, audioBuffer, 'audio/mpeg');
+	});
+
 	const baseUrl = await server.listen({ port: 0, host: '127.0.0.1' });
 
 	return {
@@ -68,6 +101,9 @@ async function createRemoteFileServer() {
 		svgUrl: `${baseUrl}/dummy.svg`,
 		textUrl: `${baseUrl}/dummy.txt`,
 		flatPngUrl: `${baseUrl}/flat.png`,
+		videoUrl: `${baseUrl}/dummy.mp4`,
+		audioUrl: `${baseUrl}/dummy.mp3`,
+		getLastRange: () => lastRange,
 	};
 }
 
@@ -86,6 +122,9 @@ describe('FileServerService', () => {
 	let remoteSvgUrl: string;
 	let remoteTextUrl: string;
 	let remoteFlatPngUrl: string;
+	let remoteVideoUrl: string;
+	let remoteAudioUrl: string;
+	let getLastRemoteRange: () => string | undefined;
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -165,6 +204,7 @@ describe('FileServerService', () => {
 			downloadService,
 			imageProcessingService,
 			videoProcessingService,
+			httpRequestService,
 			internalStorageService,
 			loggerService,
 		);
@@ -189,6 +229,7 @@ describe('FileServerService', () => {
 			downloadService,
 			imageProcessingService,
 			videoProcessingService,
+			httpRequestService,
 			internalStorageService,
 			loggerService,
 		);
@@ -206,6 +247,9 @@ describe('FileServerService', () => {
 		remoteSvgUrl = remoteServerInfo.svgUrl;
 		remoteTextUrl = remoteServerInfo.textUrl;
 		remoteFlatPngUrl = remoteServerInfo.flatPngUrl;
+		remoteVideoUrl = remoteServerInfo.videoUrl;
+		remoteAudioUrl = remoteServerInfo.audioUrl;
+		getLastRemoteRange = remoteServerInfo.getLastRange;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -523,9 +567,41 @@ describe('FileServerService', () => {
 			expect(res.statusCode).toBe(206);
 			expect(res.headers['content-range']).toBe(`bytes 0-3/${dummyBuffer.length}`);
 			expect(res.headers['accept-ranges']).toBe('bytes');
-			expect(res.headers['content-length']).toBe(String(dummyBuffer.length));
+			expect(res.headers['content-length']).toBe('4');
 			expect(res.headers['content-type']).toBe('image/png');
 			expect(res.headers['cache-control']).toBe('max-age=31536000, immutable');
+			expect(getLastRemoteRange()).toBe('bytes=0-3');
+		});
+
+		test.each([
+			['video', 'video/mp4', () => remoteVideoUrl, videoBuffer],
+			['audio', 'audio/mpeg', () => remoteAudioUrl, audioBuffer],
+		])('GET /files/:key remote %s forwards Range without full-file buffering', async (_kind, type, getUrl, buffer) => {
+			const accessKey = randomString();
+			await insertDriveFile({
+				accessKey,
+				storedInternal: false,
+				isLink: true,
+				uri: getUrl(),
+				name: `remote.${type === 'video/mp4' ? 'mp4' : 'mp3'}`,
+				type,
+				size: buffer.length,
+			});
+
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/files/${accessKey}`,
+				headers: {
+					range: 'bytes=2-5',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 2-5/${buffer.length}`);
+			expect(res.headers['content-length']).toBe('4');
+			expect(res.headers['content-type']).toBe(type);
+			expect(res.rawPayload).toEqual(buffer.subarray(2, 6));
+			expect(getLastRemoteRange()).toBe('bytes=2-5');
 		});
 
 		test('GET /files/:key thumbnail は mediaProxy/static.webp にリダイレクトする', async () => {

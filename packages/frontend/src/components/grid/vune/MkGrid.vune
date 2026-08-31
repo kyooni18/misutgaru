@@ -1,0 +1,14 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Text } from 'vune-ui';
+export struct MkGrid: View {
+	let data: any[]
+	let settings: any
+	init(_ data: any[] = [], settings: any = null) { self.data = data; self.settings = settings }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			ForEach(data, key: (item, index) => item?.id ?? index) { item in Text(JSON.stringify(item)).className('_monospace mk-vune-grid__row') }
+		}.className('mk-vune-grid')
+	}
+}
+export default MkGrid

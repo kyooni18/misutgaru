@@ -1,33 +1,47 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text } from 'vune-ui';
-import MkButton from '@/components/MkButton.vue';
-import MkInput from '@/components/MkInput.vue';
+/* @misutgaru-vune-native */
+import { Group, Text, VStack } from 'vune-ui';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkInput from '@/components/vune/MkInput.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { token: string; backup?: boolean; classes: Record<string,string>; onTokenChange?: (value: string) => void; onToggleBackup?: () => void; onSubmit?: () => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: props.classes.wrapper },
-		Element('div', { className: ['_gaps', props.classes.root] },
-			Element('div', { className: '_gaps_s' },
-				Element('div', { className: props.classes.totpIcon }, Element('i', { className: 'ti ti-key' })),
-				Element('div', { className: props.classes.totpDescription }, i18n.ts['2fa']),
-			),
-			Element('form', { className: '_gaps_s', onSubmit: (ev: SubmitEvent) => { ev.preventDefault(); props.onSubmit?.(); } },
-				VueComponent(MkInput, {
-					modelValue: props.token,
-					type: 'text',
-					pattern: vuneBoolean(props.backup) ? '^[A-Z0-9]{32}$' : '^[0-9]{6}$',
-					autocomplete: 'one-time-code', required: true, autofocus: true, spellcheck: false,
-					inputmode: vuneBoolean(props.backup) ? undefined : 'numeric',
-					'onUpdate:modelValue': (value: string) => props.onTokenChange?.(value),
-				}, {
-					label: () => Text(`${i18n.ts.token} (${i18n.ts['2fa']})`),
-					prefix: () => Element('i', { className: vuneBoolean(props.backup) ? 'ti ti-key' : 'ti ti-123' }),
-					caption: () => Element('button', { className: '_textButton', type: 'button', onClick: () => props.onToggleBackup?.() }, vuneBoolean(props.backup) ? i18n.ts.useTotp : i18n.ts.useBackupCode),
-				}),
-				VueComponent(MkButton, { type: 'submit', large: true, primary: true, rounded: true, style: { margin: '0 auto' } }, { default: () => Group() { Text(i18n.ts.continue); Element('i', { className: 'ti ti-arrow-right' }) } }),
-			),
-		),
-	)
-);
+function updateToken(props: Props, value: unknown): void { props.onTokenChange?.(String(value ?? '')); }
+function toggleBackup(props: Props): void { props.onToggleBackup?.(); }
+function submitTotp(props: Props): void { props.onSubmit?.(); }
+
+
+export struct VuneMkSigninTotpView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					VStack(alignment: 'stretch', spacing: 0) { VuneIcon('ti ti-key') }.className(props.classes.totpIcon)
+					Text(i18n.ts['2fa']).className(props.classes.totpDescription)
+				}.className('_gaps_s')
+				VStack(alignment: 'stretch', spacing: 'var(--MI-marginHalf)') {
+					MkInput(props.token,
+						type: 'text',
+						pattern: Boolean(props.backup) ? '^[A-Z0-9]{32}$' : '^[0-9]{6}$',
+						autocomplete: 'one-time-code', required: true, autofocus: true, spellcheck: false,
+						inputmode: Boolean(props.backup) ? undefined : 'numeric',
+						onChange: value => updateToken(props, value),
+						label: Text(`${i18n.ts.token} (${i18n.ts['2fa']})`),
+						prefix: VuneIcon(Boolean(props.backup) ? 'ti ti-key' : 'ti ti-123'),
+						caption: MkButton(transparent: true, small: true, onClick: { toggleBackup(props) }) { Text(Boolean(props.backup) ? i18n.ts.useTotp : i18n.ts.useBackupCode) },
+					)
+					MkButton(large: true, primary: true, rounded: true, style: { margin: '0 auto' }, onClick: { submitTotp(props) }) { Group() { Text(i18n.ts.continue); VuneIcon('ti ti-arrow-right') } }
+				}.className('_gaps_s')
+			}.className(['_gaps', props.classes.root])
+		}.className(props.classes.wrapper)
+	}
+}
+
+export default VuneMkSigninTotpView

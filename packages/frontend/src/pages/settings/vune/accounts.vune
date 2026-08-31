@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import SearchMarker from '@/components/global/SearchMarker.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkUserCardMini from '@/components/MkUserCardMini.vue';
+import SearchMarker from '@/components/global/vune/SearchMarker.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkUserCardMini from '@/components/vune/MkUserCardMini.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Account = { host: string; id: string; user?: Misskey.entities.UserDetailed | null };
 type Props = {
@@ -14,21 +15,28 @@ type Props = {
 	onAddAccount?: (ev: PointerEvent) => void;
 	onShowMenu?: (host: string, id: string, ev: PointerEvent) => void;
 };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(SearchMarker, { path: '/settings/accounts', label: i18n.ts.accounts, keywords: ['accounts'], icon: 'ti ti-users' }, {
-		default: () => Element('div', { className: '_gaps' },
-			Element('div', { className: '_buttons' },
-				VueComponent(MkButton, { primary: true, onClick: (ev: PointerEvent) => props.onAddAccount?.(ev) }, {
-					default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.addAccount) },
-				}),
-			),
-			ForEach(props.accounts.filter(x => x.user), key: x => `${x.host}${x.id}`) { x in
-				VueComponent(MkUserCardMini, {
-					user: x.user!,
-					class: props.userClass,
-					onClick: (ev: PointerEvent) => { ev.preventDefault(); props.onShowMenu?.(x.host, x.id, ev); },
-				})
-			},
-		),
-	})
-);
+function showAccountMenu(props: Props, account: Account, event: PointerEvent): void { event.preventDefault(); props.onShowMenu?.(account.host, account.id, event); }
+
+
+export struct VuneAccountsView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		SearchMarker() {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					MkButton(primary: true, onClick: { event in props.onAddAccount?.(event) }) { Group() { VuneIcon('ti ti-plus'); Text(i18n.ts.addAccount) } }
+				}.className('_buttons')
+				ForEach(props.accounts.filter(x => x.user), key: x => `${x.host}${x.id}`) { x in
+					MkUserCardMini({ user: x.user! }).className(props.userClass).withProps({ onClick: (event: PointerEvent) => showAccountMenu(props, x, event) })
+				}
+			}.className('_gaps')
+		}
+	}
+}
+
+export default VuneAccountsView

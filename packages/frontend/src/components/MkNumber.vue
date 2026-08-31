@@ -15,6 +15,7 @@ import { Animation } from 'vune-ui';
 import number from '@/filters/number.js';
 import { vuneMotion } from '@/vune/motion.js';
 import type { MotionHandle } from '@/vune/motion.js';
+import { prefer } from '@/preferences.js';
 
 const NativeMkNumber = createVuneWebHost(VuneMkNumber);
 
@@ -29,6 +30,12 @@ const tweened = reactive({
 let motion: MotionHandle | null = null;
 
 watch(() => props.value, (to) => {
+	if (!prefer.s.animation) {
+		motion?.cancel();
+		motion = null;
+		tweened.number = to;
+		return;
+	}
 	// Share Vune's single animation clock instead of starting one rAF loop per
 	// number. Retarget from the currently displayed value so rapid updates stay
 	// continuous instead of snapping back to the previous prop value.

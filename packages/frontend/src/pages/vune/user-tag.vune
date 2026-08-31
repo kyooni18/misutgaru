@@ -1,15 +1,27 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkUserList from '@/components/MkUserList.vue';
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkUserList from '@/components/vune/MkUserList.vune';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
 
 type Props = { paginator: IPaginator };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, {}, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '1200px' } },
-			Element('div', { className: '_gaps_s' }, VueComponent(MkUserList, { paginator: props.paginator })),
-		),
-	})
-);
+
+
+export struct VuneUserTagView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: null) {
+			VStack(alignment: 'stretch', spacing: 0) { VStack(alignment: 'stretch', spacing: 0) { MkUserList({ paginator: props.paginator }) }.className('_gaps_s') }
+				.className('_spacer')
+				.style({ '--MI_SPACER-w': '1200px' })
+		}
+	}
+}
+
+export default VuneUserTagView

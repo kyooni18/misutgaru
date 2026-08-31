@@ -15,7 +15,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneWidgetFederation from './vune/WidgetFederation.vune';
+import VuneWidgetFederationView from './vune/WidgetFederation.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useWidgetPropsManager } from './widget.js';
@@ -24,6 +25,8 @@ import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
+
+const VuneWidgetFederation = createVuneWebHost(VuneWidgetFederationView);
 
 const name = 'federation';
 

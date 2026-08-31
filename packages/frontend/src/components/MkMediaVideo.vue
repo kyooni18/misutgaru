@@ -27,6 +27,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:class="$style.video"
 			:src="video.thumbnailUrl"
 			:alt="video.comment ?? undefined"
+			loading="eager"
+			fetchpriority="high"
+			decoding="sync"
 		/>
 		<video
 			v-else
@@ -48,7 +51,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MediaComponentExposes } from '@/types/media-component.js';
 import bytes from '@/filters/bytes.js';
@@ -56,18 +58,18 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { getFileMenu } from '@/utility/get-file-menu.js';
-import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
+import { canRevealFile, useSensitiveFileVisibility } from '@/utility/sensitive-file.js';
 
 const props = defineProps<{
 	video: Misskey.entities.DriveFile;
+	forceShow?: boolean;
 }>();
 
 const emit = defineEmits<{
 	(event: 'mediaClick', ev: PointerEvent): void;
 }>();
 
-// eslint-disable-next-line vue/no-setup-props-reactivity-loss
-const hide = ref(shouldHideFileByDefault(props.video));
+const hide = useSensitiveFileVisibility(() => props.video, { forceShow: () => props.forceShow === true });
 
 async function reveal() {
 	if (!(await canRevealFile(props.video))) {

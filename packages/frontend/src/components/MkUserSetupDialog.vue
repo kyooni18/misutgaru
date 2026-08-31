@@ -24,6 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.progressBarValue" :style="{ width: `${(page / 5) * 100}%` }"></div>
 		</div>
 		<Transition
+			:css="prefer.s.animation"
 			mode="out-in"
 			:enterActiveClass="$style.transition_x_enterActive"
 			:leaveActiveClass="$style.transition_x_leaveActive"
@@ -134,6 +135,7 @@ import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkButton from '@/components/MkButton.vue';
 import XProfile from '@/components/MkUserSetupDialog.Profile.vue';
 import XFollow from '@/components/MkUserSetupDialog.Follow.vue';
+import { prefer } from '@/preferences.js';
 import XPrivacy from '@/components/MkUserSetupDialog.Privacy.vue';
 import MkAnimBg from '@/components/MkAnimBg.vue';
 import { i18n } from '@/i18n.js';

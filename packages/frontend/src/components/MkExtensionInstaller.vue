@@ -34,7 +34,7 @@ export type Extension = {
 };
 </script>
 <script lang="ts" setup>
-import VuneExtensionInstaller from './vune/MkExtensionInstaller.vune';
+import VuneExtensionInstaller from './vune/MkExtensionInstaller.vune?vue-host';
 
 defineProps<{
 	extension: Extension;

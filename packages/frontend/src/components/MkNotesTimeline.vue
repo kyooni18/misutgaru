@@ -62,6 +62,7 @@ import { clearPreparedNoteCache, prefetchPreparedNotes } from '@/utility/prepare
 import { useVariableVirtualList } from '@/composables/use-variable-virtual-list.js';
 import type { VariableVirtualEntry } from '@/composables/use-variable-virtual-list.js';
 import { normalizeNoteEntity, evictNormalizedNote } from '@/utility/normalized-entity-cache.js';
+import { prefetchNoteMedia } from '@/utility/media-prefetch.js';
 
 const props = withDefaults(defineProps<MkPaginationOptions & {
 	paginator: T;
@@ -78,6 +79,7 @@ const virtualRoot = ref<HTMLElement | null>(null);
 const {
 	enabled: virtualizationEnabled,
 	entries: virtualEntries,
+	range: virtualRange,
 	beforeSize,
 	afterSize,
 	observeRow: observeVirtualRow,
@@ -102,6 +104,14 @@ useGlobalEvent('noteDeleted', (noteId) => {
 
 watch(timelineNotes, notes => {
 	prefetchPreparedNotes(notes);
+}, { immediate: true, deep: false });
+
+const mediaPrefetchItems = computed(() => {
+	return timelineNotes.value;
+});
+
+watch(mediaPrefetchItems, notes => {
+	prefetchNoteMedia(notes);
 }, { immediate: true, deep: false });
 
 function reload() {

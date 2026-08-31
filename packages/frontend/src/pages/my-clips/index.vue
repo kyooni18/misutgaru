@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneMyClipsIndex :tab="tab" :paginator="paginator" :favoritesPaginator="favoritesPaginator" :headerActions="headerActions" :headerTabs="headerTabs" :onCreate="create" :onTabChange="value => tab = value"/>
+<VuneMyClipsIndex :tab="tab" :paginator="paginator" :favoritesPaginator="favoritesPaginator" :headerActions="headerActions" :headerTabs="headerTabs" :onCreate="create" :onTabChange="(value: string) => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneMyClipsIndex from '@/pages/vune/my-clips-index.vune';
+import VuneMyClipsIndex from '@/pages/vune/my-clips-index.vune?vue-host';
 import { ref, computed, markRaw } from 'vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';

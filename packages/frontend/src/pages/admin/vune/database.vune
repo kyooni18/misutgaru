@@ -1,27 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkSuspense from '@/components/global/MkSuspense.vue';
-import MkKeyValue from '@/components/MkKeyValue.vue';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Text } from 'vune-ui';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkSuspense from '@/components/global/vune/MkSuspense.vune';
+import MkKeyValue from '@/components/vune/MkKeyValue.vune';
 import bytes from '@/filters/bytes.js';
 import number from '@/filters/number.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import type { PageMetadata } from '@/page.js';
+type TableEntry = [string, { size:number; count:number }];
 
-type TableEntry = [string, { size: number; count: number }];
-type Props = { databasePromiseFactory: () => Promise<TableEntry[]> };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, {}, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px', '--MI_SPACER-min': '16px', '--MI_SPACER-max': '32px' } },
-			VueComponent(MkSuspense, { p: props.databasePromiseFactory }, {
-				default: (slotProps: any) => Group() {
-					ForEach(slotProps.result ?? [], key: (table: TableEntry) => table[0]) { table in
-						VueComponent(MkKeyValue, { oneline: true, style: { margin: '1em 0' } }, {
-							key: () => Text(table[0]),
-							value: () => Text(`${bytes(table[1].size)} (${number(table[1].count)} recs)`),
-						})
-					}
-				},
-			}),
-		),
-	})
-);
+function databasePromiseFactory(): Promise<TableEntry[]> {
+ return misskeyApi('admin/get-table-stats').then(res => Object.entries(res).sort((a, b) => b[1].size - a[1].size));
+}
+
+export struct VuneDatabaseView: View {
+ let pageMetadata: PageMetadata | null
+ init(pageMetadata: PageMetadata | null = null) { self.pageMetadata = pageMetadata }
+ var body: some View {
+  PageWithHeader(pageMetadata: pageMetadata) {
+   VStack(alignment: 'stretch', spacing: 0) {
+    MkSuspense(databasePromiseFactory) { result in
+     ForEach(result as TableEntry[], key: table => table[0]) { table in MkKeyValue(oneline: true, key: Text(table[0]), value: Text(`${bytes(table[1].size)} (${number(table[1].count)} recs)`)).style({ margin: '1em 0' }) }
+    }
+   }.className('_spacer').style({ '--MI_SPACER-w':'800px', '--MI_SPACER-min':'16px', '--MI_SPACER-max':'32px' })
+  }
+ }
+}
+export default VuneDatabaseView

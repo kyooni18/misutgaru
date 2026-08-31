@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { ForEach } from 'vune-ui';
+import { Canvas } from '@vune-ui/core/web-primitives';
 import { deepClone } from '@/utility/clone.js';
-import { svgElement } from '@/vune/native.js';
 import './WidgetActivity.calendar.scss';
 
 type Item = { total: number; notes: number; replies: number; renotes: number };
@@ -26,21 +25,29 @@ function prepare(input: Item[]): RecordItem[] {
 }
 
 function calendarView(activity: Item[]) {
-	let prepared = prepare(activity);
-	let today = prepared[0];
-	return svgElement('svg', { className: 'mk-vune-activity-calendar' },
-		ForEach(prepared, key: record => `bg-${record.date.year}-${record.date.month}-${record.date.day}`) { record in
-			svgElement('rect', { className: 'day' },
-				svgElement('title', {}, `${record.date.year}/${record.date.month + 1}/${record.date.day}`),
-			).withProps({ width: '1', height: '1', x: record.x, y: record.date.weekday, rx: '1', ry: '1', fill: 'transparent' })
-		},
-		ForEach(prepared, key: record => `fg-${record.date.year}-${record.date.month}-${record.date.day}`) { record in
-			svgElement('rect', { className: 'day', style: { pointerEvents: 'none' } }).withProps({
-				width: record.v, height: record.v, x: record.x + ((1 - record.v) / 2), y: record.date.weekday + ((1 - record.v) / 2), rx: '1', ry: '1', fill: record.color,
-			})
-		},
-		today ? svgElement('rect', { className: 'today' }).withProps({ width: '1', height: '1', x: today.x, y: today.date.weekday, rx: '1', ry: '1', fill: 'none', 'stroke-width': '0.1', stroke: '#f73520' }) : null,
-	).withProps({ viewBox: '0 0 21 7' });
+	const prepared = prepare(activity);
+	const today = prepared[0];
+	const scale = 10;
+	return Canvas(210, 70, (node: unknown) => {
+		if (!(node instanceof HTMLCanvasElement)) return;
+		const context = node.getContext('2d');
+		if (!context) return;
+		context.clearRect(0, 0, 210, 70);
+		for (const record of prepared) {
+			const size = record.v * scale;
+			const x = (record.x + ((1 - record.v) / 2)) * scale;
+			const y = (record.date.weekday + ((1 - record.v) / 2)) * scale;
+			context.fillStyle = record.color;
+			context.beginPath();
+			context.roundRect(x, y, size, size, Math.min(4, size / 2));
+			context.fill();
+		}
+		if (today) {
+			context.strokeStyle = '#f73520';
+			context.lineWidth = 1;
+			context.strokeRect(today.x * scale, today.date.weekday * scale, scale, scale);
+		}
+	}).className('mk-vune-activity-calendar');
 }
 
 export struct WidgetActivityCalendar: View {

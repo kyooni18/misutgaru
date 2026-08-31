@@ -4,14 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneUserFiles :paginator="paginator"/>
+<VuneUserFilesHost :paginator="paginator"/>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
 import VuneUserFiles from './vune/files.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { Paginator } from '@/utility/paginator.js';
+
+const VuneUserFilesHost = createVuneWebHost(VuneUserFiles, { deepProps: ['paginator'] });
 
 const props = defineProps<{
 	user: Misskey.entities.UserDetailed;

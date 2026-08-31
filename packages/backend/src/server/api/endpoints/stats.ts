@@ -97,7 +97,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const parsed = Number(value);
 				return Number.isFinite(parsed) ? parsed : undefined;
 			},
-			invalidationBus: this.cacheInvalidationService,
+			invalidationBus: cacheInvalidationService,
 		});
 		const instancesCountCache = new RedisSingleCache<number>(redisClient, 'stats:instancesCount', {
 			lifetime: 1000 * 60 * 60,
@@ -108,7 +108,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const parsed = Number(value);
 				return Number.isFinite(parsed) ? parsed : undefined;
 			},
-			invalidationBus: this.cacheInvalidationService,
+			invalidationBus: cacheInvalidationService,
 		});
 
 		super(meta, paramDef, async () => {

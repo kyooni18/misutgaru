@@ -1,53 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkCondensedLine from '@/components/global/MkCondensedLine.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import { createVuneComponent, VueComponent, vuneBoolean } from '@/vune/vue.js';
-
-type Decoration = {
-	id: string;
-	url: string;
-	name: string;
-	roleIdsThatCanBeUsedThisDecoration: string[];
-};
-
-type Props = {
-	active?: boolean;
-	decoration: Decoration;
-	angle?: number;
-	flipH?: boolean;
-	offsetX?: number;
-	offsetY?: number;
-	locked?: boolean;
-	user: Misskey.entities.User;
-	rootClass: string;
-	activeClass: string;
-	nameClass: string;
-	lockClass: string;
-	onClick?: () => void;
-};
-
-export default createVuneComponent<Props>((props) =>
-	Element('div', {
-		className: [props.rootClass, vuneBoolean(props.active) ? props.activeClass : null],
-		onClick: () => props.onClick?.(),
-	},
-		Element('div', { className: props.nameClass },
-			VueComponent(MkCondensedLine, { minScale: 0.5 }, { default: () => props.decoration.name }),
-		),
-		VueComponent(MkAvatar, {
-			style: { width: '60px', height: '60px' },
-			user: props.user,
-			decorations: [{
-				url: props.decoration.url,
-				angle: props.angle,
-				flipH: vuneBoolean(props.flipH),
-				offsetX: props.offsetX,
-				offsetY: props.offsetY,
-			}],
-			forceShowDecoration: true,
-		}),
-		vuneBoolean(props.locked) ? Element('i', { className: [props.lockClass, 'ti ti-lock'] }) : null,
-	)
-);
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import VuneIcon from '@/vune/Icon.vune';
+type Decoration={id:string;url:string;name:string;roleIdsThatCanBeUsedThisDecoration:string[]};
+type Props={active?:boolean;decoration:Decoration;angle?:number;flipH?:boolean;offsetX?:number;offsetY?:number;locked?:boolean;user:Misskey.entities.User;rootClass:string;activeClass:string;nameClass:string;lockClass:string;onClick?:()=>void};
+function clickDecoration(props:Props):void{props.onClick?.()}
+export struct VuneAvatarDecorationDecorationView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { VStack(alignment: 'stretch', spacing: 0){Text(props.decoration.name).className(props.nameClass);MkAvatar(props.user,decorations:[{url:props.decoration.url,angle:props.angle,flipH:props.flipH??false,offsetX:props.offsetX,offsetY:props.offsetY}],forceShowDecoration:true).frame(width:60,height:60);if(props.locked){VuneIcon('ti ti-lock',className:props.lockClass)}}.className([props.rootClass,props.active?props.activeClass:null]).withProps({onClick:()=>clickDecoration(props)}) } }
+export default VuneAvatarDecorationDecorationView

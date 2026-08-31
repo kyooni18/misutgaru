@@ -44,9 +44,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { inject, provide, shallowRef } from 'vue';
 import type { Router } from '@/router.js';
 import { prefer } from '@/preferences.js';
-import MkLoadingPage from '@/pages/_loading_.vue';
+import MkLoadingPage from '@/pages/vune/_loading_.vune?vue-host';
 import { DI } from '@/di.js';
 import { deepEqual } from '@/utility/deep-equal.js';
+import { resolveVueRouteTarget } from '@/vune/route-target-vue.js';
 
 const props = defineProps<{
 	router?: Router;
@@ -64,7 +65,7 @@ provide(DI.routerCurrentDepth, currentDepth + 1);
 const tabs = shallowRef([{
 	fullPath: router.getCurrentFullPath(),
 	routePath: router.current.route.path,
-	component: 'component' in router.current.route ? router.current.route.component : MkLoadingPage,
+	component: 'component' in router.current.route ? resolveVueRouteTarget(router.current.route.component) : MkLoadingPage,
 	props: router.current.props,
 }]);
 
@@ -105,13 +106,13 @@ router.useListener('change', ({ resolved }) => {
 		{
 			fullPath: fullPath,
 			routePath,
-			component: resolved.route.component,
+			component: resolveVueRouteTarget(resolved.route.component),
 			props: resolved.props,
 		},
 	] : [...tabs.value, {
 		fullPath: fullPath,
 		routePath,
-		component: resolved.route.component,
+		component: resolveVueRouteTarget(resolved.route.component),
 		props: resolved.props,
 	}];
 });

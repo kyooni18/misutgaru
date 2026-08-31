@@ -1,13 +1,14 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group, Text } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Group, Text } from 'vune-ui';
 import * as Misskey from 'misskey-js';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkResult from '@/components/global/MkResult.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkA from '@/components/global/MkA.vue';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkA from '@/components/global/vune/MkA.vune';
 import { i18n } from '@/i18n.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	antennas: Misskey.entities.Antenna[];
@@ -18,22 +19,30 @@ type Props = {
 	nameClass: string;
 };
 
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-			Element('div', {},
-				props.antennas.length === 0 ? VueComponent(MkResult, { type: 'empty' }) : null,
-				VueComponent(MkButton, { type: 'routerLink', to: '/my/antennas/create', primary: true, class: props.addClass }, {
-					default: () => Group() { Element('i', { className: 'ti ti-plus' }); Text(i18n.ts.add) },
-				}),
-				props.antennas.length > 0 ? Element('div', { className: '_gaps' },
-					ForEach(props.antennas, key: (antenna) => antenna.id) { antenna in
-						VueComponent(MkA, { class: props.antennaClass, to: `/timeline/antenna/${antenna.id}` }, {
-							default: () => Element('div', { className: props.nameClass }, antenna.name),
-						})
-					},
-				) : null,
-			),
-		),
-	})
-);
+
+
+export struct VuneMyAntennasIndexView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					if (props.antennas.length === 0) { MkResult('empty') }
+					MkA('/my/antennas/create', className: props.addClass) { Group() { VuneIcon('ti ti-plus'); Text(i18n.ts.add) } }.className('_buttonPrimary')
+					if (props.antennas.length > 0) { VStack(alignment: 'stretch', spacing: 0) {
+						ForEach(props.antennas, key: (antenna) => antenna.id) { antenna in
+							MkA(`/timeline/antenna/${antenna.id}`, className: props.antennaClass) { Text(antenna.name).className(props.nameClass) }
+						}
+					}.className('_gaps') }
+				}
+			}.className('_spacer').style({ '--MI_SPACER-w': '700px' })
+		}
+	}
+}
+
+export default VuneMyAntennasIndexView

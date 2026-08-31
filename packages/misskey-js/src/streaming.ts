@@ -83,8 +83,10 @@ export default class Stream extends EventEmitter<StreamEvents> implements IStrea
 
 		const wsOrigin = origin.replace('http://', 'ws://').replace('https://', 'wss://');
 
+		// ReconnectingWebSocket makes the first connection immediately. Keep its
+		// jittered reconnect backoff instead of overriding the minimum to a near-zero
+		// value, which can create a tight connection loop while the server is down.
 		this.stream = new ReconnectingWebSocketConstructor(`${wsOrigin}/streaming?${query}`, '', {
-			minReconnectionDelay: 1, // https://github.com/pladaria/reconnecting-websocket/issues/91
 			WebSocket: options.WebSocket,
 		});
 		if (options.binaryType) {

@@ -425,11 +425,13 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	@bindThis
 	public async prefetchEmojis(emojis: { name: string; host: string | null; }[]): Promise<void> {
 		const namesByHost = new Map<string, Set<string>>();
+		const requestedKeys = new Set<string>();
 		for (const emoji of emojis) {
 			if (emoji.host == null) continue;
 			const key = `${emoji.name} ${emoji.host}`;
 			// null is a valid negative-cache value; only undefined means uncached.
 			if (this.emojisCache.get(key) !== undefined) continue;
+			requestedKeys.add(key);
 			let names = namesByHost.get(emoji.host);
 			if (names == null) {
 				names = new Set();
@@ -452,7 +454,20 @@ export class CustomEmojiService implements OnApplicationShutdown {
 				publicUrl: true,
 			},
 		}) : [];
-		for (const emoji of fetched) this.emojisCache.set(`${emoji.name} ${emoji.host}`, emoji);
+		const fetchedKeys = new Set<string>();
+		for (const emoji of fetched) {
+			const key = `${emoji.name} ${emoji.host}`;
+			fetchedKeys.add(key);
+			// A concurrent ActivityPub refresh may have populated a newer value while
+			// the batch query was in flight. Preserve that value instead of replacing it.
+			if (this.emojisCache.get(key) === undefined) this.emojisCache.set(key, emoji);
+		}
+		for (const key of requestedKeys) {
+			if (fetchedKeys.has(key)) continue;
+			// Cache batch misses as well. Without this, NoteEntityService.packMany()
+			// immediately falls back to one findOneBy() per missing/stale remote emoji.
+			if (this.emojisCache.get(key) === undefined) this.emojisCache.set(key, null);
+		}
 	}
 
 	/**

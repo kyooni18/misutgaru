@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Group, Text, VStack } from 'vune-ui';
-import MkInput from '@/components/MkInput.vue';
-import FormSection from '@/components/form/section.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { Group, Text, VStack } from 'vune-ui';
+import MkInput from '@/components/vune/MkInput.vune';
+import FormSection from '@/components/vune/MkFormSection.vune';
+import MkSwitch from '@/components/vune/MkSwitch.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = {
 	name: string;
@@ -30,42 +31,61 @@ type Props = {
 	onEventMention?: (value: boolean) => void;
 	onCreate?: () => void;
 };
+function setWebhookName(props: Props, value: unknown): void { props.onName?.(String(value ?? '')); }
+function setWebhookUrl(props: Props, value: unknown): void { props.onUrl?.(String(value ?? '')); }
+function setWebhookSecret(props: Props, value: unknown): void { props.onSecret?.(String(value ?? '')); }
+function createWebhook(props: Props): void { props.onCreate?.(); }
 
-function switchRow(value: boolean, label: string, onChange: ((value: boolean) => void) | undefined, disabled = false) {
-	return VueComponent(MkSwitch, {
-		modelValue: value,
-		disabled,
-		'onUpdate:modelValue': (next: boolean) => onChange?.(next),
-	}, { default: () => Text(label) });
+function setWebhookEvent(action: ((value: boolean) => void) | undefined, value: boolean): void { action?.(value); }
+
+struct WebhookSwitchRow: View {
+	let value: boolean
+	let label: string
+	let onChange: ((value: boolean) => void) | undefined
+	let disabled: boolean
+	init(_ value: boolean, label: string, onChange: ((value: boolean) => void) | undefined, disabled: boolean = false) {
+		self.value = value
+		self.label = label
+		self.onChange = onChange
+		self.disabled = disabled
+	}
+	var body: some View {
+		MkSwitch(value, disabled: disabled, onChange: next => setWebhookEvent(onChange, next), label: Text(label))
+	}
 }
 
-export default createVuneComponent<Props>((props) =>
-	VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
-		VueComponent(MkInput, { modelValue: props.name, 'onUpdate:modelValue': (value: string) => props.onName?.(value) }, {
-			label: () => Text(i18n.ts._webhookSettings.name),
-		})
-		VueComponent(MkInput, { modelValue: props.url, type: 'url', 'onUpdate:modelValue': (value: string) => props.onUrl?.(value) }, {
-			label: () => Text('URL'),
-		})
-		VueComponent(MkInput, { modelValue: props.secret, 'onUpdate:modelValue': (value: string) => props.onSecret?.(value) }, {
-			prefix: () => Element('i', { className: 'ti ti-lock' }),
-			label: () => Text(i18n.ts._webhookSettings.secret),
-		})
-		VueComponent(FormSection, {}, {
-			label: () => Text(i18n.ts._webhookSettings.trigger),
-			default: () => VStack(alignment: 'stretch', spacing: 'var(--MI-marginHalf)') {
-				switchRow(props.eventFollow, i18n.ts._webhookSettings._events.follow, props.onEventFollow)
-				switchRow(props.eventFollowed, i18n.ts._webhookSettings._events.followed, props.onEventFollowed)
-				switchRow(props.eventNote, i18n.ts._webhookSettings._events.note, props.onEventNote)
-				switchRow(props.eventReply, i18n.ts._webhookSettings._events.reply, props.onEventReply)
-				switchRow(props.eventRenote, i18n.ts._webhookSettings._events.renote, props.onEventRenote)
-				switchRow(props.eventReaction, i18n.ts._webhookSettings._events.reaction, props.onEventReaction, true)
-				switchRow(props.eventMention, i18n.ts._webhookSettings._events.mention, props.onEventMention)
-			}.className('_gaps_s'),
-		})
-		VueComponent(MkButton, { primary: true, inline: true, onClick: () => props.onCreate?.() }, {
-			default: () => Group() { Element('i', { className: 'ti ti-check' }); Text(` ${i18n.ts.create}`) },
-		})
+
+
+export struct VuneWebhookNewView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-		.className('_gaps_m')
-);
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 'var(--MI-margin)') {
+			MkInput(props.name, onChange: value => setWebhookName(props, value), label: Text(i18n.ts._webhookSettings.name))
+			MkInput(props.url, type: 'url', onChange: value => setWebhookUrl(props, value), label: Text('URL'))
+			MkInput(props.secret,
+				onChange: value => setWebhookSecret(props, value),
+				prefix: VuneIcon('ti ti-lock'),
+				label: Text(i18n.ts._webhookSettings.secret),
+			)
+			FormSection(label: Text(i18n.ts._webhookSettings.trigger)) {
+				VStack(alignment: 'stretch', spacing: 'var(--MI-marginHalf)') {
+					WebhookSwitchRow(props.eventFollow, label: i18n.ts._webhookSettings._events.follow, onChange: props.onEventFollow)
+					WebhookSwitchRow(props.eventFollowed, label: i18n.ts._webhookSettings._events.followed, onChange: props.onEventFollowed)
+					WebhookSwitchRow(props.eventNote, label: i18n.ts._webhookSettings._events.note, onChange: props.onEventNote)
+					WebhookSwitchRow(props.eventReply, label: i18n.ts._webhookSettings._events.reply, onChange: props.onEventReply)
+					WebhookSwitchRow(props.eventRenote, label: i18n.ts._webhookSettings._events.renote, onChange: props.onEventRenote)
+					WebhookSwitchRow(props.eventReaction, label: i18n.ts._webhookSettings._events.reaction, onChange: props.onEventReaction, disabled: true)
+					WebhookSwitchRow(props.eventMention, label: i18n.ts._webhookSettings._events.mention, onChange: props.onEventMention)
+				}.className('_gaps_s')
+			}
+			MkButton(primary: true, inline: true, onClick: { createWebhook(props) }) { Group() { VuneIcon('ti ti-check'); Text(` ${i18n.ts.create}`) } }
+		}.className('_gaps_m')
+	}
+}
+
+export default VuneWebhookNewView

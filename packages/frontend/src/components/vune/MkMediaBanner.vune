@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Box, Text } from 'vune-ui';
+import { VStack, Link, Text } from 'vune-ui';
 import { i18n } from '@/i18n.js';
-import { anchorElement } from '@/vune/native.js';
 import VuneIcon from '@/vune/Icon.vune';
 
 type RevealAction = () => void | Promise<void>;
@@ -37,9 +36,9 @@ export struct MkMediaBanner: View {
 	}
 
 	var body: some View {
-		Box() {
+		VStack(alignment: 'stretch', spacing: 0) {
 			if (hidden) {
-				Box() {
+				VStack(alignment: 'stretch', spacing: 0) {
 					VuneIcon('ti ti-alert-triangle').fontSize('1.6em')
 					Text(i18n.ts.sensitive).bold()
 					Text(i18n.ts.clickToShow)
@@ -47,10 +46,9 @@ export struct MkMediaBanner: View {
 					.className(sensitiveClass)
 					.withProps({ onClick: () => onReveal() })
 			} else {
-				anchorElement({ className: downloadClass, href: mediaUrl, title: mediaName, download: mediaName },
-					VuneIcon('ti ti-download').fontSize('1.6em'),
-					Text(mediaName).bold(),
-				)
+				Link(mediaName, mediaUrl)
+					.className(downloadClass)
+					.withProps({ title: mediaName, download: mediaName })
 			}
 		}
 			.className(rootClass)

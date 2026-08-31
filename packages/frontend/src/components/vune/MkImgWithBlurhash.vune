@@ -1,0 +1,61 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import MkBlurhash from './MkBlurhash.vune';
+import { Image, ZStack } from 'vune-ui';
+import './MkImgWithBlurhash.scss';
+
+type TransitionSpec = { duration?: number | { enter: number; leave: number } } | null;
+
+function transitionDuration(spec: TransitionSpec): number {
+	if (!spec?.duration) return 300;
+	if (typeof spec.duration === 'number') return spec.duration;
+	return spec.duration.enter;
+}
+
+export struct MkImgWithBlurhash: View {
+	let src: string | null
+	let hash: string | null
+	let alt: string
+	let title: string | null
+	let height: number
+	let width: number
+	let cover: boolean
+	let forceBlurhash: boolean
+	let onlyAvgColor: boolean
+	let marker: string | undefined
+	let transition: TransitionSpec
+	let className: string
+	let style: any
+
+	init(
+		src: string | null = null,
+		hash: string | null = null,
+		alt: string = '',
+		title: string | null = null,
+		height: number = 64,
+		width: number = 64,
+		cover: boolean = true,
+		forceBlurhash: boolean = false,
+		onlyAvgColor: boolean = false,
+		marker: string | undefined = undefined,
+		transition: TransitionSpec = null,
+		className: string = '',
+		style: any = undefined,
+	) {
+		self.src = src; self.hash = hash; self.alt = alt; self.title = title; self.height = height; self.width = width; self.cover = cover; self.forceBlurhash = forceBlurhash; self.onlyAvgColor = onlyAvgColor; self.marker = marker; self.transition = transition; self.className = className; self.style = style
+	}
+
+	var body: some View {
+		return ZStack(alignment: 'center') {
+			MkBlurhash(hash, onlyAvgColor: onlyAvgColor, width: width, height: height, show: true, className: 'mk-vune-img-blurhash__canvas')
+			Image(src ?? '', { alt })
+				.className('mk-vune-img-blurhash__img')
+				.style({ opacity: forceBlurhash ? 0 : 1, transition: `opacity ${transitionDuration(transition)}ms ease`, WebkitUserDrag: 'none' })
+				.withProps({ title: title ?? undefined, 'data-marker': marker, loading: 'eager', fetchpriority: 'high', decoding: 'sync', draggable: false, tabindex: -1 })
+		}
+			.className(['chromatic-ignore', 'mk-vune-img-blurhash', cover ? 'mk-vune-img-blurhash--cover' : null, className])
+			.style(style ?? {})
+			.withProps({ title: title ?? '' })
+	}
+}
+export default MkImgWithBlurhash

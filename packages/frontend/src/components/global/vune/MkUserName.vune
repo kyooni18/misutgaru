@@ -1,22 +1,30 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Group } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import Mfm from '@/components/global/MkMfm.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import type * as Misskey from 'misskey-js';
+import MkPlainMfm from './MkPlainMfm.vune';
 
 type Props = {
 	user: Misskey.entities.User;
 	nowrap?: boolean;
+	className?: string;
 };
 
-export default createVuneComponent<Props>((props) =>
-	Group() {
-		VueComponent(Mfm, {
-			text: props.user.name ?? props.user.username,
-			author: props.user,
-			plain: true,
-			nowrap: props.nowrap ?? true,
-			emojiUrls: props.user.emojis,
-		})
+export struct MkUserName: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
 	}
-);
+
+	var body: some View {
+		MkPlainMfm(
+			props.user.name ?? props.user.username,
+			author: props.user,
+			emojiUrls: props.user.emojis,
+			nowrap: props.nowrap ?? true,
+			className: props.className ?? '',
+		)
+	}
+}
+
+export default MkUserName

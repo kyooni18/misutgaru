@@ -1,0 +1,111 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, ForEach, Image, State, Text, type StateRef, type ViewGraphValue } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { i18n } from '@/i18n.js';
+import { ACHIEVEMENT_TYPES, ACHIEVEMENT_BADGES, claimAchievement } from '@/utility/achievements.js';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import './MkAchievements.scss';
+
+type Achievement = Misskey.entities.UsersAchievementsResponse[number];
+type Cache = { achievements: StateRef<Achievement[] | null>; loading: boolean };
+const caches = new Map<string, Cache>();
+
+function cacheFor(userId: string): Cache {
+	let cache = caches.get(userId);
+	if (!cache) {
+		cache = { achievements: State<Achievement[] | null>(null), loading: false };
+		caches.set(userId, cache);
+	}
+	return cache;
+}
+
+function fetchAchievements(userId: string, force = false): void {
+	const cache = cacheFor(userId);
+	if (cache.loading || (!force && cache.achievements.value != null)) return;
+	cache.loading = true;
+	void misskeyApi('users/achievements', { userId }).then(result => {
+		const ordered: Achievement[] = [];
+		for (const type of ACHIEVEMENT_TYPES) {
+			const achievement = result.find(item => item.name === type);
+			if (achievement) ordered.push(achievement);
+		}
+		cache.achievements.value = ordered;
+	}).finally(() => { cache.loading = false; });
+}
+
+function mountFetch(userId: string) {
+	return (element: HTMLElement | null) => {
+		if (element) fetchAchievements(userId);
+	};
+}
+
+function unlockedCard(achievement: Achievement, withDescription: boolean): ViewGraphValue {
+	const badge = ACHIEVEMENT_BADGES[achievement.name];
+	const copy = i18n.ts._achievements._types[`_${achievement.name}`];
+	const date = new Date(achievement.unlockedAt);
+	const flavor = 'flavor' in copy && withDescription ? (copy as { flavor: string }).flavor : null;
+	return VStack(alignment: 'stretch', spacing: 0) {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) {
+					Image(badge.img, { alt: '' }).className('mk-vune-achievements__icon-img')
+				}.className('mk-vune-achievements__icon-inner').style({ background: badge.bg ?? '' })
+			}.className(['mk-vune-achievements__icon-frame', `mk-vune-achievements__icon-frame--${badge.frame}`])
+		}.className('mk-vune-achievements__icon')
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				Text(copy.title).className('mk-vune-achievements__title')
+				Text(`${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`)
+					.className('mk-vune-achievements__time')
+					.withProps({ title: date.toLocaleString() })
+			}.className('mk-vune-achievements__header')
+			Text(withDescription ? copy.description : '???').className('mk-vune-achievements__description')
+			if (flavor) { Text(flavor).className('mk-vune-achievements__flavor') }
+		}.className('mk-vune-achievements__body')
+	}.className('_panel mk-vune-achievements__achievement');
+}
+
+function lockedCard(name: (typeof ACHIEVEMENT_TYPES)[number], userId: string): ViewGraphValue {
+	return VStack(alignment: 'stretch', spacing: 0) {
+		VStack(alignment: 'stretch', spacing: 0).className('mk-vune-achievements__icon')
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) { Text('???').className('mk-vune-achievements__title') }.className('mk-vune-achievements__header')
+			Text('???').className('mk-vune-achievements__description')
+		}.className('mk-vune-achievements__body')
+	}
+		.className('_panel mk-vune-achievements__achievement mk-vune-achievements__achievement--locked')
+		.withProps({ onClick: () => {
+			if (name !== 'clickedClickHere') return;
+			claimAchievement('clickedClickHere');
+			fetchAchievements(userId, true);
+		} });
+}
+
+function achievementsBody(userId: string, withLocked: boolean, withDescription: boolean): ViewGraphValue {
+	const achievements = cacheFor(userId).achievements.value;
+	if (achievements == null) return MkLoading();
+	const unlocked = new Set(achievements.map(item => item.name));
+	const locked = ACHIEVEMENT_TYPES.filter(name => !unlocked.has(name));
+	return VStack(alignment: 'stretch', spacing: 0) {
+		ForEach(achievements, key: item => item.name) { item in unlockedCard(item, withDescription) }
+		if (withLocked) { ForEach(locked, key: name => name) { name in lockedCard(name, userId) } }
+	}.className('mk-vune-achievements__root');
+}
+
+export struct MkAchievements: View {
+	let user: Misskey.entities.User
+	let withLocked: boolean
+	let withDescription: boolean
+	init(_ user: Misskey.entities.User, withLocked: boolean = true, withDescription: boolean = true) {
+		self.user = user
+		self.withLocked = withLocked
+		self.withDescription = withDescription
+	}
+	var body: some View {
+		return VStack(alignment: 'stretch', spacing: 0) { achievementsBody(user.id, withLocked, withDescription) }.elementRef(mountFetch(user.id))
+	}
+}
+
+export default MkAchievements

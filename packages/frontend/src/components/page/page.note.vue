@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VunePageNote from './vune/page.note.vune';
+import VunePageNote from './vune/page.note.vune?vue-host';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const props = defineProps<{

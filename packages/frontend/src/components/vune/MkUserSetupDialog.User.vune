@@ -1,32 +1,43 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import * as Misskey from 'misskey-js';
-import Mfm from '@/components/global/MkMfm.js';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
-import MkAcct from '@/components/global/MkAcct.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import type * as Misskey from 'misskey-js';
+import MkMfm from '@/components/global/vune/MkMfm.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkUserName from '@/components/global/vune/MkUserName.vune';
+import MkAcct from '@/components/global/vune/MkAcct.vune';
+import MkButton from '@/components/vune/MkButton.vune';
 import { i18n } from '@/i18n.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import { Group, Text, VStack } from 'vune-ui';
+import VuneIcon from '@/vune/Icon.vune';
 
 type Props = { user: Misskey.entities.UserDetailed; isFollowing?: boolean; classes: Record<string, string>; onFollow?: () => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { style: { display: 'contents' } },
-		Element('div', { className: props.classes.banner, style: props.user.bannerUrl ? { backgroundImage: `url(${props.user.bannerUrl})` } : {} }),
-		VueComponent(MkAvatar, { class: props.classes.avatar, user: props.user, indicator: true }),
-		Element('div', { className: props.classes.title },
-			Element('div', { className: props.classes.name }, VueComponent(MkUserName, { user: props.user, nowrap: false })),
-			Element('p', { className: props.classes.username }, VueComponent(MkAcct, { user: props.user })),
-		),
-		Element('div', { className: props.classes.description },
-			props.user.description
-				? Element('div', { className: props.classes.mfm }, VueComponent(Mfm as any, { text: props.user.description, author: props.user }))
-				: Element('span', { style: { opacity: 0.7 } }, i18n.ts.noAccountDescription),
-		),
-		Element('div', { className: props.classes.footer },
-			!props.isFollowing
-				? VueComponent(MkButton, { primary: true, gradate: true, rounded: true, full: true, onClick: () => props.onFollow?.() }, { default: () => Element('span', {}, Element('i', { className: 'ti ti-plus' }), ` ${i18n.ts.follow}`) })
-				: Element('div', { style: { opacity: 0.7, textAlign: 'center' } }, `${i18n.ts.youFollowing} `, Element('i', { className: 'ti ti-check' })),
-		),
-	)
-);
+
+export struct MkUserSetupDialogUser: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		return Group() {
+			VStack(alignment: 'stretch', spacing: 0).className(props.classes.banner).style(props.user.bannerUrl ? { backgroundImage: `url(${props.user.bannerUrl})` } : {})
+			MkAvatar(props.user, indicator: true, className: props.classes.avatar),
+			VStack(alignment: 'stretch', spacing: 0) {
+				VStack(alignment: 'stretch', spacing: 0) { MkUserName({ user: props.user, nowrap: false }) }.className(props.classes.name)
+				VStack(alignment: 'stretch', spacing: 0) { MkAcct(props.user) }.className(props.classes.username)
+			}.className(props.classes.title)
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (props.user.description) { VStack(alignment: 'stretch', spacing: 0) { MkMfm({ text: props.user.description, author: props.user }) }.className(props.classes.mfm) }
+				else { Text(i18n.ts.noAccountDescription).opacity(0.7) }
+			}.className(props.classes.description)
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (!props.isFollowing) {
+					MkButton(primary: true, gradate: true, rounded: true, full: true, onClick: { props.onFollow?.() }) {
+						Group() { VuneIcon('ti ti-plus'); Text(` ${i18n.ts.follow}`) }
+					}
+				} else {
+					Group() { Text(`${i18n.ts.youFollowing} `); VuneIcon('ti ti-check') }.opacity(0.7)
+				}
+			}.className(props.classes.footer)
+		}
+	}
+}
+
+export default MkUserSetupDialogUser

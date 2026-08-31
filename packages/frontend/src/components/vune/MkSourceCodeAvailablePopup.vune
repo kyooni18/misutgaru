@@ -1,54 +1,27 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import I18n from '@/components/global/I18n.vue';
-import MkA from '@/components/global/MkA.vue';
-import MkButton from '@/components/MkButton.vue';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import MkA from '@/components/global/vune/MkA.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import VuneIcon from '@/vune/Icon.vune';
 import { host } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-import '@/vune/phase6-migration.scss';
-
-type Props = {
-	zIndex: number | string;
-	onClose?: () => void;
-};
-
-function sourceIcon() {
-	return Element('i', { className: 'ti ti-brand-open-source', style: { fontSize: '40px' } });
+type Props = { zIndex:number|string; onClose?:()=>void };
+function closePrompt(props:Props):void{props.onClose?.()}
+export struct VuneMkSourceCodeAvailablePopupView: View {
+ let props: Props
+ init(_ props:Props){self.props=props}
+ var body: some View {
+  VStack(alignment: 'stretch', spacing: 0) {
+   VStack(alignment: 'stretch', spacing: 0) { VuneIcon('ti ti-brand-open-source').fontSize('40px') }.className('mk-vune-bottom-prompt__icon')
+   VStack(alignment: 'stretch', spacing: 0) {
+    Text(`${i18n.ts.aboutX.replace('{x}', instance.name ?? host)}`).className('mk-vune-bottom-prompt__title')
+    VStack(alignment: 'stretch', spacing: 0) { Text(i18n.ts._aboutMisskey.thisIsModifiedVersion.replace('{name}', instance.name ?? host)); Text(' '); Text(i18n.ts.correspondingSourceIsAvailable); Text(' '); MkA('/about-misskey', className:'_link') { Text(i18n.ts.aboutMisskey) } }.className('mk-vune-bottom-prompt__text')
+    MkButton(onClick:{closePrompt(props)}) { Text(i18n.ts.gotIt) }
+   }.className('mk-vune-bottom-prompt__main')
+   MkButton(transparent:true, iconOnly:true, className:'mk-vune-bottom-prompt__close', onClick:{closePrompt(props)}) { VuneIcon('ti ti-x') }
+  }.className('_acrylic _shadow mk-vune-bottom-prompt').style({zIndex:String(props.zIndex)})
+ }
 }
-
-export default createVuneComponent<Props>((props) =>
-	Element('div', {
-		className: '_acrylic _shadow mk-vune-bottom-prompt',
-		style: { zIndex: String(props.zIndex) },
-	},
-		Element('div', { className: 'mk-vune-bottom-prompt__icon' }, sourceIcon()),
-		Element('div', { className: 'mk-vune-bottom-prompt__main' },
-			Element('div', { className: 'mk-vune-bottom-prompt__title' },
-				VueComponent(I18n, { src: i18n.ts.aboutX, tag: 'span' }, {
-					x: () => Text(instance.name ?? host),
-				}),
-			),
-			Element('div', { className: 'mk-vune-bottom-prompt__text' },
-				VueComponent(I18n, { src: i18n.ts._aboutMisskey.thisIsModifiedVersion, tag: 'span' }, {
-					name: () => Text(instance.name ?? host),
-				}),
-				VueComponent(I18n, { src: i18n.ts.correspondingSourceIsAvailable, tag: 'span' }, {
-					anchor: () => VueComponent(MkA, { to: '/about-misskey', class: '_link' }, {
-						default: () => Text(i18n.ts.aboutMisskey),
-					}),
-				}),
-			),
-			Element('div', { className: '_buttons' },
-				VueComponent(MkButton, { onClick: () => props.onClose?.() }, {
-					default: () => Text(i18n.ts.gotIt),
-				}),
-			),
-		),
-		Element('button', {
-			className: '_button mk-vune-bottom-prompt__close',
-			onClick: () => props.onClose?.(),
-		}, Element('i', { className: 'ti ti-x' })),
-	)
-);
+export default VuneMkSourceCodeAvailablePopupView

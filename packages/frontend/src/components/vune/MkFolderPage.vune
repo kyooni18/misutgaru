@@ -30,7 +30,7 @@ export struct MkFolderPage: View {
 						.withProps({ id: `v-${pageId}-header` })
 					VStack(spacing: 0) {}.className('mk-vune-folder-page__spacer')
 				}
-					.className('mk-vune-folder-page__header')
+					.className(['mk-vune-folder-page__header', '_materialBar'])
 				VStack(alignment: 'stretch', spacing: 0) {}
 					.className('mk-vune-folder-page__body')
 					.withProps({ id: `v-${pageId}-body` })

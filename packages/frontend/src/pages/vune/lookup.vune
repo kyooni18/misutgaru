@@ -1,22 +1,36 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, Text } from 'vune-ui';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkLoading from '@/components/global/MkLoading.vue';
-import { i18n } from '@/i18n.js';
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import type { PageMetadata } from '@/page.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkButton from '@/components/vune/MkButton.vune';
+import MkLoading from '@/components/global/vune/MkLoading.vune';
+import { i18n } from '@/i18n.js';
+import type { NativeTab } from '@/components/vune/MkTabs.vune';
 
-type Props = { state: 'fetching' | 'done'; headerActions?: PageHeaderItem[]; headerTabs?: unknown[]; onClose?: () => void; onGoToMisskey?: () => void };
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '800px' } },
-			props.state === 'done'
-				? Element('div', { className: '_buttonsCenter' },
-					VueComponent(MkButton, { onClick: () => props.onClose?.() }, { default: () => Text(i18n.ts.close) }),
-					VueComponent(MkButton, { onClick: () => props.onGoToMisskey?.() }, { default: () => Text(i18n.ts.goToMisskey) }),
-				)
-				: Element('div', { className: '_fullInfo' }, VueComponent(MkLoading)),
-		),
-	})
-);
+type Props = { state: 'fetching' | 'done'; headerActions?: PageHeaderItem[]; headerTabs?: NativeTab[]; pageMetadata?: PageMetadata | null; onClose?: () => void; onGoToMisskey?: () => void };
+function closeLookup(props: Props): void { props.onClose?.(); }
+function goToMisskey(props: Props): void { props.onGoToMisskey?.(); }
+
+export struct Lookup: View {
+	let props: Props
+	init(_ props: Props) { self.props = props }
+	var body: some View {
+		PageWithHeader(pageMetadata: props.pageMetadata ?? null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) {
+			VStack(alignment: 'leading', spacing: 0) {
+				if (props.state === 'done') {
+					VStack(alignment: 'leading', spacing: 0) {
+						MkButton(onClick: { closeLookup(props) }) { Text(i18n.ts.close) }
+						MkButton(onClick: { goToMisskey(props) }) { Text(i18n.ts.goToMisskey) }
+					}.className('_buttonsCenter')
+				} else {
+					VStack(alignment: 'leading', spacing: 0) { MkLoading() }.className('_fullInfo')
+				}
+			}
+				.className('_spacer')
+				.style({ '--MI_SPACER-w': '800px' })
+		}
+	}
+}
+export default Lookup

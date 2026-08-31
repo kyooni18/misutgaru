@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import type { GridColumn } from '@/components/grid/column.js';
+import VuneIcon from '@/vune/Icon.vune';
+
+export struct MkHeaderCell: View {
+	let column: GridColumn
+	init(_ column: GridColumn) { self.column = column }
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			if (column.setting.icon) { VuneIcon(column.setting.icon) }
+			else { Text((column.setting.title ?? column.setting.bindTo) || '　') }
+		}.className('mk_grid_th mk-vune-grid-header-cell')
+			.style({ maxWidth: column.width, minWidth: column.width, width: column.width })
+			.withProps({ 'data-grid-cell': '', 'data-grid-cell-row': -1, 'data-grid-cell-col': column.index })
+	}
+}
+export default MkHeaderCell

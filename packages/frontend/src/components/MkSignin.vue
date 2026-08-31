@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.signinRoot">
 	<Transition
+		:css="prefer.s.animation"
 		mode="out-in"
 		:enterActiveClass="$style.transition_enterActive"
 		:leaveActiveClass="$style.transition_leaveActive"
@@ -71,6 +72,7 @@ import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialRequestOptionsJSON, AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import type { PwResponse } from '@/components/MkSignin.password.vue';
+import { prefer } from '@/preferences.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { showSuspendedDialog } from '@/utility/show-suspended-dialog.js';
 import { i18n } from '@/i18n.js';

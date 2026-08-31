@@ -1,19 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import * as Misskey from 'misskey-js';
-import PageWithHeader from '@/components/global/PageWithHeader.vue';
-import MkAntennaEditor from '@/components/MkAntennaEditor.vue';
+/* @misutgaru-vune-native */
+import type * as Misskey from 'misskey-js';
+import PageWithHeader from '@/components/global/vune/PageWithHeader.vune';
+import MkAntennaEditor from '@/components/vune/MkAntennaEditor.vune';
 import type { PageHeaderItem } from '@/types/page-header.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
-type Props = {
-	antenna?: Misskey.entities.Antenna | null;
-	headerActions?: PageHeaderItem[];
-	headerTabs?: unknown[];
-	onUpdated?: () => void;
-};
-
-export default createVuneComponent<Props>((props) =>
-	VueComponent(PageWithHeader, { actions: props.headerActions ?? [], tabs: props.headerTabs ?? [] }, {
-		default: () => props.antenna ? VueComponent(MkAntennaEditor, { antenna: props.antenna, onUpdated: () => props.onUpdated?.() }) : null,
-	})
-);
+type Props = { antenna?: Misskey.entities.Antenna | null; headerActions?: PageHeaderItem[]; headerTabs?: any[]; onUpdated?: () => void };
+export struct VuneMyAntennasEditView: View {
+ let props: Props
+ init(_ props: Props) { self.props = props }
+ var body: some View { PageWithHeader(pageMetadata: null, actions: props.headerActions ?? [], tabs: props.headerTabs ?? []) { if (props.antenna) { MkAntennaEditor(antenna: props.antenna, onUpdated: props.onUpdated) } } }
+}
+export default VuneMyAntennasEditView

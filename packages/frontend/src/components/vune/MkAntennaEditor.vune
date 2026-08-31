@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, Text } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import MkInput from './MkInput.vune';
+import MkButton from './MkButton.vune';
+import { i18n } from '@/i18n.js';
+
+function setName(state: any, value: unknown): void { state.value = String(value ?? ''); }
+function finishAntenna(antenna: Misskey.entities.Antenna | null, created: Action | undefined, updated: Action | undefined): void { if (antenna) updated?.(); else created?.(); }
+
+type Action = () => void;
+export struct MkAntennaEditor: View {
+	let antenna: Misskey.entities.Antenna | null
+	let onCreated: Action | undefined
+	let onUpdated: Action | undefined
+	@State var name: string = ''
+	init(antenna: Misskey.entities.Antenna | null = null, @Action onCreated: Action | undefined = undefined, @Action onUpdated: Action | undefined = undefined) {
+		self.antenna = antenna; self.onCreated = onCreated; self.onUpdated = onUpdated
+	}
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			MkInput(antenna?.name ?? name.value, onChange: { value in setName(name, value) }, label: Text(i18n.ts.name))
+			MkButton(primary: true, onClick: { finishAntenna(antenna, onCreated, onUpdated) }) { Text(antenna ? i18n.ts.save : i18n.ts.create) }
+		}.className('_gaps_m')
+	}
+}
+export default MkAntennaEditor

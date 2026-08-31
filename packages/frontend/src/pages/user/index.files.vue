@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneUserIndexFiles :fetching="fetching" :notes="notes" :rootClass="$style.root" :streamClass="$style.stream" :onShowMore="() => emit('showMore')"/>
+<VuneUserIndexFilesHost :fetching="fetching" :notes="notes" :rootClass="$style.root" :streamClass="$style.stream" :onShowMore="() => emit('showMore')"/>
 </template>
 
 <script lang="ts" setup>
@@ -12,6 +12,9 @@ import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import VuneUserIndexFiles from './vune/index.files.vune';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneUserIndexFilesHost = createVuneWebHost(VuneUserIndexFiles);
 
 const props = defineProps<{
 	user: Misskey.entities.UserDetailed;

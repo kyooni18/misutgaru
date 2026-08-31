@@ -5,20 +5,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <VuneThemeManage
-	:selectedThemeId="selectedThemeId"
-	:selectedThemeIdDef="selectedThemeIdDef"
-	:selectedTheme="selectedTheme"
-	:selectedThemeCode="selectedThemeCode"
-	:isBuiltin="selectedTheme != null && builtinThemes.some(t => t.id === selectedTheme.id)"
-	:onThemeId="value => selectedThemeId = value"
-	:onCopy="copyThemeCode"
-	:onUninstall="uninstall"
+	:props="{
+		selectedThemeId,
+		selectedThemeIdDef,
+		selectedTheme,
+		selectedThemeCode,
+		isBuiltin: selectedThemeIsBuiltin,
+		onThemeId: updateSelectedThemeId,
+		onCopy: copyThemeCode,
+		onUninstall: uninstall,
+	}"
 />
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
-import VuneThemeManage from './vune/theme.manage.vune';
+import VuneThemeManageView from './vune/theme.manage.vune';
 import JSON5 from 'json5';
 import type { Theme } from '@@/js/theme.js';
 import { removeTheme } from '@/theme.js';
@@ -30,6 +32,9 @@ import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import type { MkSelectItem } from '@/components/MkSelect.vue';
 import { prefer } from '@/preferences';
+import { createVuneWebHost } from '@/vune/compat-vue.js';
+
+const VuneThemeManage = createVuneWebHost(VuneThemeManageView);
 
 const installedThemes = prefer.r.themes;
 const builtinThemes = ref<Theme[]>([]);
@@ -64,6 +69,15 @@ const selectedThemeCode = computed(() => {
 	if (selectedTheme.value == null) return null;
 	return JSON5.stringify(selectedTheme.value, null, '\t');
 });
+
+const selectedThemeIsBuiltin = computed(() => {
+	const theme = selectedTheme.value;
+	return theme != null && builtinThemes.value.some(t => t.id === theme.id);
+});
+
+function updateSelectedThemeId(value: string | null): void {
+	selectedThemeId.value = value;
+}
 
 function copyThemeCode() {
 	copyToClipboard(selectedThemeCode.value);

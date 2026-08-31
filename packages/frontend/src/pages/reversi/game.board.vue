@@ -59,6 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							@click="putStone(i)"
 						>
 							<Transition
+								:css="prefer.s.animation"
 								:enterActiveClass="$style.transition_flip_enterActive"
 								:leaveActiveClass="$style.transition_flip_leaveActive"
 								:enterFromClass="$style.transition_flip_enterFrom"
@@ -148,6 +149,7 @@ import * as Reversi from 'misskey-reversi';
 import { useInterval } from '@@/js/use-interval.js';
 import { url } from '@@/js/config.js';
 import MkButton from '@/components/MkButton.vue';
+import { prefer } from '@/preferences.js';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import { deepClone } from '@/utility/clone.js';

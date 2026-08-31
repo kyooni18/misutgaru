@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { markRaw } from 'vue';
-import VuneFollowSetup from './vune/MkUserSetupDialog.Follow.vune';
+import VuneFollowSetup from './vune/MkUserSetupDialog.Follow.vune?vue-host';
 import { Paginator } from '@/utility/paginator.js';
 
 const pinnedUsersPaginator = markRaw(new Paginator('pinned-users', {

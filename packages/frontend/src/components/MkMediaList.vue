@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="$style.root">
-	<XBanner v-for="media in medias.nonPreviewable" :key="media.id" :media="media"/>
+	<XBanner v-for="media in medias.nonPreviewable" :key="media.id" :media="media" :forceShow="props.forceShow"/>
 	<div v-if="count > 0" :class="$style.container">
 		<div
 			ref="gallery"
@@ -25,6 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:key="`audio:${media.id}`"
 					:class="$style.media"
 					:audio="media"
+					:forceShow="props.forceShow"
 					@mediaClick="onMediaClick(media)"
 				/>
 				<XVideo
@@ -33,6 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:ref="(comp) => { mediaComponents.set(media.id, comp as InstanceType<typeof XVideo> | null); }"
 					:class="$style.media"
 					:video="media"
+					:forceShow="props.forceShow"
 					@mediaClick="onMediaClick(media)"
 				/>
 				<XImage
@@ -43,6 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:disableImageLink="true"
 					:class="$style.media"
 					:image="media"
+					:forceShow="props.forceShow"
 					:raw="raw"
 					@mediaClick="onMediaClick(media)"
 				/>
@@ -70,6 +73,7 @@ const props = defineProps<{
 	mediaList: Misskey.entities.DriveFile[];
 	user?: Misskey.entities.User | null; // DriveFileのuserはnullになることがある。その場合に使用する所有者情報
 	raw?: boolean;
+	forceShow?: boolean;
 }>();
 
 const gallery = useTemplateRef('gallery');

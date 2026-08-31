@@ -1,13 +1,16 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* @misutgaru-vune-native */
-import { Animation, Text } from 'vune-ui';
-import { htmlElement } from '@/vune/native.js';
+import { Animation, Group, Text } from 'vune-ui';
 
-function colon(showColon: boolean) {
-	return Text(':')
-		.className('mk-vune-digital-clock__colon')
-		.style({ opacity: showColon ? 1 : 0 })
-		.animation(showColon ? Animation.linear(0) : Animation.easeInOut(1), value: showColon);
+struct ClockColon: View {
+	let visible: boolean
+	init(_ visible: boolean) { self.visible = visible }
+	var body: some View {
+		Text(':')
+			.className('mk-vune-digital-clock__colon')
+			.style({ opacity: visible ? 1 : 0 })
+			.animation(visible ? Animation.linear(0) : Animation.easeInOut(1), value: visible)
+	}
 }
 
 export struct MkDigitalClock: View {
@@ -38,15 +41,13 @@ export struct MkDigitalClock: View {
 	}
 
 	var body: some View {
-		htmlElement('span', {},
-			Text(hh),
-			colon(showColon),
-			Text(mm),
-			showS ? colon(showColon) : null,
-			showS ? Text(ss) : null,
-			showMs ? colon(showColon) : null,
-			showMs ? Text(ms) : null,
-		)
+		Group() {
+			Text(hh)
+			ClockColon(showColon)
+			Text(mm)
+			if (showS) { ClockColon(showColon); Text(ss) }
+			if (showMs) { ClockColon(showColon); Text(ms) }
+		}
 	}
 }
 

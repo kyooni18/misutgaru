@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div style="overflow-x: clip;">
 		<Transition
+			:css="prefer.s.animation"
 			mode="out-in"
 			:enterActiveClass="$style.transition_x_enterActive"
 			:leaveActiveClass="$style.transition_x_leaveActive"
@@ -39,6 +40,7 @@ import XSignup from '@/components/MkSignupDialog.form.vue';
 import XServerRules from '@/components/MkSignupDialog.rules.vue';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;

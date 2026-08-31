@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="[$style.root, acrylic ? $style.acrylic : null]">
+<div :class="[$style.root, acrylic ? [$style.acrylic, '_materialBar'] : null]">
 	<div :class="$style.body">
 		<div>
 			<button v-click-anime :class="[$style.item, $style.instance]" class="_button" @click="openInstanceMenu">
@@ -112,9 +112,9 @@ async function openAccountMenu(ev: PointerEvent) {
 	background: var(--MI_THEME-navBg);
 
 	&.acrylic {
-		background: color(from var(--MI_THEME-bg) srgb r g b / 0.75);
-		-webkit-backdrop-filter: var(--MI-blur, blur(15px));
-		backdrop-filter: var(--MI-blur, blur(15px));
+		--vune-material-surface: var(--MI_THEME-navBg);
+		--vune-material-fallback-background: var(--MI_THEME-navBg);
+		background: transparent;
 	}
 }
 

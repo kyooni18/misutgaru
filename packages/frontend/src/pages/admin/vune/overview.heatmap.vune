@@ -1,13 +1,25 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import MkHeatmap from '@/components/MkHeatmap.vue';
-import MkSelect from '@/components/MkSelect.vue';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack } from 'vune-ui';
+import MkHeatmap from '@/components/vune/MkHeatmap.vune';
+import MkSelect from '@/components/vune/MkSelect.vune';
 
 type Props = { src: string; srcDef: any; rootClass: string; onUpdateSrc?: (value: string) => void };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: ['_panel', props.rootClass] },
-		VueComponent(MkSelect, { modelValue: props.src, items: props.srcDef, style: { margin: '0 0 12px 0' }, small: true, 'onUpdate:modelValue': (value: string) => props.onUpdateSrc?.(value) }),
-		VueComponent(MkHeatmap, { src: props.src }),
-	)
-);
+
+
+export struct VuneOverviewHeatmapView: View {
+	let props: Props
+
+	init(_ props: Props) {
+		self.props = props
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			MkSelect(props.src, items: props.srcDef, small: true, style: { margin: '0 0 12px 0' }, onChange: { value in props.onUpdateSrc?.(String(value)) })
+			MkHeatmap()
+		}.className(['_panel', props.rootClass])
+	}
+}
+
+export default VuneOverviewHeatmapView

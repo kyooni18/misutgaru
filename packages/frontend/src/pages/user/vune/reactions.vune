@@ -1,30 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element, ForEach, Group } from 'vune-ui';
+/* @misutgaru-vune-native */
+import { VStack, ForEach } from 'vune-ui';
 import type * as Misskey from 'misskey-js';
-import MkPagination from '@/components/MkPagination.vue';
-import MkNote from '@/components/MkNote.vue';
-import MkReactionIcon from '@/components/MkReactionIcon.vue';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkTime from '@/components/global/MkTime.vue';
+import MkPagination from '@/components/vune/MkPagination.vune';
+import MkNote from '@/components/vune/MkNote.vune';
+import MkReactionIcon from '@/components/vune/MkReactionIcon.vune';
+import MkAvatar from '@/components/global/vune/MkAvatar.vune';
+import MkTimeValue from '@/components/global/vune/MkTimeValue.vune';
 import type { IPaginator } from '@/utility/paginator.js';
-import { createVuneComponent, VueComponent } from '@/vune/vue.js';
-
-type Props = { paginator: IPaginator; user: Misskey.entities.User };
-export default createVuneComponent<Props>((props) =>
-	Element('div', { className: '_spacer', style: { '--MI_SPACER-w': '700px' } },
-		VueComponent(MkPagination, { paginator: props.paginator }, {
-			default: (slotProps: any) => Group() {
-				ForEach(slotProps.items ?? [], key: (item: any) => item.id) { item in
-					Element('div', { className: '_panel _margin' },
-						Element('div', { className: 'mk-vune-reaction-header' },
-							VueComponent(MkAvatar, { class: 'mk-vune-reaction-avatar', user: props.user }),
-							VueComponent(MkReactionIcon, { class: 'mk-vune-reaction-icon', reaction: item.type, noStyle: true }),
-							VueComponent(MkTime, { class: 'mk-vune-reaction-created', time: item.createdAt }),
-						),
-						VueComponent(MkNote, { key: item.id, note: item.note }),
-					)
-				}
-			},
-		}),
-	)
-);
+type Props={paginator:IPaginator;user:Misskey.entities.User};
+export struct VuneReactionsView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { VStack(alignment: 'stretch', spacing: 0){MkPagination(props.paginator){ForEach(props.paginator.items.value as any[],key:item=>item.id){item in VStack(alignment: 'stretch', spacing: 0){VStack(alignment: 'stretch', spacing: 0){MkAvatar(props.user,className:'mk-vune-reaction-avatar');MkReactionIcon(item.type,noStyle:true,className:'mk-vune-reaction-icon');MkTimeValue(item.createdAt)}.className('mk-vune-reaction-header');MkNote(item.note)}.className('_panel _margin')}}}.className('_spacer').style({'--MI_SPACER-w':'700px'}) } }
+export default VuneReactionsView

@@ -184,16 +184,23 @@ export class Paginator<
 	}
 
 	private getNewestId(): string | null | undefined {
-		// 様々な要因により並び順は保証されないのでソートが必要
-		if (this.aheadQueue.length > 0) {
-			return this.aheadQueue.map(x => x.id).sort().at(-1);
+		// Ordering is not guaranteed, but finding an extremum is O(n); cloning
+		// and sorting the whole retained timeline here made every page request
+		// O(n log n) and allocated two temporary arrays.
+		const source = this.aheadQueue.length > 0 ? this.aheadQueue : this.items.value;
+		let newest: string | undefined;
+		for (const item of source) {
+			if (newest == null || item.id > newest) newest = item.id;
 		}
-		return this.items.value.map(x => x.id).sort().at(-1);
+		return newest;
 	}
 
 	private getOldestId(): string | null | undefined {
-		// 様々な要因により並び順は保証されないのでソートが必要
-		return this.items.value.map(x => x.id).sort().at(0);
+		let oldest: string | undefined;
+		for (const item of this.items.value) {
+			if (oldest == null || item.id < oldest) oldest = item.id;
+		}
+		return oldest;
 	}
 
 	public async init(): Promise<void> {

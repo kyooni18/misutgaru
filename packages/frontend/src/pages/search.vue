@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneSearch :tab="tab" :searchProps="props" :notesAvailable="notesSearchAvailable" :usersAvailable="usersSearchAvailable" :ignoreNotesAvailable="props.ignoreNotesSearchAvailable" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="value => tab = value"/>
+<VuneSearch :tab="tab" :searchProps="props" :notesAvailable="notesSearchAvailable" :usersAvailable="usersSearchAvailable" :ignoreNotesAvailable="props.ignoreNotesSearchAvailable" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="(value: 'note' | 'user') => tab = value"/>
 </template>
 
 <script lang="ts" setup>
-import VuneSearch from '@/pages/vune/search.vune';
+import VuneSearch from '@/pages/vune/search.vune?vue-host';
 import { computed, ref, toRef } from 'vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

@@ -25,9 +25,13 @@ const props = withDefaults(defineProps<{
 });
 
 let handle: ReturnType<typeof window['requestAnimationFrame']> | null = null;
+let frameTimer: number | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
 let disposeWebGl = () => {};
+let removeDocumentVisibilityListener = () => {};
+
+const FRAME_INTERVAL = 1000 / 30;
 
 onMounted(() => {
 	const canvas = canvasEl.value!;
@@ -91,37 +95,60 @@ onMounted(() => {
 	resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(syncCanvasSize);
 	resizeObserver?.observe(canvas);
 
-	if (isChromatic()) {
+	const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+	if (isChromatic() || reducedMotion) {
 		gl.uniform1f(u_time, 0);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	} else {
-		let visible = true;
+		let intersecting = true;
+		let documentVisible = window.document.visibilityState === 'visible';
+		const active = () => intersecting && documentVisible;
 
 		const stop = () => {
-			if (handle === null) return;
-			window.cancelAnimationFrame(handle);
-			handle = null;
+			if (handle !== null) {
+				window.cancelAnimationFrame(handle);
+				handle = null;
+			}
+			if (frameTimer !== null) {
+				window.clearTimeout(frameTimer);
+				frameTimer = null;
+			}
+		};
+		const schedule = () => {
+			if (!active() || handle !== null || frameTimer !== null) return;
+			// A decorative shader does not benefit from matching a 120/144 Hz
+			// display. Delay the next RAF instead of requesting every display frame
+			// and merely skipping most draws, which would still wake the renderer.
+			frameTimer = window.setTimeout(() => {
+				frameTimer = null;
+				if (active()) handle = window.requestAnimationFrame(render);
+			}, FRAME_INTERVAL);
 		};
 		const render = (timeStamp: number) => {
-			if (!visible) {
-				handle = null;
-				return;
-			}
+			handle = null;
+			if (!active()) return;
 			gl.uniform1f(u_time, timeStamp);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			handle = window.requestAnimationFrame(render);
+			schedule();
 		};
 		const start = () => {
-			if (handle !== null || !visible) return;
-			handle = window.requestAnimationFrame(render);
+			if (!active()) return;
+			schedule();
 		};
+		const onDocumentVisibility = () => {
+			documentVisible = window.document.visibilityState === 'visible';
+			if (documentVisible) start();
+			else stop();
+		};
+		window.document.addEventListener('visibilitychange', onDocumentVisibility);
+		removeDocumentVisibilityListener = () => window.document.removeEventListener('visibilitychange', onDocumentVisibility);
 
 		if (typeof IntersectionObserver === 'undefined') {
 			start();
 		} else {
 			visibilityObserver = new IntersectionObserver(entries => {
-				visible = entries.some(entry => entry.isIntersecting);
-				if (visible) start();
+				intersecting = entries.some(entry => entry.isIntersecting);
+				if (intersecting) start();
 				else stop();
 			}, { rootMargin: '128px' });
 			visibilityObserver.observe(canvas);
@@ -140,6 +167,12 @@ onUnmounted(() => {
 		window.cancelAnimationFrame(handle);
 		handle = null;
 	}
+	if (frameTimer !== null) {
+		window.clearTimeout(frameTimer);
+		frameTimer = null;
+	}
+	removeDocumentVisibilityListener();
+	removeDocumentVisibilityListener = () => {};
 	resizeObserver?.disconnect();
 	resizeObserver = null;
 	visibilityObserver?.disconnect();

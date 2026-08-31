@@ -1,0 +1,56 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, ForEach } from 'vune-ui';
+import type * as Misskey from 'misskey-js';
+import type { IPaginator } from '@/utility/paginator.js';
+import MkPagination from './MkPagination.vune';
+import MkNote from './MkNote.vune';
+import MkResult from '@/components/global/vune/MkResult.vune';
+import { i18n } from '@/i18n.js';
+
+type Direction = 'up' | 'down' | 'both';
+
+export struct MkNotesTimeline: View {
+	let paginator: IPaginator
+	let noGap: boolean
+	let autoLoad: boolean
+	let direction: Direction
+	let withControl: boolean
+	let forceDisableInfiniteScroll: boolean
+
+	init(
+		_ paginator: IPaginator,
+		noGap: boolean = false,
+		autoLoad: boolean = true,
+		direction: Direction = 'down',
+		withControl: boolean = true,
+		forceDisableInfiniteScroll: boolean = false,
+	) {
+		self.paginator = paginator
+		self.noGap = noGap
+		self.autoLoad = autoLoad
+		self.direction = direction
+		self.withControl = withControl
+		self.forceDisableInfiniteScroll = forceDisableInfiniteScroll
+	}
+
+	var body: some View {
+		MkPagination(
+			paginator,
+			autoLoad: autoLoad,
+			direction: direction,
+			withControl: withControl,
+			forceDisableInfiniteScroll: forceDisableInfiniteScroll,
+			empty: MkResult('empty', text: i18n.ts.noNotes),
+		) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				ForEach(paginator.items.value as Misskey.entities.Note[], key: note => note.id) { note in
+					MkNote(note, className: 'mk-vune-notes-timeline__note')
+						.withProps({ 'data-scroll-anchor': note.id })
+				}
+			}.className([noGap ? 'mk-vune-notes-timeline--no-gap' : '_gaps', 'mk-vune-notes-timeline'])
+		}
+	}
+}
+
+export default MkNotesTimeline

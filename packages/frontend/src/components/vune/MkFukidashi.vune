@@ -1,16 +1,52 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { Element } from 'vune-ui';
-import { createVuneComponent, VueSlot } from '@/vune/vue.js';
+/* @misutgaru-vune-native */
+import { VStack, Path, type ViewGraphValue } from 'vune-ui';
+import './MkFukidashi.scss';
 
-type Props = { tail?: 'left' | 'right' | 'none'; negativeMargin?: boolean; shadow?: boolean; accented?: boolean; fullWidth?: boolean; classes: Record<string, string> };
-export default createVuneComponent<Props>((props, slots) => {
-	const tail = props.tail ?? 'right';
-	return Element('div', { className: [props.classes.root, tail === 'left' ? props.classes.left : props.classes.right, props.negativeMargin ? props.classes.negativeMargin : null, props.shadow ? props.classes.shadow : null, props.accented ? props.classes.accented : null, props.fullWidth ? props.classes.fullWidth : null] },
-		Element('div', { className: props.classes.bg },
-			tail !== 'none' ? Element('svg', { className: props.classes.tail },
-				Element('g', {}, Element('path', { style: { paintOrder: 'stroke fill markers' } }).withProps({ d: 'm188.19 87.657c-1.469 2.3218-3.9315 3.8312-6.667 4.0865-2.2309-1.7379-4.9781-2.6816-7.8061-2.6815h-5.1e-4v12.702h12.702v-5.1e-4c2e-5 -1.9998-0.47213-3.9713-1.378-5.754 2.0709-1.6834 3.2732-4.2102 3.273-6.8791-6e-5 -0.49375-0.0413-0.98662-0.1235-1.4735z', 'fill-rule': 'evenodd', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '.33225' })).withProps({ transform: 'translate(-173.71 -87.184)' }),
-			).withProps({ version: '1.1', viewBox: '0 0 14.597 14.58', xmlns: 'http://www.w3.org/2000/svg' }) : null,
-			Element('div', { className: props.classes.content }, VueSlot(slots.default)),
-		),
-	);
-});
+export struct MkFukidashi: View {
+	let tail: 'left' | 'right' | 'none'
+	let negativeMargin: boolean
+	let shadow: boolean
+	let accented: boolean
+	let fullWidth: boolean
+	let content: ViewGraphValue
+
+	init(
+		tail: 'left' | 'right' | 'none' = 'right',
+		negativeMargin: boolean = false,
+		shadow: boolean = false,
+		accented: boolean = false,
+		fullWidth: boolean = false,
+		@ViewBuilder content: () => ViewGraphValue,
+	) {
+		self.tail = tail
+		self.negativeMargin = negativeMargin
+		self.shadow = shadow
+		self.accented = accented
+		self.fullWidth = fullWidth
+		self.content = content()
+	}
+
+	var body: some View {
+		VStack(alignment: 'stretch', spacing: 0) {
+			VStack(alignment: 'stretch', spacing: 0) {
+				if (tail !== 'none') {
+					Path('m188.19 87.657c-1.469 2.3218-3.9315 3.8312-6.667 4.0865-2.2309-1.7379-4.9781-2.6816-7.8061-2.6815h-5.1e-4v12.702h12.702v-5.1e-4c2e-5 -1.9998-0.47213-3.9713-1.378-5.754 2.0709-1.6834 3.2732-4.2102 3.273-6.8791-6e-5 -0.49375-0.0413-0.98662-0.1235-1.4735z')
+						.className('mk-vune-fukidashi__tail')
+						.withProps({ viewBox: '0 0 14.597 14.58' })
+				}
+				VStack(alignment: 'stretch', spacing: 0) { content }.className('mk-vune-fukidashi__content')
+			}.className('mk-vune-fukidashi__bg')
+		}
+			.className([
+				'mk-vune-fukidashi',
+				tail === 'left' ? 'mk-vune-fukidashi--left' : tail === 'right' ? 'mk-vune-fukidashi--right' : null,
+				negativeMargin ? 'mk-vune-fukidashi--negative-margin' : null,
+				shadow ? 'mk-vune-fukidashi--shadow' : null,
+				accented ? 'mk-vune-fukidashi--accented' : null,
+				fullWidth ? 'mk-vune-fukidashi--full-width' : null,
+			])
+	}
+}
+
+export default MkFukidashi

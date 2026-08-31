@@ -22,12 +22,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
+import { nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue';
 import * as os from '@/os.js';
 import { calcPopupPosition } from '@/utility/popup-position.js';
 import { prefer } from '@/preferences.js';
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
+import { animateSurfaceTransition } from '@/vune/motion.js';
 
 const props = withDefaults(defineProps<{
 	showing: boolean;
@@ -60,10 +59,7 @@ function enter(element: Element, done: () => void) {
 		done();
 		return;
 	}
-	animateVuneTransition(element, [
-		{ opacity: 0, transform: 'scale(0.75)' },
-		{ opacity: 1, transform: 'scale(1)' },
-	], Animation.easeOut(0.2), done);
+	animateSurfaceTransition(element, 'enter', done);
 }
 
 function leave(element: Element, done: () => void) {
@@ -71,10 +67,7 @@ function leave(element: Element, done: () => void) {
 		done();
 		return;
 	}
-	animateVuneTransition(element, [
-		{ opacity: 1, transform: 'scale(1)' },
-		{ opacity: 0, transform: 'scale(0.75)' },
-	], Animation.easeIn(0.2), done);
+	animateSurfaceTransition(element, 'leave', done);
 }
 
 function setPosition() {
@@ -93,23 +86,72 @@ function setPosition() {
 	el.value.style.top = data.top + 'px';
 }
 
-let loopHandler: number | null = null;
+let positionFrame: number | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let tracking = false;
+
+function cancelScheduledPosition() {
+	if (positionFrame == null) return;
+	window.cancelAnimationFrame(positionFrame);
+	positionFrame = null;
+}
+
+function schedulePosition() {
+	if (!props.showing || positionFrame != null) return;
+	positionFrame = window.requestAnimationFrame(() => {
+		positionFrame = null;
+		if (!props.showing) return;
+		setPosition();
+	});
+}
+
+function stopTracking() {
+	cancelScheduledPosition();
+	resizeObserver?.disconnect();
+	resizeObserver = null;
+
+	if (!tracking) return;
+	tracking = false;
+	window.removeEventListener('scroll', schedulePosition, true);
+	window.removeEventListener('resize', schedulePosition);
+	window.visualViewport?.removeEventListener('scroll', schedulePosition);
+	window.visualViewport?.removeEventListener('resize', schedulePosition);
+}
+
+function startTracking() {
+	if (!props.showing) return;
+	stopTracking();
+	tracking = true;
+
+	window.addEventListener('scroll', schedulePosition, { capture: true, passive: true });
+	window.addEventListener('resize', schedulePosition, { passive: true });
+	window.visualViewport?.addEventListener('scroll', schedulePosition, { passive: true });
+	window.visualViewport?.addEventListener('resize', schedulePosition, { passive: true });
+
+	if (typeof ResizeObserver !== 'undefined') {
+		resizeObserver = new ResizeObserver(schedulePosition);
+		if (el.value != null) resizeObserver.observe(el.value);
+		if (props.anchorElement != null) resizeObserver.observe(props.anchorElement);
+	}
+
+	void nextTick(schedulePosition);
+}
 
 onMounted(() => {
-	nextTick(() => {
-		setPosition();
-
-		const loop = () => {
-			setPosition();
-			loopHandler = window.requestAnimationFrame(loop);
-		};
-
-		loop();
-	});
+	if (props.showing) startTracking();
 });
 
+watch(() => [props.showing, props.anchorElement] as const, () => {
+	if (props.showing) startTracking();
+	else stopTracking();
+}, { flush: 'post' });
+
+watch(() => [props.x, props.y, props.direction, props.innerMargin, props.maxWidth] as const, () => {
+	schedulePosition();
+}, { flush: 'post' });
+
 onUnmounted(() => {
-	if (loopHandler != null) window.cancelAnimationFrame(loopHandler);
+	stopTracking();
 });
 </script>
 

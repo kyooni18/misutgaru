@@ -125,14 +125,15 @@ export class DriveFileEntityService {
 
 	@bindThis
 	public getPublicUrl(file: MiDriveFile, mode?: 'avatar'): string { // static = thumbnail
-		// リモートかつメディアプロキシ
-		if (file.uri != null && file.userHost != null && this.config.externalMediaProxyEnabled) {
+		// External media-proxy is an image service. Routing audio/video through
+		// image.webp makes the public DriveFile URL unusable as a media source.
+		if (file.uri != null && file.userHost != null && this.config.externalMediaProxyEnabled && (mode === 'avatar' || file.type.startsWith('image/'))) {
 			return this.getProxiedUrl(file.uri, mode);
 		}
 
 		// リモートかつ期限切れはローカルプロキシを試みる
 		if (file.uri != null && file.isLink && this.meta.proxyRemoteFiles) {
-			const key = file.webpublicAccessKey;
+			const key = file.webpublicAccessKey ?? file.accessKey;
 
 			if (key && !key.match('/')) {	// 古いものはここにオブジェクトストレージキーが入ってるので除外
 				const url = `${this.config.url}/files/${key}`;

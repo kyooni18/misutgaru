@@ -285,8 +285,7 @@ function onContextmenu(ev: PointerEvent) {
 		action: async () => {
 			const { dispose } = await os.popupAsyncWithDialog(import('@/components/MkDriveWindow.vue').then(x => x.default), {
 				initialFolder: props.folder,
-			}, {
-				closed: () => dispose(),
+				onClosed: () => dispose(),
 			});
 		},
 	}, { type: 'divider' }, {

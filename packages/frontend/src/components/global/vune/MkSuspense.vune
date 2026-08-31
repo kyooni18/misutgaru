@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* @misutgaru-vune-native */
+import { VStack, type StateRef, type ViewGraphValue } from 'vune-ui';
+import MkLoading from './MkLoading.vune';
+import MkError from '@/components/vune/MkError.vune';
+
+function suspenseRef(promise: Promise<any> | (() => Promise<any>), resolved: StateRef<any>, failed: StateRef<boolean>) {
+	return (element: HTMLElement | null) => {
+		if (!element || resolved.value != null || failed.value) return;
+		const task = typeof promise === 'function' ? promise() : promise;
+		void task.then(value => { resolved.value = value; }).catch(() => { failed.value = true; });
+	};
+}
+
+export struct MkSuspense: View {
+	let promise: Promise<any> | (() => Promise<any>)
+	let content: (value: any) => ViewGraphValue
+	@State var resolved: any = null
+	@State var failed: boolean = false
+
+	init(_ promise: Promise<any> | (() => Promise<any>), @ViewBuilder content: (value: any) => ViewGraphValue) {
+		self.promise = promise
+		self.content = content
+	}
+
+	var body: some View {
+		VStack(alignment: 'leading', spacing: 0) {
+			if (failed.value) { MkError() }
+			else if (resolved.value == null) { MkLoading() }
+			else { content(resolved.value) }
+		}.elementRef(suspenseRef(promise, resolved, failed))
+	}
+}
+
+export default MkSuspense

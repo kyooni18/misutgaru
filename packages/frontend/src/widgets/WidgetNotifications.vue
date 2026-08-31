@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { useWidgetPropsManager } from './widget.js';
-import VuneWidgetNotifications from './vune/WidgetNotifications.vune';
+import VuneWidgetNotifications from './vune/WidgetNotifications.vune?vue-host';
 import type { notificationTypes as notificationTypes_typeReferenceOnly } from 'misskey-js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';

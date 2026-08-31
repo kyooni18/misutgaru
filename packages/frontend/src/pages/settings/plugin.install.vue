@@ -6,14 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <VunePluginInstall
 	:code="code"
-	:onCodeChange="value => code = value"
+	:onCodeChange="(value: string | null) => code = value"
 	:onInstall="install"
 />
 </template>
 
 <script lang="ts" setup>
 import { nextTick, ref, computed } from 'vue';
-import VunePluginInstall from './vune/plugin.install.vune';
+import VunePluginInstall from './vune/plugin.install.vune?vue-host';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
