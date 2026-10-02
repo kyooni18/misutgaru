@@ -4,13 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VunePageNote :block="block" :note="note" :rootClass="$style.root"/>
+<div :class="$style.root">
+	<MkNote v-if="note && !block.detailed" :key="note.id + ':normal'" :note="note"/>
+	<MkNoteDetailed v-if="note && block.detailed" :key="note.id + ':detail'" :note="note"/>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VunePageNote from './vune/page.note.vune?vue-host';
+import MkNote from '@/components/MkNote.vue';
+import MkNoteDetailed from '@/components/MkNoteDetailed.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const props = defineProps<{

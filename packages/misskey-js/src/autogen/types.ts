@@ -746,6 +746,15 @@ export type paths = {
          */
         post: operations['admin___roles___users'];
     };
+    '/admin/runtime-diagnostics': {
+        /**
+         * admin/runtime-diagnostics
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:server-info*
+         */
+        post: operations['admin___runtime-diagnostics'];
+    };
     '/admin/send-email': {
         /**
          * admin/send-email
@@ -2802,10 +2811,9 @@ export type paths = {
     '/i/revoke-token': {
         /**
          * i/revoke-token
-         * @description No description provided.
+         * @description Revoke an access token of the authenticated user. Requires credential. When called with an access token (third-party app), only the token currently in use can be revoked.
          *
-         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
-         *     **Credential required**: *Yes*
+         *     **Credential required**: *No*
          */
         post: operations['i___revoke-token'];
     };
@@ -11537,6 +11545,105 @@ export interface operations {
                         /** Format: date-time */
                         expiresAt: string | null;
                     }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___runtime-diagnostics': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: date-time */
+                        startedAt: string;
+                        uptimeMs: number;
+                        process: {
+                            rssBytes: number;
+                            heapUsedBytes: number;
+                            heapTotalBytes: number;
+                            externalBytes: number;
+                            eventLoopUtilization: number;
+                            eventLoopDelay: {
+                                p50Ms: number;
+                                p95Ms: number;
+                                p99Ms: number;
+                                maxMs: number;
+                            };
+                        };
+                        counters: {
+                            name: string;
+                            value: number;
+                        }[];
+                        distributions: {
+                            name: string;
+                            count: number;
+                            sum: number;
+                            min: number;
+                            max: number;
+                            average: number;
+                            p50: number;
+                            p95: number;
+                            p99: number;
+                        }[];
+                        recentTraces: {
+                            /** Format: date-time */
+                            at: string;
+                            category: string;
+                            durationMs: number;
+                            detail?: {
+                                [key: string]: unknown;
+                            };
+                        }[];
+                    };
                 };
             };
             /** @description Client error */

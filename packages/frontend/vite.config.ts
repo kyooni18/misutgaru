@@ -1,11 +1,10 @@
 import path from 'path';
 import pluginVue from '@vitejs/plugin-vue';
-import { vunePlugin } from '@vune-ui/vite';
 import pluginGlsl from 'vite-plugin-glsl';
 import { replacePlugin } from 'rolldown/plugins';
 import { visualizer } from 'rollup-plugin-visualizer';
 import type { PluginOption, UserConfig } from 'vite';
-import { defineConfig, transformWithOxc } from 'vite';
+import { defineConfig } from 'vite';
 import { load as loadYaml } from 'js-yaml';
 import { promises as fsp } from 'fs';
 
@@ -25,18 +24,6 @@ const url = process.env.NODE_ENV === 'development' ? (loadYaml(await fsp.readFil
 const host = url ? (new URL(url)).hostname : undefined;
 
 const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.json5', '.svg', '.sass', '.scss', '.css', '.vue'];
-
-function vuneTypeScriptPlugin(): PluginOption {
-	return {
-		name: 'misutgaru-vune-typescript',
-		enforce: 'pre',
-		async transform(code, id) {
-			const fileName = id.split('?', 1)[0];
-			if (!/\.vune$/i.test(fileName)) return null;
-			return transformWithOxc(code, fileName, { lang: 'ts' });
-		},
-	};
-}
 
 function getBundleVisualizerPlugin(): PluginOption[] {
 	if (process.env.FRONTEND_BUNDLE_VISUALIZER !== 'true') return [];
@@ -156,11 +143,6 @@ export function getConfig(): UserConfig {
 		},
 
 		plugins: [
-			vunePlugin({
-				include: /\.vune(?:\.[cm]?[jt]sx?)?$/,
-				vueHost: { factoryImport: '@/vune/compat-vue.js' },
-			}),
-			vuneTypeScriptPlugin(),
 			pluginWatchLocales(),
 			...searchIndexes.map(options => pluginCreateSearchIndex(options)),
 			pluginVue(),

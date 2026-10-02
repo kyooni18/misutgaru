@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<template #footer>
 			<slot name="footer"></slot>
-			<div v-if="prefer.s.showPageTabBarBottom && (props.tabs?.length ?? 0) > 0" class="_materialBar" :class="$style.footerTabs">
+			<div v-if="prefer.s.showPageTabBarBottom && (props.tabs?.length ?? 0) > 0" :class="$style.footerTabs">
 				<MkTabs v-model:tab="tab" :tabs="props.tabs" :centered="true" :tabHighlightUpper="true"/>
 			</div>
 		</template>
@@ -80,8 +80,9 @@ defineExpose({
 }
 
 .footerTabs {
-	--vune-material-surface: var(--MI_THEME-pageHeaderBg);
-	--vune-material-fallback-background: var(--MI_THEME-pageHeaderBg);
+	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
+	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
+	backdrop-filter: var(--MI-blur, blur(15px));
 	border-top: solid 0.5px var(--MI_THEME-divider);
 }
 </style>

@@ -31,7 +31,7 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
-import { installMaterialPerformancePolicy } from '@/vune/material-performance.js';
+import { initializeMotionRuntime } from '@/motion/index.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
@@ -62,11 +62,6 @@ export async function common(createVue: () => Promise<App<Element>>) {
 			});
 			*/
 		});
-	}
-
-	if (_DEV_) {
-		const { installVuneDevtools } = await import('@/vune/devtools-overlay.js');
-		installVuneDevtools();
 	}
 
 	let isClientUpdated = false;
@@ -104,7 +99,6 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 	// タッチデバイスでCSSの:hoverを機能させる
 	window.document.addEventListener('touchend', () => {}, { passive: true });
-	installMaterialPerformancePolicy();
 
 	// URLに#pswpを含む場合は取り除く
 	if (window.location.hash === '#pswp') {
@@ -124,6 +118,7 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 	await store.ready;
 	await deckStore.ready;
+	initializeMotionRuntime();
 
 	const fetchInstanceMetaPromise = fetchInstance();
 
@@ -205,7 +200,6 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 	watch(prefer.r.useBlurEffectForModal, v => {
 		window.document.documentElement.style.setProperty('--MI-modalBgFilter', v ? 'blur(1px)' : 'none');
-		window.document.documentElement.style.setProperty('--MI-modalBgBlurTarget', v ? '1px' : '0px');
 	}, { immediate: true });
 
 	watch(prefer.r.useBlurEffect, v => {

@@ -4,22 +4,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetTrends :showHeader="widgetProps.showHeader" :fetching="fetching" :stats="stats"/>
+<MkContainer :showHeader="widgetProps.showHeader" data-testid="mkw-trends" class="mkw-trends">
+	<template #icon><i class="ti ti-hash"></i></template>
+	<template #header>{{ i18n.ts._widgets.trends }}</template>
+
+	<div class="wbrkwala">
+		<MkLoading v-if="fetching"/>
+		<TransitionGroup v-else tag="div" :name="prefer.s.animation ? 'chart' : ''" class="tags">
+			<div v-for="stat in stats" :key="stat.tag">
+				<div class="tag">
+					<MkA class="a" :to="`/tags/${ encodeURIComponent(stat.tag) }`" :title="stat.tag">#{{ stat.tag }}</MkA>
+					<p>{{ i18n.tsx.nUsersMentioned({ n: stat.usersCount }) }}</p>
+				</div>
+				<MkMiniChart class="chart" :src="stat.chart"/>
+			</div>
+		</TransitionGroup>
+	</div>
+</MkContainer>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneWidgetTrendsView from './vune/WidgetTrends.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
+import MkContainer from '@/components/MkContainer.vue';
+import MkMiniChart from '@/components/MkMiniChart.vue';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
-
-const VuneWidgetTrends = createVuneWebHost(VuneWidgetTrendsView);
+import { prefer } from '@/preferences.js';
 
 const name = 'trends';
 
@@ -64,7 +79,7 @@ defineExpose<WidgetComponentExpose>({
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .wbrkwala {
 	height: (62px + 1px) + (62px + 1px) + (62px + 1px) + (62px + 1px) + 62px;
 	overflow: hidden;

@@ -4,35 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<NativeDigitalClock
-	:transparent="widgetProps.transparent"
-	:fontSize="widgetProps.fontSize"
-	:showMs="widgetProps.showMs"
-	:showLabel="widgetProps.showLabel"
-	:tzAbbrev="tzAbbrev"
-	:tzOffsetLabel="tzOffsetLabel"
-	:rootClass="$style.root"
-	:labelClass="$style.label"
-	:hh="hh"
-	:mm="mm"
-	:ss="ss"
-	:ms="ms"
-	:showColon="showColon"
-/>
+<div data-testid="mkw-digitalClock" class="_monospace" :class="[$style.root, { _panel: !widgetProps.transparent }]" :style="{ fontSize: `${widgetProps.fontSize}em` }">
+	<div v-if="widgetProps.showLabel" :class="$style.label">{{ tzAbbrev }}</div>
+	<div>
+		<MkDigitalClock :showMs="widgetProps.showMs" :offset="tzOffset"/>
+	</div>
+	<div v-if="widgetProps.showLabel" :class="$style.label">{{ tzOffsetLabel }}</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import WidgetDigitalClock from './vune/WidgetDigitalClock.vune';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { timezones } from '@/utility/timezones.js';
 import { i18n } from '@/i18n.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { defaultIdlingRenderScheduler } from '@/utility/idle-render.js';
-
-const NativeDigitalClock = createVuneWebHost(WidgetDigitalClock);
+import MkDigitalClock from '@/components/MkDigitalClock.vue';
 
 const name = 'digitalClock';
 
@@ -92,41 +80,6 @@ const tzOffset = computed(() => widgetProps.timezone === null
 	: timezones.find((tz) => tz.name.toLowerCase() === widgetProps.timezone)?.offset ?? 0);
 
 const tzOffsetLabel = computed(() => (tzOffset.value >= 0 ? '+' : '-') + Math.floor(tzOffset.value / 60).toString().padStart(2, '0') + ':' + (tzOffset.value % 60).toString().padStart(2, '0'));
-
-const hh = ref('');
-const mm = ref('');
-const ss = ref('');
-const ms = ref('');
-const showColon = ref(false);
-let prevSec: number | null = null;
-
-watch(showColon, (value) => {
-	if (!value) return;
-	window.setTimeout(() => {
-		showColon.value = false;
-	}, 30);
-});
-
-const tick = (): void => {
-	const now = new Date();
-	now.setMinutes(now.getMinutes() + now.getTimezoneOffset() + tzOffset.value);
-	hh.value = now.getHours().toString().padStart(2, '0');
-	mm.value = now.getMinutes().toString().padStart(2, '0');
-	ss.value = now.getSeconds().toString().padStart(2, '0');
-	ms.value = Math.floor(now.getMilliseconds() / 10).toString().padStart(2, '0');
-	if (now.getSeconds() !== prevSec) showColon.value = true;
-	prevSec = now.getSeconds();
-};
-
-tick();
-
-onMounted(() => {
-	defaultIdlingRenderScheduler.add(tick);
-});
-
-onUnmounted(() => {
-	defaultIdlingRenderScheduler.delete(tick);
-});
 
 defineExpose<WidgetComponentExpose>({
 	name,

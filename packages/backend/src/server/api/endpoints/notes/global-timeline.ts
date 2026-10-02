@@ -12,6 +12,8 @@ import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import ActiveUsersChart from '@/core/chart/charts/active-users.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
+import { RecommendationTimelineService } from '@/core/RecommendationTimelineService.js';
+import { MiLocalUser } from '@/models/User.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -60,14 +62,63 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private queryService: QueryService,
 		private roleService: RoleService,
 		private activeUsersChart: ActiveUsersChart,
+		private recommendationTimelineService: RecommendationTimelineService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const policies = await this.roleService.getUserPolicies(me ? me.id : null);
 			if (!policies.gtlAvailable) {
 				throw new ApiError(meta.errors.gtlDisabled);
 			}
+			const enableDiscovery = ps.sinceId == null && ps.untilId == null && ps.sinceDate == null && ps.untilDate == null;
+			const loadRecommendedCandidates = async (candidateIds: string[]) => {
+				const candidates = await this.getFromDb({
+					sinceId: null,
+					untilId: null,
+					sinceDate: null,
+					untilDate: null,
+					limit: candidateIds.length,
+					withFiles: ps.withFiles,
+					withRenotes: ps.withRenotes,
+					candidateIds,
+				}, me);
+				return await this.noteEntityService.packMany(candidates, me);
+			};
 
-			//#region Construct query
+			const timeline = await this.getFromDb({
+				sinceId: ps.sinceId ?? null,
+				untilId: ps.untilId ?? null,
+				sinceDate: ps.sinceDate ?? null,
+				untilDate: ps.untilDate ?? null,
+				limit: ps.limit,
+				withFiles: ps.withFiles,
+				withRenotes: ps.withRenotes,
+			}, me);
+
+			process.nextTick(() => {
+				if (me) {
+					this.activeUsersChart.read(me);
+				}
+			});
+
+			const packed = await this.noteEntityService.packMany(timeline, me);
+			return await this.recommendationTimelineService.mix(packed, me?.id ?? null, {
+				limit: ps.limit,
+				enableDiscovery,
+				loadCandidates: loadRecommendedCandidates,
+			});
+		});
+	}
+
+	private async getFromDb(ps: {
+		sinceId: string | null,
+		untilId: string | null,
+		sinceDate: number | null,
+		untilDate: number | null,
+		limit: number,
+		withFiles: boolean,
+		withRenotes: boolean,
+		candidateIds?: string[],
+	}, me: MiLocalUser | null) {
 			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'),
 				ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)
 				.andWhere('note.visibility = \'public\'')
@@ -78,6 +129,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
+			if (ps.candidateIds != null) {
+				if (ps.candidateIds.length === 0) return [];
+				query.andWhere('note.id IN (:...candidateIds)', { candidateIds: ps.candidateIds });
+			}
+
 			this.queryService.generateBaseNoteFilteringQuery(query, me);
 			if (me) this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 
@@ -85,7 +141,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				query.andWhere('note.fileIds != \'{}\'');
 			}
 
-			if (ps.withRenotes === false) {
+			if (!ps.withRenotes) {
 				query.andWhere(new Brackets(qb => {
 					qb.where('note.renoteId IS NULL');
 					qb.orWhere(new Brackets(qb => {
@@ -95,17 +151,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					}));
 				}));
 			}
-			//#endregion
-
-			const timeline = await query.limit(ps.limit).getMany();
-
-			process.nextTick(() => {
-				if (me) {
-					this.activeUsersChart.read(me);
-				}
-			});
-
-			return await this.noteEntityService.packMany(timeline, me);
-		});
+			return await query.limit(ps.limit).getMany();
 	}
 }

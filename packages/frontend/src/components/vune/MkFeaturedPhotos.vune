@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack } from 'vune-ui';
-export struct MkFeaturedPhotos: View { init() {} var body: some View { VStack(alignment: 'stretch', spacing: 0).className('mk-vune-featured-photos') } }
-export default MkFeaturedPhotos

@@ -5,15 +5,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
+	:enterActiveClass="prefer.s.animation ? $style.transition_window_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_window_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_window_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_window_leaveTo : ''"
 	appear
-	:css="false"
-	@enter="enter"
-	@leave="leave"
 	@afterLeave="emit('closed')"
 >
 	<div v-if="showing" ref="rootEl" :class="[$style.root, { [$style.maximized]: maximized }]">
 		<div :class="$style.body" class="_shadow" @pointerdown="onBodyPointerDown" @keydown="onKeydown">
-			<div ref="headerEl" class="_materialBar" :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
+			<div :class="[$style.header, { [$style.mini]: mini }]" @contextmenu.prevent.stop="onContextmenu">
 				<span :class="$style.headerLeft">
 					<template v-if="!minimized">
 						<button v-for="button in buttonsLeft" v-tooltip="button.title" class="_button" :class="[$style.headerButton, { [$style.highlighted]: button.highlighted }]" @click="button.onClick"><i :class="button.icon"></i></button>
@@ -33,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<button v-if="closeButton" v-tooltip="i18n.ts.close" class="_button" :class="$style.headerButton" @click="close()"><i class="ti ti-x"></i></button>
 				</span>
 			</div>
-			<div ref="contentEl" :class="$style.content">
+			<div :class="$style.content">
 				<slot></slot>
 			</div>
 		</div>
@@ -52,13 +53,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onBeforeUnmount, onMounted, provide, useTemplateRef, ref } from 'vue';
+import { onBeforeUnmount, onMounted, provide, useTemplateRef, ref } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import { elementContains } from '@/utility/element-contains.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
-import { animateSurfaceTransition } from '@/vune/motion.js';
 
 type WindowButton = {
 	title: string;
@@ -70,45 +70,18 @@ type WindowButton = {
 const minHeight = 50;
 const minWidth = 250;
 
-function enter(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
-	animateSurfaceTransition(element, 'enter', () => {
-		if (element instanceof HTMLElement) element.style.pointerEvents = '';
-		done();
-	});
-}
-
-function leave(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	if (element instanceof HTMLElement) element.style.pointerEvents = 'none';
-	animateSurfaceTransition(element, 'leave', () => {
-		if (element instanceof HTMLElement) element.style.pointerEvents = '';
-		done();
-	});
-}
-
-const pointerCleanups = new Set<() => void>();
-
 function dragListen(fn: (ev: PointerEvent) => void) {
+	window.addEventListener('pointermove', fn);
 	const clear = () => {
-		window.removeEventListener('pointermove', fn);
-		window.removeEventListener('pointerup', clear);
-		window.removeEventListener('pointercancel', clear);
-		window.removeEventListener('blur', clear);
-		pointerCleanups.delete(clear);
+		dragClear(fn);
 	};
-	pointerCleanups.add(clear);
-	window.addEventListener('pointermove', fn, { passive: true });
 	window.addEventListener('pointerup', clear, { once: true });
 	window.addEventListener('pointercancel', clear, { once: true });
 	window.addEventListener('blur', clear, { once: true });
+}
+
+function dragClear(fn: (ev: PointerEvent) => void) {
+	window.removeEventListener('pointermove', fn);
 }
 
 function capturePointer(evt: PointerEvent) {
@@ -123,15 +96,11 @@ function capturePointer(evt: PointerEvent) {
 	}
 
 	const release = () => {
-		window.removeEventListener('pointerup', release);
-		window.removeEventListener('pointercancel', release);
-		pointerCleanups.delete(release);
 		if (target.hasPointerCapture(evt.pointerId)) {
 			target.releasePointerCapture(evt.pointerId);
 		}
 	};
 
-	pointerCleanups.add(release);
 	window.addEventListener('pointerup', release, { once: true });
 	window.addEventListener('pointercancel', release, { once: true });
 }
@@ -139,7 +108,6 @@ function capturePointer(evt: PointerEvent) {
 const props = withDefaults(defineProps<{
 	initialWidth?: number | null;
 	initialHeight?: number | null;
-	autoHeight?: boolean;
 	canResize?: boolean;
 	closeButton?: boolean;
 	mini?: boolean;
@@ -150,7 +118,6 @@ const props = withDefaults(defineProps<{
 }>(), {
 	initialWidth: null,
 	initialHeight: null,
-	autoHeight: false,
 	canResize: false,
 	closeButton: true,
 	mini: false,
@@ -173,8 +140,6 @@ const INITIAL_WINDOW_HEIGHT_MIN = 500; // スクリーンの最小幅に合わ�
 provide('inWindow', true);
 
 const rootEl = useTemplateRef('rootEl');
-const headerEl = useTemplateRef<HTMLElement>('headerEl');
-const contentEl = useTemplateRef<HTMLElement>('contentEl');
 const showing = ref(true);
 let beforeClickedAt = 0;
 const maximized = ref(false);
@@ -183,75 +148,6 @@ let unResizedTop = '';
 let unResizedLeft = '';
 let unResizedWidth = '';
 let unResizedHeight = '';
-let autoHeightResizeObserver: ResizeObserver | undefined;
-let autoHeightMutationObserver: MutationObserver | undefined;
-let autoHeightFrame = 0;
-let autoHeightInitialized = false;
-
-function fitAutoHeight() {
-	if (!props.autoHeight || maximized.value || minimized.value) return;
-
-	const main = rootEl.value;
-	const header = headerEl.value;
-	const content = contentEl.value;
-	if (main == null || header == null || content == null) return;
-
-	const desiredHeight = Math.ceil(header.offsetHeight + content.scrollHeight);
-	const nextHeight = Math.min(Math.max(desiredHeight, minHeight), window.innerHeight);
-	const currentHeight = main.offsetHeight;
-
-	// The first pass uses the slot's natural height. Afterwards, only content
-	// growth (or a viewport becoming shorter) changes an automatically-sized
-	// window, so manual resizing remains useful.
-	if (!autoHeightInitialized || nextHeight > currentHeight + 1 || currentHeight > window.innerHeight) {
-		applyTransformHeight(nextHeight);
-		autoHeightInitialized = true;
-
-		const position = main.getBoundingClientRect();
-		if (position.top + nextHeight > window.innerHeight) {
-			main.style.top = Math.max(0, window.innerHeight - nextHeight) + 'px';
-		}
-	}
-}
-
-function scheduleAutoHeight() {
-	if (!props.autoHeight || autoHeightFrame !== 0) return;
-	autoHeightFrame = window.requestAnimationFrame(() => {
-		autoHeightFrame = 0;
-		fitAutoHeight();
-	});
-}
-
-function observeAutoHeightContent() {
-	const content = contentEl.value;
-	if (content == null || autoHeightResizeObserver == null) return;
-
-	autoHeightResizeObserver.disconnect();
-	for (const child of content.children) autoHeightResizeObserver.observe(child);
-}
-
-function setupAutoHeightObservers() {
-	if (!props.autoHeight || contentEl.value == null) return;
-
-	if (typeof ResizeObserver !== 'undefined') {
-		autoHeightResizeObserver = new ResizeObserver(() => scheduleAutoHeight());
-		observeAutoHeightContent();
-	}
-
-	if (typeof MutationObserver !== 'undefined') {
-		autoHeightMutationObserver = new MutationObserver(() => {
-			observeAutoHeightContent();
-			scheduleAutoHeight();
-		});
-		autoHeightMutationObserver.observe(contentEl.value, {
-			childList: true,
-			characterData: true,
-			subtree: true,
-		});
-	}
-
-	scheduleAutoHeight();
-}
 
 function close() {
 	showing.value = false;
@@ -595,7 +491,6 @@ function onBrowserResize() {
 	if (position.top + windowHeight > browserHeight) main.style.top = browserHeight - windowHeight + 'px'; // 下はみ出し
 	if (position.left + windowWidth > browserWidth) main.style.left = browserWidth - windowWidth + 'px'; // 右はみ出し
 	if (position.top < 0) main.style.top = '0'; // 上はみ出し
-	scheduleAutoHeight();
 }
 
 onMounted(() => {
@@ -603,25 +498,14 @@ onMounted(() => {
 	let initialHeight = props.initialHeight;
 
 	if (initialWidth == null) initialWidth = Math.min(Math.max(Math.round(window.innerWidth * INITIAL_WINDOW_WIDTH_RATIO), INITIAL_WINDOW_WIDTH_MIN), INITIAL_WINDOW_WIDTH_MAX);
+	if (initialHeight == null) initialHeight = Math.max(Math.round(window.innerHeight * INITIAL_WINDOW_HEIGHT_RATIO), INITIAL_WINDOW_HEIGHT_MIN);
 
 	applyTransformWidth(initialWidth);
-	if (!props.autoHeight) {
-		if (initialHeight == null) initialHeight = Math.max(Math.round(window.innerHeight * INITIAL_WINDOW_HEIGHT_RATIO), INITIAL_WINDOW_HEIGHT_MIN);
-		applyTransformHeight(initialHeight);
-		if (rootEl.value) {
-			applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
-			applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
-		}
-	} else {
-		void nextTick(() => {
-			setupAutoHeightObservers();
-			fitAutoHeight();
+	applyTransformHeight(initialHeight);
 
-			if (rootEl.value) {
-				applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
-				applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
-			}
-		});
+	if (rootEl.value) {
+		applyTransformTop((window.innerHeight / 2) - (rootEl.value.offsetHeight / 2));
+		applyTransformLeft((window.innerWidth / 2) - (rootEl.value.offsetWidth / 2));
 	}
 
 	// 他のウィンドウ内のボタンなどを押してこのウィンドウが開かれた場合、親が最前面になろうとするのでそれに隠されないようにする
@@ -631,10 +515,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-	for (const cleanup of [...pointerCleanups]) cleanup();
-	autoHeightResizeObserver?.disconnect();
-	autoHeightMutationObserver?.disconnect();
-	if (autoHeightFrame !== 0) window.cancelAnimationFrame(autoHeightFrame);
 	window.removeEventListener('resize', onBrowserResize);
 });
 
@@ -644,6 +524,17 @@ defineExpose({
 </script>
 
 <style lang="scss" module>
+.transition_window_enterActive,
+.transition_window_leaveActive {
+	transition: opacity 0.2s, transform 0.2s !important;
+}
+.transition_window_enterFrom,
+.transition_window_leaveTo {
+	pointer-events: none;
+	opacity: 0;
+	transform: scale(0.9);
+}
+
 .root {
 	// universal.vueとかで直接--MI-stickyBottomが定義されていたりするのでリセット
 	--MI-stickyTop: 0;
@@ -672,8 +563,6 @@ defineExpose({
 
 .header {
 	--height: 39px;
-	--vune-material-surface: var(--MI_THEME-windowHeader);
-	--vune-material-fallback-background: var(--MI_THEME-windowHeader);
 
 	display: flex;
 	position: relative;
@@ -681,6 +570,9 @@ defineExpose({
 	flex-shrink: 0;
 	user-select: none;
 	height: var(--height);
+	background: var(--MI_THEME-windowHeader);
+	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
+	backdrop-filter: var(--MI-blur, blur(15px));
 	//border-bottom: solid 1px var(--MI_THEME-divider);
 	font-size: 90%;
 	font-weight: bold;

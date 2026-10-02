@@ -4,25 +4,60 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNoteMediaGridHost
-	:key="mediaVisibilityKey"
-	:note="note"
-	:square="square"
-	:classes="$style"
-	:isHiding="isHiding"
-	:onReveal="reveal"
-/>
+<template v-for="file in note.files">
+	<div
+		v-if="isHiding(file)"
+		:class="[$style.filePreview, { [$style.square]: square }]"
+		:data-scroll-anchor="`${note.id}:${file.id}`"
+		@click="reveal(file)"
+	>
+		<MkDriveFileThumbnail
+			:file="file"
+			fit="cover"
+			:highlightWhenSensitive="prefer.s.highlightSensitiveMedia"
+			:forceBlurhash="true"
+			:large="true"
+			:class="$style.file"
+		/>
+		<div :class="$style.sensitive">
+			<div>
+				<div v-if="file.isSensitive"><i class="ti ti-eye-exclamation"></i> {{ i18n.ts.sensitive }}{{ prefer.s.dataSaver.media && file.size ? ` (${bytes(file.size)})` : '' }}</div>
+				<div v-else><i class="ti ti-photo"></i> {{ prefer.s.dataSaver.media && file.size ? bytes(file.size) : i18n.ts.image }}</div>
+				<div>{{ i18n.ts.clickToShow }}</div>
+			</div>
+		</div>
+	</div>
+	<button
+		v-else
+		type="button"
+		class="_button"
+		:class="[$style.filePreview, { [$style.square]: square }]"
+		:data-scroll-anchor="`${note.id}:${file.id}`"
+		@click.stop="openGallery(file)"
+	>
+		<MkDriveFileThumbnail
+			:file="file"
+			fit="cover"
+			:highlightWhenSensitive="prefer.s.highlightSensitiveMedia"
+			:large="true"
+			:class="$style.file"
+		/>
+	</button>
+</template>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
-import VuneNoteMediaGrid from './vune/MkNoteMediaGrid.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
+import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { Content } from '@/components/MkLightbox.types.js';
+import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
+import { getType, isPreviewable } from '@/utility/lightbox.js';
+import * as os from '@/os.js';
+import bytes from '@/filters/bytes.js';
 
-const VuneNoteMediaGridHost = createVuneWebHost(VuneNoteMediaGrid);
+import MkDriveFileThumbnail from '@/components/MkDriveFileThumbnail.vue';
 
 const props = defineProps<{
 	note: Misskey.entities.Note;
@@ -31,20 +66,7 @@ const props = defineProps<{
 
 const showingFiles = ref<Set<string>>(new Set());
 
-// The Vune renderer receives a stable `isHiding` callback, so changing a
-// preference alone would not cause the grid to render again. Bump the key to
-// remount it with the new visibility policy and clear any stale reveals.
-const mediaVisibilityKey = computed(() => `${prefer.r.nsfw.value}:${prefer.r.dataSaver.value.media}:${prefer.r.showCwMedia.value}`);
-
-const showCwMedia = computed(() => prefer.r.showCwMedia.value);
-
-watch(mediaVisibilityKey, () => {
-	showingFiles.value = new Set();
-});
-
 function isHiding(file: Misskey.entities.DriveFile) {
-	if (showCwMedia.value && props.note.cw != null) return false;
-
 	if (shouldHideFileByDefault(file) && !showingFiles.value.has(file.id)) {
 		if (!file.isSensitive && !file.type.startsWith('image/')) {
 			return false;
@@ -61,6 +83,37 @@ async function reveal(file: Misskey.entities.DriveFile) {
 
 	showingFiles.value.add(file.id);
 }
+
+async function openGallery(file: Misskey.entities.DriveFile) {
+	if (prefer.s.imageNewTab || !isPreviewable(file.type)) {
+		window.open(file.url, '_blank', 'noopener');
+		return;
+	}
+
+	const previewableFiles = (props.note.files ?? []).filter(media => isPreviewable(media.type));
+	const contents = previewableFiles.map<Content>(media => ({
+		id: media.id,
+		type: getType(media.type),
+		url: media.url,
+		thumbnailUrl: media.thumbnailUrl,
+		width: media.properties.width,
+		height: media.properties.height,
+		filename: media.name,
+		file: media,
+	}));
+
+	const defaultIndex = contents.findIndex(content => content.id === file.id);
+	if (defaultIndex < 0) return;
+
+	const { dispose } = await os.popupAsyncWithDialog(import('@/components/MkLightbox.vue').then(x => x.default), {
+		defaultIndex,
+		contents,
+		initiallyRevealedContentIds: [...showingFiles.value],
+		user: props.note.user,
+	}, {
+		closed: () => dispose(),
+	});
+}
 </script>
 
 <style lang="scss" module>
@@ -72,6 +125,8 @@ async function reveal(file: Misskey.entities.DriveFile) {
 
 .filePreview {
 	position: relative;
+	display: block;
+	width: 100%;
 	height: 128px;
 	border-radius: calc(var(--MI-radius) / 2);
 	overflow: clip;

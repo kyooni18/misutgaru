@@ -4,16 +4,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetActivity :showHeader="widgetProps.showHeader" :transparent="widgetProps.transparent" :view="widgetProps.view" :fetching="fetching" :activity="activity" :onToggleView="toggleView"/>
+<MkContainer :showHeader="widgetProps.showHeader" :naked="widgetProps.transparent" data-testid="mkw-activity" class="mkw-activity">
+	<template #icon><i class="ti ti-chart-line"></i></template>
+	<template #header>{{ i18n.ts._widgets.activity }}</template>
+	<template #func="{ buttonStyleClass }"><button class="_button" :class="buttonStyleClass" @click="toggleView()"><i class="ti ti-selector"></i></button></template>
+
+	<div>
+		<MkLoading v-if="fetching"/>
+		<template v-else>
+			<XCalendar v-show="widgetProps.view === 0" :activity="activity ?? []"/>
+			<XChart v-show="widgetProps.view === 1" :activity="activity ?? []"/>
+		</template>
+	</div>
+</MkContainer>
 </template>
 
 <script lang="ts" setup>
-import VuneWidgetActivity from './vune/WidgetActivity.vune?vue-host';
 import { ref } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentProps, WidgetComponentEmits, WidgetComponentExpose } from './widget.js';
+import XCalendar from './WidgetActivity.calendar.vue';
+import XChart from './WidgetActivity.chart.vue';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
+import MkContainer from '@/components/MkContainer.vue';
 import { ensureSignin } from '@/i.js';
 import { i18n } from '@/i18n.js';
 

@@ -4,20 +4,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneStreamIndicator :visible="hasDisconnected && prefer.s.serverDisconnectedBehavior === 'quiet'" :zIndex="zIndex" :onReset="resetDisconnected" :onReload="reload"/>
+<div v-if="hasDisconnected && prefer.s.serverDisconnectedBehavior === 'quiet'" :class="$style.root" class="_panel _shadow" @click="resetDisconnected">
+	<div><i class="ti ti-alert-triangle"></i> {{ i18n.ts.disconnectedFromServer }}</div>
+	<div :class="$style.command" class="_buttons">
+		<MkButton small primary @click="reload">{{ i18n.ts.reload }}</MkButton>
+		<MkButton small>{{ i18n.ts.doNothing }}</MkButton>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import StreamIndicator from './vune/stream-indicator.vune';
 import { onUnmounted, ref } from 'vue';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { useStream } from '@/stream.js';
+import { i18n } from '@/i18n.js';
+import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 
 const zIndex = os.claimZIndex('high');
-const VuneStreamIndicator = createVuneWebHost(StreamIndicator);
 
 const hasDisconnected = ref(false);
 
@@ -42,65 +47,19 @@ if (store.s.realtimeMode) {
 }
 </script>
 
-<style lang="scss">
-.mk-vune-stream-indicator {
+<style lang="scss" module>
+.root {
 	position: fixed;
 	z-index: v-bind(zIndex);
 	bottom: calc(var(--MI-minBottomSpacing) + var(--MI-margin));
 	right: var(--MI-margin);
 	margin: 0;
 	padding: 12px;
-	width: max-content !important;
 	font-size: 0.9em;
 	max-width: 320px;
 }
 
-.mk-vune-stream-indicator__message,
-.mk-vune-stream-indicator__command {
-	width: max-content !important;
-	justify-content: flex-start !important;
-}
-
-.mk-vune-stream-indicator__command {
+.command {
 	margin-top: 8px;
-}
-
-.mk-vune-stream-indicator__button {
-	position: relative;
-	z-index: 1;
-	display: block;
-	width: max-content;
-	padding: 6px 12px;
-	box-sizing: border-box;
-	border-radius: 5px;
-	overflow: clip;
-	font-size: 90%;
-	text-align: center;
-	text-decoration: none;
-	box-shadow: none;
-	transition: background 0.1s ease;
-
-	&--secondary {
-		background: var(--MI_THEME-buttonBg);
-
-		&:not(:disabled):hover,
-		&:not(:disabled):active {
-			background: var(--MI_THEME-buttonHoverBg);
-		}
-	}
-
-	&--primary {
-		color: var(--MI_THEME-fgOnAccent);
-		font-weight: bold;
-		background: var(--MI_THEME-accent);
-
-		&:not(:disabled):hover {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
-		}
-
-		&:not(:disabled):active {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l - 5));
-		}
-	}
 }
 </style>

@@ -1,0 +1,4 @@
+- generic [ref=f10e5]:
+  - link "네스트" [ref=f10e6] [cursor=pointer]:
+    - /url: /
+  - button "회원 가입" [ref=f10e7] [cursor=pointer]

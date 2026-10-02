@@ -4,32 +4,59 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAdminAbuses
-	:state="state"
-	:stateDef="stateDef"
-	:reporterOrigin="reporterOrigin"
-	:reporterOriginDef="reporterOriginDef"
-	:targetUserOrigin="targetUserOrigin"
-	:targetUserOriginDef="targetUserOriginDef"
-	:paginator="paginator"
-	:rootClass="$style.root"
-	:subMenusClass="$style.subMenus"
-	:inputsClass="$style.inputs"
-	:headerActions="headerActions"
-	:headerTabs="headerTabs"
-	:onState="setState"
-	:onReporterOrigin="setReporterOrigin"
-	:onTargetUserOrigin="setTargetUserOrigin"
-	:onResolved="resolved"
-/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
+		<div :class="$style.root" class="_gaps">
+			<div :class="$style.subMenus" class="_gaps">
+				<MkButton type="routerLink" to="/admin/abuse-report-notification-recipient" primary>{{ i18n.ts.notificationSetting }}</MkButton>
+			</div>
+
+			<MkTip k="abuses">
+				{{ i18n.ts._abuseUserReport.resolveTutorial }}
+			</MkTip>
+
+			<div :class="$style.inputs" class="_gaps">
+				<MkSelect v-model="state" :items="stateDef" style="margin: 0; flex: 1;">
+					<template #label>{{ i18n.ts.state }}</template>
+				</MkSelect>
+				<MkSelect v-model="targetUserOrigin" :items="targetUserOriginDef" style="margin: 0; flex: 1;">
+					<template #label>{{ i18n.ts.reporteeOrigin }}</template>
+				</MkSelect>
+				<MkSelect v-model="reporterOrigin" :items="reporterOriginDef" style="margin: 0; flex: 1;">
+					<template #label>{{ i18n.ts.reporterOrigin }}</template>
+				</MkSelect>
+			</div>
+
+			<!-- TODO
+			<div class="inputs" style="display: flex; padding-top: 1.2em;">
+				<MkInput v-model="searchUsername" style="margin: 0; flex: 1;" type="text" :spellcheck="false">
+					<span>{{ i18n.ts.username }}</span>
+				</MkInput>
+				<MkInput v-model="searchHost" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :disabled="paginator.computedParams.value.origin === 'local'">
+					<span>{{ i18n.ts.host }}</span>
+				</MkInput>
+			</div>
+			-->
+
+			<MkPagination v-slot="{items}" :paginator="paginator">
+				<div class="_gaps">
+					<XAbuseReport v-for="report in items" :key="report.id" :report="report" @resolved="resolved"/>
+				</div>
+			</MkPagination>
+		</div>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, markRaw } from 'vue';
-import VuneAdminAbuses from './vune/abuses.vune?vue-host';
+import MkSelect from '@/components/MkSelect.vue';
+import MkPagination from '@/components/MkPagination.vue';
+import XAbuseReport from '@/components/MkAbuseReport.vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
+import MkButton from '@/components/MkButton.vue';
 import { store } from '@/store.js';
 import { Paginator } from '@/utility/paginator.js';
 
@@ -68,18 +95,6 @@ const {
 });
 const searchUsername = ref('');
 const searchHost = ref('');
-
-function setState(value: 'all' | 'resolved' | 'unresolved'): void {
-	state.value = value;
-}
-
-function setReporterOrigin(value: 'local' | 'remote' | 'combined'): void {
-	reporterOrigin.value = value;
-}
-
-function setTargetUserOrigin(value: 'local' | 'remote' | 'combined'): void {
-	targetUserOrigin.value = value;
-}
 
 const paginator = markRaw(new Paginator('admin/abuse-user-reports', {
 	limit: 10,

@@ -4,33 +4,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneRoomInfo
-	:props="{
-		name: name_,
-		description: description_,
-		isOwner,
-		canDelete: isOwner || $i.isAdmin || $i.isModerator,
-		isMuted,
-		onName: updateName,
-		onDescription: updateDescription,
-		onMuted: updateMuted,
-		onSave: save,
-		onDelete: del,
-	}"
-/>
+<div class="_gaps">
+	<MkInput v-model="name_" :disabled="!isOwner">
+		<template #label>{{ i18n.ts.name }}</template>
+	</MkInput>
+
+	<MkTextarea v-model="description_" :disabled="!isOwner">
+		<template #label>{{ i18n.ts.description }}</template>
+	</MkTextarea>
+
+	<MkButton v-if="isOwner" primary @click="save">{{ i18n.ts.save }}</MkButton>
+
+	<hr>
+
+	<MkButton v-if="isOwner || ($i.isAdmin || $i.isModerator)" danger @click="del">{{ i18n.ts._chat.deleteRoom }}</MkButton>
+
+	<MkSwitch v-if="!isOwner" v-model="isMuted">
+		<template #label>{{ i18n.ts._chat.muteThisRoom }}</template>
+	</MkSwitch>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
-import VuneRoomInfoView from './vune/room.info.vune';
 import * as Misskey from 'misskey-js';
+import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
+import MkInput from '@/components/MkInput.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { useRouter } from '@/router.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneRoomInfo = createVuneWebHost(VuneRoomInfoView);
 
 const router = useRouter();
 const $i = ensureSignin();
@@ -45,14 +50,6 @@ const isOwner = computed(() => {
 
 const name_ = ref(props.room.name);
 const description_ = ref(props.room.description);
-
-function updateName(value: string): void {
-	name_.value = value;
-}
-
-function updateDescription(value: string): void {
-	description_.value = value;
-}
 
 function save() {
 	os.apiWithDialog('chat/rooms/update', {
@@ -76,10 +73,6 @@ async function del() {
 }
 
 const isMuted = ref(props.room.isMuted ?? false);
-
-function updateMuted(value: boolean): void {
-	isMuted.value = value;
-}
 
 watch(isMuted, async () => {
 	await os.apiWithDialog('chat/rooms/mute', {

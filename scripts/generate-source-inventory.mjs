@@ -15,9 +15,9 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(repoRoot, 'docs/source-map/INVENTORY.md');
 const roots = ['packages', 'packages-private', 'scripts'];
-const ignoredDirectories = new Set(['node_modules', '.git', '.pi', 'dist', 'built', 'build', 'coverage', 'storybook-static']);
+const ignoredDirectories = new Set(['node_modules', '.git', '.pi', 'dist', 'built', 'build', 'coverage', 'storybook-static', 'target']);
 const sourceExtensions = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.vune',
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue',
   '.scss', '.sass', '.css', '.html', '.json', '.json5', '.yml', '.yaml', '.sh',
 ]);
 
@@ -33,7 +33,7 @@ async function walk(dir) {
     if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) result.push(...await walk(full));
-    else if (sourceExtensions.has(path.extname(entry.name)) || entry.name.includes('.vune')) result.push(full);
+    else if (sourceExtensions.has(path.extname(entry.name))) result.push(full);
   }
   return result;
 }
@@ -114,14 +114,12 @@ function describe(rel, source = '') {
   if (/\/src\/models\//.test(rel)) return `Database model or schema definition for ${label}.`;
   if (/\/src\/daemons\//.test(rel)) return `Long-running backend daemon for ${label}.`;
 
-  if (rel.endsWith('.vune')) return `Vune view or renderer for ${label}; part of the Vue-to-Vune migration.`;
   if (rel.endsWith('.vue')) {
-    if (/\/pages\//.test(rel)) return `Vue route/page for ${label}; may also act as a compatibility shell around Vune.`;
-    if (/\/widgets\//.test(rel)) return `Vue widget UI for ${label}; may also host a Vune renderer.`;
-    if (/\/ui\//.test(rel)) return `Vue application shell UI for ${label}; may also host a Vune renderer.`;
-    return `Vue component for ${label}; may also host a Vune renderer.`;
+    if (/\/pages\//.test(rel)) return `Vue route/page for ${label}.`;
+    if (/\/widgets\//.test(rel)) return `Vue widget UI for ${label}.`;
+    if (/\/ui\//.test(rel)) return `Vue application shell UI for ${label}.`;
+    return `Vue component for ${label}.`;
   }
-  if (/\/src\/vune\//.test(rel)) return `Vune integration/runtime support for ${label}.`;
   if (/\/src\/pages\//.test(rel)) return `Frontend page logic for ${label}.`;
   if (/\/src\/components\//.test(rel)) return `Frontend component support for ${label}.`;
   if (/\/src\/widgets\//.test(rel)) return `Frontend widget support for ${label}.`;

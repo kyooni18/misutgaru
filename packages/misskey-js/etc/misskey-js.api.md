@@ -377,6 +377,9 @@ type AdminRolesUsersRequest = operations['admin___roles___users']['requestBody']
 type AdminRolesUsersResponse = operations['admin___roles___users']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminRuntimeDiagnosticsResponse = operations['admin___runtime-diagnostics']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminSendEmailRequest = operations['admin___send-email']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1648,6 +1651,7 @@ declare namespace entities {
         AdminRolesUpdateDefaultPoliciesRequest,
         AdminRolesUsersRequest,
         AdminRolesUsersResponse,
+        AdminRuntimeDiagnosticsResponse,
         AdminSendEmailRequest,
         AdminServerInfoResponse,
         AdminShowModerationLogsRequest,

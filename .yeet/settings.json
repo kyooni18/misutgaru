@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "capabilities": {
+    "disabled": []
+  },
+  "openaiFlex": false,
+  "memory": {
+    "enabled": true,
+    "server": "foundation"
+  },
+  "context": {
+    "workingSetTokens": 65536,
+    "unknownModelTokens": 32768,
+    "warningPercent": 70,
+    "rolloverPercent": 85
+  },
+  "projectId": "yeet-project:560cc10c-084f-411b-9300-b247eae36502"
+}

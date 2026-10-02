@@ -16,6 +16,7 @@ import { QueryService } from '@/core/QueryService.js';
 import { MiLocalUser } from '@/models/User.js';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
+import { RecommendationTimelineService } from '@/core/RecommendationTimelineService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -78,10 +79,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
 		private queryService: QueryService,
 		private channelMutingService: ChannelMutingService,
+		private recommendationTimelineService: RecommendationTimelineService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
 			const sinceId = ps.sinceId ?? (ps.sinceDate ? this.idService.gen(ps.sinceDate!) : null);
+			const enableDiscovery = untilId == null && sinceId == null;
+			const loadRecommendedCandidates = async (candidateIds: string[]) => {
+				const candidates = await this.getFromDb({
+					untilId: null,
+					sinceId: null,
+					limit: candidateIds.length,
+					withFiles: ps.withFiles,
+					withReplies: ps.withReplies,
+					withRenotes: ps.withRenotes,
+					candidateIds,
+				}, me);
+				return await this.noteEntityService.packMany(candidates, me);
+			};
 
 			const policies = await this.roleService.getUserPolicies(me ? me.id : null);
 			if (!policies.ltlAvailable) {
@@ -97,6 +112,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					limit: ps.limit,
 					withFiles: ps.withFiles,
 					withReplies: ps.withReplies,
+					withRenotes: ps.withRenotes,
 				}, me);
 
 				process.nextTick(() => {
@@ -105,7 +121,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					}
 				});
 
-				return await this.noteEntityService.packMany(timeline, me);
+				const packed = await this.noteEntityService.packMany(timeline, me);
+				return await this.recommendationTimelineService.mix(packed, me?.id ?? null, {
+					limit: ps.limit,
+					enableDiscovery,
+					loadCandidates: loadRecommendedCandidates,
+				});
 			}
 
 			const timeline = await this.fanoutTimelineEndpointService.timeline({
@@ -128,6 +149,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					limit,
 					withFiles: ps.withFiles,
 					withReplies: ps.withReplies,
+					withRenotes: ps.withRenotes,
 				}, me),
 			});
 
@@ -137,7 +159,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 			});
 
-			return timeline;
+			return await this.recommendationTimelineService.mix(timeline, me?.id ?? null, {
+				limit: ps.limit,
+				enableDiscovery,
+				loadCandidates: loadRecommendedCandidates,
+			});
 		});
 	}
 
@@ -147,6 +173,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		limit: number,
 		withFiles: boolean,
 		withReplies: boolean,
+		withRenotes: boolean,
+		candidateIds?: string[],
 	}, me: MiLocalUser | null) {
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'),
 			ps.sinceId, ps.untilId)
@@ -156,6 +184,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			.leftJoinAndSelect('note.renote', 'renote')
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
+
+		if (ps.candidateIds != null) {
+			if (ps.candidateIds.length === 0) return [];
+			query.andWhere('note.id IN (:...candidateIds)', { candidateIds: ps.candidateIds });
+		}
 
 		this.queryService.generateVisibilityQuery(query, me);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
@@ -186,6 +219,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 							.where('note.replyId IS NOT NULL')
 							.andWhere('note.replyUserId = note.userId');
 					}));
+			}));
+		}
+
+		if (!ps.withRenotes) {
+			query.andWhere(new Brackets(qb => {
+				qb.where('note.renoteId IS NULL');
+				qb.orWhere(new Brackets(qb => {
+					qb.where('note.text IS NOT NULL');
+					qb.orWhere('note.fileIds != \'{}\'');
+					qb.orWhere('0 < (SELECT COUNT(*) FROM poll WHERE poll."noteId" = note.id)');
+				}));
 			}));
 		}
 

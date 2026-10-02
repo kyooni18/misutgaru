@@ -1,0 +1,25 @@
+- generic [ref=e3]:
+  - link "View source on GitHub":
+    - /url: https://github.com/misskey-dev/misskey
+    - img [aria-hidden] [ref=e4] [cursor=pointer]
+  - generic [ref=e12]:
+    - generic:
+      - generic: Powered by
+      - img "Misskey"
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "더 보기!" [ref=e16] [cursor=pointer]:
+          - generic:
+            - generic [aria-hidden]: 
+        - generic [ref=e17]:
+          - heading "네스트" [level=1] [ref=e18]
+          - generic [ref=e19]: 노트로 연결되는 네트워크
+          - generic [ref=e21]:
+            - generic [aria-hidden] [ref=e22]: 
+            - generic [ref=e23]: 현재 이 서버는 비공개입니다. 회원가입을 하시려면 초대 코드가 필요합니다.
+          - generic [ref=e25]:
+            - button "이 서버에 가입" [ref=e26] [cursor=pointer]
+            - link "다른 서버 찾기" [ref=e27] [cursor=pointer]:
+              - /url: https://misskey-hub.net/servers/
+            - button "로그인" [ref=e28] [cursor=pointer]
+      - generic [ref=e29]: 타임라인 구경하기

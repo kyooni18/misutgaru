@@ -1,9 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-.mk-vune-activity-calendar {
-	display: block;
-	padding: 16px;
-	width: 100%;
-	box-sizing: border-box;
-}
-.mk-vune-activity-calendar > rect { transform-origin: center; }
-.mk-vune-activity-calendar > rect.day:hover { fill: rgba(0, 0, 0, 0.05); }

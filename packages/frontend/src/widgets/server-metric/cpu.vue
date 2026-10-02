@@ -4,16 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneCpuHost :usage="usage" :meta="meta"/>
+<div class="vrvdvrys">
+	<XPie class="pie" :value="usage"/>
+	<div>
+		<p><i class="ti ti-cpu"></i>CPU</p>
+		<p>{{ meta.cpu.cores }} Logical cores</p>
+		<p>{{ meta.cpu.model }}</p>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneCpu from './vune/cpu.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-
-const VuneCpuHost = createVuneWebHost(VuneCpu);
+import XPie from './pie.vue';
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,
@@ -35,7 +39,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .vrvdvrys {
 	display: flex;
 	padding: 16px;

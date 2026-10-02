@@ -1,7 +1,3 @@
-# Vune is a nested pnpm workspace with its own lockfile. It is built through
-# scripts/build-local-modules.mjs so its internal workspace packages do not
-# leak into Misskey's outer dependency graph. The animation runtime now lives
-# inside Vune as @vune-ui/animation and is exposed to the frontend by local link.
 packages:
   - packages/misutgaru-core
   - packages/backend
@@ -58,19 +54,14 @@ minimumReleaseAgeExclude:
   - slacc-win32-arm64-msvc
   - slacc-win32-x64-msvc
   - '@typescript/native-preview*'
-  - vitest-mock-extended@5.1.1 # そのうち消す
-  - '@vune-ui/core@0.1.20'
-  - '@vune-ui/animation@0.1.20'
-  - '@vune-ui/compiler@0.1.20'
-  - '@vune-ui/vite@0.1.20'
-  - '@vune-ui/vue@0.1.20'
-  - '@vune-ui/web@0.1.20'
-  - '@vune-ui/react@0.1.20'
-  - vune-ui@0.1.20
+  - undici@6.28.1 || 7.29.1 # そのうち消す
 overrides:
   '@aiscript-dev/aiscript-languageserver': '-'
   chokidar: 5.0.0
   lodash: 4.18.1
+  undici@^7: 7.29.1
+  undici@^6: 6.28.1
+  '@tabler/icons-webfont>sharp': '-'
 engineStrict: true
 saveExact: true
 shellEmulator: true

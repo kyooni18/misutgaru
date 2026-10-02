@@ -4,17 +4,80 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneCpuMemHost :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :cpuGradientId="cpuGradientId" :cpuMaskId="cpuMaskId" :memGradientId="memGradientId" :memMaskId="memMaskId" :cpuPolylinePoints="cpuPolylinePoints" :memPolylinePoints="memPolylinePoints" :cpuPolygonPoints="cpuPolygonPoints" :memPolygonPoints="memPolygonPoints" :cpuHeadX="cpuHeadX" :cpuHeadY="cpuHeadY" :memHeadX="memHeadX" :memHeadY="memHeadY" :cpuP="cpuP" :memP="memP"/>
+<div class="lcfyofjk">
+	<svg :viewBox="`0 0 ${ viewBoxX } ${ viewBoxY }`">
+		<defs>
+			<linearGradient :id="cpuGradientId" x1="0" x2="0" y1="1" y2="0">
+				<stop offset="0%" stop-color="hsl(180, 80%, 70%)"></stop>
+				<stop offset="100%" stop-color="hsl(0, 80%, 70%)"></stop>
+			</linearGradient>
+			<mask :id="cpuMaskId" x="0" y="0" :width="viewBoxX" :height="viewBoxY">
+				<polygon
+					:points="cpuPolygonPoints"
+					fill="#fff"
+					fill-opacity="0.5"
+				/>
+				<polyline
+					:points="cpuPolylinePoints"
+					fill="none"
+					stroke="#fff"
+					stroke-width="1"
+				/>
+				<circle
+					:cx="cpuHeadX"
+					:cy="cpuHeadY"
+					r="1.5"
+					fill="#fff"
+				/>
+			</mask>
+		</defs>
+		<rect
+			x="-2" y="-2"
+			:width="viewBoxX + 4" :height="viewBoxY + 4"
+			:style="{ stroke: 'none', fill: `url(#${ cpuGradientId })`, mask: `url(#${ cpuMaskId })` }"
+		/>
+		<text x="1" y="5">CPU <tspan>{{ cpuP }}%</tspan></text>
+	</svg>
+	<svg :viewBox="`0 0 ${ viewBoxX } ${ viewBoxY }`">
+		<defs>
+			<linearGradient :id="memGradientId" x1="0" x2="0" y1="1" y2="0">
+				<stop offset="0%" stop-color="hsl(180, 80%, 70%)"></stop>
+				<stop offset="100%" stop-color="hsl(0, 80%, 70%)"></stop>
+			</linearGradient>
+			<mask :id="memMaskId" x="0" y="0" :width="viewBoxX" :height="viewBoxY">
+				<polygon
+					:points="memPolygonPoints"
+					fill="#fff"
+					fill-opacity="0.5"
+				/>
+				<polyline
+					:points="memPolylinePoints"
+					fill="none"
+					stroke="#fff"
+					stroke-width="1"
+				/>
+				<circle
+					:cx="memHeadX"
+					:cy="memHeadY"
+					r="1.5"
+					fill="#fff"
+				/>
+			</mask>
+		</defs>
+		<rect
+			x="-2" y="-2"
+			:width="viewBoxX + 4" :height="viewBoxY + 4"
+			:style="{ stroke: 'none', fill: `url(#${ memGradientId })`, mask: `url(#${ memMaskId })` }"
+		/>
+		<text x="1" y="5">MEM <tspan>{{ memP }}%</tspan></text>
+	</svg>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneCpuMem from './vune/cpu-mem.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { genId } from '@/utility/id.js';
-
-const VuneCpuMemHost = createVuneWebHost(VuneCpuMem);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,
@@ -81,7 +144,7 @@ function onStatsLog(statsLog: Misskey.entities.ServerStatsLog) {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .lcfyofjk {
 	display: flex;
 

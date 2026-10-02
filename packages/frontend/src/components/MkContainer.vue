@@ -4,36 +4,44 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneContainer
-	ref="vuneRef"
-	v-bind="$attrs"
-	:showHeader="showHeader"
-	:thin="thin"
-	:naked="naked"
-	:foldable="foldable"
-	:scrollable="scrollable"
-	:showBody="showBody"
-	:omitted="omitted"
-	:maxHeight="maxHeight"
-	:contentHeight="contentHeight"
-	:headerHeight="headerHeight"
-	:animated="prefer.s.animation === true"
-	:testId="$attrs['data-testid']"
-	:dataTransparent="$attrs['data-transparent']"
-	:onToggle="toggleBody"
-	:onShowMore="showMore"
->
-	<template #icon><slot name="icon"></slot></template>
-	<template #header><slot name="header"></slot></template>
-	<template #func><slot name="func" buttonStyleClass="mk-vune-container__header-button"></slot></template>
-	<slot></slot>
-</VuneContainer>
+<div ref="rootEl" class="_panel" :class="[$style.root, { [$style.naked]: naked, [$style.thin]: thin, [$style.scrollable]: scrollable }]">
+	<header v-if="showHeader" ref="headerEl" :class="$style.header">
+		<div :class="$style.title">
+			<span :class="$style.titleIcon"><slot name="icon"></slot></span>
+			<slot name="header"></slot>
+		</div>
+		<div :class="$style.headerSub">
+			<slot name="func" :buttonStyleClass="$style.headerButton"></slot>
+			<button v-if="foldable" :class="$style.headerButton" class="_button" @click="() => showBody = !showBody">
+				<template v-if="showBody"><i class="ti ti-chevron-up"></i></template>
+				<template v-else><i class="ti ti-chevron-down"></i></template>
+			</button>
+		</div>
+	</header>
+	<Transition
+		:enterActiveClass="prefer.s.animation ? $style.transition_toggle_enterActive : ''"
+		:leaveActiveClass="prefer.s.animation ? $style.transition_toggle_leaveActive : ''"
+		:enterFromClass="prefer.s.animation ? $style.transition_toggle_enterFrom : ''"
+		:leaveToClass="prefer.s.animation ? $style.transition_toggle_leaveTo : ''"
+		@enter="enter"
+		@afterEnter="afterEnter"
+		@leave="leave"
+		@afterLeave="afterLeave"
+	>
+		<div v-show="showBody" ref="contentEl" :class="[$style.content, { [$style.omitted]: omitted }]">
+			<slot></slot>
+			<button v-if="omitted" :class="$style.fade" class="_button" @click="showMore">
+				<span :class="$style.fadeLabel">{{ i18n.ts.showMore }}</span>
+			</button>
+		</div>
+	</Transition>
+</div>
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
+import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import { prefer } from '@/preferences.js';
-import VuneContainer from '@/components/vune/MkContainer.vune?vue-host';
+import { i18n } from '@/i18n.js';
 
 const props = withDefaults(defineProps<{
 	showHeader?: boolean;
@@ -49,63 +57,256 @@ const props = withDefaults(defineProps<{
 	maxHeight: null,
 });
 
-const vuneRef = useTemplateRef<HTMLElement | { $el?: unknown }>('vuneRef');
+const rootEl = useTemplateRef('rootEl');
+const contentEl = useTemplateRef('contentEl');
+const headerEl = useTemplateRef('headerEl');
 const showBody = ref(props.expanded);
 const ignoreOmit = ref(false);
 const omitted = ref(false);
 
-const contentHeight = ref<number | null>(null);
-const headerHeight = ref(0);
-let omitObserver: ResizeObserver | undefined;
-
-function hostElement(): HTMLElement | null {
-	const value = vuneRef.value;
-	if (value instanceof HTMLElement) return value;
-	const element = value?.$el;
-	return element instanceof HTMLElement ? element : null;
+function enter(el: Element) {
+	if (!(el instanceof HTMLElement)) return;
+	const elementHeight = el.getBoundingClientRect().height;
+	el.style.height = '0';
+	el.offsetHeight; // reflow
+	el.style.height = `${Math.min(elementHeight, props.maxHeight ?? Infinity)}px`;
 }
 
-function measureContent(element: HTMLElement): number {
-	return Math.max(element.scrollHeight, element.getBoundingClientRect().height);
+function afterEnter(el: Element) {
+	if (!(el instanceof HTMLElement)) return;
+	el.style.height = '';
 }
 
-function syncMeasurements() {
-	const root = hostElement();
-	if (!root) return;
-	const header = root.querySelector<HTMLElement>('[data-vune-container-header]');
-	const content = root.querySelector<HTMLElement>('[data-vune-container-content]');
-	headerHeight.value = props.showHeader ? header?.offsetHeight ?? 0 : 0;
-	const height = content ? measureContent(content) : 0;
-	contentHeight.value = height;
-	if (!ignoreOmit.value) omitted.value = props.maxHeight != null && height > props.maxHeight;
-	omitObserver?.disconnect();
-	if (content) omitObserver?.observe(content);
+function leave(el: Element) {
+	if (!(el instanceof HTMLElement)) return;
+	const elementHeight = el.getBoundingClientRect().height;
+	el.style.height = `${elementHeight}px`;
+	el.offsetHeight; // reflow
+	el.style.height = '0';
 }
 
-function toggleBody() {
-	showBody.value = !showBody.value;
+function afterLeave(el: Element) {
+	if (!(el instanceof HTMLElement)) return;
+	el.style.height = '';
 }
+
+const calcOmit = () => {
+	if (!contentEl.value) return;
+	if (ignoreOmit.value || props.maxHeight == null) {
+		omitted.value = false;
+		return;
+	}
+	const height = Math.max(contentEl.value.scrollHeight, contentEl.value.getBoundingClientRect().height);
+	omitted.value = height > props.maxHeight;
+};
+
+function syncLayout() {
+	if (!rootEl.value) return;
+	const headerHeight = props.showHeader ? headerEl.value?.offsetHeight ?? 0 : 0;
+	rootEl.value.style.minHeight = `${headerHeight}px`;
+	rootEl.value.style.flexBasis = showBody.value ? 'auto' : `${headerHeight}px`;
+	if (props.maxHeight == null) {
+		rootEl.value.style.removeProperty('--maxHeight');
+	} else {
+		rootEl.value.style.setProperty('--maxHeight', `${props.maxHeight}px`);
+	}
+}
+
+const layoutObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => {
+	syncLayout();
+	calcOmit();
+});
+const mutationObserver = layoutObserver || typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(() => {
+	syncLayout();
+	calcOmit();
+});
+const onWindowResize = () => {
+	syncLayout();
+	calcOmit();
+};
+const onMediaLoad = () => {
+	if (!layoutObserver) onWindowResize();
+};
+
+function observeLayoutElements() {
+	layoutObserver?.disconnect();
+	mutationObserver?.disconnect();
+	for (const element of [headerEl.value, contentEl.value]) {
+		if (!element) continue;
+		layoutObserver?.observe(element);
+		mutationObserver?.observe(element, { attributes: true, childList: true, characterData: true, subtree: true });
+	}
+}
+
+watch([showBody, () => props.showHeader, () => props.maxHeight], () => {
+	syncLayout();
+	calcOmit();
+	observeLayoutElements();
+}, { flush: 'post' });
 
 function showMore() {
 	ignoreOmit.value = true;
 	omitted.value = false;
-	nextTick().then(syncMeasurements);
 }
 
 onMounted(() => {
-	omitObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => syncMeasurements());
-	nextTick().then(syncMeasurements);
+	syncLayout();
+	calcOmit();
+	observeLayoutElements();
+	if (!layoutObserver) {
+		window.addEventListener('resize', onWindowResize, { passive: true });
+		rootEl.value?.addEventListener('load', onMediaLoad, true);
+		rootEl.value?.addEventListener('loadedmetadata', onMediaLoad, true);
+		rootEl.value?.addEventListener('loadeddata', onMediaLoad, true);
+	}
 });
 
 onUnmounted(() => {
-	omitObserver?.disconnect();
-});
-
-watch(showBody, () => {
-	nextTick().then(syncMeasurements);
-});
-
-watch([() => props.maxHeight, () => props.showHeader], () => {
-	nextTick().then(syncMeasurements);
+	layoutObserver?.disconnect();
+	mutationObserver?.disconnect();
+	if (!layoutObserver) {
+		window.removeEventListener('resize', onWindowResize);
+		rootEl.value?.removeEventListener('load', onMediaLoad, true);
+		rootEl.value?.removeEventListener('loadedmetadata', onMediaLoad, true);
+		rootEl.value?.removeEventListener('loadeddata', onMediaLoad, true);
+	}
 });
 </script>
+
+<style lang="scss" module>
+.transition_toggle_enterActive,
+.transition_toggle_leaveActive {
+	overflow-y: clip;
+	transition: opacity 0.5s, height 0.5s !important;
+}
+.transition_toggle_enterFrom,
+.transition_toggle_leaveTo {
+	opacity: 0;
+}
+
+.root {
+	position: relative;
+	overflow: clip;
+	contain: content;
+
+	&.naked {
+		background: transparent !important;
+		box-shadow: none !important;
+
+		> .content {
+			background: transparent !important;
+		}
+	}
+
+	&.scrollable {
+		display: flex;
+		flex-direction: column;
+
+		> .content {
+			overflow: auto;
+		}
+	}
+
+	&.thin {
+		> .header {
+			> .title {
+				padding: 8px 10px;
+				font-size: 0.9em;
+			}
+		}
+	}
+}
+
+.header {
+	position: sticky;
+	top: var(--MI-stickyTop, 0px);
+	left: 0;
+	color: var(--MI_THEME-panelHeaderFg);
+	background: var(--MI_THEME-panelHeaderBg);
+	z-index: 2;
+	line-height: 1.4em;
+}
+
+@container style(--MI_THEME-panelHeaderBg: var(--MI_THEME-panel)) {
+	.header {
+		box-shadow: 0 0.5px 0 0 light-dark(#0002, #fff2);
+	}
+}
+
+.title {
+	margin: 0;
+	padding: 12px 16px;
+
+	&:empty {
+		display: none;
+	}
+}
+
+.titleIcon {
+	margin-right: 6px;
+}
+
+.headerSub {
+	position: absolute;
+	z-index: 2;
+	top: 0;
+	right: 0;
+	height: 100%;
+}
+
+.headerButton {
+	width: 42px;
+	height: 100%;
+}
+
+.content {
+	--MI-stickyTop: 0px;
+
+	/*
+	理屈は知らないけど、ここでbackgroundを設定しておかないと
+	スクロールコンテナーが少なくともChromeにおいて
+	main thread scrolling になってしまい、パフォーマンスが(多分)落ちる。
+	backgroundが透明だと裏側を描画しないといけなくなるとかそういう理由かもしれない
+	*/
+	background: var(--MI_THEME-panel);
+
+	&.omitted {
+		position: relative;
+		max-height: var(--maxHeight);
+		overflow: hidden;
+
+		> .fade {
+			display: block;
+			position: absolute;
+			z-index: 10;
+			bottom: 0;
+			left: 0;
+			width: 100%;
+			height: 64px;
+			background: linear-gradient(0deg, var(--MI_THEME-panel), color(from var(--MI_THEME-panel) srgb r g b / 0));
+
+			> .fadeLabel {
+				display: inline-block;
+				background: var(--MI_THEME-panel);
+				padding: 6px 10px;
+				font-size: 0.8em;
+				border-radius: 999px;
+				box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+			}
+
+			&:hover {
+				> .fadeLabel {
+					background: var(--MI_THEME-panelHighlight);
+				}
+			}
+		}
+	}
+}
+
+@container (max-width: 380px) {
+	.title {
+		padding: 8px 10px;
+		font-size: 0.9em;
+	}
+}
+</style>

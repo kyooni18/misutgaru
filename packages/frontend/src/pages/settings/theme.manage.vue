@@ -4,25 +4,34 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneThemeManage
-	:props="{
-		selectedThemeId,
-		selectedThemeIdDef,
-		selectedTheme,
-		selectedThemeCode,
-		isBuiltin: selectedThemeIsBuiltin,
-		onThemeId: updateSelectedThemeId,
-		onCopy: copyThemeCode,
-		onUninstall: uninstall,
-	}"
-/>
+<div class="_gaps_m">
+	<MkSelect v-model="selectedThemeId" :items="selectedThemeIdDef">
+		<template #label>{{ i18n.ts.theme }}</template>
+	</MkSelect>
+	<template v-if="selectedTheme != null">
+		<MkInput readonly :modelValue="selectedTheme.author">
+			<template #label>{{ i18n.ts.author }}</template>
+		</MkInput>
+		<MkTextarea v-if="selectedTheme.desc" readonly :modelValue="selectedTheme.desc">
+			<template #label>{{ i18n.ts._theme.description }}</template>
+		</MkTextarea>
+		<MkTextarea readonly tall :modelValue="selectedThemeCode">
+			<template #label>{{ i18n.ts._theme.code }}</template>
+			<template #caption><button class="_textButton" @click="copyThemeCode()">{{ i18n.ts.copy }}</button></template>
+		</MkTextarea>
+		<MkButton v-if="!builtinThemes.some(t => t.id == selectedTheme!.id)" danger @click="uninstall()"><i class="ti ti-trash"></i> {{ i18n.ts.uninstall }}</MkButton>
+	</template>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
-import VuneThemeManageView from './vune/theme.manage.vune';
 import JSON5 from 'json5';
 import type { Theme } from '@@/js/theme.js';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkButton from '@/components/MkButton.vue';
 import { removeTheme } from '@/theme.js';
 import { getBuiltinThemes } from '@@/js/theme.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
@@ -32,9 +41,6 @@ import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import type { MkSelectItem } from '@/components/MkSelect.vue';
 import { prefer } from '@/preferences';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneThemeManage = createVuneWebHost(VuneThemeManageView);
 
 const installedThemes = prefer.r.themes;
 const builtinThemes = ref<Theme[]>([]);
@@ -69,15 +75,6 @@ const selectedThemeCode = computed(() => {
 	if (selectedTheme.value == null) return null;
 	return JSON5.stringify(selectedTheme.value, null, '\t');
 });
-
-const selectedThemeIsBuiltin = computed(() => {
-	const theme = selectedTheme.value;
-	return theme != null && builtinThemes.value.some(t => t.id === theme.id);
-});
-
-function updateSelectedThemeId(value: string | null): void {
-	selectedThemeId.value = value;
-}
 
 function copyThemeCode() {
 	copyToClipboard(selectedThemeCode.value);

@@ -7,12 +7,9 @@ import { defineAsyncComponent } from 'vue';
 import type { AsyncComponentLoader } from 'vue';
 import type { RouteDef } from '@/lib/nirax.js';
 import { $i, iAmModerator } from '@/i.js';
-import { i18n } from '@/i18n.js';
-import MkLoading from '@/pages/vune/_loading_.vune?vue-host';
+import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
 import PageTimeline from '@/pages/timeline.vue';
-import { vuneRoute } from '@/vune/route-target.js';
-import { pleaseLogin } from '@/utility/please-login.js';
 
 export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 	loader: loader,
@@ -21,17 +18,8 @@ export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 });
 
 function chatPage(...args: Parameters<typeof page>) {
-	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : notFoundVuneRoute;
+	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : page(() => import('@/pages/not-found.vue'));
 }
-
-const emptyVuneRoute = vuneRoute(() => import('@/pages/vune/_empty_.vune'));
-export const notFoundVuneRoute = vuneRoute(
-	() => import('@/pages/vune/not-found.vune'),
-	() => ({ title: i18n.ts.notFound, icon: 'ti ti-alert-triangle' }),
-	(props) => {
-		if (props.showLoginPopup === true) void pleaseLogin({ path: '/' });
-	},
-);
 
 export const ROUTE_DEF = [{
 	name: 'index',
@@ -206,7 +194,7 @@ export const ROUTE_DEF = [{
 		component: page(() => import('@/pages/settings/other.vue')),
 	}, {
 		path: '/',
-		component: emptyVuneRoute,
+		component: page(() => import('@/pages/_empty_.vue')),
 	}],
 }, {
 	path: '/reset-password/:token?',
@@ -229,10 +217,7 @@ export const ROUTE_DEF = [{
 	hash: 'initialTab',
 }, {
 	path: '/contact',
-	component: vuneRoute(
-		() => import('@/pages/vune/contact.view.vune'),
-		() => ({ title: i18n.ts.inquiry, icon: 'ti ti-help-circle' }),
-	),
+	component: page(() => import('@/pages/contact.vue')),
 }, {
 	path: '/about-misskey',
 	component: page(() => import('@/pages/about-misskey.vue')),
@@ -242,10 +227,7 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/invite.vue')),
 }, {
 	path: '/ads',
-	component: vuneRoute(
-		() => import('@/pages/vune/ads.vune'),
-		() => ({ title: i18n.ts.ads, icon: 'ti ti-ad' }),
-	),
+	component: page(() => import('@/pages/ads.vue')),
 }, {
 	path: '/theme-editor',
 	component: page(() => import('@/pages/theme-editor.vue')),
@@ -299,10 +281,7 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/scratchpad.vue')),
 }, {
 	path: '/preview',
-	component: vuneRoute(
-		() => import('@/pages/vune/preview.vune'),
-		() => ({ title: i18n.ts.preview, icon: 'ti ti-eye' }),
-	),
+	component: page(() => import('@/pages/preview.vue')),
 }, {
 	path: '/auth/:token',
 	component: page(() => import('@/pages/auth.vue')),
@@ -400,13 +379,13 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/admin/user/:userId',
-	component: iAmModerator ? page(() => import('@/pages/admin-user.vue')) : notFoundVuneRoute,
+	component: iAmModerator ? page(() => import('@/pages/admin-user.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/admin/file/:fileId',
-	component: iAmModerator ? page(() => import('@/pages/admin-file.vue')) : notFoundVuneRoute,
+	component: iAmModerator ? page(() => import('@/pages/admin-file.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/admin',
-	component: iAmModerator ? page(() => import('@/pages/admin/index.vue')) : notFoundVuneRoute,
+	component: iAmModerator ? page(() => import('@/pages/admin/index.vue')) : page(() => import('@/pages/not-found.vue')),
 	children: [{
 		path: '/overview',
 		name: 'overview',
@@ -470,10 +449,7 @@ export const ROUTE_DEF = [{
 	}, {
 		path: '/database',
 		name: 'database',
-		component: vuneRoute(
-			() => import('@/pages/admin/vune/database.vune'),
-			() => ({ title: i18n.ts.database, icon: 'ti ti-database' }),
-		),
+		component: page(() => import('@/pages/admin/database.vue')),
 	}, {
 		path: '/abuses',
 		name: 'abuses',
@@ -519,10 +495,6 @@ export const ROUTE_DEF = [{
 		name: 'performance',
 		component: page(() => import('@/pages/admin/performance.vue')),
 	}, {
-		path: '/runtime-diagnostics',
-		name: 'runtime-diagnostics',
-		component: page(() => import('@/pages/admin/runtime-diagnostics.vue')),
-	}, {
 		path: '/invites',
 		name: 'invites',
 		component: page(() => import('@/pages/admin/invites.vue')),
@@ -536,7 +508,7 @@ export const ROUTE_DEF = [{
 		component: page(() => import('@/pages/admin/system-webhook.vue')),
 	}, {
 		path: '/',
-		component: emptyVuneRoute,
+		component: page(() => import('@/pages/_empty_.vue')),
 	}],
 }, {
 	path: '/my/notifications',
@@ -600,17 +572,11 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/clicker',
-	component: vuneRoute(
-		() => import('@/pages/vune/clicker.vune'),
-		() => ({ title: '🍪👈', icon: 'ti ti-cookie' }),
-	),
+	component: page(() => import('@/pages/clicker.vue')),
 	loginRequired: true,
 }, {
 	path: '/games',
-	component: vuneRoute(
-		() => import('@/pages/vune/games.vune'),
-		() => ({ title: 'Misskey Games', icon: 'ti ti-device-gamepad' }),
-	),
+	component: page(() => import('@/pages/games.vue')),
 	loginRequired: false,
 }, {
 	path: '/bubble-game',
@@ -639,5 +605,5 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/:(*)',
-	component: notFoundVuneRoute,
+	component: page(() => import('@/pages/not-found.vue')),
 }] as const satisfies RouteDef[];

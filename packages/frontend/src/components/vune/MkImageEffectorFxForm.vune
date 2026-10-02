@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, Text } from 'vune-ui';
-export struct MkImageEffectorFxForm: View { let model: any; init(_ model: any = null) { self.model = model } var body: some View { VStack(alignment: 'stretch', spacing: 0) { Text(String(model?.type ?? 'Effect')) }.className('mk-vune-image-effector-form') } }
-export default MkImageEffectorFxForm

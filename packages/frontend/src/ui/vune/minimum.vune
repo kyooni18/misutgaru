@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, type ViewGraphValue } from 'vune-ui';
-export struct VuneMinimumView: View { let rootClass:string; let router:ViewGraphValue; let common:ViewGraphValue; init(rootClass:string,@ViewBuilder router:()=>ViewGraphValue,@ViewBuilder common:()=>ViewGraphValue){self.rootClass=rootClass;self.router=router();self.common=common()} var body:some View { VStack(alignment: 'stretch', spacing: 0){router;common}.className(rootClass) } }
-export default VuneMinimumView

@@ -4,12 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneProfiles :backups="backups" :onDelete="del"/>
+<SearchMarker path="/settings/profiles" :label="i18n.ts._preferencesProfile.manageProfiles" :keywords="['profile', 'settings', 'preferences', 'manage']" icon="ti ti-settings-cog">
+	<div class="_gaps">
+		<MkFolder v-for="backup in backups">
+			<template #label>{{ backup.name }}</template>
+			<MkButton danger @click="del(backup)">{{ i18n.ts.delete }}</MkButton>
+		</MkFolder>
+	</div>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import VuneProfiles from './vune/profiles.vune?vue-host';
+import MkButton from '@/components/MkButton.vue';
+import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { deleteCloudBackup, listCloudBackups } from '@/preferences/utility.js';

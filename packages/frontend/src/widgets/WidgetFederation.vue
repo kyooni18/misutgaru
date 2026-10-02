@@ -4,29 +4,39 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetFederation
-	:showHeader="widgetProps.showHeader"
-	:fetching="fetching"
-	:instances="instances"
-	:charts="charts"
-	:getInstanceIcon="getInstanceIcon"
-/>
+<MkContainer :showHeader="widgetProps.showHeader" data-testid="mkw-federation" class="mkw-federation">
+	<template #icon><i class="ti ti-whirl"></i></template>
+	<template #header>{{ i18n.ts._widgets.federation }}</template>
+
+	<div class="wbrkwalb">
+		<MkLoading v-if="fetching"/>
+		<TransitionGroup v-else tag="div" :name="prefer.s.animation ? 'chart' : ''" class="instances">
+			<div v-for="(instance, i) in instances" :key="instance.id" class="instance">
+				<img :src="getInstanceIcon(instance)" alt=""/>
+				<div class="body">
+					<MkA class="a" :to="`/instance-info/${instance.host}`" behavior="window" :title="instance.host">{{ instance.host }}</MkA>
+					<p>{{ instance.softwareName || '?' }} {{ instance.softwareVersion }}</p>
+				</div>
+				<MkMiniChart class="chart" :src="charts[i].requests.received"/>
+			</div>
+		</TransitionGroup>
+	</div>
+</MkContainer>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
-import VuneWidgetFederationView from './vune/WidgetFederation.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
+import MkContainer from '@/components/MkContainer.vue';
+import MkMiniChart from '@/components/MkMiniChart.vue';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
-
-const VuneWidgetFederation = createVuneWebHost(VuneWidgetFederationView);
+import { prefer } from '@/preferences.js';
 
 const name = 'federation';
 
@@ -80,7 +90,7 @@ defineExpose<WidgetComponentExpose>({
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .wbrkwalb {
 	$bodyTitleHieght: 18px;
 	$bodyInfoHieght: 16px;

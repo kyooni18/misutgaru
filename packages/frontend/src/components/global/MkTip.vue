@@ -4,13 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneTip :hidden="!!store.r.tips.value[props.k]" :warn="warn" :onClose="_closeTip" :onMenu="showMenu"><slot></slot></VuneTip>
+<div v-if="!store.r.tips.value[props.k]" :class="[$style.root, { [$style.warn]: warn }]" class="_selectable _gaps_s">
+	<div style="font-weight: bold;"><i class="ti ti-bulb"></i> {{ i18n.ts.tip }}:</div>
+	<div><slot></slot></div>
+	<div>
+		<MkButton inline primary rounded small @click="_closeTip()"><i class="ti ti-check"></i> {{ i18n.ts.gotIt }}</MkButton>
+		<button class="_button" style="padding: 8px; margin-left: 4px;" @click="showMenu"><i class="ti ti-dots"></i></button>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneTip from './vune/MkTip.vune?vue-host';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
+import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { TIPS, hideAllTips, closeTip } from '@/tips.js';
 
@@ -37,3 +44,19 @@ function showMenu(ev: PointerEvent) {
 	}], ev.currentTarget ?? ev.target);
 }
 </script>
+
+<style lang="scss" module>
+.root {
+	padding: 12px 14px;
+	font-size: 90%;
+	background: var(--MI_THEME-infoBg);
+	color: var(--MI_THEME-infoFg);
+	border-radius: var(--MI-radius);
+
+	&.warn {
+		background: var(--MI_THEME-infoWarnBg);
+		color: var(--MI_THEME-infoWarnFg);
+	}
+}
+
+</style>

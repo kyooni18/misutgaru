@@ -4,24 +4,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<NativeSortOrderEditor
-	:currentOrders="nativeOrders"
-	:classes="$style"
-	:onToggle="onToggleSortOrderButtonClicked"
-	:onAdd="onAddSortOrderButtonClicked"
-	:onRemove="onRemoveSortOrderButtonClicked"
-/>
+<div :class="$style.sortOrderArea">
+	<div :class="$style.sortOrderAreaTags">
+		<MkTagItem
+			v-for="order in currentOrders"
+			:key="order.key"
+			:iconClass="order.direction === '+' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"
+			:exButtonIconClass="'ti ti-x'"
+			:content="order.key"
+			:class="$style.sortOrderTag"
+			@click="onToggleSortOrderButtonClicked(order)"
+			@exButtonClick="onRemoveSortOrderButtonClicked(order)"
+		/>
+	</div>
+	<MkButton :class="$style.sortOrderAddButton" @click="onAddSortOrderButtonClicked">
+		<span class="ti ti-plus"></span>
+	</MkButton>
+</div>
 </template>
 
 <script setup lang="ts" generic="T extends string">
-import { computed, toRefs } from 'vue';
-import MkSortOrderEditor from './vune/MkSortOrderEditor.vune';
+import { toRefs } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import type { SortOrder } from '@/components/MkSortOrderEditor.define.js';
+import MkTagItem from '@/components/MkTagItem.vue';
+import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const NativeSortOrderEditor = createVuneWebHost(MkSortOrderEditor);
 
 const emit = defineEmits<{
 	(ev: 'update', sortOrders: SortOrder<T>[]): void;
@@ -33,7 +41,6 @@ const props = defineProps<{
 }>();
 
 const { currentOrders } = toRefs(props);
-const nativeOrders = computed(() => currentOrders.value.map(order => ({ ...order })));
 
 function onToggleSortOrderButtonClicked(order: SortOrder<T>) {
 	switch (order.direction) {
@@ -90,26 +97,18 @@ function emitOrder(sortOrders: SortOrder<T>[]) {
 }
 
 .sortOrderAddButton {
-	display: inline-flex;
+	display: flex;
 	justify-content: center;
 	align-items: center;
-	padding: var(--MI-button-padding-y-small);
+	box-sizing: border-box;
+	min-width: 2.0em;
+	min-height: 2.0em;
+	max-width: 2.0em;
+	max-height: 2.0em;
+	padding: 8px;
 	margin-left: auto;
-	border: thin solid var(--MI-button-border);
-	border-radius: calc(1em + var(--MI-button-padding-y-small));
-	background: var(--MI-button-surface);
-	box-shadow: var(--MI-button-shadow);
-	transition: background var(--MI-motion-duration-fast) var(--MI-motion-ease-standard), border-color var(--MI-motion-duration-fast) var(--MI-motion-ease-standard), box-shadow var(--MI-motion-duration-fast) var(--MI-motion-ease-standard);
-
-	&:hover {
-		background: var(--MI-button-surface-hover);
-		border-color: var(--MI-button-border-hover);
-	}
-
-	&:active {
-		background: var(--MI-button-surface-pressed);
-		box-shadow: var(--MI-button-shadow-pressed);
-	}
+	border-radius: 9999px;
+	background-color: var(--MI_THEME-buttonBg);
 }
 
 .sortOrderTag {

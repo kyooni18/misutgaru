@@ -4,16 +4,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneFederationJobQueue :tab="tab" :headerActions="headerActions" :headerTabs="headerTabs" :onTabChange="(value: ApQueueDomain) => tab = value" :onPromote="promoteAllQueues" :onClear="clear"/>
+<PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 800px;">
+		<XQueue v-if="tab === 'deliver'" domain="deliver"/>
+		<XQueue v-else-if="tab === 'inbox'" domain="inbox"/>
+		<br>
+		<div class="_buttons">
+			<MkButton @click="promoteAllQueues"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+			<MkButton danger @click="clear"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+		</div>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import VuneFederationJobQueue from './vune/federation-job-queue.vune?vue-host';
 import { ref, computed } from 'vue';
+import XQueue from './federation-job-queue.chart.vue';
 import type { Ref } from 'vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
+import MkButton from '@/components/MkButton.vue';
 
 export type ApQueueDomain = 'deliver' | 'inbox';
 

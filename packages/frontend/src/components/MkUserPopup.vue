@@ -5,11 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
-	appear
-	:css="false"
-	@enter="enter"
-	@leave="leave"
-	@afterLeave="emit('closed')"
+	:enterActiveClass="prefer.s.animation ? $style.transition_popup_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_popup_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_popup_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_popup_leaveTo : ''"
+	appear @afterLeave="emit('closed')"
 >
 	<div v-if="showing" :class="$style.root" class="_popup _shadow" :style="{ zIndex, top: top + 'px', left: left + 'px' }" @mouseover="() => { emit('mouseover'); }" @mouseleave="() => { emit('mouseleave'); }">
 		<MkError v-if="error" @retry="fetchUser()"/>
@@ -71,7 +71,6 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
-import { animateSurfaceTransition } from '@/vune/motion.js';
 
 const props = defineProps<{
 	showing: boolean;
@@ -90,22 +89,6 @@ const user = ref<Misskey.entities.UserDetailed | null>(null);
 const top = ref(0);
 const left = ref(0);
 const error = ref(false);
-
-function enter(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateSurfaceTransition(element, 'enter', done);
-}
-
-function leave(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateSurfaceTransition(element, 'leave', done);
-}
 
 function showMenu(ev: PointerEvent) {
 	if (user.value == null) return;
@@ -146,6 +129,16 @@ onMounted(() => {
 </script>
 
 <style lang="scss" module>
+.transition_popup_enterActive,
+.transition_popup_leaveActive {
+	transition: opacity 0.15s, transform 0.15s !important;
+}
+.transition_popup_enterFrom,
+.transition_popup_leaveTo {
+	opacity: 0;
+	transform: scale(0.9);
+}
+
 .root {
 	position: absolute;
 	width: 300px;

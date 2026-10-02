@@ -4,13 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VunePagesView :paginator="paginator"/>
+<div class="_spacer" style="--MI_SPACER-w: 700px;">
+	<MkPagination v-slot="{items}" :paginator="paginator" withControl>
+		<MkPagePreview v-for="page in items" :key="page.id" :page="page" class="_margin"/>
+	</MkPagination>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
-import VunePagesView from './vune/pages.view.vune?vue-host';
+import MkPagePreview from '@/components/MkPagePreview.vue';
+import MkPagination from '@/components/MkPagination.vue';
 import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{

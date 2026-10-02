@@ -4,35 +4,25 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 
 | Path | Responsibility |
 | --- | --- |
-| `packages/frontend` | Vue/Vune browser application and migration shells |
+| `packages/frontend` | Vue 3 browser application, routes, components, composables, and frontend tests |
 | `packages/backend` | API, federation, queues, caches, entity packing, storage and runtime |
 | `packages/misutgaru-core` | fork-owned contracts/helpers that should not live in upstream-shaped implementation files |
+| `packages/recommendation` | standalone Rust timeline candidate generator/reranker and disposable SQLite feature index |
 | `packages/sw` | service worker and Web Push lifecycle |
-| `packages/modules/Vune` | checked-out Vune framework/compiler/web renderer source |
-| `packages/modules/Vune/packages/animation` | `@vune-ui/animation` shared motion engine and DOM property ownership source |
-| `scripts` | repository checks, local module build, source inventory, upstream delta and regression benchmark |
+| `scripts` | repository checks, source inventory, upstream delta and regression benchmark |
 
-## Vune/compiler/runtime
+## Frontend
 
 | File | Responsibility |
 | --- | --- |
-| `packages/modules/Vune/packages/compiler/src/pipeline.ts` | Vune lowering and compiler-emitted legacy-host metadata |
-| `packages/modules/Vune/packages/compiler/src/vue-host.ts` | typed transitional Vue host code generation |
-| `packages/modules/Vune/packages/core/src/web-primitives.ts` | graph-first browser primitives |
-| `packages/modules/Vune/packages/web/src/dom.ts` | DOM reconciliation, fine-grained State boundary scheduling and DevTools recording |
-| `packages/modules/Vune/packages/web/src/devtools.ts` | optional boundary profiling store |
-| `packages/modules/Vune/packages/web/src/focus.ts` | focus-scope DOM behavior |
-| `packages/modules/Vune/packages/web/src/motion.ts` | Vune web motion and layout FLIP integration |
-| `packages/modules/Vune/packages/web/src/element-motion.ts` | shared imperative/keyframe motion bridge with per-property ownership for Vune and compatibility Vue surfaces |
-| `packages/frontend/src/vune/compat-vue.ts` | transitional Vue placement host consuming compiler plans |
-| `packages/frontend/src/vune/motion.ts` | thin compatibility re-export of the shared Vune Web element-motion engine |
-| `packages/frontend/src/vune/devtools-overlay.ts` | development-only in-app Vune profiler panel |
 | `packages/frontend/src/lib/nirax-core.ts` | renderer-neutral route matching, redirects, navigation state and events |
 | `packages/frontend/src/lib/nirax.ts` | Vue binding for NIRAX refs and lifecycle-scoped listeners |
 | `packages/frontend/src/components/MkNoteDetailed.vue` | note detail layout, thread context and optional additional sections |
 | `packages/frontend/src/components/MkNoteDetailedContent.vue` | reusable detailed note avatar, author metadata and content renderer |
 | `packages/frontend/src/components/MkNoteDetailedControls.vue` | reusable detailed note timestamp, reactions and action controls |
 | `packages/frontend/src/components/MkThreadWindow.vue` | thread popup composition with ancestor and continuation notes |
+
+Historical Vune migration implementation notes are retained only as archive/reference material; they are not part of the active frontend path.
 
 ## Fork package
 
@@ -51,6 +41,7 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 | `packages/backend/src/core/entities/NoteEntityService.ts` | note serialization and batched note lookup |
 | `packages/backend/src/core/entities/NoteDraftEntityService.ts` | draft serialization and batched draft lookup |
 | `packages/backend/src/core/OpenAiTranslationService.ts` | provider transport using `@misutgaru/core` contracts |
+| `packages/backend/src/core/RecommendationTimelineService.ts` | fail-open internal client for candidate discovery, Misskey-side hydration/filtering handoff, and final reranking |
 | `packages/backend/src/misc/block-io.ts` | shared hot-path block-size policy |
 | `packages/backend/src/misc/FileWriterStream.ts` | buffered/vector file writes |
 
@@ -59,7 +50,6 @@ Use this file for architectural navigation and `docs/source-map/INVENTORY.md` fo
 | File | Responsibility |
 | --- | --- |
 | `packages/frontend/test/e2e/performance.spec.ts` | browser runaway-performance guard |
-| `scripts/benchmark-regressions.mjs` | deterministic DOM/motion work and property-ownership regression |
 | `scripts/check-repository-integrity.mjs` | merge markers, package alignment, Docker contract and inventory checks |
 | `scripts/generate-source-inventory.mjs` | exhaustive source index generation |
 | `scripts/upstream-delta.mjs` | whole-tree comparison with the recorded Misskey upstream base |

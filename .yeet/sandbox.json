@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "mode": "unlimited",
+  "autoApprove": true,
+  "workspaceRead": {
+    "mode": "all"
+  },
+  "scratchWritable": true,
+  "networkAllow": [],
+  "environment": {},
+  "secretIDs": [],
+  "limits": {
+    "wallTimeSeconds": 900,
+    "maxStdoutBytes": 8388608,
+    "maxStderrBytes": 8388608,
+    "maxMemoryBytes": 4294967296,
+    "maxProcesses": 64
+  }
+}

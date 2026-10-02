@@ -4,16 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneDiskHost :usage="usage" :total="total" :used="used" :available="available"/>
+<div class="zbwaqsat">
+	<XPie class="pie" :value="usage"/>
+	<div>
+		<p><i class="ti ti-database"></i>Disk</p>
+		<p>Total: {{ bytes(total, 1) }}</p>
+		<p>Free: {{ bytes(available, 1) }}</p>
+		<p>Used: {{ bytes(used, 1) }}</p>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneDisk from './vune/disk.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
-
-const VuneDiskHost = createVuneWebHost(VuneDisk);
+import XPie from './pie.vue';
+import bytes from '@/filters/bytes.js';
 
 const props = defineProps<{
 	meta: Misskey.entities.ServerInfoResponse;
@@ -25,7 +31,7 @@ const used = computed(() => props.meta.fs.used);
 const available = computed(() => props.meta.fs.total - props.meta.fs.used);
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .zbwaqsat {
 	display: flex;
 	padding: 16px;

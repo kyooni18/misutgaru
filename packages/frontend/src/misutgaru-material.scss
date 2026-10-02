@@ -1,0 +1,87 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+.misutgaru-material {
+	--misutgaru-material-blur: 18px;
+	--misutgaru-material-opacity: 58%;
+	--misutgaru-material-saturation: 1.35;
+	--misutgaru-material-border-opacity: 13%;
+	--misutgaru-material-surface: var(--MI_THEME-panel);
+	--misutgaru-material-fallback: var(--MI_THEME-panel);
+	position: relative;
+	isolation: isolate;
+	border: 1px solid color-mix(in srgb, var(--MI_THEME-fg) var(--misutgaru-material-border-opacity), transparent);
+	corner-shape: round;
+	box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+
+	&::before {
+		content: '';
+		position: absolute;
+		z-index: 0;
+		inset: 0;
+		border-radius: inherit;
+		pointer-events: none;
+		background: color-mix(in srgb, var(--misutgaru-material-surface) var(--misutgaru-material-opacity), transparent);
+		-webkit-backdrop-filter: saturate(var(--misutgaru-material-saturation)) blur(var(--misutgaru-material-blur));
+		backdrop-filter: saturate(var(--misutgaru-material-saturation)) blur(var(--misutgaru-material-blur));
+	}
+
+	> * {
+		position: relative;
+		z-index: 1;
+	}
+}
+
+.misutgaru-material--ultra-thin {
+	--misutgaru-material-blur: 8px;
+	--misutgaru-material-opacity: 34%;
+	--misutgaru-material-saturation: 1.18;
+}
+
+.misutgaru-material--thin {
+	--misutgaru-material-blur: 12px;
+	--misutgaru-material-opacity: 46%;
+	--misutgaru-material-saturation: 1.25;
+}
+
+.misutgaru-material--regular {
+	--misutgaru-material-blur: 18px;
+	--misutgaru-material-opacity: 58%;
+}
+
+.misutgaru-material--thick {
+	--misutgaru-material-blur: 24px;
+	--misutgaru-material-opacity: 70%;
+	--misutgaru-material-saturation: 1.42;
+}
+
+.misutgaru-material--bar {
+	--misutgaru-material-blur: 20px;
+	--misutgaru-material-opacity: 64%;
+	--misutgaru-material-saturation: 1.4;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+	.misutgaru-material::before {
+		background: var(--misutgaru-material-fallback);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}
+
+@media (prefers-reduced-transparency: reduce) {
+	.misutgaru-material::before {
+		background: var(--misutgaru-material-fallback);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}
+
+@media (prefers-contrast: more) {
+	.misutgaru-material {
+		--misutgaru-material-opacity: 88%;
+		--misutgaru-material-border-opacity: 32%;
+	}
+}

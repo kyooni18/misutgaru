@@ -4,17 +4,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNotificationConfig
-	:props="{
-		type,
-		typeDef,
-		userListId,
-		userListIdDef,
-		onType: updateType,
-		onUserListId: updateUserListId,
-		onSave: save,
-	}"
-/>
+<div class="_gaps_m">
+	<MkSelect v-model="type" :items="typeDef">
+	</MkSelect>
+
+	<MkSelect v-if="type === 'list'" v-model="userListId" :items="userListIdDef">
+		<template #label>{{ i18n.ts.userList }}</template>
+	</MkSelect>
+
+	<div class="_buttons">
+		<MkButton inline primary :disabled="type === 'list' && userListId === null" @click="save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
+	</div>
+</div>
 </template>
 
 <script lang="ts">
@@ -38,13 +39,11 @@ export type NotificationConfig = {
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
-import VuneNotificationConfigView from './vune/notifications.notification-config.vune';
 import { ref, computed } from 'vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkButton from '@/components/MkButton.vue';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { i18n } from '@/i18n.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneNotificationConfig = createVuneWebHost(VuneNotificationConfigView);
 
 const props = defineProps<{
 	value: NotificationConfig;
@@ -86,14 +85,6 @@ const {
 	}))),
 	initialValue: props.value.type === 'list' ? props.value.userListId : null,
 });
-
-function updateType(value: NotificationConfig['type']): void {
-	type.value = value;
-}
-
-function updateUserListId(value: string | null): void {
-	userListId.value = value;
-}
 
 function save() {
 	emit('update', type.value === 'list' ? { type: type.value, userListId: userListId.value! } : { type: type.value });

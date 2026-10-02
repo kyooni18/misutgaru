@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@afterLeave="onClosed"
 >
 	<div v-if="showing" ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
-		<MkMenu :items="items" :align="'left'" material="thin" :animated="true" @close="close"/>
+		<MkMenu :items="items" :align="'left'" :animated="true" @close="close"/>
 	</div>
 </Transition>
 </template>
@@ -37,7 +37,6 @@ const emit = defineEmits<{
 
 const rootEl = useTemplateRef('rootEl');
 const showing = ref(true);
-
 const zIndex = ref<number>(os.claimZIndex('high'));
 const VIEWPORT_MARGIN = 16;
 
@@ -69,14 +68,12 @@ onMounted(() => {
 	const root = rootEl.value;
 	if (!root) return;
 
-	let left = props.ev.pageX + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
-	let top = props.ev.pageY + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
-
+	let left = props.ev.pageX + 1;
+	let top = props.ev.pageY + 1;
 	const width = root.offsetWidth;
 	const height = root.offsetHeight;
 	const viewportLeft = window.scrollX;
 	const viewportTop = window.scrollY;
-	// clientWidth/clientHeight already exclude classic scrollbars, unlike innerWidth.
 	const viewportRight = viewportLeft + window.document.documentElement.clientWidth - VIEWPORT_MARGIN;
 	const viewportBottom = viewportTop + window.document.documentElement.clientHeight - VIEWPORT_MARGIN;
 	let opensLeft = false;
@@ -86,7 +83,6 @@ onMounted(() => {
 		left = viewportRight - width;
 		opensLeft = true;
 	}
-
 	if (top + height > viewportBottom) {
 		top = viewportBottom - height;
 		opensUp = true;
@@ -94,7 +90,6 @@ onMounted(() => {
 
 	left = Math.max(viewportLeft + VIEWPORT_MARGIN, left);
 	top = Math.max(viewportTop + VIEWPORT_MARGIN, top);
-
 	root.style.top = `${top}px`;
 	root.style.left = `${left}px`;
 	root.style.transformOrigin = `${opensLeft ? 'right' : 'left'} ${opensUp ? 'bottom' : 'top'}`;
@@ -113,14 +108,7 @@ function onMousedown(evt: MouseEvent) {
 
 <style lang="scss" module>
 .root {
-	--mk-context-menu-scale: 1;
-
 	position: absolute;
-	transform: scale(var(--mk-context-menu-scale));
 	transform-origin: left top;
-
-	:global(.vune-material--animated) {
-		animation: none;
-	}
 }
 </style>

@@ -2,63 +2,75 @@
 SPDX-FileCopyrightText: syuilo and misskey-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
+
 <template>
-<div ref="motionHost" style="display: contents;">
-	<VuneToastHost :message="message" :zIndex="zIndex"/>
+<div>
+	<Transition
+		:enterActiveClass="prefer.s.animation ? $style.transition_toast_enterActive : ''"
+		:leaveActiveClass="prefer.s.animation ? $style.transition_toast_leaveActive : ''"
+		:enterFromClass="prefer.s.animation ? $style.transition_toast_enterFrom : ''"
+		:leaveToClass="prefer.s.animation ? $style.transition_toast_leaveTo : ''"
+		appear @afterLeave="emit('closed')"
+	>
+		<div v-if="showing" class="misutgaru-material misutgaru-material--thin" :class="$style.root" :style="{ zIndex }">
+			<div style="padding: 16px 24px;">
+				{{ message }}
+			</div>
+		</div>
+	</Transition>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import MkToast from './vune/MkToast.vune';
-import type { MotionHandle } from '@/vune/motion.js';
+import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { uiMotion, vuneMotion } from '@/vune/motion.js';
 
-const props = defineProps<{ message: string }>();
-const emit = defineEmits<{ (ev: 'closed'): void }>();
+defineProps<{
+	message: string;
+}>();
 
-const VuneToastHost = createVuneWebHost(MkToast);
+const emit = defineEmits<{
+	(ev: 'closed'): void;
+}>();
+
 const zIndex = os.claimZIndex('high');
-const motionHost = ref<HTMLElement | null>(null);
-let timer: number | null = null;
-let motion: MotionHandle | null = null;
-let closed = false;
+const showing = ref(true);
 
-function toastElement(): HTMLElement | null {
-	return motionHost.value?.querySelector('.mk-vune-toast') as HTMLElement | null;
-}
-
-async function closeToast() {
-	if (closed) return;
-	closed = true;
-	const target = toastElement();
-	if (target && prefer.s.animation) {
-		motion = vuneMotion.animateElement(target, [
-			{ opacity: 1, transform: 'translateY(0)' },
-			{ opacity: 0, transform: 'translateY(-100%)' },
-		], { animation: uiMotion.surfaceLeave, fill: 'forwards' });
-		await motion.finished;
-	}
-	emit('closed');
-}
-
-onMounted(async () => {
-	await nextTick();
-	const target = toastElement();
-	if (target && prefer.s.animation) {
-		motion = vuneMotion.animateElement(target, [
-			{ opacity: 0, transform: 'translateY(-100%)' },
-			{ opacity: 1, transform: 'translateY(0)' },
-		], { animation: uiMotion.surfaceEnter, fill: 'both' });
-	}
-	timer = window.setTimeout(() => { void closeToast(); }, 4000);
-});
-
-onBeforeUnmount(() => {
-	if (timer !== null) window.clearTimeout(timer);
-	motion?.cancel();
+onMounted(() => {
+	window.setTimeout(() => {
+		showing.value = false;
+	}, 4000);
 });
 </script>
+
+<style lang="scss" module>
+.transition_toast_enterActive,
+.transition_toast_leaveActive {
+	transition: opacity 0.3s, transform 0.3s !important;
+}
+.transition_toast_enterFrom,
+.transition_toast_leaveTo {
+	opacity: 0;
+	transform: translateY(-100%);
+}
+
+.root {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 50px;
+	margin: 0 auto;
+	margin-top: 16px;
+	min-width: 300px;
+	max-width: calc(100% - 32px);
+	width: min-content;
+	box-shadow: 0 4px 16px var(--MI_THEME-shadow);
+	border-radius: var(--MI-radius);
+	corner-shape: round;
+	overflow: clip;
+	--misutgaru-material-fallback: var(--MI_THEME-bg);
+	text-align: center;
+	pointer-events: none;
+}
+</style>

@@ -4,13 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneMyAntennasEdit :antenna="antenna" :headerActions="headerActions" :headerTabs="headerTabs" :onUpdated="onAntennaUpdated"/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<MkAntennaEditor v-if="antenna" :antenna="antenna" @updated="onAntennaUpdated"/>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import VuneMyAntennasEdit from '@/pages/vune/my-antennas-edit.vune?vue-host';
 import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
+import MkAntennaEditor from '@/components/MkAntennaEditor.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';

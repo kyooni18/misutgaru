@@ -4,27 +4,42 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneApiConsole
-	:body="body"
-	:endpoint="endpoint"
-	:endpoints="endpoints"
-	:sending="sending"
-	:response="res"
-	:withCredential="withCredential"
-	:headerActions="headerActions"
-	:headerTabs="headerTabs"
-	:onBody="(value: string) => body = value"
-	:onEndpoint="(value: string) => { endpoint = value; onEndpointChange(); }"
-	:onCredential="(value: boolean) => withCredential = value"
-	:onSend="send"
-/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 700px;">
+		<div class="_gaps_m">
+			<div class="_gaps_m">
+				<MkInput v-model="endpoint" :datalist="endpoints" @update:modelValue="onEndpointChange()">
+					<template #label>Endpoint</template>
+				</MkInput>
+				<MkTextarea v-model="body" code>
+					<template #label>Params (JSON or JSON5)</template>
+				</MkTextarea>
+				<MkSwitch v-model="withCredential">
+					With credential
+				</MkSwitch>
+				<MkButton primary :disabled="sending" @click="send">
+					<template v-if="sending"><MkEllipsis/></template>
+					<template v-else><i class="ti ti-send"></i> Send</template>
+				</MkButton>
+			</div>
+			<div v-if="res">
+				<MkTextarea v-model="res" code readonly tall>
+					<template #label>Response</template>
+				</MkTextarea>
+			</div>
+		</div>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import VuneApiConsole from './vune/api-console.vune?vue-host';
 import JSON5 from 'json5';
 import type { Endpoints } from 'misskey-js';
+import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { definePage } from '@/page.js';
 

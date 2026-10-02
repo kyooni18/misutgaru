@@ -16,13 +16,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 WORKDIR /misskey
 
-COPY --link ["packages/modules/Vune/package.json", "./packages/modules/Vune/package.json"]
-COPY --link ["packages/modules/Vune/packages/animation/package.json", "./packages/modules/Vune/packages/animation/package.json"]
-COPY --link ["packages/modules/Vune/packages/compiler/package.json", "./packages/modules/Vune/packages/compiler/package.json"]
-COPY --link ["packages/modules/Vune/packages/core/package.json", "./packages/modules/Vune/packages/core/package.json"]
-COPY --link ["packages/modules/Vune/packages/vite/package.json", "./packages/modules/Vune/packages/vite/package.json"]
-COPY --link ["packages/modules/Vune/packages/vue/package.json", "./packages/modules/Vune/packages/vue/package.json"]
-COPY --link ["packages/modules/Vune/packages/web/package.json", "./packages/modules/Vune/packages/web/package.json"]
 COPY --link ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "./"]
 COPY --link ["scripts", "./scripts"]
 COPY --link ["patches", "./patches"]
@@ -48,8 +41,6 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 
 COPY --link . ./
 
-# The root build prepares the local Vune workspace, including @vune-ui/animation,
-# before compiling the application.
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 	PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm build
 RUN rm -rf .git/
@@ -64,8 +55,6 @@ RUN apt-get update \
 
 WORKDIR /misskey
 
-COPY --link ["packages/modules/Vune/package.json", "./packages/modules/Vune/package.json"]
-COPY --link ["packages/modules/Vune/packages/compiler/package.json", "./packages/modules/Vune/packages/compiler/package.json"]
 COPY --link ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "./"]
 COPY --link ["scripts", "./scripts"]
 COPY --link ["patches", "./patches"]
@@ -112,9 +101,6 @@ COPY --chown=misskey:misskey --from=target-builder /misskey/packages/backend/nod
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-js/node_modules ./packages/misskey-js/node_modules
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-reversi/node_modules ./packages/misskey-reversi/node_modules
 COPY --chown=misskey:misskey --from=target-builder /misskey/packages/misskey-bubble-game/node_modules ./packages/misskey-bubble-game/node_modules
-COPY --chown=misskey:misskey --from=native-builder /misskey/packages/modules/Vune/package.json ./packages/modules/Vune/package.json
-COPY --chown=misskey:misskey --from=native-builder /misskey/packages/modules/Vune/bin ./packages/modules/Vune/bin
-COPY --chown=misskey:misskey --from=native-builder /misskey/packages/modules/Vune/dist ./packages/modules/Vune/dist
 COPY --chown=misskey:misskey --from=native-builder /misskey/built ./built
 COPY --chown=misskey:misskey --from=native-builder /misskey/packages/misskey-js/built ./packages/misskey-js/built
 COPY --chown=misskey:misskey --from=native-builder /misskey/packages/misskey-reversi/built ./packages/misskey-reversi/built

@@ -1,53 +1,29 @@
 # Misutgaru architecture
 
-Misutgaru retains the Misskey protocol, database lineage, API surface, and package layout where practical. The fork concentrates its divergence in the UI framework boundary, runtime efficiency, and a small set of user-facing extensions.
+Misutgaru retains the Misskey protocol, database lineage, API surface, and package layout where practical. The fork concentrates its divergence in Vue UI behavior, runtime efficiency, and a small set of user-facing extensions.
 
 ## Frontend path
 
 ```text
-Vue application/state while migration is incomplete
-  -> typed placement host
-  -> compiled Vune View boundary
-  -> fine-grained State dependency scheduler
-  -> @vune-ui/web DOM renderer
-  -> @vune-ui/animation motion ownership/scheduler
+Vue application and components
+  -> NIRAX route/component binding
+  -> Vue reactivity and composables
+  -> Vue templates / CSS / browser DOM
 ```
 
-`packages/frontend/src/vune/compat-vue.ts` is intentionally transitional. Authored Vune Views now carry compiler-emitted legacy-host parameter plans, so primitive coercion and initializer mapping are mostly decided at compile time. `@vune-ui/compiler` exports `generateVueHostModule`, and its Vite plugin can materialize the matching pure-JS runtime placement module through a `.vune?vue-host` import. The physical generator retains consumer-visible `$props` typing; the query form deliberately emits no TypeScript-only syntax.
+The current frontend is Vue-only. Vune compiler plugins, renderer packages, host adapters, native Vune views, and Vune-specific motion/runtime layers are not part of the active application path.
 
-NIRAX route matching/navigation now lives in renderer-neutral `packages/frontend/src/lib/nirax-core.ts`. `packages/frontend/src/lib/nirax.ts` is the Vue binding that adds `shallowRef` state and component-lifecycle listener cleanup. This keeps current Vue routing behavior intact while allowing a future Vune router owner to consume the same navigation core without importing Vue runtime APIs.
-
-Native Vune feature sources must not import Vue components or use raw host constructors. Browser-specific semantics should be expressed through Vune primitives first and the closed low-level Misutgaru native bridge only when the framework does not yet expose an equivalent.
-
-## Fine-grained renderer
-
-The web renderer associates State reads with View boundaries. A State update schedules the smallest safe boundary rather than blindly rerendering the entire root. Dirty boundaries are collected into one microtask and processed parent-first so an ancestor update can absorb redundant descendant work.
-
-Compiled templates retain direct text/modifier patch paths where the compiler can prove them safe. Structural changes fall back to boundary reconciliation without losing State identity.
-
-Development builds can enable the Vune DevTools overlay with `?vune-devtools=1` or Ctrl/Command + Shift + V. The instrumentation is disabled by default and records no boundary history while disabled.
+NIRAX continues to provide route matching/navigation while the application root, route views, component lifecycle, and reactive state ownership remain in Vue.
 
 ## Timeline rendering path
 
-Long Note lists keep logical entities separate from mounted DOM. `Paginator` can retain a bounded streaming identity window plus older fetched history, normalized Note/User/DriveFile entities reuse canonical references, PreparedNote prefetch shares MFM AST/URL work, and `useVariableVirtualList` mounts only a measured viewport window once the threshold is crossed. Row height measurements are keyed by Note identity rather than numeric position, so prepend/reorder and delayed ResizeObserver delivery cannot attach an old height to a different Note.
+Timeline surfaces use the standard Vue component tree and existing Misskey paginator/streaming abstractions. The Vune-backed variable-height virtualization path introduced during the migration has been removed from the active frontend so timeline behavior no longer depends on Vune measurement or renderer packages.
 
-## Native web semantics
-
-Vune core owns graph-first primitives for browser concepts that previously required raw host elements, including `TextEditor`, `FilePicker`, `ContentEditable`, `Canvas`, `Video`, `Audio`, `Svg`, `Path`, `FocusScope`, and `Popover`.
-
-The web package owns DOM-only behavior such as focus trapping/restoration. This keeps feature Views renderer-oriented instead of embedding DOM construction throughout Misutgaru.
-
-Detailed notes are composed from a reusable avatar/content renderer and a separate action-control renderer. `MkNoteDetailed` owns the surrounding layout, optional tabs, and thread context, so the thread window can show ancestor and continuation notes without repeating reply controls.
+Detailed notes remain composed from reusable Vue note/content/action components. Thread and timeline behavior should be extended through existing Vue components and composables rather than a parallel renderer.
 
 ## Motion and layout
 
-Misutgaru delegates per-element property ownership to Vune's `@vune-ui/animation` package. Starting a new opacity animation only replaces the opacity owner; transform, size, color, and other property owners remain independent.
-
-Bare Vune `.animation()` is a compiler-assisted automatic motion domain. The compiler records the properties implied by the modifier chain, while the web renderer checks the actual DOM/style diff before scheduling work. Opacity, compositor transforms, paint/color, and layout changes can therefore choose separate default motion profiles and remain independently retargetable. Explicit `.animation(animation)` and `.animation(animation, value)` keep their authored timing and trigger semantics.
-
-Vue compatibility surfaces that still need imperative enter/leave or keyframe motion use `packages/frontend/src/vune/motion.ts`, which is intentionally only a compatibility re-export of the shared Vune Web element-motion engine. Feature code must not create a second scheduler or bypass per-property ownership with direct `Element.animate()` calls.
-
-Vune intrinsic layout animation snapshots geometry before and after a structural update and applies FLIP projection. The layout channel uses CSS `translate` and `scale` when available, leaving the normal `transform` channel available for user rotation/transform animation. Unsupported environments retain a conservative fallback.
+UI motion follows the Vue/CSS/browser behavior implemented by each active component. There is no shared Vune animation scheduler or Vune-owned property-ownership layer in the current frontend; new motion work should stay compatible with Vue component lifecycle and existing CSS/transition patterns.
 
 ## Fork package boundary
 
@@ -70,6 +46,14 @@ Within an API request, `AsyncLocalStorage` gives the hot entity loaders one requ
 PostgreSQL schema ownership stays entirely with vanilla Misskey. Misutgaru may change query scheduling, batching, Redis caching, and non-schema DataSource runtime options, but migrations, TypeORM entity schema sources, schema-shaping ID helpers, the entity registry, and DataSource schema options are fingerprinted against the matching vanilla source. See [DB_COMPATIBILITY.md](DB_COMPATIBILITY.md).
 
 Redis cache writes are serialized per key. Each invalidation advances a generation, so an older Redis read cannot populate memory after a newer mutation. `CacheInvalidationService` publishes cache-name/key invalidations across backend processes after Redis becomes authoritative. It duplicates the existing subscriber connection instead of adding its channel to the shared Misskey stream subscriber, so unrelated stream listeners never see cache-control envelopes; remote cache listeners drop their memory tier and in-flight stale reads retry.
+
+## Timeline recommendation boundary
+
+Misutgaru can optionally expand and rerank the first page of Home, Hybrid, Local, and Global timelines through the standalone Rust service in `packages/recommendation`. The sidecar proposes rediscovery, active-conversation, and exploration Note IDs, but each endpoint re-runs those IDs through its existing Misskey SQL scope and visibility/mute/block rules before packing. Misskey therefore remains authoritative for authorization and timeline semantics even though candidate generation is no longer limited to the original page.
+
+The recommendation service maintains a disposable SQLite feature index populated by read-only polling of Misskey PostgreSQL. The index contains Note IDs, author IDs, creation/activity timestamps, aggregate reaction/reply/renote counts, and coarse media/reply/renote/local flags; Note text and user profile data are not copied. Recent reply/renote Notes and reaction IDs advance `last_activity_at` for their target Note so older conversations can re-enter the candidate pool. Candidate generation uses rediscovery, activity and exploration quotas plus author diversity; the final heuristic ranker mixes chronology, freshness, rediscovery, engagement, conversation activity, deterministic jitter, and another diversity pass. The original newest and oldest page Notes remain boundary anchors so the existing ID cursor continues to advance chronologically.
+
+Calls are fail-open with a short timeout. If the recommendation container is unavailable, malformed, or disabled, the backend returns the original chronological page unchanged. The SQLite index may therefore be deleted and rebuilt without affecting canonical Misskey data or availability.
 
 ## Runtime and I/O
 

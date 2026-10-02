@@ -1,27 +1,57 @@
-<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
-<div class="_selectable mk-vune-info" :class="{ 'mk-vune-info--warn': warn }">
-	<i :class="warn ? 'ti ti-alert-triangle mk-vune-info__icon' : 'ti ti-info-circle mk-vune-info__icon'" aria-hidden="true"></i>
-	<div class="mk-vune-info__content"><slot></slot></div>
-	<button v-if="closable" class="_button mk-vune-info__close" type="button" :aria-label="i18n.ts.close" @click="emit('close')">
-		<i class="ti ti-x" aria-hidden="true"></i>
-	</button>
+<div :class="[$style.root, { [$style.warn]: warn }]" class="_selectable">
+	<i v-if="warn" class="ti ti-alert-triangle" :class="$style.i"></i>
+	<i v-else class="ti ti-info-circle" :class="$style.i"></i>
+	<div><slot></slot></div>
+	<button v-if="closable" :class="$style.button" class="_button" @click="close()"><i class="ti ti-x"></i></button>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { i18n } from '@/i18n.js';
-import './vune/misskey-vune.scss';
+import { } from 'vue';
 
-withDefaults(defineProps<{
+const props = defineProps<{
 	warn?: boolean;
 	closable?: boolean;
-}>(), {
-	warn: false,
-	closable: false,
-});
+}>();
 
 const emit = defineEmits<{
 	(ev: 'close'): void;
 }>();
+
+function close() {
+	// こいつの中では非表示動作は行わない
+	emit('close');
+}
 </script>
+
+<style lang="scss" module>
+.root {
+	display: flex;
+  align-items: center;
+	padding: 12px 14px;
+	font-size: 90%;
+	background: var(--MI_THEME-infoBg);
+	color: var(--MI_THEME-infoFg);
+	border-radius: var(--MI-radius);
+
+	&.warn {
+		background: var(--MI_THEME-infoWarnBg);
+		color: var(--MI_THEME-infoWarnFg);
+	}
+}
+
+.i {
+	margin-right: 4px;
+}
+
+.button {
+	margin-left: auto;
+	padding: 4px;
+}
+</style>

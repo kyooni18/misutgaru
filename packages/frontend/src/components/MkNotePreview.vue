@@ -4,19 +4,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNotePreviewHost :text="text" :files="files" :poll="poll" :useCw="useCw" :cw="cw" :user="user" :showContent="showContent" :classes="$style" :onShowContent="(value: boolean) => showContent = value"/>
+<div :class="$style.root">
+	<MkAvatar :class="$style.avatar" :user="user"/>
+	<div :class="$style.main">
+		<div :class="$style.header">
+			<MkUserName :user="user" :nowrap="true"/>
+		</div>
+		<div>
+			<p v-if="useCw" :class="$style.cw">
+				<Mfm v-if="cw != null && cw != ''" :text="cw" :author="user" :nyaize="'respect'" :i="user" style="margin-right: 8px;"/>
+				<MkCwButton v-model="showContent" :text="text.trim()" :files="files" :poll="poll" style="margin: 4px 0;"/>
+			</p>
+			<div v-show="!useCw || showContent">
+				<Mfm :text="text.trim()" :author="user" :nyaize="'respect'" :i="user"/>
+			</div>
+		</div>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneNotePreview from './vune/MkNotePreview.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { PollEditorModelValue } from '@/components/MkPollEditor.types.js';
+import MkCwButton from '@/components/MkCwButton.vue';
 
 const showContent = ref(false);
-
-const VuneNotePreviewHost = createVuneWebHost(VuneNotePreview);
 
 const props = defineProps<{
 	text: string;
@@ -40,7 +53,7 @@ const props = defineProps<{
 .avatar {
 	flex-shrink: 0 !important;
 	display: block !important;
-	margin: 0 10px 0 10px !important;
+	margin: 0 10px 0 0 !important;
 	width: 40px !important;
 	height: 40px !important;
 	border-radius: 8px !important;
@@ -70,7 +83,7 @@ const props = defineProps<{
 
 @container (min-width: 350px) {
 	.avatar {
-		margin: 0 10px 0 10px !important;
+		margin: 0 10px 0 0 !important;
 		width: 44px !important;
 		height: 44px !important;
 	}
@@ -78,7 +91,7 @@ const props = defineProps<{
 
 @container (min-width: 500px) {
 	.avatar {
-		margin: 0 12px 0 12px !important;
+		margin: 0 12px 0 0 !important;
 		width: 48px !important;
 		height: 48px !important;
 	}

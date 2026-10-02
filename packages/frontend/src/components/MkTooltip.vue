@@ -5,9 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
-	appear :css="false"
-	@enter="enter"
-	@leave="leave"
+	:enterActiveClass="prefer.s.animation ? $style.transition_tooltip_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_tooltip_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_tooltip_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_tooltip_leaveTo : ''"
+	appear :css="prefer.s.animation"
 	@afterLeave="emit('closed')"
 >
 	<div v-show="showing" ref="el" :class="$style.root" class="_acrylic _shadow" :style="{ zIndex, maxWidth: maxWidth + 'px' }">
@@ -22,11 +24,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import * as os from '@/os.js';
 import { calcPopupPosition } from '@/utility/popup-position.js';
 import { prefer } from '@/preferences.js';
-import { animateSurfaceTransition } from '@/vune/motion.js';
 
 const props = withDefaults(defineProps<{
 	showing: boolean;
@@ -54,22 +55,6 @@ if (!props.showing) emit('closed');
 const el = useTemplateRef('el');
 const zIndex = os.claimZIndex('high');
 
-function enter(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateSurfaceTransition(element, 'enter', done);
-}
-
-function leave(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateSurfaceTransition(element, 'leave', done);
-}
-
 function setPosition() {
 	if (el.value == null) return;
 	const data = calcPopupPosition(el.value, {
@@ -86,76 +71,39 @@ function setPosition() {
 	el.value.style.top = data.top + 'px';
 }
 
-let positionFrame: number | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let tracking = false;
-
-function cancelScheduledPosition() {
-	if (positionFrame == null) return;
-	window.cancelAnimationFrame(positionFrame);
-	positionFrame = null;
-}
-
-function schedulePosition() {
-	if (!props.showing || positionFrame != null) return;
-	positionFrame = window.requestAnimationFrame(() => {
-		positionFrame = null;
-		if (!props.showing) return;
-		setPosition();
-	});
-}
-
-function stopTracking() {
-	cancelScheduledPosition();
-	resizeObserver?.disconnect();
-	resizeObserver = null;
-
-	if (!tracking) return;
-	tracking = false;
-	window.removeEventListener('scroll', schedulePosition, true);
-	window.removeEventListener('resize', schedulePosition);
-	window.visualViewport?.removeEventListener('scroll', schedulePosition);
-	window.visualViewport?.removeEventListener('resize', schedulePosition);
-}
-
-function startTracking() {
-	if (!props.showing) return;
-	stopTracking();
-	tracking = true;
-
-	window.addEventListener('scroll', schedulePosition, { capture: true, passive: true });
-	window.addEventListener('resize', schedulePosition, { passive: true });
-	window.visualViewport?.addEventListener('scroll', schedulePosition, { passive: true });
-	window.visualViewport?.addEventListener('resize', schedulePosition, { passive: true });
-
-	if (typeof ResizeObserver !== 'undefined') {
-		resizeObserver = new ResizeObserver(schedulePosition);
-		if (el.value != null) resizeObserver.observe(el.value);
-		if (props.anchorElement != null) resizeObserver.observe(props.anchorElement);
-	}
-
-	void nextTick(schedulePosition);
-}
+let loopHandler: number | null = null;
 
 onMounted(() => {
-	if (props.showing) startTracking();
+	nextTick(() => {
+		setPosition();
+
+		const loop = () => {
+			setPosition();
+			loopHandler = window.requestAnimationFrame(loop);
+		};
+
+		loop();
+	});
 });
 
-watch(() => [props.showing, props.anchorElement] as const, () => {
-	if (props.showing) startTracking();
-	else stopTracking();
-}, { flush: 'post' });
-
-watch(() => [props.x, props.y, props.direction, props.innerMargin, props.maxWidth] as const, () => {
-	schedulePosition();
-}, { flush: 'post' });
-
 onUnmounted(() => {
-	stopTracking();
+	if (loopHandler != null) window.cancelAnimationFrame(loopHandler);
 });
 </script>
 
 <style lang="scss" module>
+.transition_tooltip_enterActive,
+.transition_tooltip_leaveActive {
+	opacity: 1;
+	transform: scale(1);
+	transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.transition_tooltip_enterFrom,
+.transition_tooltip_leaveTo {
+	opacity: 0;
+	transform: scale(0.75);
+}
+
 .root {
 	position: absolute;
 	font-size: 0.8em;

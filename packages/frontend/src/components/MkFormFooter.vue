@@ -1,20 +1,23 @@
-<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
-<NativeMkFormFooter
-	:modified="props.form.modified.value"
-	:modifiedCount="props.form.modifiedCount.value"
-	:canSaving="props.canSaving"
-	:onDiscard="props.form.discard"
-	:onSave="props.form.save"
-/>
+<div v-if="form.modified.value" :class="$style.root">
+	<div :class="$style.text">{{ i18n.tsx.thereAreNChanges({ n: form.modifiedCount.value }) }}</div>
+	<div style="margin-left: auto;" class="_buttons">
+		<MkButton danger rounded @click="form.discard"><i class="ti ti-x"></i> {{ i18n.ts.discard }}</MkButton>
+		<MkButton primary rounded :disabled="!canSaving" @click="form.save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import MkFormFooter from './vune/MkFormFooter.vune';
+import { } from 'vue';
+import MkButton from './MkButton.vue';
 import type { useForm } from '@/composables/use-form.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const NativeMkFormFooter = createVuneWebHost(MkFormFooter);
+import { i18n } from '@/i18n.js';
 
 const props = withDefaults(defineProps<{
 	form: ReturnType<typeof useForm>;
@@ -23,3 +26,22 @@ const props = withDefaults(defineProps<{
 	canSaving: true,
 });
 </script>
+
+<style lang="scss" module>
+.root {
+	display: flex;
+	align-items: center;
+}
+
+.text {
+	color: var(--MI_THEME-warn);
+	font-size: 90%;
+	animation: modified-blink 2s infinite;
+}
+
+@keyframes modified-blink {
+	0% { opacity: 1; }
+	50% { opacity: 0.5; }
+	100% { opacity: 1; }
+}
+</style>

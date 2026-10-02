@@ -1,6 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, ForEach, Text } from 'vune-ui'; import MkSwitch from '@/components/vune/MkSwitch.vune'; import { i18n } from '@/i18n.js'; import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js'; import type { GridSetting } from '@/components/grid/grid.js';
-type Props={logs:RequestLogItem[];filteredLogs:RequestLogItem[];showingSuccessLogs?:boolean;settings:GridSetting;onToggleSuccess?:(v:boolean)=>void}; function toggle(props:Props,v:boolean){props.onToggleSuccess?.(v)}
-export struct VuneCustomEmojisManagerLogsView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { VStack(alignment: 'stretch', spacing: 0){if(props.logs.length>0){MkSwitch(props.showingSuccessLogs??false,onChange:v => toggle(props,v),label:Text(i18n.ts._customEmojisManager._logs.showSuccessLogSwitch));if(props.filteredLogs.length>0){VStack(alignment: 'stretch', spacing: 0){ForEach(props.filteredLogs,key:(log:any)=>log.id??JSON.stringify(log)){log in Text(JSON.stringify(log)).className('_monospace _selectable').className('_panel').padding(8)}}.className('_gaps_s')}else{Text(i18n.ts._customEmojisManager._logs.failureLogNothing)}}else{Text(i18n.ts._customEmojisManager._logs.logNothing)}}.className('_gaps_m') } }
-export default VuneCustomEmojisManagerLogsView

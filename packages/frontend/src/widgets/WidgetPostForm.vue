@@ -4,14 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetPostForm/>
+<MkPostForm data-testid="mkw-postForm" class="_panel mkw-post-form" :fixed="true" :autofocus="false"/>
 </template>
 
 <script lang="ts" setup>
+import { } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
-import VuneWidgetPostForm from './vune/WidgetPostForm.vune?vue-host';
+import MkPostForm from '@/components/MkPostForm.vue';
 
 const name = 'postForm';
 

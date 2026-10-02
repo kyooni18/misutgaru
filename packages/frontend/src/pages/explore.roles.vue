@@ -4,17 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneExploreRoles :props="{ roles, loading }"/>
+<div class="_spacer" style="--MI_SPACER-w: 700px;">
+	<div v-if="roles != null && roles.length > 0" class="_gaps_s">
+		<MkRolePreview v-for="role in roles" :key="role.id" :role="role" :forModeration="false"/>
+	</div>
+	<MkLoading v-else-if="loading" />
+	<MkResult v-else type="empty" :text="i18n.ts.noRole"/>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneExploreRolesView from './vune/explore-roles.view.vune';
+import MkRolePreview from '@/components/MkRolePreview.vue';
+import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneExploreRoles = createVuneWebHost(VuneExploreRolesView);
 
 const roles = ref<Misskey.entities.Role[] | null>(null);
 const loading = ref(true);

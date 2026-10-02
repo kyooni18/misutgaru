@@ -4,17 +4,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneFollowListHost :type="type" :followingPaginator="followingPaginator" :followersPaginator="followersPaginator"/>
+<div>
+	<MkPagination v-slot="{items}" :paginator="type === 'following' ? followingPaginator : followersPaginator" withControl>
+		<div :class="$style.users">
+			<MkUserInfo v-for="user in items.map(x => type === 'following' ? x.followee! : x.follower!)" :key="user.id" :user="user"/>
+		</div>
+	</MkPagination>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneFollowList from './vune/follow-list.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
+import MkUserInfo from '@/components/MkUserInfo.vue';
+import MkPagination from '@/components/MkPagination.vue';
 import { Paginator } from '@/utility/paginator.js';
-
-const VuneFollowListHost = createVuneWebHost(VuneFollowList, { deepProps: ['followingPaginator', 'followersPaginator'] });
 
 const props = defineProps<{
 	user: Misskey.entities.User;
@@ -35,3 +39,11 @@ const followersPaginator = markRaw(new Paginator('users/followers', {
 	})),
 }));
 </script>
+
+<style lang="scss" module>
+.users {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	grid-gap: var(--MI-margin);
+}
+</style>

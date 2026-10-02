@@ -20,8 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button class="_button" :class="$style.newButton" @click="releaseQueue()"><i class="ti ti-circle-arrow-up"></i> {{ i18n.ts.newNote }}</button>
 		</div>
 		<component
-			:is="prefer.s.animation && !virtualizationEnabled ? TransitionGroup : 'div'"
-			:ref="setVirtualRoot"
+			:is="prefer.s.animation ? TransitionGroup : 'div'"
 			:class="$style.notes"
 			:enterActiveClass="$style.transition_x_enterActive"
 			:leaveActiveClass="$style.transition_x_leaveActive"
@@ -30,34 +29,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:moveClass="$style.transition_x_move"
 			tag="div"
 		>
-			<div v-if="virtualizationEnabled && beforeSize > 0" key="_virtual_before_" aria-hidden="true" :class="$style.virtualSpacer" :style="{ height: `${beforeSize}px` }"></div>
-			<div
-				v-for="entry in virtualEntries"
-				:key="entry.key"
-				:ref="el => setVirtualRow(el, entry)"
-				:data-virtual-index="entry.index"
-				:data-scroll-anchor="entry.item.id"
-				:class="$style.virtualRow"
-			>
-				<div v-if="entry.index > 0 && isSeparatorNeeded(paginator.items.value[entry.index - 1].createdAt, entry.item.createdAt)">
+			<template v-for="(note, i) in paginator.items.value" :key="note.id">
+				<div v-if="i > 0 && isSeparatorNeeded(paginator.items.value[i -1].createdAt, note.createdAt)" :data-scroll-anchor="note.id">
 					<div :class="$style.date">
-						<span><i class="ti ti-chevron-up"></i> {{ getSeparatorInfo(paginator.items.value[entry.index - 1].createdAt, entry.item.createdAt)?.prevText }}</span>
+						<span><i class="ti ti-chevron-up"></i> {{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.prevText }}</span>
 						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
-						<span>{{ getSeparatorInfo(paginator.items.value[entry.index - 1].createdAt, entry.item.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
+						<span>{{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
 					</div>
-					<MkNote :class="$style.note" :note="entry.item" :withHardMute="true"/>
+					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 				</div>
-				<template v-else-if="entry.item._shouldInsertAd_">
-					<MkNote :class="$style.note" :note="entry.item" :withHardMute="true"/>
+				<div v-else-if="note._shouldInsertAd_" :data-scroll-anchor="note.id">
+					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 					<div :class="$style.ad">
 						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 					</div>
-				</template>
-				<MkNote v-else :class="$style.note" :note="entry.item" :withHardMute="true"/>
-			</div>
-			<div v-if="virtualizationEnabled && afterSize > 0" key="_virtual_after_" aria-hidden="true" :class="$style.virtualSpacer" :style="{ height: `${afterSize}px` }"></div>
+				</div>
+				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :data-scroll-anchor="note.id"/>
+			</template>
 		</component>
-		<button v-if="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.r.enableInfiniteScroll.value ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
+		<button v-show="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.s.enableInfiniteScroll ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
 			<div v-if="!paginator.fetchingOlder.value">{{ i18n.ts.loadMore }}</div>
 			<MkLoading v-else :inline="true"/>
 		</button>
@@ -67,7 +57,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, watch, onUnmounted, provide, useTemplateRef, TransitionGroup, onMounted, shallowRef, ref, markRaw } from 'vue';
-import type { ComponentPublicInstance } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useDocumentVisibility } from '@@/js/use-document-visibility.js';
@@ -88,12 +77,7 @@ import { i18n } from '@/i18n.js';
 import { DI } from '@/di.js';
 import { globalEvents, useGlobalEvent } from '@/events.js';
 import { isSeparatorNeeded, getSeparatorInfo } from '@/utility/timeline-date-separate.js';
-import { clearPreparedNoteCache, prefetchPreparedNotes } from '@/utility/prepared-note.js';
 import { Paginator } from '@/utility/paginator.js';
-import { normalizeNoteEntity, evictNormalizedNote } from '@/utility/normalized-entity-cache.js';
-import { useVariableVirtualList } from '@/composables/use-variable-virtual-list.js';
-import { prefetchNoteMedia } from '@/utility/media-prefetch.js';
-import type { VariableVirtualEntry } from '@/composables/use-variable-virtual-list.js';
 
 const props = withDefaults(defineProps<{
 	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role';
@@ -128,8 +112,6 @@ if (props.src === 'antenna') {
 			antennaId: props.antenna!,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'home') {
 	paginator = markRaw(new Paginator('notes/timeline', {
@@ -138,8 +120,6 @@ if (props.src === 'antenna') {
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'local') {
 	paginator = markRaw(new Paginator('notes/local-timeline', {
@@ -149,8 +129,6 @@ if (props.src === 'antenna') {
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'social') {
 	paginator = markRaw(new Paginator('notes/hybrid-timeline', {
@@ -160,8 +138,6 @@ if (props.src === 'antenna') {
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'global') {
 	paginator = markRaw(new Paginator('notes/global-timeline', {
@@ -170,14 +146,10 @@ if (props.src === 'antenna') {
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'mentions') {
 	paginator = markRaw(new Paginator('notes/mentions', {
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'directs') {
 	paginator = markRaw(new Paginator('notes/mentions', {
@@ -185,8 +157,6 @@ if (props.src === 'antenna') {
 			visibility: 'specified',
 		},
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'list') {
 	paginator = markRaw(new Paginator('notes/user-list-timeline', {
@@ -196,8 +166,6 @@ if (props.src === 'antenna') {
 			listId: props.list!,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'channel') {
 	paginator = markRaw(new Paginator('channels/timeline', {
@@ -205,8 +173,6 @@ if (props.src === 'antenna') {
 			channelId: props.channel!,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else if (props.src === 'role') {
 	paginator = markRaw(new Paginator('roles/notes', {
@@ -214,72 +180,10 @@ if (props.src === 'antenna') {
 			roleId: props.role!,
 		})),
 		useShallowRef: true,
-		maxItems: 240,
-		normalizeItem: normalizeNoteEntity,
 	}));
 } else {
 	throw new Error('Unrecognized timeline type: ' + props.src);
 }
-
-const virtualRoot = ref<HTMLElement | null>(null);
-// Paginator intentionally keeps a shallowRef and mutates its array in place.
-// Expose a fresh snapshot so the virtual-list computed chain observes an older
-// page appended by fetchOlder instead of retaining the previous array identity.
-const timelineItems = computed(() => paginator.items.value.slice());
-const {
-	enabled: virtualizationEnabled,
-	entries: virtualEntries,
-	range: virtualRange,
-	beforeSize,
-	afterSize,
-	observeRow: observeVirtualRow,
-} = useVariableVirtualList({
-	items: timelineItems,
-	root: virtualRoot,
-	keyOf: note => note.id,
-	estimate: 220,
-	overscan: 6,
-	threshold: 72,
-});
-
-function setVirtualRoot(value: Element | ComponentPublicInstance | null): void {
-	if (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) {
-		virtualRoot.value = value;
-		return;
-	}
-	const root = value && '$el' in value ? value.$el : null;
-	virtualRoot.value = typeof HTMLElement !== 'undefined' && root instanceof HTMLElement ? root : null;
-}
-
-function setVirtualRow(el: Element | ComponentPublicInstance | null, entry: VariableVirtualEntry<Misskey.entities.Note>): void {
-	const element = typeof HTMLElement !== 'undefined' && el instanceof HTMLElement
-		? el
-		: el && '$el' in el && el.$el instanceof HTMLElement ? el.$el : null;
-	observeVirtualRow(element, entry);
-}
-
-const preparedPrefetchItems = computed(() => {
-	const notes = timelineItems.value;
-	if (!virtualizationEnabled.value) return notes.slice(0, 96);
-	// Follow the actual viewport rather than repeatedly preparing the oldest
-	// retained notes. A small look-behind plus a larger forward window keeps
-	// scrolls warm without filling the worker/cache with off-screen MFM.
-	const start = Math.max(0, virtualRange.value.start - 4);
-	const end = Math.min(notes.length, virtualRange.value.end + 24);
-	return notes.slice(start, end);
-});
-
-watch(preparedPrefetchItems, notes => {
-	prefetchPreparedNotes(notes, notes.length);
-}, { immediate: true, deep: false });
-
-const mediaPrefetchItems = computed(() => {
-	return timelineItems.value;
-});
-
-watch(mediaPrefetchItems, notes => {
-	prefetchNoteMedia(notes);
-}, { immediate: true, deep: false });
 
 onMounted(() => {
 	paginator.init();
@@ -300,14 +204,11 @@ function isTop() {
 }
 
 let scrollContainer: HTMLElement | null = null;
-let scrollCheckRaf: number | null = null;
 
 function onScrollContainerScroll() {
-	if (paginator.queuedAheadItemsCount.value === 0 || scrollCheckRaf != null) return;
-	scrollCheckRaf = window.requestAnimationFrame(() => {
-		scrollCheckRaf = null;
-		if (paginator.queuedAheadItemsCount.value > 0 && isTop()) paginator.releaseQueue();
-	});
+	if (isTop()) {
+		paginator.releaseQueue();
+	}
 }
 
 const rootEl = useTemplateRef('rootEl');
@@ -320,7 +221,6 @@ watch(rootEl, (el) => {
 }, { immediate: true });
 
 onUnmounted(() => {
-	if (scrollCheckRaf != null) window.cancelAnimationFrame(scrollCheckRaf);
 	if (scrollContainer) {
 		scrollContainer.removeEventListener('scroll', onScrollContainerScroll);
 	}
@@ -369,8 +269,6 @@ if (!store.s.realtimeMode) {
 
 useGlobalEvent('noteDeleted', (noteId) => {
 	paginator.removeItem(noteId);
-	evictNormalizedNote(noteId);
-	clearPreparedNoteCache(noteId);
 });
 
 useGlobalEvent('noteRemovedFromAntenna', (antennaId, noteId) => {
@@ -567,16 +465,6 @@ defineExpose({
 .notes {
 	container-type: inline-size;
 	background: var(--MI_THEME-panel);
-}
-
-.virtualRow {
-	min-width: 0;
-}
-
-.virtualSpacer {
-	flex: 0 0 auto;
-	width: 100%;
-	pointer-events: none;
 }
 
 .note:not(:empty) {

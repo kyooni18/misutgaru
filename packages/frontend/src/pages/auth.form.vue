@@ -4,18 +4,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAuthForm :permissions="permissions" :name="name" :appId="app.id" :buttonsClass="$style.buttons" :onCancel="cancel" :onAccept="accept"/>
+<section>
+	<div v-if="permissions.length > 0">
+		<p>{{ i18n.tsx._auth.permission({ name }) }}</p>
+		<ul>
+			<li v-for="p in permissions" :key="p">{{ i18n.ts._permissions[p] ?? p }}</li>
+		</ul>
+	</div>
+	<div>{{ i18n.tsx._auth.shareAccess({ name: `${name} (${app.id})` }) }}</div>
+	<div :class="$style.buttons">
+		<MkButton inline @click="cancel">{{ i18n.ts.cancel }}</MkButton>
+		<MkButton inline primary @click="accept">{{ i18n.ts.accept }}</MkButton>
+	</div>
+</section>
 </template>
 
 <script lang="ts" setup>
-import AuthForm from './vune/auth-form.vune';
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
+import MkButton from '@/components/MkButton.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneAuthForm = createVuneWebHost(AuthForm);
 
 const props = defineProps<{
 	session: Misskey.entities.AuthSessionShowResponse;
