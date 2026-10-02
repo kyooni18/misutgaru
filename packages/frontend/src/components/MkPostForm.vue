@@ -4,9 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkPostFormSurface>
 <div
-	:class="[$style.root, { [$style.reply]: replyTargetNote }]"
+	:class="[$style.root]"
 	@dragover.stop="onDragover"
 	@dragenter="onDragenter"
 	@dragleave="onDragleave"
@@ -72,17 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
 	</MkInfo>
 	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
-	<!-- eslint-disable vue/html-indent -->
-	<div
-		:class="$style.cwOuter"
-		:style="{
-			maxHeight: useCw ? '80px' : '0px',
-			opacity: useCw ? 1 : 0,
-			transform: useCw ? 'none' : 'translateY(-6px)',
-			pointerEvents: useCw ? 'auto' : 'none',
-		}"
-		:aria-hidden="!useCw"
-	>
+	<div v-show="useCw" :class="$style.cwOuter">
 		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
 		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
 	</div>
@@ -91,14 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
-	<Transition
-		:enterActiveClass="$style.optionalSectionActive"
-		:leaveActiveClass="$style.optionalSectionActive"
-		:enterFromClass="$style.optionalSectionHidden"
-		:leaveToClass="$style.optionalSectionHidden"
-	>
-		<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
-	</Transition>
+	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
 		<MkTip k="postFormUploader">
@@ -106,23 +88,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkTip>
 		<MkUploaderItems :items="uploader.items.value" @showMenu="(item, ev) => showPerUploadItemMenu(item, ev)" @showMenuViaContextmenu="(item, ev) => showPerUploadItemMenuViaContextmenu(item, ev)"/>
 	</div>
-	<Transition
-		:enterActiveClass="$style.optionalSectionActive"
-		:leaveActiveClass="$style.optionalSectionActive"
-		:enterFromClass="$style.optionalSectionHidden"
-		:leaveToClass="$style.optionalSectionHidden"
-	>
-		<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
-	</Transition>
-	<Transition
-		:enterActiveClass="$style.optionalSectionActive"
-		:leaveActiveClass="$style.optionalSectionActive"
-		:enterFromClass="$style.optionalSectionHidden"
-		:leaveToClass="$style.optionalSectionHidden"
-	>
-		<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
-	</Transition>
-	<!-- eslint-enable vue/html-indent -->
+	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
+	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
 	<footer ref="footerEl" :class="$style.footer">
@@ -144,14 +111,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"></option>
 	</datalist>
 </div>
-</MkPostFormSurface>
 </template>
 
 <script lang="ts" setup>
 import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, useTemplateRef, onUnmounted, onBeforeUnmount } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
-import MkPostFormSurface from './vune/MkPostFormSurface.vune?vue-host';
 import insertTextAtCursor from 'insert-text-at-cursor';
 import { toASCII } from 'punycode.js';
 import { host, url } from '@@/js/config.js';
@@ -909,24 +874,24 @@ function onDrop(ev: DragEvent): void {
 	//#endregion
 }
 
-type StoredDrafts = {
-	[key: string]: {
-		updatedAt: string;
-		data: {
-			text: string;
-			useCw: boolean;
-			cw: string | null;
-			visibility: 'public' | 'home' | 'followers' | 'specified';
-			localOnly: boolean;
-			files: Misskey.entities.DriveFile[];
-			poll: PollEditorModelValue | null;
-			visibleUserIds?: string[];
-			quoteId: string | null;
-			reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
-			scheduledAt: number | null;
-		};
+type StoredDraft = {
+	updatedAt: string;
+	data: {
+		text: string;
+		useCw: boolean;
+		cw: string | null;
+		visibility: 'public' | 'home' | 'followers' | 'specified';
+		localOnly: boolean;
+		files: Misskey.entities.DriveFile[];
+		poll: PollEditorModelValue | null;
+		visibleUserIds?: string[];
+		quoteId: string | null;
+		reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
+		scheduledAt: number | null;
 	};
 };
+
+type StoredDrafts = Record<string, StoredDraft>;
 
 let draftSaveTimer: number | null = null;
 
@@ -935,9 +900,67 @@ function readStoredDrafts(): StoredDrafts {
 		const raw = miLocalStorage.getItem('drafts');
 		if (!raw) return {};
 		const parsed = JSON.parse(raw) as unknown;
-		return parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)
-			? parsed as StoredDrafts
-			: {};
+		if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+		const drafts: StoredDrafts = {};
+		const isRecord = (value: unknown): value is Record<string, unknown> => value != null && typeof value === 'object' && !Array.isArray(value);
+		const isNullableString = (value: unknown): value is string | null => value === null || typeof value === 'string';
+		const isNullableNumber = (value: unknown): value is number | null => value === null || typeof value === 'number';
+		const isStoredDriveFile = (value: unknown): value is Misskey.entities.DriveFile => isRecord(value)
+			&& typeof value.id === 'string'
+			&& typeof value.name === 'string'
+			&& typeof value.type === 'string'
+			&& typeof value.url === 'string'
+			&& isNullableString(value.thumbnailUrl)
+			&& typeof value.isSensitive === 'boolean'
+			&& isNullableString(value.comment)
+			&& isRecord(value.properties)
+			&& (value.properties.width === undefined || typeof value.properties.width === 'number')
+			&& (value.properties.height === undefined || typeof value.properties.height === 'number');
+		const visibilityValues = ['public', 'home', 'followers', 'specified'] as const;
+		const reactionAcceptanceValues = ['likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'] as const;
+
+		for (const [key, candidate] of Object.entries(parsed)) {
+			if (!isRecord(candidate) || !isRecord(candidate.data)) continue;
+			const data = candidate.data;
+			if (typeof data.text !== 'string') continue;
+			const text = data.text;
+			const poll = isRecord(data.poll)
+				&& Array.isArray(data.poll.choices)
+				&& data.poll.choices.every((choice): choice is string => typeof choice === 'string')
+				&& typeof data.poll.multiple === 'boolean'
+				&& isNullableNumber(data.poll.expiresAt)
+				&& isNullableNumber(data.poll.expiredAfter)
+				? data.poll as PollEditorModelValue
+				: null;
+			const visibility = visibilityValues.includes(data.visibility as typeof visibilityValues[number])
+				? data.visibility as StoredDraft['data']['visibility']
+				: 'public';
+			const reactionAcceptance = reactionAcceptanceValues.includes(data.reactionAcceptance as typeof reactionAcceptanceValues[number])
+				? data.reactionAcceptance as NonNullable<StoredDraft['data']['reactionAcceptance']>
+				: null;
+
+			drafts[key] = {
+				updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : '',
+				data: {
+					text,
+					useCw: typeof data.useCw === 'boolean' ? data.useCw : false,
+					cw: isNullableString(data.cw) ? data.cw : null,
+					visibility,
+					localOnly: typeof data.localOnly === 'boolean' ? data.localOnly : false,
+					files: Array.isArray(data.files)
+						? data.files.filter(isStoredDriveFile)
+						: [],
+					poll,
+					...(Array.isArray(data.visibleUserIds) ? { visibleUserIds: data.visibleUserIds.filter((id): id is string => typeof id === 'string') } : {}),
+					quoteId: isNullableString(data.quoteId) ? data.quoteId : null,
+					reactionAcceptance,
+					scheduledAt: isNullableNumber(data.scheduledAt) ? data.scheduledAt : null,
+				},
+			};
+		}
+
+		return drafts;
 	} catch (error) {
 		console.warn('[MkPostForm] Ignoring invalid local draft storage', error);
 		return {};
@@ -1175,9 +1198,13 @@ async function post(ev?: PointerEvent) {
 			deleteDraft();
 			emit('posted');
 			if (postData.text && postData.text !== '') {
-				const hashtags_ = mfm.parse(postData.text).map(x => x.type === 'hashtag' && x.props.hashtag).filter(x => x) as string[];
-				const history = readRecentHashtags();
-				miLocalStorage.setItem('hashtags', JSON.stringify(unique(hashtags_.concat(history))));
+				try {
+					const hashtags_ = mfm.parse(postData.text).map(x => x.type === 'hashtag' && x.props.hashtag).filter(x => x) as string[];
+					const history = readRecentHashtags();
+					miLocalStorage.setItem('hashtags', JSON.stringify(unique(hashtags_.concat(history))));
+				} catch (error) {
+					console.warn('[MkPostForm] Failed to save recent hashtags', error);
+				}
 			}
 			posting.value = false;
 			postAccount.value = null;
@@ -1603,11 +1630,6 @@ defineExpose({
 	container-type: inline-size;
 }
 
-.reply {
-	padding: 0 12px;
-	box-sizing: border-box;
-}
-
 //#region header
 .header {
 	z-index: 1000;
@@ -1825,35 +1847,6 @@ html[data-color-scheme=light] .preview {
 .cwOuter {
 	width: 100%;
 	position: relative;
-	max-height: 80px;
-	overflow: hidden;
-	transition: max-height 0.2s ease, opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-	opacity: 1 !important;
-	transform: none !important;
-}
-
-.cwOuter[aria-hidden='true'] {
-	max-height: 0 !important;
-	opacity: 0 !important;
-	transform: translateY(-6px) !important;
-}
-
-.optionalSectionActive {
-	transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.optionalSectionHidden {
-	max-height: 0;
-	opacity: 0;
-	transform: translateY(-6px);
-	pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.cwOuter,
-	.optionalSectionActive {
-		transition: none;
-	}
 }
 
 .cw {
@@ -1967,10 +1960,6 @@ html[data-color-scheme=light] .preview {
 }
 
 @container (max-width: 500px) {
-	.reply {
-		padding: 0 8px;
-	}
-
 	.headerRight {
 		font-size: .9em;
 	}

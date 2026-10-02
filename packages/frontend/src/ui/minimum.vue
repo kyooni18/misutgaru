@@ -4,15 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneMinimum :rootClass="$style.root"><template #router><RouterView/></template><template #common><XCommon/></template></VuneMinimum>
+<div :class="$style.root">
+	<RouterView/>
+
+	<XCommon/>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneMinimum from './vune/minimum.vune?vue-host';
-import RouterView from '@/components/global/RouterView.vue';
-import XCommon from './_common_/common.vue';
 import { computed, provide, ref } from 'vue';
 import { instanceName } from '@@/js/config.js';
+import XCommon from './_common_/common.vue';
 import type { PageMetadata } from '@/page.js';
 import { provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { mainRouter } from '@/router.js';

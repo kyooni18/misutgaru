@@ -111,13 +111,17 @@ const url = computed(() => (props.raw || prefer.s.loadRawImages)
 );
 
 async function onClick(ev: PointerEvent) {
+	// Media lives inside clickable note surfaces in timelines. The media owns
+	// this click whether it reveals sensitive content or opens the lightbox;
+	// never let the note's article click handler also open the thread window.
+	ev.stopPropagation();
+
 	if (!props.controls) {
 		emit('mediaClick', ev);
 		return;
 	}
 
 	if (hide.value) {
-		ev.stopPropagation();
 		if (!(await canRevealFile(props.image))) {
 			return;
 		}

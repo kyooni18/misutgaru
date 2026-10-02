@@ -363,13 +363,11 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 
 				> .banner-container {
 					position: relative;
-					display: grid;
 					--bannerHeight: 250px;
 					height: var(--bannerHeight);
 					overflow: clip;
 
 					> .banner {
-						grid-area: 1 / 1;
 						width: 100%;
 						height: 100%;
 						background-size: cover;
@@ -401,43 +399,27 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 					}
 
 					> .actions {
-						grid-area: 1 / 1;
-						align-self: start;
-						justify-self: end;
-						display: flex;
-						align-items: center;
-						gap: .35em;
-						margin: .85em;
+						position: absolute;
+						top: 12px;
+						right: 12px;
+						-webkit-backdrop-filter: var(--MI-blur, blur(8px));
+						backdrop-filter: var(--MI-blur, blur(8px));
+						background: rgba(0, 0, 0, 0.2);
+						padding: 8px;
+						border-radius: 24px;
 
 						> .menu {
-							display: inline-flex;
-							align-items: center;
-							justify-content: center;
-							padding: .62em;
+							vertical-align: bottom;
+							height: 31px;
+							width: 31px;
 							color: #fff;
-							font-size: 1.1em;
-							line-height: 1;
-							background: color-mix(in srgb, #fff 10%, transparent);
-							border: thin solid color-mix(in srgb, #fff 10%, transparent);
-							border-radius: calc(1em + .62em);
-							-webkit-backdrop-filter: saturate(1.15) blur(.7em);
-							backdrop-filter: saturate(1.15) blur(.7em);
-							transition: background var(--MI-motion-duration-fast) var(--MI-motion-ease-standard), border-color var(--MI-motion-duration-fast) var(--MI-motion-ease-standard);
-
-							&:hover {
-								background: color-mix(in srgb, #fff 16%, transparent);
-								border-color: color-mix(in srgb, #fff 14%, transparent);
-							}
-
-							&:active {
-								background: color-mix(in srgb, #fff 22%, transparent);
-							}
+							text-shadow: 0 0 8px #000;
+							font-size: 16px;
 						}
 
 						> .koudoku {
-							flex: 0 0 auto;
-							-webkit-backdrop-filter: saturate(1.15) blur(.7em);
-							backdrop-filter: saturate(1.15) blur(.7em);
+							margin-left: 4px;
+							vertical-align: bottom;
 						}
 					}
 

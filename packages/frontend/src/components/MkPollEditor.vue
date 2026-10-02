@@ -56,6 +56,7 @@ import { i18n } from '@/i18n.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 
 import type { PollEditorModelValue } from './MkPollEditor.types.js';
+export type { PollEditorModelValue } from './MkPollEditor.types.js';
 
 const props = defineProps<{
 	modelValue: PollEditorModelValue;

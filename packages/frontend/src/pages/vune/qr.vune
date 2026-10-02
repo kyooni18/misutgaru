@@ -1,6 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, Group, Text } from 'vune-ui'; import MkButton from '@/components/vune/MkButton.vune'; import MkPolkadots from '@/components/vune/MkPolkadots.vune'; import MkInput from '@/components/vune/MkInput.vune'; import VuneIcon from '@/vune/Icon.vune'; import { i18n } from '@/i18n.js';
-type Props={read?:boolean;rootClass:string;mainClass:string;buttonClass:string;onToggle?:()=>void}; function toggle(props:Props){props.onToggle?.()}
-export struct VuneQrView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { VStack(alignment: 'stretch', spacing: 0){VStack(alignment: 'stretch', spacing: 0){MkButton(className:props.buttonClass,rounded:true,onClick:{toggle(props)}){Group(){VuneIcon(props.read?'ti ti-qrcode':'ti ti-scan');Text(props.read?i18n.ts._qr.showTabTitle:i18n.ts._qr.readTabTitle)}};if(props.read){MkInput('',placeholder:i18n.ts._qr.readTabTitle,label:Text(i18n.ts._qr.readTabTitle))}else{VStack(alignment: 'stretch', spacing: 0){VuneIcon('ti ti-qrcode').fontSize('120px');Text(i18n.ts._qr.showTabTitle)}.multilineTextAlignment('center')}}.className(['_spacer',props.mainClass]);if(!props.read){MkPolkadots().style({position:'sticky',bottom:0,marginTop:'-200px'})}}.className([props.rootClass,'_pageScrollable']) } }
-export default VuneQrView

@@ -4,13 +4,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAdminFile :fetcher="_fetch_" :onResolved="onResolved"/>
+<MkSuspense v-slot="{ result }" :p="_fetch_" @resolved="(result) => file = result.file">
+	<XRoot v-if="result.file != null && result.info != null" :file="result.file" :info="result.info"/>
+</MkSuspense>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneAdminFile from './vune/admin-file.vune?vue-host';
+import XRoot from './admin-file.root.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
@@ -30,10 +32,6 @@ function _fetch_() {
 }
 
 const file = ref<Misskey.entities.DriveFile | null>(null);
-
-function onResolved(result: { file: Misskey.entities.DriveFile }) {
-	file.value = result.file;
-}
 
 definePage(() => ({
 	title: file.value ? `${i18n.ts.file}: ${file.value.name}` : i18n.ts.file,

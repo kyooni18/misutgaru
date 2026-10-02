@@ -4,132 +4,117 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<NativeMkEmojiPickerHost ref="pickerRoot" :model="nativeModel" :class="$attrs.class" :style="$attrs.style"/>
-<!--
-	<input
-		ref="searchEl"
-		:value="q"
-		class="search"
-		data-prevent-emoji-insert
-		:class="{ filled: q != null && q != '' }"
-		:placeholder="i18n.ts.search"
-		type="search"
-		autocapitalize="off"
-		@input="input()"
-		@paste.stop="paste"
-		@keydown="onKeydown"
-	>
-	FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744
-	<div ref="emojisEl" class="emojis" tabindex="-1">
-		<section class="result">
-			<div v-if="searchResultCustom.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultCustom"
-					:key="emoji.name"
-					class="_button item"
-					:disabled="!canReact(emoji)"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
-				</button>
-			</div>
-			<div v-if="searchResultUnicode.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultUnicode"
-					:key="emoji.name"
-					class="_button item"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkEmoji class="emoji" :emoji="emoji.char"/>
-				</button>
-			</div>
-		</section>
-
-		<div v-if="tab === 'index'" class="group index">
-			<section v-if="showPinned && (pinned && pinned.length > 0)">
-				<div class="body">
-					<button
-						v-for="emoji in pinnedEmojisDef"
-						:key="getKey(emoji)"
-						:data-emoji="getKey(emoji)"
-						class="_button item"
-						:disabled="!canReact(emoji)"
-						tabindex="0"
-						@pointerenter="computeButtonTitle"
-						@click="chosen(emoji, $event)"
-					>
-						<MkCustomEmoji v-if="!emoji.hasOwnProperty('char')" class="emoji" :name="getKey(emoji)" :normal="true"/>
-						<MkEmoji v-else class="emoji" :emoji="getKey(emoji)" :normal="true"/>
-					</button>
-					<button v-tooltip="i18n.ts.settings" class="_button config" @click="settings"><i class="ti ti-settings"></i></button>
-				</div>
-			</section>
-
-			<section>
-				<header class="_acrylic"><i class="ti ti-clock ti-fw"></i> {{ i18n.ts.recentUsed }}</header>
-				<div class="body">
-					<button
-						v-for="emoji in recentlyUsedEmojisDef"
-						:key="getKey(emoji)"
-						class="_button item"
-						:disabled="!canReact(emoji)"
-						:data-emoji="getKey(emoji)"
-						@pointerenter="computeButtonTitle"
-						@click="chosen(emoji, $event)"
-					>
-						<MkCustomEmoji v-if="!emoji.hasOwnProperty('char')" class="emoji" :name="getKey(emoji)" :normal="true"/>
-						<MkEmoji v-else class="emoji" :emoji="getKey(emoji)" :normal="true"/>
-					</button>
-				</div>
-			</section>
-		</div>
-		<div v-once class="group">
-			<header class="_acrylic">{{ i18n.ts.customEmojis }}</header>
-			<XSection
-				v-for="child in customEmojiFolderRoot.children"
-				:key="`custom:${child.value}`"
-				:initialShown="false"
-				:emojis="computed(() => customEmojis.filter(e => filterCategory(e, child.value)).map(e => `:${e.name}:`))"
-				:disabledEmojis="computed(() => customEmojis.filter(e => filterCategory(e, child.value)).filter(e => !canReact(e)).map(e => `:${e.name}:`))"
-				:hasChildSection="child.children.length !== 0"
-				:customEmojiTree="child.children"
-				@chosen="chosen"
+<div
+	class="omfetrab misutgaru-material misutgaru-material--regular"
+	:class="['s' + size, 'w' + width, 'h' + height, { asDrawer, asWindow }]"
+	:style="{ maxHeight: maxHeight ? maxHeight + 'px' : undefined }"
+>
+	<div class="top">
+		<div class="searchShell">
+			<i class="ti ti-search searchIcon"></i>
+			<input
+				ref="searchEl"
+				:value="q"
+				class="search"
+				data-prevent-emoji-insert
+				:placeholder="i18n.ts.search"
+				type="search"
+				autocapitalize="off"
+				@input="input()"
+				@paste.stop="paste"
+				@keydown="onKeydown"
 			>
-				{{ child.value || i18n.ts.other }}
-			</XSection>
+			<button v-if="q" class="_button searchAction" type="button" :aria-label="i18n.ts.clear" @click="q = ''; focus()"><i class="ti ti-x"></i></button>
+			<button v-else v-tooltip="i18n.ts.settings" class="_button searchAction" type="button" :aria-label="i18n.ts.settings" @click="settings"><i class="ti ti-settings"></i></button>
 		</div>
-		<div v-once class="group">
-			<header class="_acrylic">{{ i18n.ts.emoji }}</header>
-			<XSection v-for="category in categories" :key="category" :emojis="emojiCharByCategory.get(category) ?? []" :hasChildSection="false" @chosen="chosen">{{ category }}</XSection>
-		</div>
+
+		<nav v-if="!q" ref="categoryRailEl" class="categoryRail" :aria-label="i18n.ts.emoji">
+			<button
+				v-for="(category, index) in pickerCategories"
+				:key="category.key"
+				class="_button categoryButton"
+				:class="{ categoryButtonActive: activeCategoryIndex === index }"
+				type="button"
+				:title="category.label"
+				:aria-label="category.label"
+				:aria-current="activeCategoryIndex === index ? 'true' : undefined"
+				@click="selectCategory(index)"
+				@keydown.left.prevent="selectCategory(index - 1)"
+				@keydown.right.prevent="selectCategory(index + 1)"
+			>
+				<i :class="category.icon"></i>
+			</button>
+		</nav>
 	</div>
-	<div class="tabs">
-		<button class="_button tab" :class="{ active: tab === 'index' }" @click="tab = 'index'"><i class="ti ti-asterisk ti-fw"></i></button>
-		<button class="_button tab" :class="{ active: tab === 'custom' }" @click="tab = 'custom'"><i class="ti ti-mood-happy ti-fw"></i></button>
-		<button class="_button tab" :class="{ active: tab === 'unicode' }" @click="tab = 'unicode'"><i class="ti ti-leaf ti-fw"></i></button>
-		<button class="_button tab" :class="{ active: tab === 'tags' }" @click="tab = 'tags'"><i class="ti ti-hash ti-fw"></i></button>
+
+	<!-- Search temporarily replaces the category carousel, like a native picker. -->
+	<div v-if="q" ref="emojisEl" class="searchResults" tabindex="-1">
+		<span class="visuallyHidden">{{ i18n.ts.search }}</span>
+		<div v-if="searchResults.length > 0" class="emojiGrid">
+			<button
+				v-for="emoji in searchResults"
+				:key="getKey(emoji)"
+				class="_button emojiItem"
+				:data-emoji="getKey(emoji)"
+				:disabled="!canReact(emoji)"
+				:title="emojiTitle(emoji)"
+				@click="chosen(emoji, $event)"
+			>
+				<MkCustomEmoji v-if="isCustomEmoji(emoji)" class="emoji" :name="getKey(emoji)" :normal="true" :fallbackToImage="true"/>
+				<MkEmoji v-else class="emoji" :emoji="getKey(emoji)" :normal="true"/>
+			</button>
+		</div>
+		<div v-else class="empty">{{ i18n.ts.none }}</div>
+	</div>
+
+	<div v-else class="carouselShell">
+		<div ref="carouselEl" class="categoryCarousel" @scroll.passive="onCarouselScroll">
+			<section
+				v-for="(category, index) in pickerCategories"
+				:key="category.key"
+				:data-picker-category-index="index"
+				class="categoryPane"
+				:class="{
+					categoryPaneActive: activeCategoryIndex === index,
+					categoryPaneNeighbor: Math.abs(activeCategoryIndex - index) === 1,
+				}"
+				:aria-label="category.label"
+			>
+				<!-- Keep the label in the pane for accessibility and existing UI tests, but visually stay icon-only. -->
+				<span class="visuallyHidden">{{ category.label }}</span>
+				<div v-if="shouldRenderCategory(index)" class="emojiGrid">
+					<button
+						v-for="emoji in category.items"
+						:key="getKey(emoji)"
+						class="_button emojiItem"
+						:data-emoji="getKey(emoji)"
+						:disabled="!canReact(emoji)"
+						:title="emojiTitle(emoji)"
+						@click="chosen(emoji, $event)"
+					>
+						<MkCustomEmoji v-if="isCustomEmoji(emoji)" class="emoji" :name="getKey(emoji)" :normal="true" :fallbackToImage="true"/>
+						<MkEmoji v-else class="emoji" :emoji="getKey(emoji)" :normal="true"/>
+					</button>
+				</div>
+			</section>
+		</div>
 	</div>
 </div>
--->
 </template>
 
 <script lang="ts" setup>
-import { ref, useTemplateRef, computed, watch, onMounted } from 'vue';
+import { ref, useTemplateRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as Misskey from 'misskey-js';
 import {
 	emojilist,
 	emojiCharByCategory,
 	unicodeEmojiCategories as categories,
-	colorizeEmoji,
 	getEmojiName,
 	getUnicodeEmoji,
 } from '@@/js/emojilist.js';
-import type { UnicodeEmojiDef } from '@@/js/emojilist.js';
-import { char2fluentEmojiFilePath, char2twemojiFilePath } from '@@/js/emoji-base.js';
+import type {
+	UnicodeEmojiDef,
+} from '@@/js/emojilist.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import * as os from '@/os.js';
 import { isTouchUsing } from '@/utility/touch.js';
@@ -142,13 +127,8 @@ import { checkReactionPermissions } from '@/utility/check-reaction-permissions.j
 import { prefer } from '@/preferences.js';
 import { useRouter } from '@/router.js';
 import { haptic } from '@/utility/haptic.js';
-import NativeMkEmojiPicker from '@/components/vune/MkEmojiPicker.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { getProxiedImageUrl, getStaticImageUrl } from '@/utility/media-proxy.js';
-import type { NativeEmojiPickerGroup, NativeEmojiPickerItem, NativeEmojiPickerModel, NativeEmojiPickerSection } from '@/components/vune/MkEmojiPicker.types.js';
 
 const router = useRouter();
-const NativeMkEmojiPickerHost = createVuneWebHost(NativeMkEmojiPicker);
 
 const props = withDefaults(defineProps<{
 	showPinned?: boolean;
@@ -167,7 +147,8 @@ const emit = defineEmits<{
 	(ev: 'esc'): void;
 }>();
 
-const pickerRoot = useTemplateRef('pickerRoot');
+const searchEl = useTemplateRef('searchEl');
+const emojisEl = useTemplateRef('emojisEl');
 
 const {
 	emojiPickerScale,
@@ -185,28 +166,80 @@ const pinnedEmojisDef = computed(() => {
 });
 
 const pinned = computed(() => props.pinnedEmojis);
+const size = computed(() => emojiPickerScale.value);
+const width = computed(() => emojiPickerWidth.value);
+const height = computed(() => emojiPickerHeight.value);
 const q = ref<string>('');
 const searchResultCustom = ref<Misskey.entities.EmojiSimple[]>([]);
 const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
 
-const expandedSections = new Map<string, boolean>();
-
-const unicodeCategoryMeta: Record<UnicodeEmojiDef['category'], { title: string; icon: string }> = {
-	face: { title: 'Face', icon: 'ti ti-mood-smile' },
-	people: { title: 'People', icon: 'ti ti-users' },
-	animals_and_nature: { title: 'Animals & nature', icon: 'ti ti-leaf' },
-	food_and_drink: { title: 'Food & drink', icon: 'ti ti-tools-kitchen-2' },
-	activity: { title: 'Activity', icon: 'ti ti-ball-football' },
-	travel_and_places: { title: 'Travel & places', icon: 'ti ti-plane' },
-	objects: { title: 'Objects', icon: 'ti ti-bulb' },
-	symbols: { title: 'Symbols', icon: 'ti ti-hash' },
-	flags: { title: 'Flags', icon: 'ti ti-flag' },
+type PickerEmoji = string | Misskey.entities.EmojiSimple | UnicodeEmojiDef;
+type PickerCategory = {
+	key: string;
+	label: string;
+	icon: string;
+	items: PickerEmoji[];
 };
 
+const unicodeCategoryIcons: Record<string, string> = {
+	face: 'ti ti-mood-smile',
+	people: 'ti ti-hand-stop',
+	animals_and_nature: 'ti ti-paw',
+	food_and_drink: 'ti ti-apple',
+	activity: 'ti ti-ball-football',
+	travel_and_places: 'ti ti-car',
+	objects: 'ti ti-bulb',
+	symbols: 'ti ti-heart',
+	flags: 'ti ti-flag',
+};
+
+const pickerCategories = computed<PickerCategory[]>(() => {
+	const result: PickerCategory[] = [];
+	const pinnedItems = pinnedEmojisDef.value ?? [];
+	if (props.showPinned && pinnedItems.length > 0) {
+		result.push({ key: 'pinned', label: i18n.ts.pinned, icon: 'ti ti-pin', items: pinnedItems });
+	}
+	if (recentlyUsedEmojisDef.value.length > 0) {
+		result.push({ key: 'recent', label: i18n.ts.recentUsed, icon: 'ti ti-clock', items: recentlyUsedEmojisDef.value });
+	}
+	const customCategories = ['', ...customEmojiCategories.value.filter((category): category is string => category !== null && category !== '')];
+	for (const category of customCategories) {
+		const items = customEmojis.value.filter(emoji => filterCategory(emoji, category));
+		if (items.length === 0) continue;
+		result.push({
+			key: `custom:${category || '__uncategorized__'}`,
+			label: category || i18n.ts.other,
+			icon: category === '' ? 'ti ti-sparkles' : 'ti ti-folder',
+			items,
+		});
+	}
+	for (const category of categories) {
+		result.push({
+			key: `unicode:${category}`,
+			label: category.replaceAll('_', ' '),
+			icon: unicodeCategoryIcons[category] ?? 'ti ti-mood-happy',
+			items: emojiCharByCategory.get(category) ?? [],
+		});
+	}
+	return result;
+});
+
+const searchResults = computed<PickerEmoji[]>(() => [
+	...searchResultCustom.value,
+	...searchResultUnicode.value,
+]);
+const activeCategoryIndex = ref(0);
+const categoryRailEl = useTemplateRef('categoryRailEl');
+const carouselEl = useTemplateRef('carouselEl');
+let categorySyncFrame: number | null = null;
+
 watch(q, () => {
+	if (emojisEl.value) emojisEl.value.scrollTop = 0;
+
 	if (q.value === '') {
 		searchResultCustom.value = [];
 		searchResultUnicode.value = [];
+		nextTick(() => selectCategory(activeCategoryIndex.value, 'auto'));
 		return;
 	}
 
@@ -358,6 +391,75 @@ watch(q, () => {
 	searchResultUnicode.value = Array.from(searchUnicode());
 });
 
+function clampCategoryIndex(index: number): number {
+	return Math.max(0, Math.min(index, pickerCategories.value.length - 1));
+}
+
+function centerCategoryButton(index: number, behavior: ScrollBehavior = 'smooth') {
+	const rail = categoryRailEl.value;
+	if (rail == null) return;
+	const button = rail.children.item(index) as HTMLElement | null;
+	if (button == null) return;
+	rail.scrollTo({
+		left: button.offsetLeft - ((rail.clientWidth - button.offsetWidth) / 2),
+		behavior,
+	});
+}
+
+function selectCategory(index: number, behavior: ScrollBehavior = 'smooth') {
+	if (pickerCategories.value.length === 0) return;
+	const nextIndex = clampCategoryIndex(index);
+	activeCategoryIndex.value = nextIndex;
+	centerCategoryButton(nextIndex, behavior);
+
+	const carousel = carouselEl.value;
+	if (carousel == null) return;
+	const pane = carousel.querySelector<HTMLElement>(`[data-picker-category-index="${nextIndex}"]`);
+	if (pane == null) return;
+	carousel.scrollTo({
+		left: pane.offsetLeft - ((carousel.clientWidth - pane.offsetWidth) / 2),
+		behavior,
+	});
+}
+
+function onCarouselScroll() {
+	if (categorySyncFrame != null) return;
+	categorySyncFrame = window.requestAnimationFrame(() => {
+		categorySyncFrame = null;
+		const carousel = carouselEl.value;
+		if (carousel == null) return;
+		const center = carousel.scrollLeft + (carousel.clientWidth / 2);
+		let nearestIndex = activeCategoryIndex.value;
+		let nearestDistance = Number.POSITIVE_INFINITY;
+		for (const pane of carousel.querySelectorAll<HTMLElement>('[data-picker-category-index]')) {
+			const paneCenter = pane.offsetLeft + (pane.offsetWidth / 2);
+			const distance = Math.abs(paneCenter - center);
+			if (distance < nearestDistance) {
+				nearestDistance = distance;
+				nearestIndex = Number(pane.dataset.pickerCategoryIndex ?? 0);
+			}
+		}
+		if (nearestIndex !== activeCategoryIndex.value) {
+			activeCategoryIndex.value = nearestIndex;
+			centerCategoryButton(nearestIndex, 'smooth');
+		}
+	});
+}
+
+function shouldRenderCategory(index: number): boolean {
+	return Math.abs(activeCategoryIndex.value - index) <= 1;
+}
+
+function isCustomEmoji(emoji: PickerEmoji): boolean {
+	if (typeof emoji === 'string') return emoji.startsWith(':');
+	return !('char' in emoji);
+}
+
+function emojiTitle(emoji: PickerEmoji): string {
+	const key = getKey(emoji);
+	return isCustomEmoji(emoji) ? key.replaceAll(':', '') : getEmojiName(key);
+}
+
 function canReact(emoji: Misskey.entities.EmojiSimple | UnicodeEmojiDef | string): boolean {
 	return !props.targetNote || checkReactionPermissions($i!, props.targetNote, emoji);
 }
@@ -368,13 +470,17 @@ function filterCategory(emoji: Misskey.entities.EmojiSimple, category: string): 
 
 function focus() {
 	if (!['smartphone', 'tablet'].includes(deviceKind) && !isTouchUsing) {
-		const root = (pickerRoot.value as unknown as { $el?: HTMLElement } | null)?.$el;
-		root?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+		searchEl.value?.focus({
+			preventScroll: true,
+		});
 	}
 }
 
 function reset() {
+	if (emojisEl.value) emojisEl.value.scrollTop = 0;
 	q.value = '';
+	activeCategoryIndex.value = 0;
+	window.requestAnimationFrame(() => selectCategory(0, 'auto'));
 }
 
 function getKey(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef): string {
@@ -390,6 +496,13 @@ function getDef(emoji: string): string | Misskey.entities.EmojiSimple | UnicodeE
 	} else {
 		return getUnicodeEmoji(emoji);
 	}
+}
+
+/** @see MkEmojiPicker.section.vue */
+function computeButtonTitle(ev: PointerEvent): void {
+	const elm = ev.target as HTMLElement;
+	const emoji = elm.dataset.emoji as string;
+	elm.title = getEmojiName(emoji);
 }
 
 function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, ev?: PointerEvent) {
@@ -414,6 +527,34 @@ function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, 
 		recents = recents.filter((emoji) => emoji !== key);
 		recents.unshift(key);
 		store.set('recentlyUsedEmojis', recents.splice(0, 32));
+	}
+}
+
+function input(): void {
+	// Using custom input event instead of v-model to respond immediately on
+	// Android, where composition happens on all languages
+	// (v-model does not update during composition)
+	q.value = searchEl.value?.value.trim() ?? '';
+}
+
+function paste(event: ClipboardEvent): void {
+	const pasted = event.clipboardData?.getData('text') ?? '';
+	if (done(pasted)) {
+		event.preventDefault();
+	}
+}
+
+function onKeydown(ev: KeyboardEvent) {
+	if (ev.isComposing || ev.key === 'Process' || ev.keyCode === 229) return;
+	if (ev.key === 'Enter') {
+		ev.preventDefault();
+		ev.stopPropagation();
+		done();
+	}
+	if (ev.key === 'Escape') {
+		ev.preventDefault();
+		ev.stopPropagation();
+		emit('esc');
 	}
 }
 
@@ -442,147 +583,25 @@ function done(query?: string): boolean | void {
 	}
 }
 
+watch(pickerCategories, (nextCategories) => {
+	if (nextCategories.length === 0) return;
+	const nextIndex = clampCategoryIndex(activeCategoryIndex.value);
+	if (nextIndex !== activeCategoryIndex.value) activeCategoryIndex.value = nextIndex;
+	if (!q.value) window.requestAnimationFrame(() => selectCategory(nextIndex, 'auto'));
+}, { flush: 'post' });
+
 function settings() {
 	emit('esc');
 	router.push('/settings/emoji-palette');
 }
 
-function pickerItem(value: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef): NativeEmojiPickerItem {
-	const key = getKey(value);
-	const custom = key.startsWith(':');
-	const muted = prefer.r.mutingEmojis.value.includes(key);
-	if (muted) {
-		return {
-			key,
-			disabled: !canReact(value),
-			title: custom ? key.slice(1, -1) : getEmojiName(key),
-			imageUrl: '/client-assets/unknown.png',
-		};
-	}
-
-	if (!custom) {
-		const emojiStyle = prefer.s.emojiStyle;
-		return {
-			key,
-			disabled: !canReact(value),
-			title: getEmojiName(key),
-			...(emojiStyle === 'native'
-				? { text: colorizeEmoji(key) }
-				: { imageUrl: (emojiStyle === 'twemoji' ? char2twemojiFilePath : char2fluentEmojiFilePath)(key) }),
-		};
-	}
-
-	const customEmoji = typeof value === 'object' && !('char' in value)
-		? value
-		: customEmojisMap.get(key.slice(1, -1));
-	const rawUrl = customEmoji?.url;
-	const proxiedUrl = rawUrl == null
-		? '/client-assets/dummy.png'
-		: rawUrl.startsWith('/emoji/')
-			? `${rawUrl}?fallback=1`
-			: getProxiedImageUrl(rawUrl, 'emoji', false, true);
-	const imageUrl = prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(proxiedUrl) : proxiedUrl;
-	return {
-		key,
-		disabled: !canReact(value),
-		title: key.slice(1, -1),
-		imageUrl,
-		fallbackUrl: '/client-assets/dummy.png',
-	};
-}
-
-function sectionItems(values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerItem[] {
-	return values.map(pickerItem);
-}
-
-function toggleSection(key: string): void {
-	expandedSections.set(key, !(expandedSections.get(key) ?? false));
-	nativeModel.value = buildNativeModel();
-}
-
-function makeSection(key: string, title: string, icon: string, values: Array<string | Misskey.entities.EmojiSimple | UnicodeEmojiDef>): NativeEmojiPickerSection {
-	return {
-		key,
-		title,
-		icon,
-		count: values.length,
-		emojis: sectionItems(values),
-		expanded: expandedSections.get(key) ?? false,
-		onToggle: () => toggleSection(key),
-	};
-}
-
-function groupCount(sections: NativeEmojiPickerSection[]): number {
-	return sections.reduce((total, section) => total + section.count, 0);
-}
-
-function buildNativeModel(): NativeEmojiPickerModel {
-	const columnsByWidth = [0, 5, 6, 7, 8, 9];
-	const sizeByScale = [0, 38, 42, 46, 50, 54];
-	const columns = columnsByWidth[emojiPickerWidth.value] ?? 7;
-	const itemSize = sizeByScale[emojiPickerScale.value] ?? 46;
-	const customCategories = ['', ...customEmojiCategories.value.filter((category): category is string => category !== null && category !== '')];
-	const customSections = customCategories.map(category => makeSection(
-		`custom:${category}`,
-		category || i18n.ts.other,
-		category === '' ? 'ti ti-sparkles' : 'ti ti-folder',
-		customEmojis.value.filter(emoji => filterCategory(emoji, category)),
-	)).filter(section => section.count > 0);
-	const unicodeSections = categories.map(category => {
-		const meta = unicodeCategoryMeta[category];
-		return makeSection(
-			`unicode:${category}`,
-			meta.title,
-			meta.icon,
-			(emojiCharByCategory.get(category) ?? []).map(char => getUnicodeEmoji(char)).filter((emoji): emoji is UnicodeEmojiDef => typeof emoji !== 'string'),
-		);
-	});
-	const groups: NativeEmojiPickerGroup[] = [
-		{ key: 'custom', title: i18n.ts.customEmojis, icon: 'ti ti-icons', count: groupCount(customSections), sections: customSections },
-		{ key: 'unicode', title: i18n.ts.emoji, icon: 'ti ti-mood-happy', count: groupCount(unicodeSections), sections: unicodeSections },
-	].filter(group => group.count > 0);
-	const results = [...searchResultCustom.value, ...searchResultUnicode.value].map(pickerItem);
-	return {
-		query: q.value,
-		placeholder: i18n.ts.search,
-		width: columns * itemSize + 24,
-		height: (emojiPickerHeight.value === 1 ? 4 : emojiPickerHeight.value === 2 ? 6 : emojiPickerHeight.value === 3 ? 8 : 10) * itemSize + 28,
-		columns,
-		itemSize,
-		maxHeight: props.maxHeight,
-		asDrawer: props.asDrawer ?? false,
-		asWindow: props.asWindow ?? false,
-		pinned: props.showPinned ? sectionItems(pinnedEmojisDef.value ?? []) : [],
-		recent: sectionItems(recentlyUsedEmojisDef.value),
-		results,
-		resultLabel: `${i18n.ts.search} · ${results.length}`,
-		groups,
-		onQuery: (value: string) => { q.value = value.trim(); },
-		onPaste: (value: string) => done(value) === true,
-		onSubmit: () => { done(); },
-		onChoose: (key: string) => chosen(getDef(key)),
-		onSettings: settings,
-		onEscape: () => emit('esc'),
-	};
-}
-
-const nativeModel = ref<NativeEmojiPickerModel>(buildNativeModel());
-watch([
-	q,
-	recentlyUsedEmojis,
-	customEmojis,
-	emojiPickerScale,
-	emojiPickerWidth,
-	emojiPickerHeight,
-	prefer.r.mutingEmojis,
-	() => prefer.s.emojiStyle,
-	() => prefer.s.disableShowingAnimatedImages,
-], () => {
-	nativeModel.value = buildNativeModel();
-}, { deep: true });
-
 onMounted(() => {
 	focus();
+	window.requestAnimationFrame(() => selectCategory(activeCategoryIndex.value, 'auto'));
+});
+
+onBeforeUnmount(() => {
+	if (categorySyncFrame != null) window.cancelAnimationFrame(categorySyncFrame);
 });
 
 defineExpose({
@@ -593,291 +612,348 @@ defineExpose({
 
 <style lang="scss" scoped>
 .omfetrab {
-	$pad: 8px;
+	--eachSize: 50px;
+	--columns: 7;
+	--rows: 8;
+	--pickerPeek: clamp(28px, 8%, 40px);
+	--pickerGap: 8px;
+	--misutgaru-material-surface: var(--MI_THEME-panel);
+	--misutgaru-material-fallback: var(--MI_THEME-panel);
 
 	display: flex;
 	flex-direction: column;
+	box-sizing: border-box;
+	width: calc((var(--eachSize) * var(--columns)) + 20px);
+	height: calc((var(--eachSize) * var(--rows)) + 98px);
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border-radius: 18px;
+	corner-shape: round;
+	color: var(--MI_THEME-fg);
 
-	&.s1 {
-		--eachSize: 40px;
-	}
-
-	&.s2 {
-		--eachSize: 45px;
-	}
-
-	&.s3 {
-		--eachSize: 50px;
-	}
-
-	&.s4 {
-		--eachSize: 55px;
-	}
-
-	&.s5 {
-		--eachSize: 60px;
-	}
-
-	&.w1 {
-		--columns: 5;
-	}
-
-	&.w2 {
-		--columns: 6;
-	}
-
-	&.w3 {
-		--columns: 7;
-	}
-
-	&.w4 {
-		--columns: 8;
-	}
-
-	&.w5 {
-		--columns: 9;
-	}
-
-	&.h1 {
-		--rows: 4;
-	}
-
-	&.h2 {
-		--rows: 6;
-	}
-
-	&.h3 {
-		--rows: 8;
-	}
-
-	&.h4 {
-		--rows: 10;
-	}
-
-	width: calc((var(--eachSize) * var(--columns)) + (#{$pad} * 2));
-	height: calc((var(--eachSize) * var(--rows)) + (#{$pad} * 2));
+	&.s1 { --eachSize: 40px; }
+	&.s2 { --eachSize: 45px; }
+	&.s3 { --eachSize: 50px; }
+	&.s4 { --eachSize: 55px; }
+	&.s5 { --eachSize: 60px; }
+	&.w1 { --columns: 5; }
+	&.w2 { --columns: 6; }
+	&.w3 { --columns: 7; }
+	&.w4 { --columns: 8; }
+	&.w5 { --columns: 9; }
+	&.h1 { --rows: 4; }
+	&.h2 { --rows: 6; }
+	&.h3 { --rows: 8; }
+	&.h4 { --rows: 10; }
 
 	&.asDrawer {
 		width: 100% !important;
-
-		> .emojis {
-			::v-deep(section) {
-				> header {
-					height: 32px;
-					line-height: 32px;
-					padding: 0 12px;
-					font-size: 15px;
-				}
-
-				> .body {
-					display: grid;
-					grid-template-columns: repeat(var(--columns), 1fr);
-					font-size: 30px;
-
-					> .config {
-						aspect-ratio: 1 / 1;
-						width: auto;
-						height: auto;
-						min-width: 0;
-						font-size: 14px;
-					}
-
-					> .item {
-						aspect-ratio: 1 / 1;
-						width: auto;
-						height: auto;
-						min-width: 0;
-
-						&:disabled {
-							cursor: not-allowed;
-							background: linear-gradient(-45deg, transparent 0% 48%, light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.15)) 48% 52%, transparent 52% 100%);
-							opacity: 1;
-
-							> .emoji {
-								filter: grayscale(1);
-								mix-blend-mode: exclusion;
-								opacity: 0.8;
-							}
-						}
-					}
-				}
-			}
-		}
+		max-width: 600px;
+		border-radius: 20px 20px 0 0;
 	}
 
 	&.asWindow {
 		width: 100% !important;
 		height: 100% !important;
+		border-radius: 0;
+	}
+}
 
-		> .emojis {
-			::v-deep(section) {
-				> .body {
-					display: grid;
-					grid-template-columns: repeat(var(--columns), 1fr);
-					font-size: 30px;
+.top {
+	position: relative;
+	z-index: 3;
+	flex: 0 0 auto;
+	padding: 10px 10px 4px;
+}
 
-					> .item {
-						aspect-ratio: 1 / 1;
-						width: auto;
-						height: auto;
-						min-width: 0;
-						padding: 0;
+.searchShell {
+	display: flex;
+	align-items: center;
+	min-height: 38px;
+	border-radius: 13px;
+	corner-shape: round;
+	background: color-mix(in srgb, var(--MI_THEME-bg) 68%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+	color: color-mix(in srgb, var(--MI_THEME-fg) 52%, transparent);
+	transition: background 0.2s ease, box-shadow 0.2s ease;
 
-						&:disabled {
-							cursor: not-allowed;
-							background: linear-gradient(-45deg, transparent 0% 48%, light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.15)) 48% 52%, transparent 52% 100%);
-							opacity: 1;
+	&:focus-within {
+		background: color-mix(in srgb, var(--MI_THEME-bg) 82%, transparent);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 48%, transparent), 0 0 0 3px color-mix(in srgb, var(--MI_THEME-accent) 9%, transparent);
+		color: var(--MI_THEME-accent);
+	}
+}
 
-							> .emoji {
-								filter: grayscale(1);
-								mix-blend-mode: exclusion;
-								opacity: 0.8;
-							}
-						}
-					}
-				}
-			}
-		}
+.searchIcon {
+	flex: 0 0 auto;
+	width: 20px;
+	margin-left: 11px;
+	font-size: 15px;
+	text-align: center;
+}
+
+.search {
+	box-sizing: border-box;
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 38px;
+	padding: 0 7px;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	color: var(--MI_THEME-fg);
+	font: inherit;
+
+	&::placeholder {
+		color: color-mix(in srgb, var(--MI_THEME-fg) 42%, transparent);
 	}
 
-	> .search {
-		width: 100%;
-		padding: 12px;
-		box-sizing: border-box;
-		font-size: 1em;
-		outline: none;
-		border: none;
-		background: transparent;
-		color: var(--MI_THEME-fg);
-
-		&:not(:focus):not(.filled) {
-			margin-bottom: env(safe-area-inset-bottom, 0px);
-		}
-
-		&:not(.filled) {
-			order: 1;
-			z-index: 2;
-			box-shadow: 0px -1px 0 0px var(--MI_THEME-divider);
-		}
-	}
-
-	> .tabs {
-		display: flex;
+	&::-webkit-search-cancel-button {
 		display: none;
+	}
+}
 
-		> .tab {
-			flex: 1;
-			height: 38px;
-			border-top: solid 0.5px var(--MI_THEME-divider);
+.searchAction {
+	flex: 0 0 auto;
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	margin-right: 4px;
+	border-radius: 10px;
+	color: color-mix(in srgb, var(--MI_THEME-fg) 54%, transparent);
 
-			&.active {
-				border-top: solid 1px var(--MI_THEME-accent);
-				color: var(--MI_THEME-accent);
-			}
-		}
+	&:hover,
+	&:focus-visible {
+		background: color-mix(in srgb, var(--MI_THEME-accent) 10%, transparent);
+		color: var(--MI_THEME-accent);
+		outline: none;
+	}
+}
+
+.categoryRail {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	margin-top: 5px;
+	padding: 2px calc(50% - 18px) 3px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scroll-snap-type: x proximity;
+	scrollbar-width: none;
+	overscroll-behavior-inline: contain;
+	-webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+	mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+.categoryButton {
+	flex: 0 0 34px;
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 11px;
+	color: color-mix(in srgb, var(--MI_THEME-fg) 42%, transparent);
+	font-size: 17px;
+	scroll-snap-align: center;
+	transition: opacity 0.2s ease, transform 0.24s cubic-bezier(.2,.8,.2,1), color 0.2s ease, background 0.2s ease;
+
+	&:hover,
+	&:focus-visible {
+		background: color-mix(in srgb, var(--MI_THEME-fg) 6%, transparent);
+		color: color-mix(in srgb, var(--MI_THEME-fg) 75%, transparent);
+		outline: none;
+	}
+}
+
+.categoryButtonActive {
+	background: color-mix(in srgb, var(--MI_THEME-accent) 13%, transparent);
+	color: var(--MI_THEME-accent);
+	transform: scale(1.08);
+}
+
+.carouselShell {
+	position: relative;
+	z-index: 2;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+
+	&::before,
+	&::after {
+		content: '';
+		position: absolute;
+		z-index: 5;
+		top: 0;
+		bottom: 0;
+		width: 15px;
+		pointer-events: none;
 	}
 
-	> .emojis {
+	&::before {
+		left: 0;
+		background: linear-gradient(90deg, color-mix(in srgb, var(--MI_THEME-panel) 74%, transparent), transparent);
+	}
+
+	&::after {
+		right: 0;
+		background: linear-gradient(270deg, color-mix(in srgb, var(--MI_THEME-panel) 74%, transparent), transparent);
+	}
+}
+
+.categoryCarousel {
+	display: flex;
+	gap: var(--pickerGap);
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	padding: 2px var(--pickerPeek) 8px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+	overscroll-behavior-inline: contain;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+.categoryPane {
+	flex: 0 0 calc(100% - (var(--pickerPeek) * 2));
+	box-sizing: border-box;
+	height: 100%;
+	min-width: 0;
+	padding: 3px 4px 18px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scroll-snap-align: center;
+	scroll-snap-stop: always;
+	scrollbar-width: thin;
+	overscroll-behavior-y: contain;
+	opacity: 0.08;
+	filter: blur(7px) saturate(0.65);
+	transform: scale(0.955);
+	transform-origin: center center;
+	pointer-events: none;
+	transition: opacity 0.22s ease, filter 0.28s ease, transform 0.28s cubic-bezier(.2,.8,.2,1);
+}
+
+.categoryPaneNeighbor {
+	opacity: 0.26;
+	filter: blur(5px) saturate(0.72);
+	transform: scale(0.972);
+}
+
+.categoryPaneActive {
+	opacity: 1;
+	filter: none;
+	transform: scale(1);
+	pointer-events: auto;
+}
+
+.searchResults {
+	position: relative;
+	z-index: 2;
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 7px 12px 16px;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	overscroll-behavior: contain;
+}
+
+.emojiGrid {
+	display: grid;
+	grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+	align-content: start;
+	gap: 2px;
+	width: 100%;
+}
+
+.emojiItem {
+	position: relative;
+	display: grid;
+	place-items: center;
+	aspect-ratio: 1;
+	min-width: 0;
+	padding: 4px;
+	border-radius: 11px;
+	font-size: clamp(21px, calc(var(--eachSize) * 0.56), 30px);
+	contain: layout paint;
+	transition: background 0.15s ease, transform 0.15s ease;
+
+	&:hover,
+	&:focus-visible {
+		background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+		outline: none;
+	}
+
+	&:active {
+		background: color-mix(in srgb, var(--MI_THEME-accent) 17%, transparent);
+		transform: scale(0.92);
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.34;
+		filter: grayscale(0.8);
+	}
+
+	> .emoji {
+		width: 100%;
 		height: 100%;
-		overflow-y: auto;
-		overflow-x: hidden;
-		scrollbar-width: none;
+		object-fit: contain;
+		pointer-events: none;
+	}
+}
 
-		> .group {
-			&:not(.index) {
-				padding: 4px 0 8px 0;
-				border-top: solid 0.5px var(--MI_THEME-divider);
-			}
+.empty {
+	display: grid;
+	place-items: center;
+	min-height: 120px;
+	color: color-mix(in srgb, var(--MI_THEME-fg) 42%, transparent);
+	font-size: 12px;
+}
 
-			> header {
-				/*position: sticky;
-				top: 0;
-				left: 0;*/
-				height: 32px;
-				line-height: 32px;
-				z-index: 2;
-				padding: 0 8px;
-				font-size: 12px;
-			}
-		}
+.visuallyHidden {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0 0 0 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
 
-		::v-deep(section) {
-			> header {
-				position: sticky;
-				top: 0;
-				left: 0;
-				line-height: 28px;
-				z-index: 1;
-				padding: 0 8px;
-				font-size: 12px;
-				cursor: pointer;
+@media (max-width: 520px) {
+	.omfetrab {
+		--pickerPeek: 30px;
+		border-radius: 17px 17px 0 0;
+	}
 
-				&:hover {
-					color: var(--MI_THEME-accent);
-				}
-			}
+	.top {
+		padding: 8px 8px 3px;
+	}
 
-			> .body {
-				position: relative;
-				padding: $pad;
+	.categoryCarousel {
+		padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+	}
+}
 
-				> .config {
-					position: relative;
-					padding: 0 3px;
-					width: var(--eachSize);
-					height: var(--eachSize);
-					contain: strict;
-					opacity: 0.5;
-				}
-
-				> .item {
-					position: relative;
-					padding: 0 3px;
-					width: var(--eachSize);
-					height: var(--eachSize);
-					contain: strict;
-					border-radius: 4px;
-					font-size: 24px;
-
-					&:hover {
-						background: rgba(0, 0, 0, 0.05);
-					}
-
-					&:active {
-						background: var(--MI_THEME-accent);
-						box-shadow: inset 0 0.15em 0.3em rgba(27, 31, 35, 0.15);
-					}
-
-					&:disabled {
-						cursor: not-allowed;
-						background: linear-gradient(-45deg, transparent 0% 48%, light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.15)) 48% 52%, transparent 52% 100%);
-						opacity: 1;
-
-						> .emoji {
-							filter: grayscale(1);
-							mix-blend-mode: exclusion;
-							opacity: 0.8;
-						}
-					}
-
-					> .emoji {
-						height: 1.25em;
-						vertical-align: -.25em;
-						pointer-events: none;
-						width: 100%;
-						object-fit: contain;
-					}
-				}
-			}
-
-			&.result {
-				border-bottom: solid 0.5px var(--MI_THEME-divider);
-
-				&:empty {
-					display: none;
-				}
-			}
-		}
+@media (prefers-reduced-motion: reduce) {
+	.searchShell,
+	.categoryButton,
+	.categoryPane,
+	.emojiItem {
+		transition: none;
 	}
 }
 </style>

@@ -1,6 +1,6 @@
 # Misutgaru agent and contributor guide
 
-Misutgaru is a Misskey fork with a large in-progress Vue-to-Vune frontend migration and backend runtime optimization work. Do not treat it as a lightly themed upstream checkout.
+Misutgaru is a Misskey fork with a Vue 3 frontend and substantial backend/runtime optimization work. Do not treat it as a lightly themed upstream checkout.
 
 Before editing code, read:
 
@@ -13,18 +13,14 @@ The phase journals under `docs/archive` are history only. Their Vune counts, dep
 
 ## Current validation boundary
 
-At the 2026-08-28 source checkpoint, active merge markers are resolved, the native Vune boundary passes for 65 files, and the delivered source archive contains the Vune framework source including `@vune-ui/animation`. The remaining handoff gate is dependency-backed: run `pnpm verify:full` in a normal networked checkout before describing a release as fully typechecked, test-complete, and production-build validated.
+The active frontend is Vue-only. Vune sources, packages, compiler integration, host adapters, and the `packages/modules/Vune` submodule are not part of the current build. Frontend changes should pass `pnpm --filter frontend typecheck` and `pnpm --filter frontend build`; repository-wide structural changes should also pass `pnpm verify:integrity`.
 
 ## Fork-specific rules
 
-- A file marked `@misutgaru-vune-native` must satisfy `scripts/check-vune-native.mjs`. Do not hide Vue, raw `Element`, `.vue`, or legacy factory dependencies behind a native marker.
-- `packages/frontend/src/vune/compat-vue.ts` is a placement boundary, not a new component model. Native Vune parents should import native children directly when possible.
-- `packages/frontend/src/vune/vue.ts` is legacy migration debt. Avoid introducing new dependencies on it unless required to preserve behavior during a staged migration.
-- Prefer Vune core/browser primitives for web semantics. Keep `packages/frontend/src/vune/native.ts` as a restricted last-mile bridge, not a generic tag factory.
-- Compiler-emitted legacy-host metadata and `generateVueHostModule` share the Vune semantic model. Prefer `.vune?vue-host` for trivial zero-customization Vue placement shells; keep the explicit adapter for aliases or unusual initializer wiring. Do not add a second runtime-only prop/type mapping system in the Vue bridge.
-- Keep Vune State invalidation boundary-local. Changes to the web renderer must preserve parent-first dirty-boundary batching and compiled direct-patch fast paths.
-- Vune DevTools must remain opt-in and cheap while disabled.
-- Use `packages/frontend/src/vune/motion.ts` for migrated animation and the shared Material layer for translucent surfaces instead of inventing per-component engines.
+- Keep the active frontend on Vue 3. Do not introduce `.vune` sources, `vune-ui`, `@vune-ui/*`, Vune host adapters, or Vune-specific build steps.
+- Prefer upstream-shaped Vue components and Vue composables when restoring or extending UI behavior, and isolate fork-only contracts/helpers in `packages/misutgaru-core` when practical.
+- Keep NIRAX routing and component lifecycle integration compatible with the Vue application root.
+- Treat documents under `docs/archive` and Vune-specific migration notes as historical references, not current implementation requirements.
 - Preserve batching in backend entity packing, `BatchLoader`, cache misses, Redis connections, and block I/O. A simpler-looking change that restores per-item DB queries, per-queue Redis clients, or per-fragment file writes is a performance regression.
 - Redis cache mutations must keep generation guards and cross-process invalidation. Do not populate process-local memory from a read/write that lost an invalidation race.
 - Put provider-neutral fork contracts/helpers in `packages/misutgaru-core` instead of increasing upstream-file diff when practical.

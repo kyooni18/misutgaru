@@ -2,6 +2,8 @@
 
 Date: 2026-08-28
 
+> Historical record: this verification predates the 2026-09-10 rollback to a Vue-only frontend. Vune-specific results below describe that older checkpoint and are not current implementation requirements.
+
 ## Passed in this artifact workspace
 
 - PostgreSQL compatibility invariant: 426 vanilla-owned schema/migration sources plus the entity registry and DataSource entity/migration configuration matched the supplied same-version vanilla snapshot exactly. Aggregate fingerprint: `e260f1f80d47e37e809dc0e57ac2b0e79387a2a0cee252609bc1ae3a81e9c4a7`;
@@ -33,4 +35,4 @@ In a normal networked checkout, run:
 pnpm verify:full
 ```
 
-Then run the production Docker build from a clean recursive-submodule checkout before release.
+Then run the production Docker build from a clean checkout before release.

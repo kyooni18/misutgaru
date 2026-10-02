@@ -5,11 +5,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.disabled]: disabled }]">
-	<NativeMkSwitch :checked="visualChecked" :disabled="disabled" :onToggle="toggle"/>
+	<input
+		ref="input"
+		type="checkbox"
+		:disabled="disabled"
+		:class="$style.input"
+		@click="toggle"
+	>
+	<XButton :class="$style.toggle" :checked="checked" :disabled="disabled" @toggle="toggle"/>
 	<span v-if="!noBody" :class="$style.body">
 		<!-- TODO: 無名slotの方は廃止 -->
 		<span :class="$style.label">
-			<span @click="toggleFromLabel">
+			<span @click="toggle">
 				<slot name="label"></slot><slot></slot>
 			</span>
 			<span v-if="helpText" v-tooltip:dialog="helpText" class="_button _help" :class="$style.help"><i class="ti ti-help-circle"></i></span>
@@ -20,13 +27,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, unref, watch } from 'vue';
+import { toRefs } from 'vue';
 import type { Ref } from 'vue';
+import XButton from '@/components/MkSwitch.button.vue';
 import { haptic } from '@/utility/haptic.js';
-import VuneMkSwitchButton from '@/components/vune/MkSwitchButton.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const NativeMkSwitch = createVuneWebHost(VuneMkSwitchButton);
 
 const props = defineProps<{
 	modelValue: boolean | Ref<boolean>;
@@ -40,45 +44,45 @@ const emit = defineEmits<{
 	(ev: 'change', v: boolean): void;
 }>();
 
-const checked = computed(() => unref(props.modelValue));
-
-// Keep interaction feedback local to the control instead of waiting for the
-// v-model round trip through the parent. External changes still remain the
-// source of truth and resynchronize the presentation immediately.
-const visualChecked = ref(checked.value);
-watch(checked, value => {
-	visualChecked.value = value;
-}, { flush: 'sync' });
-
-const toggle = (next: boolean) => {
+const checked = toRefs(props).modelValue;
+const toggle = () => {
 	if (props.disabled) return;
-	if (next === visualChecked.value && next === checked.value) return;
-	visualChecked.value = next;
-	emit('update:modelValue', next);
-	emit('change', next);
-
-	// The parent remains authoritative. If a controlled parent rejects the
-	// update, restore its value after Vue has had a chance to propagate v-model.
-	void nextTick(() => {
-		if (visualChecked.value !== checked.value) visualChecked.value = checked.value;
-	});
+	emit('update:modelValue', !checked.value);
+	emit('change', !checked.value);
 
 	haptic();
 };
-
-const toggleFromLabel = () => toggle(!visualChecked.value);
 </script>
 
 <style lang="scss" module>
 .root {
 	position: relative;
 	display: flex;
-	transition: opacity 0.2s ease;
+	transition: all 0.2s ease;
 	user-select: none;
+
+	&:hover {
+		> .button {
+			border-color: var(--MI_THEME-inputBorderHover) !important;
+		}
+	}
 
 	&.disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+}
+
+.input {
+	position: absolute;
+	width: 0;
+	height: 0;
+	opacity: 0;
+	margin: 0;
+
+	&:focus-visible ~ .toggle {
+		outline: 2px solid var(--MI_THEME-focus);
+		outline-offset: 2px;
 	}
 }
 

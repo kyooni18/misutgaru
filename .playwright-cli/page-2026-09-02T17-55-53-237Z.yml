@@ -1,0 +1,48 @@
+- generic [ref=f2e10]:
+  - generic [ref=f2e11]:
+    - link "View source on GitHub":
+      - /url: https://github.com/misskey-dev/misskey
+      - img [aria-hidden] [ref=f2e12] [cursor=pointer]
+    - generic [ref=f2e20]:
+      - generic:
+        - generic: Powered by
+        - img "Misskey"
+      - generic [ref=f2e22]:
+        - generic [ref=f2e23]:
+          - button "더 보기!" [ref=f2e24] [cursor=pointer]:
+            - generic:
+              - generic [aria-hidden]: 
+          - generic [ref=f2e25]:
+            - heading "네스트" [level=1] [ref=f2e26]
+            - generic [ref=f2e27]: 노트로 연결되는 네트워크
+            - generic [ref=f2e29]:
+              - generic [aria-hidden] [ref=f2e30]: 
+              - generic [ref=f2e31]: 현재 이 서버는 비공개입니다. 회원가입을 하시려면 초대 코드가 필요합니다.
+            - generic [ref=f2e33]:
+              - button "이 서버에 가입" [ref=f2e34] [cursor=pointer]
+              - link "다른 서버 찾기" [ref=f2e35] [cursor=pointer]:
+                - /url: https://misskey-hub.net/servers/
+              - button "로그인" [ref=f2e36] [cursor=pointer]
+        - generic [ref=f2e37]: 타임라인 구경하기
+  - generic [ref=f2e45]:
+    - generic [ref=f2e46]:
+      - generic [ref=f2e47]:
+        - generic [ref=f2e48]: ﱶ
+        - text: 로그인
+      - button "" [ref=f2e49] [cursor=pointer]
+    - generic [ref=f2e54]:
+      - generic [ref=f2e55]: 
+      - generic [ref=f2e57]:
+        - generic [ref=f2e59]:
+          - generic: "@"
+          - textbox "유저명" [active] [ref=f2e60]
+          - generic: "@pub.k-y.moe"
+        - button "계속 " [ref=f2e61] [cursor=pointer]:
+          - generic:
+            - text: 계속
+            - generic: 
+      - paragraph [ref=f2e63]: 혹은
+      - button "ﱙ 패스키로 로그인" [ref=f2e65] [cursor=pointer]:
+        - generic:
+          - generic: ﱙ
+          - text: 패스키로 로그인

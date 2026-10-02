@@ -1,85 +1,49 @@
 # Current project state
 
-Checkpoint date: 2026-08-28.
+Checkpoint date: 2026-09-10.
 
-Misutgaru is a Misskey `2026.8.0-alpha.0` fork with a hybrid Vue/Vune frontend, an embedded Vune framework source checkout with `@vune-ui/animation`, backend runtime optimizations, and fork-specific thread, translation, and push behavior.
+Misutgaru is a Misskey `2026.9.0` fork with a Vue 3 frontend, backend runtime optimizations, and fork-specific thread, translation, recommendation, and push behavior.
 
 ## Repository health
 
-The source checkpoint is structurally clean. PostgreSQL compatibility is a hard same-version invariant: 426 vanilla-owned migration/schema sources plus the TypeORM entity registry and DataSource entity/migration configuration match the supplied vanilla `2026.8.0-alpha.0` snapshot at aggregate SHA-256 `e260f1f80d47e37e809dc0e57ac2b0e79387a2a0cee252609bc1ae3a81e9c4a7`. Misutgaru does not add its own PostgreSQL schema objects or migrations.
+The source checkpoint is structurally clean. PostgreSQL compatibility is a hard same-version invariant: 426 vanilla-owned migration/schema sources plus the TypeORM entity registry and DataSource entity/migration configuration match vanilla `2026.9.0` at aggregate SHA-256 `e260f1f80d47e37e809dc0e57ac2b0e79387a2a0cee252609bc1ae3a81e9c4a7`. Misutgaru does not add its own PostgreSQL schema objects or migrations.
 
 
-Direct Vune framework dependencies are pinned to this checkout with local `link:` targets for `vune-ui`, `@vune-ui/core`, `@vune-ui/vue`, `@vune-ui/web`, `@vune-ui/compiler`, and `@vune-ui/vite`. The root build runs `modules:build` first, so the compiler and renderer improvements in `packages/modules/Vune` are the exact code consumed by Misutgaru rather than a same-version registry package.
+The frontend has been reverted to Vue-only operation. Active `.vune` sources and Vune host adapters were removed, Vune packages were removed from the frontend/root dependency graph, the Vite compiler integration and Vune-specific typecheck/build steps were removed, and `packages/modules/Vune` is no longer a repository submodule.
 
 - no unresolved merge markers remain in the active tree;
 - all three shipped example YAML configs parse;
-- `scripts/check-vune-native.mjs` passes for every native-marked Vune source;
-- all 234 frontend `.vune` sources transform with the current local Vune compiler;
-- the delivered source archive includes Vune and its in-tree `@vune-ui/animation` package rather than an empty framework submodule directory;
-- Docker builds Vune from source instead of requiring a prebuilt `packages/modules/Vune/dist` directory.
+- the frontend is checked by standard `vue-tsc`;
+- the production frontend bundle is produced by the normal Vue/Vite path;
+- repository integrity no longer requires or validates Vune artifacts.
 
-The final dependency-backed root `pnpm verify:full` still needs to be run in a normal networked checkout. The artifact workspace used for this pass could not reach the npm registry and did not contain the root pnpm virtual store.
+The dependency-backed root `pnpm verify:full` remains the broad release gate. Because Misutgaru commonly carries in-progress fork work alongside an upstream sync, interpret that gate together with proportional per-change checks rather than as a vanilla byte-parity claim.
 
-## Current upstream delta
+## Current source delta
 
-Against the supplied `misskey-develop` snapshot:
+The active vanilla compatibility baseline is the pinned Misskey `2026.9.0` release in `UPSTREAM_BASE.json`.
 
-| Classification | Files |
-| --- | ---: |
-| Byte-identical | 2636 |
-| Modified | 499 |
-| Added | 765 |
-| Removed | 2 |
-
-The exhaustive source/config inventory currently contains 3446 rows in the local tree. The last upstream comparison recorded 3413 classified rows: 2227 identical, 482 modified, and 704 added relative to the supplied upstream source roots. See `docs/source-map/INVENTORY.md` and `docs/UPSTREAM_DELTA.md`.
+The regenerated source/config inventory contains 2881 rows in the local tree: 2427 byte-identical to the pinned upstream source, 284 modified, and 170 added. Removed upstream paths are not represented in the present-file inventory. See `docs/source-map/INVENTORY.md`; `docs/UPSTREAM_DELTA.md` remains the broader historical whole-tree report.
 
 ## Frontend checkpoint
 
-Run `pnpm vune:report` to refresh these values.
+The active UI is Vue 3 only. Components that had been replaced by Vune hosts were restored from the pinned Misskey `2026.9.0` Vue implementation where possible, while unrelated Misutgaru backend and product work was left intact. Vue support files removed during the migration were restored as required by current imports and routes.
 
-Working-tree frontend checkpoint: 2026-08-31. This is newer than the repository-wide 2026-08-28 verification checkpoint above.
+The application no longer contains active Vune renderer/compiler integration, Vune-specific virtual-list primitives, Vune motion adapters, or Vune-only regression tests. Historical migration material remains under `docs/archive` and in older Vune documentation for reference only.
 
-| Metric | Current value |
-| --- | ---: |
-| Vue SFC compatibility surface | 585 |
-| Vune source components | 298 |
-| Native Vune components | 298 |
-| Explicit compatibility Vune shells | 0 |
-| Vue SFCs referencing Vune | 226 |
-| Generated `?vue-host` placements | 108 |
-| Direct `.vune` placements | 118 |
-| Pure Vue SFCs | 359 |
-| SwiftUI-syntax Vune files | 260 |
-| Vune files using `ForEach` | 85 |
-| Native share of Vune sources | 100.0% |
-| Vune-backed share of Vue SFCs | 38.6% |
+NIRAX routing remains attached to the Vue application lifecycle, and frontend type safety is again provided by the standard `vue-tsc --noEmit` path.
 
-All 298 Vune sources currently satisfy the native boundary and the report shows zero `VueComponent`, `VueSlot`, raw `Element`, and `.vue` dependency fallbacks. NIRAX routing is now split into a renderer-neutral `nirax-core.ts` plus the existing Vue ref/lifecycle binding in `nirax.ts`. Route-only Vue shells for `/ads`, `/preview`, `/clicker`, and `/games`, plus five additional generated-host placement shells, have been removed; their consumers load `.vune?vue-host` modules directly while the application root remains Vue-owned.
+## Runtime improvements retained in this checkpoint
 
-## Framework/runtime improvements in this checkpoint
-
-Vune now emits legacy-host binding metadata at compile time and exposes typed Vue-host code generation. The compiler can emit a typed transitional Vue placement module, while the Vite integration can compile a `.vune?vue-host` import directly into its pure-JS runtime counterpart, while the legacy Vue adapter compiles one binding plan per host instead of repeatedly interpreting initializer types during rendering. Three trivial placement shells use this generated path as executable integration coverage.
-
-The web renderer batches dirty View boundaries in one microtask, processes parents first, and keeps fine-grained State subscriptions at the boundary that read them. Optional Vune DevTools instrumentation records body evaluations, dependencies, DOM node counts, and render time only when enabled.
-
-Native browser primitives now cover text editing, file picking, content-editable text, canvas, video/audio, SVG/path, focus scopes, and popovers in addition to existing Vune controls. Layout FLIP uses independent CSS translate/scale channels so layout motion does not overwrite an unrelated user transform animation.
-
-Backend entity lookups use a common request-scoped `BatchLoader`: note, note-draft, user, and drive-file single-ID pack paths now coalesce duplicate in-flight work and combine distinct IDs into repository `IN (...)` batches. Settled values are memoized only inside the current API request, while process-long fallback loaders remain freshness-oriented. Redis-backed caches use mutation serialization, generation guards, and a process-wide invalidation bus on an isolated subscriber connection so local memory tiers cannot silently outlive writes made by another backend process. Initial invalidation subscription failures are boundedly retried with diagnostics rather than leaving cross-process invalidation permanently disabled.
-
-Long note lists now use stable-key variable-height virtualization backed by Vune's prefix measurement index, with ResizeObserver updates and scroll anchoring that preserves the visible row only after the user has scrolled away from the feed start. Prepared MFM/URL data can be prefetched in a Worker and reused across note surfaces, while a bounded normalized entity cache reuses canonical Note/User/DriveFile identities across timeline, thread and modal rendering.
+Backend entity lookups use a common request-scoped `BatchLoader`: note, note-draft, user, and drive-file single-ID pack paths coalesce duplicate in-flight work and combine distinct IDs into repository `IN (...)` batches. Settled values are memoized only inside the current API request, while process-long fallback loaders remain freshness-oriented. Redis-backed caches use mutation serialization, generation guards, and a process-wide invalidation bus on an isolated subscriber connection so local memory tiers cannot silently outlive writes made by another backend process. Initial invalidation subscription failures are boundedly retried with diagnostics rather than leaving cross-process invalidation permanently disabled.
 
 Fork-specific translation contracts and thread-window defaults have started moving into `@misutgaru/core`, reducing direct fork logic embedded in upstream-shaped files.
 
 ## Verification performed in this workspace
 
-- `@vune-ui/animation` full motion suite: 116 passed, 0 failed (`pnpm --dir packages/modules/Vune --filter @vune-ui/animation run test:full`);
-- focused Vune compiler/web/runtime smoke suite: 31 passed, 0 failed (the complete non-browser package suite remains available via `pnpm --dir packages/modules/Vune run test:full`);
-- native Vune boundary: 76 files passed;
-- Vune source transform sweep: 234 passed, 0 failed;
-- `@misutgaru/core` translation contract test passed;
-- deterministic `BatchLoader` runtime harness passed;
-- actual cache implementation race harness passed 5 generation/mutation cases across KV and single-value caches;
-- actual cache invalidation service harness passed remote routing and verified that the shared Misskey stream subscriber receives no cache-control listener;
-- motion regression committed exactly 122880 element states for 2048 elements over 60 frames and preserved independent property ownership.
+- `pnpm --filter frontend typecheck`: passed with the Vue-only frontend;
+- `pnpm --filter frontend build`: passed and produced the production frontend bundle;
+- `pnpm --filter frontend test`: passed;
+- `pnpm verify:integrity`: passed, scanning 6076 text files.
 
 See `docs/VERIFICATION-2026-08-28.md` for the exact validation boundary.

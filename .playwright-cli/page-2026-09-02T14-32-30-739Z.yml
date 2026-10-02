@@ -1,0 +1,12 @@
+- generic [ref=f7e1]:
+  - generic:
+    - generic:
+      - generic [ref=f7e2]:
+        - generic [ref=f7e3]: GLaDOS
+        - textbox "Search benchmark responses" [ref=f7e4]:
+          - /placeholder: Search
+      - generic [ref=f7e5]:
+        - button "Gallery" [ref=f7e6] [cursor=pointer]
+        - button "Compare" [ref=f7e7] [cursor=pointer]
+        - button "All" [ref=f7e8] [cursor=pointer]
+      - generic [ref=f7e11]: No Markdown responses found in /mds

@@ -4,13 +4,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneUserIndexActivity :user="user" :limit="limit" :chartSrc="chartSrc" :onMenu="showMenu"/>
+<MkContainer>
+	<template #icon><i class="ti ti-chart-line"></i></template>
+	<template #header>{{ i18n.ts.activity }}</template>
+	<template #func="{ buttonStyleClass }">
+		<button class="_button" :class="buttonStyleClass" @click="showMenu">
+			<i class="ti ti-dots"></i>
+		</button>
+	</template>
+
+	<div style="padding: 8px;">
+		<MkChart :src="chartSrc" :args="{ user, withoutAll: true }" span="day" :limit="limit" :bar="true" :stacked="true" :detailed="false" :aspectRatio="5"/>
+	</div>
+</MkContainer>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneUserIndexActivity from './vune/index.activity.vune?vue-host';
+import MkContainer from '@/components/MkContainer.vue';
+import MkChart from '@/components/MkChart.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 

@@ -4,19 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneTimeHost :absolute="absolute" :relative="relative" :invalid="invalid" :mode="props.mode" :colored="props.colored" :ago="ago" :old1Class="$style.old1" :old2Class="$style.old2"/>
+<time :title="absolute" :class="{ [$style.old1]: colored && (ago > 60 * 60 * 24 * 90), [$style.old2]: colored && (ago > 60 * 60 * 24 * 180) }">
+	<template v-if="invalid">{{ i18n.ts._ago.invalid }}</template>
+	<template v-else-if="mode === 'relative'">{{ relative }}</template>
+	<template v-else-if="mode === 'absolute'">{{ absolute }}</template>
+	<template v-else-if="mode === 'detail'">{{ absolute }} ({{ relative }})</template>
+</time>
 </template>
 
 <script lang="ts" setup>
-import VuneTime from './vune/MkTime.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import isChromatic from 'chromatic/isChromatic';
 import { computed } from 'vue';
 import { i18n } from '@/i18n.js';
 import { dateTimeFormat } from '@@/js/intl-const.js';
-import { useAdaptiveLowresTime } from '@/composables/use-lowres-time.js';
-
-const VuneTimeHost = createVuneWebHost(VuneTime);
+import { useLowresTime } from '@/composables/use-lowres-time.js';
 
 const props = withDefaults(defineProps<{
 	time: Date | string | number | null;
@@ -46,7 +47,7 @@ const _time = props.time == null ? NaN : getDateSafe(props.time).getTime();
 const invalid = Number.isNaN(_time);
 const absolute = !invalid ? dateTimeFormat.format(_time) : i18n.ts._ago.invalid;
 
-const actualNow = useAdaptiveLowresTime(_time);
+const actualNow = useLowresTime();
 const now = computed(() => (props.origin ? props.origin.getTime() : actualNow.value));
 
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss

@@ -4,20 +4,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneImageEffectorLayer
-	:label="fx.uiDefinition.name"
-	:params="layer.params"
-	:paramDefs="fx.uiDefinition.params"
-	:onUpdateParams="(value: ImageEffectorLayer['params']) => layer.params = value"
-	:onDelete="() => emit('del')"
-	:onSwapUp="() => emit('swapUp')"
-	:onSwapDown="() => emit('swapDown')"
-/>
+<MkFolder :defaultOpen="true" :canPage="false">
+	<template #label>{{ fx.uiDefinition.name }}</template>
+	<template #footer>
+		<div class="_buttons">
+			<MkButton iconOnly @click="emit('del')"><i class="ti ti-trash"></i></MkButton>
+			<MkButton iconOnly @click="emit('swapUp')"><i class="ti ti-arrow-up"></i></MkButton>
+			<MkButton iconOnly @click="emit('swapDown')"><i class="ti ti-arrow-down"></i></MkButton>
+		</div>
+	</template>
+
+	<MkImageEffectorFxForm v-model="layer.params" :paramDefs="fx.uiDefinition.params"/>
+</MkFolder>
 </template>
 
 <script setup lang="ts">
 import type { ImageEffectorLayer } from '@/utility/image-effector/ImageEffector.js';
-import VuneImageEffectorLayer from './vune/MkImageEffectorDialog.Layer.vune?vue-host';
+import MkFolder from '@/components/MkFolder.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkImageEffectorFxForm from '@/components/MkImageEffectorFxForm.vue';
 import { FXS } from '@/utility/image-effector/fxs.js';
 
 const layer = defineModel<ImageEffectorLayer>('layer', { required: true });

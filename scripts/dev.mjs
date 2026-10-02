@@ -176,14 +176,6 @@ try {
 		stderr: process.stderr,
 	});
 
-	// Prepare the nested Vune workspace and reassert all frontend package links,
-	// including the in-tree @vune-ui/animation runtime.
-	await runChildProcess('pnpm', ['modules:build'], {
-		cwd: projectRoot,
-		stdout: process.stdout,
-		stderr: process.stderr,
-	});
-
 	// アセットのビルドで依存しているので一番最初に必要
 	await runChildProcess('pnpm', ['--filter', 'i18n', 'build'], {
 		cwd: projectRoot,
@@ -232,11 +224,6 @@ try {
 		stderr: process.stderr,
 	});
 
-	startChildProcess('pnpm', ['--dir', resolve(projectRoot, 'packages/modules/Vune'), 'run', 'dev:watch', '--', '--no-build'], {
-		cwd: projectRoot,
-		stdout: process.stdout,
-		stderr: process.stderr,
-	});
 
 	startChildProcess('pnpm', ['--filter', 'backend', 'dev'], {
 		cwd: projectRoot,

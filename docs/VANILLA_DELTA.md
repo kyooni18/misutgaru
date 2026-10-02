@@ -1,29 +1,23 @@
 # Delta from vanilla Misskey
 
-Baseline: the supplied `misskey-develop` source at package version `2026.8.0-alpha.0`. Exact current path lists live in `docs/UPSTREAM_DELTA.md`; this document explains the architectural differences.
+Baseline: pinned vanilla Misskey `2026.9.0` from `UPSTREAM_BASE.json`. The generated present-file comparison lives in `docs/source-map/INVENTORY.md`; `docs/UPSTREAM_DELTA.md` is retained as a broader historical whole-tree report.
 
-## Current whole-tree summary
+## Current source inventory summary
 
 | Classification | Count |
 | --- | ---: |
-| Byte-identical | 2643 |
-| Modified | 492 |
-| Added | 741 |
-| Removed | 2 |
+| Byte-identical | 2427 |
+| Modified | 284 |
+| Added | 170 |
 
-The added count is intentionally larger than the original fork snapshot because the handoff tree includes the checked-out Vune framework source, including `@vune-ui/animation`, plus fork-owned tests/tooling instead of an empty framework submodule directory.
+The current inventory contains 2881 source/config rows. The fork adds its own runtime, recommendation, translation, thread-window, push, testing, and maintenance code while keeping the active browser UI on Vue 3.
 
 ## Frontend/framework changes
 
 | Area | Misutgaru difference |
 | --- | --- |
-| Vune migration | hybrid Vue/Vune frontend with explicit native and compatibility boundaries |
-| Compiler bridge | compiler-emitted legacy-host metadata and typed Vue-host generation |
-| Web renderer | boundary-local State invalidation, parent-first dirty-boundary batching, compiled direct-patch paths |
-| Native semantics | additional graph-first browser primitives and restricted raw-host escape paths |
-| DevTools | opt-in Vune boundary render/dependency/node profiling in development builds |
-| Motion/layout | `@vune-ui/animation` per-property ownership plus intrinsic layout FLIP on independent translate/scale channels |
-| Material | reusable translucent tiers/accessibility fallbacks |
+| UI framework | Vue 3 only; the former Vune migration/runtime/compiler path has been removed from the active tree |
+| Routing | NIRAX remains integrated with Vue route/component lifecycle |
 | Thread window | resizable in-app detailed note thread flow |
 | Translation UI | main translation plus bounded per-image translation/description results |
 | Web Push | VAPID rotation, subscription-change recovery and multi-account synchronization |
@@ -54,7 +48,7 @@ The added count is intentionally larger than the original fork snapshot because 
 - the TypeORM entity registry and DataSource schema options are separately fingerprinted, so a fork-only entity cannot silently enter the schema without changing an entity file;
 - Misutgaru-only persistence must use existing vanilla data, Redis, process/client memory, config, or an external service rather than a new PostgreSQL table, column, enum, constraint, or index;
 - ActivityPub and public API foundations remain Misskey-derived;
-- Vue remains during staged migration;
+- Vue 3 is the active frontend framework;
 - DeepL remains as a fallback path;
 - split server/queue and clustered execution are still valid deployment modes.
 

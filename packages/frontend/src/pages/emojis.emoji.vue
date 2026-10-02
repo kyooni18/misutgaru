@@ -4,12 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneEmojiCard :emoji="emoji" :classes="$style" :onMenu="menu"/>
+<button class="_button" :class="$style.root" @click="menu">
+	<img :src="emoji.url" :class="$style.img" loading="lazy"/>
+	<div :class="$style.body">
+		<div :class="$style.name" class="_monospace">{{ emoji.name }}</div>
+		<div :class="$style.info">{{ emoji.aliases.join(' ') }}</div>
+	</div>
+</button>
 </template>
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
-import EmojiCard from './vune/emojis.emoji.vune';
 import type { MenuItem } from '@/types/menu.js';
 import * as os from '@/os.js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
@@ -17,15 +22,12 @@ import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { i18n } from '@/i18n.js';
 import MkCustomEmojiDetailedDialog from '@/components/MkCustomEmojiDetailedDialog.vue';
 import { $i } from '@/i.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneEmojiCard = createVuneWebHost(EmojiCard);
 
 const props = defineProps<{
 	emoji: Misskey.entities.EmojiSimple;
 }>();
 
-function menu() {
+function menu(ev: PointerEvent) {
 	const menuItems: MenuItem[] = [];
 	menuItems.push({
 		type: 'label',
@@ -67,7 +69,7 @@ function menu() {
 		});
 	}
 
-	os.popupMenu(menuItems, window.document.activeElement);
+	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
 }
 </script>
 

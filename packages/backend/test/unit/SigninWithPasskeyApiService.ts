@@ -137,8 +137,10 @@ describe('SigninWithPasskeyApiService', () => {
 		});
 	});
 	describe('Try Passkey Auth', () => {
+		const dummyContext = '882042b6-bb28-4d79-8d63-f869488ef4ef';
+
 		it('Should Success', async () => {
-			const req = new DummyFastifyRequest({ context: 'auth-context', credential: { dummy: [] } }) as ApiFastifyRequestType;
+			const req = new DummyFastifyRequest({ context: dummyContext, credential: { dummy: [] } }) as ApiFastifyRequestType;
 			const res = new DummyFastifyReply() as FastifyReply;
 			const res_body = await passkeyApiService.signin(req, res);
 			expect((res_body as any).signinResponse).toBeDefined();
@@ -152,8 +154,16 @@ describe('SigninWithPasskeyApiService', () => {
 			expect((res_body as any).error?.id).toStrictEqual('1658cc2e-4495-461f-aee4-d403cdf073c1');
 		});
 
-		it('Should return 403 When Challenge Verify fail', async () => {
+		it('Should return 400 With Malformed Auth Context', async () => {
 			const req = new DummyFastifyRequest({ context: 'misskey-1234', credential: { dummy: [] } }) as ApiFastifyRequestType;
+			const res = new DummyFastifyReply() as FastifyReply;
+			const res_body = await passkeyApiService.signin(req, res);
+			expect(res.statusCode).toBe(400);
+			expect((res_body as any).error?.id).toStrictEqual('1658cc2e-4495-461f-aee4-d403cdf073c1');
+		});
+
+		it('Should return 403 When Challenge Verify fail', async () => {
+			const req = new DummyFastifyRequest({ context: dummyContext, credential: { dummy: [] } }) as ApiFastifyRequestType;
 			const res = new DummyFastifyReply() as FastifyReply;
 			vi.spyOn(webAuthnService, 'verifySignInWithPasskeyAuthentication')
 				.mockImplementation(async () => {
@@ -165,7 +175,7 @@ describe('SigninWithPasskeyApiService', () => {
 		});
 
 		it('Should return 403 When The user not Enabled Passwordless login', async () => {
-			const req = new DummyFastifyRequest({ context: 'misskey-1234', credential: { dummy: [] } }) as ApiFastifyRequestType;
+			const req = new DummyFastifyRequest({ context: dummyContext, credential: { dummy: [] } }) as ApiFastifyRequestType;
 			const res = new DummyFastifyReply() as FastifyReply;
 			const userId = await FakeWebauthnVerify();
 			const data = { userId: userId, usePasswordLessLogin: false };

@@ -35,6 +35,7 @@ import { GlobalEventService } from './GlobalEventService.js';
 import { HashtagService } from './HashtagService.js';
 import { HttpRequestService } from './HttpRequestService.js';
 import { OpenAiTranslationService } from './OpenAiTranslationService.js';
+import { RecommendationTimelineService } from './RecommendationTimelineService.js';
 import { IdService } from './IdService.js';
 import { ImageProcessingService } from './ImageProcessingService.js';
 import { SystemAccountService } from './SystemAccountService.js';
@@ -336,6 +337,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		HashtagService,
 		HttpRequestService,
 		OpenAiTranslationService,
+		RecommendationTimelineService,
 		IdService,
 		ImageProcessingService,
 		InternalStorageService,
@@ -640,6 +642,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		HashtagService,
 		HttpRequestService,
 		OpenAiTranslationService,
+		RecommendationTimelineService,
 		IdService,
 		ImageProcessingService,
 		InternalStorageService,

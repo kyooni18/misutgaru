@@ -1,6 +1,6 @@
-# Vune integration and migration rules
+# Historical Vune migration record
 
-Misutgaru is intentionally hybrid while Vue ownership is removed subtree by subtree. A `.vune` extension alone does not prove that a source is native.
+> Inactive as of 2026-09-10. Misutgaru's active frontend has been reverted to Vue 3 only. The Vune packages, source components, compiler/Vite integration, host adapters, and repository submodule were removed from the current application path. The material below is retained solely to document the abandoned migration.
 
 ## Native and compatibility markers
 

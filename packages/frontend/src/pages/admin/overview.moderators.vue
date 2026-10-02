@@ -7,20 +7,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div>
 	<Transition :name="prefer.s.animation ? '_transition_zoom' : ''" mode="out-in">
 		<MkLoading v-if="fetching"/>
-		<VuneOverviewModerators v-else :users="moderators ?? []" :rootClass="$style.root"/>
+		<div v-else :class="$style.root" class="_panel">
+			<MkA v-for="user in moderators" :key="user.id" class="user" :to="`/admin/user/${user.id}`">
+				<MkAvatar :user="user" class="avatar" indicator/>
+			</MkA>
+		</div>
 	</Transition>
 </div>
 </template>
 
 <script lang="ts" setup>
-import VuneOverviewModeratorsView from './vune/overview.moderators.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
-
-const VuneOverviewModerators = createVuneWebHost(VuneOverviewModeratorsView);
 
 const moderators = ref<Misskey.entities.UserDetailed[] | null>(null);
 const fetching = ref(true);

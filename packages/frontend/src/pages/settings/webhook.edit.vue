@@ -4,52 +4,82 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWebhookEdit
-	:props="{
-		name,
-		url,
-		secret,
-		active,
-		eventFollow: event_follow,
-		eventFollowed: event_followed,
-		eventNote: event_note,
-		eventReply: event_reply,
-		eventRenote: event_renote,
-		eventReaction: event_reaction,
-		eventMention: event_mention,
-		switchBoxClass: $style.switchBox,
-		testButtonClass: $style.testButton,
-		descriptionClass: $style.description,
-		onName: updateName,
-		onUrl: updateUrl,
-		onSecret: updateSecret,
-		onActive: updateActive,
-		onEventFollow: updateEventFollow,
-		onEventFollowed: updateEventFollowed,
-		onEventNote: updateEventNote,
-		onEventReply: updateEventReply,
-		onEventRenote: updateEventRenote,
-		onEventReaction: updateEventReaction,
-		onEventMention: updateEventMention,
-		onTest: test,
-		onSave: save,
-		onDelete: del,
-	}"
-/>
+<div class="_gaps_m">
+	<MkInput v-model="name">
+		<template #label>{{ i18n.ts._webhookSettings.name }}</template>
+	</MkInput>
+
+	<MkInput v-model="url" type="url">
+		<template #label>URL</template>
+	</MkInput>
+
+	<MkInput v-model="secret">
+		<template #prefix><i class="ti ti-lock"></i></template>
+		<template #label>{{ i18n.ts._webhookSettings.secret }}</template>
+	</MkInput>
+
+	<FormSection>
+		<template #label>{{ i18n.ts._webhookSettings.trigger }}</template>
+
+		<div class="_gaps">
+			<div class="_gaps_s">
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_follow">{{ i18n.ts._webhookSettings._events.follow }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_follow)" @click="test('follow')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_followed">{{ i18n.ts._webhookSettings._events.followed }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_followed)" @click="test('followed')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_note">{{ i18n.ts._webhookSettings._events.note }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_note)" @click="test('note')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_reply">{{ i18n.ts._webhookSettings._events.reply }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_reply)" @click="test('reply')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_renote">{{ i18n.ts._webhookSettings._events.renote }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_renote)" @click="test('renote')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_reaction" :disabled="true">{{ i18n.ts._webhookSettings._events.reaction }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_reaction)" @click="test('reaction')"><i class="ti ti-send"></i></MkButton>
+				</div>
+				<div :class="$style.switchBox">
+					<MkSwitch v-model="event_mention">{{ i18n.ts._webhookSettings._events.mention }}</MkSwitch>
+					<MkButton transparent :class="$style.testButton" :disabled="!(active && event_mention)" @click="test('mention')"><i class="ti ti-send"></i></MkButton>
+				</div>
+			</div>
+
+			<div :class="$style.description">
+				{{ i18n.ts._webhookSettings.testRemarks }}
+			</div>
+		</div>
+	</FormSection>
+
+	<MkSwitch v-model="active">{{ i18n.ts._webhookSettings.active }}</MkSwitch>
+
+	<div class="_buttons">
+		<MkButton primary inline @click="save"><i class="ti ti-check"></i> {{ i18n.ts.save }}</MkButton>
+		<MkButton danger inline @click="del"><i class="ti ti-trash"></i> {{ i18n.ts.delete }}</MkButton>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import VuneWebhookEditView from './vune/webhook.edit.vune';
 import * as Misskey from 'misskey-js';
+import MkInput from '@/components/MkInput.vue';
+import FormSection from '@/components/form/section.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useRouter } from '@/router.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneWebhookEdit = createVuneWebHost(VuneWebhookEditView);
 
 const router = useRouter();
 
@@ -73,50 +103,6 @@ const event_reply = ref(webhook.on.includes('reply'));
 const event_renote = ref(webhook.on.includes('renote'));
 const event_reaction = ref(webhook.on.includes('reaction'));
 const event_mention = ref(webhook.on.includes('mention'));
-
-function updateName(value: string): void {
-	name.value = value;
-}
-
-function updateUrl(value: string): void {
-	url.value = value;
-}
-
-function updateSecret(value: string): void {
-	secret.value = value;
-}
-
-function updateActive(value: boolean): void {
-	active.value = value;
-}
-
-function updateEventFollow(value: boolean): void {
-	event_follow.value = value;
-}
-
-function updateEventFollowed(value: boolean): void {
-	event_followed.value = value;
-}
-
-function updateEventNote(value: boolean): void {
-	event_note.value = value;
-}
-
-function updateEventReply(value: boolean): void {
-	event_reply.value = value;
-}
-
-function updateEventRenote(value: boolean): void {
-	event_renote.value = value;
-}
-
-function updateEventReaction(value: boolean): void {
-	event_reaction.value = value;
-}
-
-function updateEventMention(value: boolean): void {
-	event_mention.value = value;
-}
 
 function save() {
 	const events: Misskey.entities.UserWebhook['on'] = [];

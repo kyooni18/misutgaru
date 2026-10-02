@@ -4,16 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneMemHost :usage="usage" :total="total" :used="used" :free="free"/>
+<div class="zlxnikvl">
+	<XPie class="pie" :value="usage"/>
+	<div>
+		<p><i class="ti ti-section"></i>RAM</p>
+		<p>Total: {{ bytes(total, 1) }}</p>
+		<p>Used: {{ bytes(used, 1) }}</p>
+		<p>Free: {{ bytes(free, 1) }}</p>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneMem from './vune/mem.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-
-const VuneMemHost = createVuneWebHost(VuneMem);
+import XPie from './pie.vue';
+import bytes from '@/filters/bytes.js';
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,
@@ -41,7 +47,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .zlxnikvl {
 	display: flex;
 	padding: 16px;

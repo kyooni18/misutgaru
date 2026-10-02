@@ -1,5 +1,5 @@
 {
-  "version": "2026.8.0-alpha.0",
+  "version": "2026.9.0",
   "scope": {
     "migrations": "packages/backend/migration/**",
     "entityModels": "packages/backend/src/models/*.ts",
@@ -441,6 +441,6 @@
     "packages/backend/src/models/_.ts": "03554499d5eb569d3267040967d67959d1b1072abed11cd016094f6510032b26",
     "packages/backend/src/models/util/id.ts": "9700330b93195e8242fcc364c38bf98aa0c2a3995ac81ced8cefa5e5e4bc49d8"
   },
-  "generatedFrom": "vanilla Misskey 2026.8.0-alpha.0",
+  "generatedFrom": "vanilla Misskey 2026.9.0",
   "note": "Generated from vanilla Misskey. Misutgaru must keep migrations, TypeORM entity models, schema-shaping model utilities, every TypeORM-decorated backend source, the entity registry, and the DataSource schema options identical."
 }

@@ -1,4 +1,5 @@
 .autogen
+.git/
 .github
 .travis
 .vscode
@@ -13,6 +14,7 @@ db/
 .devcontainer/compose.yml
 node_modules/
 packages/*/node_modules
+**/target/
 redis/
 files/
 fluent-emojis/
@@ -28,8 +30,7 @@ fluent-emojis/
 
 .pnpm-store
 
-# Local framework sources are required for clean Vune builds. Keep only their
-# transient dependency trees and nested VCS metadata out of the build context.
+# Keep transient dependency trees and nested VCS metadata out of the build context.
 packages/modules/*/node_modules/
 packages/modules/*/.git/
 

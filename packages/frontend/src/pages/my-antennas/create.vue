@@ -4,7 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAntennaCreate :onCreated="onAntennaCreated"/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<MkAntennaEditor @created="onAntennaCreated"/>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
@@ -13,7 +15,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { antennasCache } from '@/cache.js';
 import { useRouter } from '@/router.js';
-import VuneAntennaCreate from '../vune/my-antennas-create.vune?vue-host';
+import MkAntennaEditor from '@/components/MkAntennaEditor.vue';
 
 const router = useRouter();
 

@@ -4,17 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAccountMoved :user="user" :rootClass="$style.root" :linkClass="$style.link"/>
+<div v-if="user" :class="$style.root">
+	<i class="ti ti-plane-departure" style="margin-right: 8px;"></i>
+	{{ i18n.ts.accountMoved }}
+	<MkMention :class="$style.link" :username="user.username" :host="user.host ?? localHost"/>
+</div>
 </template>
 
 <script lang="ts" setup>
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import AccountMoved from './vune/MkAccountMoved.vune';
-import { fetchMovedUser } from './MkAccountMoved.data.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneAccountMoved = createVuneWebHost(AccountMoved);
+import MkMention from './MkMention.vue';
+import { i18n } from '@/i18n.js';
+import { host as localHost } from '@@/js/config.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 const user = ref<Misskey.entities.UserLite>();
 
@@ -22,18 +25,7 @@ const props = defineProps<{
 	movedTo: string; // user id
 }>();
 
-let requestGeneration = 0;
-watch(() => props.movedTo, userId => {
-	const generation = ++requestGeneration;
-	user.value = undefined;
-	void fetchMovedUser(userId).then(result => {
-		if (generation === requestGeneration) user.value = result;
-	}).catch(() => {});
-}, { immediate: true });
-
-onBeforeUnmount(() => {
-	requestGeneration++;
-});
+misskeyApi('users/show', { userId: props.movedTo }).then(u => user.value = u);
 </script>
 
 <style lang="scss" module>

@@ -1,8 +1,8 @@
 {
 	"repository": "https://github.com/misskey-dev/misskey.git",
-	"ref": "develop",
-	"version": "2026.8.0-alpha.0",
-	"snapshotDate": "2026-08-27",
-	"commit": null,
-	"note": "The exact commit hash was not embedded in the supplied misskey-develop.zip snapshot. Set commit when the next upstream sync is performed from a Git checkout."
+	"ref": "2026.9.0",
+	"version": "2026.9.0",
+	"snapshotDate": "2026-09-06",
+	"commit": "bd9eb7c77942ef11749a04e7a5f24bee935d764b",
+	"note": "Pinned to the vanilla Misskey 2026.9.0 release tag."
 }

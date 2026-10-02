@@ -1,6 +1,19 @@
-<!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<script lang="ts">
-import MkObjectView from './vune/MkObjectView.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-export default createVuneWebHost(MkObjectView);
+<!--
+SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<template>
+<div class="_selectable">
+	<XValue :value="value" :collapsed="false"/>
+</div>
+</template>
+
+<script lang="ts" setup>
+import { } from 'vue';
+import XValue from './MkObjectView.value.vue';
+
+const props = defineProps<{
+	value: Record<string, unknown>;
+}>();
 </script>

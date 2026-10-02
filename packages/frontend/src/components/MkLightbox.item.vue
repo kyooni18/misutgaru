@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						/>
 						<div v-else :class="$style.hiddenPlaceholder"></div>
 						<div :class="[$style.hiddenText, { [$style.withBlur]: content.type === 'video' && content.thumbnailUrl != null }]">
-							<div>
+						<div>
 								<b v-if="content.file?.isSensitive" style="display: block;"><i class="ti ti-eye-exclamation"></i> {{ i18n.ts.sensitive }}</b>
 								<b v-else style="display: block;"><i class="ti" :class="contentHideFileIcon"></i> {{ contentHideFileText }}</b>
 								<span style="display: block;">{{ i18n.ts.clickToShow }}</span>
@@ -159,6 +159,7 @@ type Rect = Size & {
 };
 
 import type { Content } from './MkLightbox.types.js';
+export type { Content } from './MkLightbox.types.js';
 
 export function calculateSourceTransform({
 	fit,
@@ -868,7 +869,7 @@ watch([rootEl, hide], ([newRootEl, isHidden]) => {
 	animateFromSourceToNeutral();
 }, { immediate: true });
 
-watch([() => props.content, prefer.r.nsfw], ([newContent]) => {
+watch([() => props.content, prefer.r.nsfw, () => props.initiallyRevealed], ([newContent]) => {
 	hide.value = shouldHideInGallery(newContent);
 }, { deep: true, immediate: true });
 

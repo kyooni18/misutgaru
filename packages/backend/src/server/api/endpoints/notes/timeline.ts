@@ -18,6 +18,7 @@ import { MiLocalUser } from '@/models/User.js';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
 import { ChannelFollowingService } from '@/core/ChannelFollowingService.js';
+import { RecommendationTimelineService } from '@/core/RecommendationTimelineService.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -72,10 +73,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private channelMutingService: ChannelMutingService,
 		private channelFollowingService: ChannelFollowingService,
 		private queryService: QueryService,
+		private recommendationTimelineService: RecommendationTimelineService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
 			const sinceId = ps.sinceId ?? (ps.sinceDate ? this.idService.gen(ps.sinceDate!) : null);
+			const enableDiscovery = untilId == null && sinceId == null;
+			const loadRecommendedCandidates = async (candidateIds: string[]) => {
+				const candidates = await this.getFromDb({
+					untilId: null,
+					sinceId: null,
+					limit: candidateIds.length,
+					includeMyRenotes: ps.includeMyRenotes,
+					includeRenotedMyNotes: ps.includeRenotedMyNotes,
+					includeLocalRenotes: ps.includeLocalRenotes,
+					withFiles: ps.withFiles,
+					withRenotes: ps.withRenotes,
+					candidateIds,
+				}, me);
+				return await this.noteEntityService.packMany(candidates, me);
+			};
 
 			if (!this.serverSettings.enableFanoutTimeline) {
 				const timeline = await this.getFromDb({
@@ -93,7 +110,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					this.activeUsersChart.read(me);
 				});
 
-				return await this.noteEntityService.packMany(timeline, me);
+				const packed = await this.noteEntityService.packMany(timeline, me);
+				return await this.recommendationTimelineService.mix(packed, me.id, {
+					limit: ps.limit,
+					enableDiscovery,
+					loadCandidates: loadRecommendedCandidates,
+				});
 			}
 
 			const [
@@ -135,11 +157,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				this.activeUsersChart.read(me);
 			});
 
-			return timeline;
+			return await this.recommendationTimelineService.mix(await timeline, me.id, {
+				limit: ps.limit,
+				enableDiscovery,
+				loadCandidates: loadRecommendedCandidates,
+			});
 		});
 	}
 
-	private async getFromDb(ps: { untilId: string | null; sinceId: string | null; limit: number; includeMyRenotes: boolean; includeRenotedMyNotes: boolean; includeLocalRenotes: boolean; withFiles: boolean; withRenotes: boolean; }, me: MiLocalUser) {
+	private async getFromDb(ps: { untilId: string | null; sinceId: string | null; limit: number; includeMyRenotes: boolean; includeRenotedMyNotes: boolean; includeLocalRenotes: boolean; withFiles: boolean; withRenotes: boolean; candidateIds?: string[]; }, me: MiLocalUser) {
 		const [followees, mutingChannelIds, rawFollowingChannelIds] = await Promise.all([
 			this.userFollowingService.getFollowees(me.id),
 			this.channelMutingService
@@ -159,6 +185,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			.leftJoinAndSelect('note.renote', 'renote')
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
+
+		if (ps.candidateIds != null) {
+			if (ps.candidateIds.length === 0) return [];
+			query.andWhere('note.id IN (:...candidateIds)', { candidateIds: ps.candidateIds });
+		}
 
 		if (followees.length > 0 && followingChannelIds.length > 0) {
 			// ユーザー・チャンネルともにフォローあり

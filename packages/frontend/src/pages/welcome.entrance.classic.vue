@@ -4,14 +4,39 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWelcomeClassic :meta="meta" :instances="instances" :classes="$style" :getInstanceIcon="getInstanceIcon"/>
+<div v-if="meta" :class="$style.root">
+	<MkFeaturedPhotos :class="$style.bg"/>
+	<XTimeline :class="$style.tl"/>
+	<div :class="$style.shape1"></div>
+	<div :class="$style.shape2"></div>
+	<div :class="$style.logoWrapper">
+		<div :class="$style.poweredBy">Powered by</div>
+		<img :src="misskeysvg" :class="$style.misskey"/>
+	</div>
+	<div :class="$style.contents">
+		<MkVisitorDashboard/>
+	</div>
+	<div v-if="instances && instances.length > 0" :class="$style.federation">
+		<MkMarqueeText :duration="40">
+			<MkA v-for="instance in instances" :key="instance.id" :class="$style.federationInstance" :to="`/instance-info/${instance.host}`" behavior="window">
+				<!--<MkInstanceCardMini :instance="instance"/>-->
+				<img v-if="instance.iconUrl" :class="$style.federationInstanceIcon" :src="getInstanceIcon(instance)" alt=""/>
+				<span class="_monospace">{{ instance.host }}</span>
+			</MkA>
+		</MkMarqueeText>
+	</div>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneWelcomeClassic from './vune/welcome.entrance.classic.vune?vue-host';
+import XTimeline from './welcome.timeline.vue';
+import MkMarqueeText from '@/components/MkMarqueeText.vue';
+import MkFeaturedPhotos from '@/components/MkFeaturedPhotos.vue';
+import misskeysvg from '/client-assets/misskey.svg';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
+import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
 import { getProxiedImageUrl } from '@/utility/media-proxy.js';
 import { instance as meta } from '@/instance.js';
 
@@ -134,26 +159,13 @@ misskeyApiGet('federation/instances', {
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
 	border-radius: 999px;
-	overflow-x: auto;
-	overflow-y: clip;
-	scrollbar-width: none;
+	overflow: clip;
 	width: 800px;
 	padding: 8px 0;
 
 	@media (max-width: 900px) {
 		display: none;
 	}
-}
-
-.federation::-webkit-scrollbar {
-	display: none;
-}
-
-.federationTrack {
-	display: inline-flex;
-	align-items: center;
-	width: max-content;
-	min-width: 100%;
 }
 
 .federationInstance {

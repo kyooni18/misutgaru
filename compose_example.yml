@@ -22,6 +22,33 @@ services:
     volumes:
       - ./files:/misskey/files
       - ./.config:/misskey/.config:ro
+    environment:
+      MISUTGARU_RECOMMENDATION_ENABLED: "true"
+      MISUTGARU_RECOMMENDATION_URL: "http://recommendation:3080"
+
+  recommendation:
+    build:
+      context: ./packages/recommendation
+    restart: always
+    env_file:
+      - .config/docker.env
+    environment:
+      RECOMMENDATION_DB_HOST: db
+      RECOMMENDATION_LISTEN_ADDR: 0.0.0.0:3080
+      RECOMMENDATION_INDEX_DB: /data/recommendation.sqlite3
+      RECOMMENDATION_ID_GENERATION_METHOD: aidx
+    networks:
+      - internal_network
+    volumes:
+      - recommendation_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3080/healthz"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
 
   redis:
     restart: always
@@ -96,3 +123,6 @@ networks:
   internal_network:
     internal: true
   external_network:
+
+volumes:
+  recommendation_data:

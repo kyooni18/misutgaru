@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, Text } from 'vune-ui';
-export struct MkQrShow: View { init() {} var body: some View { VStack(alignment: 'stretch', spacing: 0) { Text('QR') }.className('mk-vune-qr-show') } }
-export default MkQrShow

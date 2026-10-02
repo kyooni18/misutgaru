@@ -1,0 +1,59 @@
+- generic [ref=e10]:
+  - generic [ref=e11]:
+    - link "View source on GitHub":
+      - /url: https://github.com/misskey-dev/misskey
+      - img [aria-hidden] [ref=e12] [cursor=pointer]
+    - generic [ref=e20]:
+      - generic:
+        - generic: Powered by
+        - img "Misskey"
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - button "더 보기!" [ref=e24] [cursor=pointer]:
+            - generic:
+              - generic [aria-hidden]: 
+          - generic [ref=e25]:
+            - heading "네스트" [level=1] [ref=e26]
+            - generic [ref=e27]: 노트로 연결되는 네트워크
+            - generic [ref=e29]:
+              - generic [aria-hidden] [ref=e30]: 
+              - generic [ref=e31]: 현재 이 서버는 비공개입니다. 회원가입을 하시려면 초대 코드가 필요합니다.
+            - generic [ref=e33]:
+              - button "이 서버에 가입" [ref=e34] [cursor=pointer]
+              - link "다른 서버 찾기" [ref=e35] [cursor=pointer]:
+                - /url: https://misskey-hub.net/servers/
+              - button "로그인" [ref=e36] [cursor=pointer]
+        - generic [ref=e37]: 타임라인 구경하기
+  - generic [ref=e45]:
+    - generic [ref=e46]:
+      - button "" [ref=e47] [cursor=pointer]
+      - generic: 회원 가입
+    - generic [ref=e51]:
+      - generic [ref=e52]: 
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - generic [aria-hidden] [ref=e58]: 
+          - generic [ref=e59]: 현재 이 서버는 비공개입니다. 회원가입을 하시려면 초대 코드가 필요합니다.
+        - generic [ref=e60]:
+          - generic [ref=e61]: 이 서버에 가입하기 전에 아래 사항을 확인하여 주십시오.
+          - generic [ref=e62]: 중요하므로 반드시 읽어주십시오.
+        - group [ref=e63]:
+          - generic [ref=e64]:
+            - button "기본적인 주의사항 " [ref=e66] [cursor=pointer]:
+              - generic [ref=e67]: 기본적인 주의사항
+              - generic [ref=e71]: 
+            - generic [ref=e78]:
+              - link "기본적인 주의사항 " [ref=e79] [cursor=pointer]:
+                - /url: https://misskey-hub.net/docs/for-users/onboarding/warning/
+                - text: 기본적인 주의사항
+                - generic [ref=e80]: 
+              - generic [ref=e81]:
+                - switch "꺼져 있습니다" [ref=e83] [cursor=pointer]
+                - generic [ref=e85]: 동의합니다
+        - generic [ref=e88]: 계속하시려면 모든 항목에 동의하십시오.
+        - generic [ref=e89]:
+          - button "취소" [ref=e90] [cursor=pointer]
+          - button "계속 " [disabled] [ref=e91]:
+            - generic:
+              - text: 계속
+              - generic: 

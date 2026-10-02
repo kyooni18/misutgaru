@@ -8,7 +8,7 @@ import type { StoryObj } from '@storybook/vue3';
 import { userDetailed } from '../../../.storybook/fakes.js';
 import MkAcct from './MkAcct.vue';
 export const Default = {
-	render(args: Record<string, unknown>) {
+	render(args) {
 		return {
 			components: {
 				MkAcct,
@@ -18,7 +18,14 @@ export const Default = {
 					args,
 				};
 			},
-			template: '<MkAcct v-bind="args" />',
+			computed: {
+				props() {
+					return {
+						...this.args,
+					};
+				},
+			},
+			template: '<MkAcct v-bind="props" />',
 		};
 	},
 	args: {

@@ -4,20 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<NativeMkNumber :value="tweened.number"/>
+<span>{{ number(Math.floor(tweened.number)) }}</span>
 </template>
 
 <script lang="ts" setup>
-import VuneMkNumber from './vune/MkNumber.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-import { onUnmounted, reactive, watch } from 'vue';
-import { Animation } from 'vune-ui';
+import { reactive, watch } from 'vue';
 import number from '@/filters/number.js';
-import { vuneMotion } from '@/vune/motion.js';
-import type { MotionHandle } from '@/vune/motion.js';
-import { prefer } from '@/preferences.js';
-
-const NativeMkNumber = createVuneWebHost(VuneMkNumber);
 
 const props = defineProps<{
 	value: number;
@@ -27,28 +19,25 @@ const tweened = reactive({
 	number: 0,
 });
 
-let motion: MotionHandle | null = null;
+watch(() => props.value, (to, from) => {
+	// requestAnimationFrameを利用して、500msでfromからtoまでを1次関数的に変化させる
+	let start: number | null = null;
 
-watch(() => props.value, (to) => {
-	if (!prefer.s.animation) {
-		motion?.cancel();
-		motion = null;
-		tweened.number = to;
-		return;
+	function step(timestamp: number) {
+		if (start === null) {
+			start = timestamp;
+		}
+		const elapsed = timestamp - start;
+		tweened.number = (from ?? 0) + (to - (from ?? 0)) * elapsed / 500;
+		if (elapsed < 500) {
+			window.requestAnimationFrame(step);
+		} else {
+			tweened.number = to;
+		}
 	}
-	// Share Vune's single animation clock instead of starting one rAF loop per
-	// number. Retarget from the currently displayed value so rapid updates stay
-	// continuous instead of snapping back to the previous prop value.
-	motion?.cancel();
-	motion = vuneMotion.animateNumber(
-		tweened.number,
-		to,
-		Animation.linear(0.5),
-		value => { tweened.number = value; },
-	);
+
+	window.requestAnimationFrame(step);
 }, {
 	immediate: true,
 });
-
-onUnmounted(() => motion?.cancel());
 </script>

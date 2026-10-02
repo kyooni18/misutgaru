@@ -4,16 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneReactionEffectHost :reaction="props.reaction" :x="props.x" :y="props.y" :zIndex="zIndex" :up="up" :angle="angle" :rootClass="$style.root" :textClass="$style.text" :upClass="$style.up"/>
+<div :class="$style.root" :style="{ zIndex, top: `${y - 64}px`, left: `${x - 64}px` }">
+	<span :class="[$style.text, { [$style.up]: up }]">
+		<MkReactionIcon class="icon" :reaction="reaction"/>
+	</span>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneReactionEffect from './vune/MkReactionEffect.vune';
 import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneReactionEffectHost = createVuneWebHost(VuneReactionEffect);
+import MkReactionIcon from '@/components/MkReactionIcon.vue';
 
 const props = withDefaults(defineProps<{
 	reaction: string;
@@ -63,6 +64,7 @@ onMounted(() => {
 	font-size: 18px;
 	font-weight: bold;
 	transform: translateY(-30px);
+	transition: transform 1s cubic-bezier(0,.5,0,1), opacity 1s cubic-bezier(.5,0,1,.5);
 	will-change: opacity, transform;
 
 	&.up {

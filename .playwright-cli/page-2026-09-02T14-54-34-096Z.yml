@@ -1,0 +1,73 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "View source on GitHub":
+      - /url: https://github.com/misskey-dev/misskey
+      - img [aria-hidden] [ref=e4] [cursor=pointer]
+    - generic [ref=e12]:
+      - generic:
+        - generic: Powered by
+        - img "Misskey"
+      - generic [ref=e15]:
+        - button "더 보기!":
+          - generic:
+            - generic [aria-hidden]: 
+        - generic [ref=e17]:
+          - heading "네스트" [level=1] [ref=e18]
+          - generic [ref=e19]: 노트로 연결되는 네트워크
+          - generic [ref=e21]:
+            - generic [aria-hidden] [ref=e22]: 
+            - generic [ref=e23]: 현재 이 서버는 비공개입니다. 회원가입을 하시려면 초대 코드가 필요합니다.
+          - generic [ref=e25]:
+            - button "이 서버에 가입" [ref=e26] [cursor=pointer]
+            - link "다른 서버 찾기" [ref=e27] [cursor=pointer]:
+              - /url: https://misskey-hub.net/servers/
+            - button "로그인" [ref=e28] [cursor=pointer]
+  - menu [ref=e80]:
+    - menu [active] [ref=e82]:
+      - generic [ref=e83]:
+        - menuitem "네스트" [ref=e84]
+        - link "서버 정보" [ref=e85] [cursor=pointer]:
+          - /url: /about
+          - generic [ref=e86]:
+            - generic [aria-hidden] [ref=e87]: 
+            - generic [ref=e88]: 서버 정보
+        - link "커스텀 이모지" [ref=e91] [cursor=pointer]:
+          - /url: /about#emojis
+          - generic [ref=e92]:
+            - generic [aria-hidden] [ref=e93]: 
+            - generic [ref=e94]: 커스텀 이모지
+        - link "연합" [ref=e97] [cursor=pointer]:
+          - /url: /about#federation
+          - generic [ref=e98]:
+            - generic [aria-hidden] [ref=e99]: 
+            - generic [ref=e100]: 연합
+        - link "차트" [ref=e103] [cursor=pointer]:
+          - /url: /about#charts
+          - generic [ref=e104]:
+            - generic [aria-hidden] [ref=e105]: 
+            - generic [ref=e106]: 차트
+        - separator [ref=e109]
+        - link "광고" [ref=e110] [cursor=pointer]:
+          - /url: /ads
+          - generic [ref=e111]:
+            - generic [aria-hidden] [ref=e112]: 
+            - generic [ref=e113]: 광고
+        - menuitem "도구" [ref=e116] [cursor=pointer]:
+          - generic [ref=e117]:
+            - generic [aria-hidden] [ref=e118]: 
+            - generic [ref=e119]:
+              - generic [ref=e120]: 도구
+              - generic [aria-hidden] [ref=e122]: 
+        - separator [ref=e123]
+        - link "문의하기" [ref=e124] [cursor=pointer]:
+          - /url: /contact
+          - generic [ref=e125]:
+            - generic [aria-hidden] [ref=e126]: 欄
+            - generic [ref=e127]: 문의하기
+        - link "문서" [ref=e130] [cursor=pointer]:
+          - /url: https://misskey-hub.net/docs/for-users/
+          - generic [ref=e131]:
+            - generic [aria-hidden] [ref=e132]: 
+            - generic [ref=e133]: 문서
+        - link "Misskey에 대하여" [ref=e136] [cursor=pointer]:
+          - /url: /about-misskey

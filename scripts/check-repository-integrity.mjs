@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* SPDX-License-Identifier: AGPL-3.0-only */
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -19,7 +19,7 @@ const ignoredDirs = new Set([
 const textExtensions = new Set([
 	'', '.c', '.cc', '.css', '.d.ts', '.graphql', '.h', '.html', '.js', '.json', '.jsx',
 	'.md', '.mjs', '.mts', '.scss', '.sh', '.sql', '.svg', '.toml', '.ts', '.tsx', '.txt',
-	'.vue', '.vune', '.yaml', '.yml',
+	'.vue', '.yaml', '.yml',
 ]);
 const conflictPattern = /^(<<<<<<<(?: .*)?|=======$|>>>>>>> .*)$/m;
 const failures = [];
@@ -73,8 +73,6 @@ const rootPackage = await readJson('package.json');
 const frontendPackage = await readJson('packages/frontend/package.json');
 const backendPackage = await readJson('packages/backend/package.json');
 const misutgaruCorePackage = await requirePackage('packages/misutgaru-core', '@misutgaru/core');
-const vunePackage = await requirePackage('packages/modules/Vune', 'vune-ui');
-const animationPackage = await requirePackage('packages/modules/Vune/packages/animation', '@vune-ui/animation');
 const dbInvariant = await readJson('scripts/db-schema-invariant.json');
 if (dbInvariant) {
 	if (dbInvariant.scope?.migrations !== 'packages/backend/migration/**') failures.push('DB invariant must fingerprint the vanilla migration tree');
@@ -111,89 +109,13 @@ if (rootPackage && misutgaruCorePackage) {
 	}
 }
 
-if (rootPackage && vunePackage) {
-	if (rootPackage.packageManager !== vunePackage.packageManager) failures.push(`root ${rootPackage.packageManager ?? 'missing packageManager'} does not match local Vune ${vunePackage.packageManager ?? 'missing packageManager'}`);
-	const linked = rootPackage.dependencies?.['vune-ui'];
-	if (linked !== 'link:packages/modules/Vune') failures.push('root vune-ui dependency must point at packages/modules/Vune');
-	const compilerLink = rootPackage.devDependencies?.['@vune-ui/compiler'];
-	if (compilerLink !== 'link:packages/modules/Vune/packages/compiler') failures.push('root @vune-ui/compiler must link the checked-out local Vune compiler');
-}
-
-if (frontendPackage && vunePackage && animationPackage) {
-	if (frontendPackage.dependencies?.['vune-ui'] !== 'link:../modules/Vune') failures.push('frontend vune-ui must use the checked-out local module');
-	const localVuneLinks = {
-		'@vune-ui/animation': 'link:../modules/Vune/packages/animation',
-		'@vune-ui/core': 'link:../modules/Vune/packages/core',
-		'@vune-ui/vue': 'link:../modules/Vune/packages/vue',
-		'@vune-ui/web': 'link:../modules/Vune/packages/web',
-	};
-	for (const [name, expected] of Object.entries(localVuneLinks)) {
-		if (frontendPackage.dependencies?.[name] !== expected) failures.push(`frontend ${name} must link the checked-out local Vune package`);
-	}
-	for (const [name, expected] of Object.entries({
-		'@vune-ui/compiler': 'link:../modules/Vune/packages/compiler',
-		'@vune-ui/vite': 'link:../modules/Vune/packages/vite',
-	})) {
-		if (frontendPackage.devDependencies?.[name] !== expected) failures.push(`frontend ${name} must link the checked-out local Vune package`);
-	}
-}
-
-
-try {
-	const lockfile = await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8');
-	for (const expected of [
-		'specifier: link:packages/modules/Vune/packages/compiler',
-		'specifier: link:../modules/Vune/packages/animation',
-		'specifier: link:../modules/Vune/packages/core',
-		'specifier: link:../modules/Vune/packages/vue',
-		'specifier: link:../modules/Vune/packages/web',
-		'specifier: link:../modules/Vune/packages/vite',
-		'specifier: link:../modules/Vune/packages/compiler',
-	]) {
-		if (!lockfile.includes(expected)) failures.push(`pnpm-lock.yaml is missing local Vune link: ${expected}`);
-	}
-} catch (error) {
-	failures.push(`cannot validate local Vune lockfile wiring: ${error.message}`);
-}
-
-for (const relative of [
-	'packages/modules/Vune/pnpm-lock.yaml',
-	'packages/modules/Vune/packages/animation/package.json',
-	'packages/modules/Vune/packages/animation/index.d.ts',
-	'packages/modules/Vune/packages/animation/src/index.js',
-	'packages/modules/Vune/packages/core/package.json',
-	'packages/modules/Vune/packages/compiler/package.json',
-	'packages/modules/Vune/packages/web/package.json',
-]) {
-	try {
-		const info = await stat(path.join(root, relative));
-		if (!info.isFile()) failures.push(`${relative} is missing`);
-	} catch {
-		failures.push(`${relative} is missing; initialize submodules recursively`);
-	}
-}
-
 try {
 	const dockerfile = await readFile(path.join(root, 'Dockerfile'), 'utf8');
-	const dockerignore = await readFile(path.join(root, '.dockerignore'), 'utf8');
-	if (!rootPackage?.scripts?.build?.includes('pnpm modules:build')) failures.push('root build must prepare the local Vune workspace before the application build');
 	if (!dockerfile.includes('pnpm build')) failures.push('Dockerfile must invoke the root build so local framework preparation cannot be skipped');
-	const prebuiltVuneCopy = dockerfile.split('\n').some(line => line.trimStart().startsWith('COPY ') && !line.includes('--from=') && line.includes('packages/modules/Vune/dist'));
-	if (prebuiltVuneCopy) failures.push('Dockerfile must not require prebuilt packages/modules/Vune/dist from the source context');
-	if (/^packages\/modules\/Vune\/\*$/m.test(dockerignore)) failures.push('.dockerignore must not hide Vune source required by the clean Docker build');
 	if (!dockerfile.includes('packages/misutgaru-core/package.json')) failures.push('Dockerfile must expose the @misutgaru/core workspace manifest during dependency installation');
 	if (!dockerfile.includes('packages/misutgaru-core/built')) failures.push('Dockerfile runner must copy the built @misutgaru/core runtime package');
 } catch (error) {
-	failures.push(`cannot validate Docker local-module build: ${error.message}`);
-}
-
-try {
-	const viteConfig = await readFile(path.join(root, 'packages/frontend/vite.config.ts'), 'utf8');
-	const compilerVite = await readFile(path.join(root, 'packages/modules/Vune/packages/compiler/src/vite.ts'), 'utf8');
-	if (!viteConfig.includes("vueHost: { factoryImport: '@/vune/compat-vue.js' }")) failures.push('frontend Vite config must enable compiler-generated transitional Vue hosts');
-	if (!compilerVite.includes('vue-host')) failures.push('Vune compiler Vite plugin must preserve the ?vue-host codegen entry point');
-} catch (error) {
-	failures.push(`cannot validate typed Vune Vue-host integration: ${error.message}`);
+	failures.push(`cannot validate Docker local workspace build: ${error.message}`);
 }
 
 try {

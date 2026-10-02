@@ -4,16 +4,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VunePagingButtons :min="min" :current="current" :max="max" :buttonRanges="buttonRanges" :prevDotVisible="prevDotVisible" :nextDotVisible="nextDotVisible" :rootClass="$style.root" :buttonsClass="$style.buttons" :headTailClass="$style.headTailButtons" :onPage="onNumberButtonClicked"/>
+<div :class="$style.root">
+	<MkButton primary :disabled="min === current" @click="onToPrevButtonClicked">&lt;</MkButton>
+
+	<div :class="$style.buttons">
+		<div v-if="prevDotVisible" :class="$style.headTailButtons">
+			<MkButton @click="onToHeadButtonClicked">{{ min }}</MkButton>
+			<span class="ti ti-dots"></span>
+		</div>
+
+		<MkButton
+			v-for="i in buttonRanges" :key="i"
+			:disabled="current === i"
+			@click="onNumberButtonClicked(i)"
+		>
+			{{ i }}
+		</MkButton>
+
+		<div v-if="nextDotVisible" :class="$style.headTailButtons">
+			<span class="ti ti-dots"></span>
+			<MkButton @click="onToTailButtonClicked">{{ max }}</MkButton>
+		</div>
+	</div>
+
+	<MkButton primary :disabled="max === current" @click="onToNextButtonClicked">&gt;</MkButton>
+</div>
 </template>
 
 <script setup lang="ts">
-import VunePagingButtonsView from './vune/MkPagingButtons.vune';
 
 import { computed, toRefs } from 'vue';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VunePagingButtons = createVuneWebHost(VunePagingButtonsView);
+import MkButton from '@/components/MkButton.vue';
 
 const min = 1;
 
@@ -37,8 +58,32 @@ const buttonRanges = computed(() => Array.from({ length: buttonCount.value }, (_
 const prevDotVisible = computed(() => (current.value - 1 > buttonCountHalf.value) && (max.value > buttonCount.value));
 const nextDotVisible = computed(() => (current.value < max.value - buttonCountHalf.value) && (max.value > buttonCount.value));
 
+if (_DEV_) {
+	console.log('[MkPagingButtons]', current.value, max.value, buttonCount.value, buttonCountHalf.value);
+	console.log('[MkPagingButtons]', current.value < max.value - buttonCountHalf.value);
+	console.log('[MkPagingButtons]', max.value > buttonCount.value);
+}
+
 function onNumberButtonClicked(pageNumber: number) {
 	emit('pageChanged', pageNumber);
+}
+
+function onToHeadButtonClicked() {
+	emit('pageChanged', min);
+}
+
+function onToPrevButtonClicked() {
+	const newPageNumber = current.value <= min ? min : current.value - 1;
+	emit('pageChanged', newPageNumber);
+}
+
+function onToNextButtonClicked() {
+	const newPageNumber = current.value >= max.value ? max.value : current.value + 1;
+	emit('pageChanged', newPageNumber);
+}
+
+function onToTailButtonClicked() {
+	emit('pageChanged', max.value);
 }
 </script>
 

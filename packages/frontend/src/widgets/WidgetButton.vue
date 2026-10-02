@@ -4,7 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetButton :label="widgetProps.label" :colored="widgetProps.colored" :onRun="run"/>
+<div data-testid="mkw-button" class="mkw-button">
+	<MkButton :primary="widgetProps.colored" full @click="run">
+		{{ widgetProps.label }}
+	</MkButton>
+</div>
 </template>
 
 <script lang="ts" setup>
@@ -15,11 +19,8 @@ import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import * as os from '@/os.js';
 import { aiScriptReadline, createAiScriptEnv } from '@/aiscript/api.js';
 import { $i } from '@/i.js';
-import WidgetButton from './vune/WidgetButton.vune';
+import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-
-const VuneWidgetButton = createVuneWebHost(WidgetButton);
 
 const name = 'button';
 

@@ -20,6 +20,7 @@ import { MiLocalUser } from '@/models/User.js';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
 import { ChannelFollowingService } from '@/core/ChannelFollowingService.js';
+import { RecommendationTimelineService } from '@/core/RecommendationTimelineService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -91,10 +92,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private channelMutingService: ChannelMutingService,
 		private channelFollowingService: ChannelFollowingService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
+		private recommendationTimelineService: RecommendationTimelineService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
 			const sinceId = ps.sinceId ?? (ps.sinceDate ? this.idService.gen(ps.sinceDate!) : null);
+			const enableDiscovery = untilId == null && sinceId == null;
+			const loadRecommendedCandidates = async (candidateIds: string[]) => {
+				const candidates = await this.getFromDb({
+					untilId: null,
+					sinceId: null,
+					limit: candidateIds.length,
+					includeMyRenotes: ps.includeMyRenotes,
+					includeRenotedMyNotes: ps.includeRenotedMyNotes,
+					includeLocalRenotes: ps.includeLocalRenotes,
+					withFiles: ps.withFiles,
+					withReplies: ps.withReplies,
+					candidateIds,
+				}, me);
+				return await this.noteEntityService.packMany(candidates, me);
+			};
 
 			const policies = await this.roleService.getUserPolicies(me.id);
 			if (!policies.ltlAvailable) {
@@ -119,7 +136,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					this.activeUsersChart.read(me);
 				});
 
-				return await this.noteEntityService.packMany(timeline, me);
+				const packed = await this.noteEntityService.packMany(timeline, me);
+				return await this.recommendationTimelineService.mix(packed, me.id, {
+					limit: ps.limit,
+					enableDiscovery,
+					loadCandidates: loadRecommendedCandidates,
+				});
 			}
 
 			let timelineConfig: FanoutTimelineName[];
@@ -182,7 +204,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				this.activeUsersChart.read(me);
 			});
 
-			return redisTimeline;
+			return await this.recommendationTimelineService.mix(redisTimeline, me.id, {
+				limit: ps.limit,
+				enableDiscovery,
+				loadCandidates: loadRecommendedCandidates,
+			});
 		});
 	}
 
@@ -195,6 +221,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		includeLocalRenotes: boolean,
 		withFiles: boolean,
 		withReplies: boolean,
+		candidateIds?: string[],
 	}, me: MiLocalUser) {
 		const [followees, mutingChannelIds, rawFollowingChannelIds] = await Promise.all([
 			this.userFollowingService.getFollowees(me.id),
@@ -224,6 +251,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			.leftJoinAndSelect('note.renote', 'renote')
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
+
+		if (ps.candidateIds != null) {
+			if (ps.candidateIds.length === 0) return [];
+			query.andWhere('note.id IN (:...candidateIds)', { candidateIds: ps.candidateIds });
+		}
 
 		if (followingChannelIds.length > 0) {
 			query.andWhere(new Brackets(qb => {

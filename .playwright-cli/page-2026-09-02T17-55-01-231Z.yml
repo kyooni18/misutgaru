@@ -1,0 +1,121 @@
+- generic [ref=f1e12]:
+  - generic [ref=f1e13]:
+    - link "네스트" [ref=f1e14] [cursor=pointer]:
+      - /url: /
+    - button "회원 가입" [ref=f1e15] [cursor=pointer]
+  - generic [ref=f1e19]:
+    - generic [ref=f1e21]:
+      - generic [ref=f1e23]:
+        - generic [ref=f1e24]:
+          - generic:
+            - generic:
+              - generic "kyooni18":
+                - generic "최근에 활동함"
+        - generic [ref=f1e25]:
+          - generic [ref=f1e26]: 경이
+          - generic [ref=f1e29]: "@kyooni18"
+      - generic [ref=f1e162]:
+        - button " 요약" [ref=f1e163] [cursor=pointer]:
+          - generic [ref=f1e164]:
+            - generic [ref=f1e165]: 
+            - generic [ref=f1e166]: 요약
+        - button " 노트" [ref=f1e167] [cursor=pointer]:
+          - generic [ref=f1e168]:
+            - generic [ref=f1e169]: 
+            - generic [ref=f1e170]: 노트
+        - button " 파일" [ref=f1e171] [cursor=pointer]:
+          - generic [ref=f1e172]:
+            - generic [ref=f1e173]: 
+            - generic [ref=f1e174]: 파일
+        - button " 활동" [ref=f1e175] [cursor=pointer]:
+          - generic [ref=f1e176]:
+            - generic [ref=f1e177]: 
+            - generic [ref=f1e178]: 활동
+        - button " 도전 과제" [ref=f1e179] [cursor=pointer]:
+          - generic [ref=f1e180]:
+            - generic [ref=f1e181]: 
+            - generic [ref=f1e182]: 도전 과제
+        - button " 리액션" [ref=f1e183] [cursor=pointer]:
+          - generic [ref=f1e184]:
+            - generic [ref=f1e185]: 
+            - generic [ref=f1e186]: 리액션
+        - button " 클립" [ref=f1e187] [cursor=pointer]:
+          - generic [ref=f1e188]:
+            - generic [ref=f1e189]: 
+            - generic [ref=f1e190]: 클립
+        - button " 리스트" [ref=f1e191] [cursor=pointer]:
+          - generic [ref=f1e192]:
+            - generic [ref=f1e193]: 
+            - generic [ref=f1e194]: 리스트
+        - button " 페이지" [ref=f1e195] [cursor=pointer]:
+          - generic [ref=f1e196]:
+            - generic [ref=f1e197]: 
+            - generic [ref=f1e198]: 페이지
+        - button " Play" [ref=f1e199] [cursor=pointer]:
+          - generic [ref=f1e200]:
+            - generic [ref=f1e201]: 
+            - generic [ref=f1e202]: Play
+        - button " 갤러리" [ref=f1e203] [cursor=pointer]:
+          - generic [ref=f1e204]:
+            - generic [ref=f1e205]: 
+            - generic [ref=f1e206]: 갤러리
+        - button " Raw" [ref=f1e207] [cursor=pointer]:
+          - generic [ref=f1e208]:
+            - generic [ref=f1e209]: 
+            - generic [ref=f1e210]: Raw
+    - generic [ref=f1e86]:
+      - generic [ref=f1e88]:
+        - generic [ref=f1e102]:
+          - button "" [ref=f1e103] [cursor=pointer]
+          - button "팔로우" [ref=f1e106] [cursor=pointer]:
+            - generic [ref=f1e107]:
+              - generic [ref=f1e108]: 팔로우
+              - generic [aria-hidden] [ref=f1e109]: 
+        - generic "kyooni18" [ref=f1e112]:
+          - generic "최근에 활동함" [ref=f1e113]
+        - generic [ref=f1e211]:
+          - generic [ref=f1e212]: 경이
+          - generic [ref=f1e218]:
+            - generic [ref=f1e219]: "@kyooni18"
+            - generic [ref=f1e220]: "@pub.k-y.moe"
+        - generic [ref=f1e116]:
+          - text: 전 계정) kyooni18@misskey.kyooni.kr클래식음악 하는 인간 (
+          - img "🎻" [ref=f1e117]
+          - text: )이지만 콤퓨타 갖고놀기를 좋아해요모든 종류의 연락 및 멘션 등은 환영합니다
+        - generic [ref=f1e118]:
+          - generic [ref=f1e119]:
+            - term [ref=f1e120]:
+              - generic [ref=f1e121]: 
+              - text: 장소
+            - definition [ref=f1e122]: 대한민국
+          - generic [ref=f1e123]:
+            - term [ref=f1e124]:
+              - generic [ref=f1e125]: 
+              - text: 생일
+            - definition [ref=f1e126]: 0118/01/18 (1908세)
+          - generic [ref=f1e127]:
+            - term [ref=f1e128]:
+              - generic [ref=f1e129]: 
+              - text: 등록일
+            - definition [ref=f1e130]:
+              - text: 2026. 7. 22. 오전 4:18:01 (
+              - generic [ref=f1e131]: 1개월 전
+              - text: )
+        - generic [ref=f1e132]:
+          - link "76 노트" [ref=f1e133] [cursor=pointer]:
+            - /url: /@kyooni18/notes
+            - generic [ref=f1e134]: "76"
+            - text: 노트
+          - link "30 팔로잉" [ref=f1e135] [cursor=pointer]:
+            - /url: /@kyooni18/following
+            - generic [ref=f1e136]: "30"
+            - text: 팔로잉
+          - link "13 팔로워" [ref=f1e137] [cursor=pointer]:
+            - /url: /@kyooni18/followers
+            - generic [ref=f1e138]: "13"
+            - text: 팔로워
+      - generic [ref=f1e145]:
+        - button "유행" [ref=f1e146] [cursor=pointer]
+        - button "노트" [disabled] [ref=f1e149]
+        - button "전체" [ref=f1e152] [cursor=pointer]
+        - button "미디어" [ref=f1e155] [cursor=pointer]

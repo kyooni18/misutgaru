@@ -4,17 +4,55 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneNetHost :viewBoxX="viewBoxX" :viewBoxY="viewBoxY" :inPolygonPoints="inPolygonPoints" :outPolygonPoints="outPolygonPoints" :inPolylinePoints="inPolylinePoints" :outPolylinePoints="outPolylinePoints" :inHeadX="inHeadX" :inHeadY="inHeadY" :outHeadX="outHeadX" :outHeadY="outHeadY" :inRecent="inRecent" :outRecent="outRecent"/>
+<div class="oxxrhrto">
+	<svg :viewBox="`0 0 ${ viewBoxX } ${ viewBoxY }`">
+		<polygon
+			:points="inPolygonPoints"
+			fill="#94a029"
+			fill-opacity="0.5"
+		/>
+		<polyline
+			:points="inPolylinePoints"
+			fill="none"
+			stroke="#94a029"
+			stroke-width="1"
+		/>
+		<circle
+			:cx="inHeadX"
+			:cy="inHeadY"
+			r="1.5"
+			fill="#94a029"
+		/>
+		<text x="1" y="5">NET rx <tspan>{{ bytes(inRecent) }}</tspan></text>
+	</svg>
+	<svg :viewBox="`0 0 ${ viewBoxX } ${ viewBoxY }`">
+		<polygon
+			:points="outPolygonPoints"
+			fill="#ff9156"
+			fill-opacity="0.5"
+		/>
+		<polyline
+			:points="outPolylinePoints"
+			fill="none"
+			stroke="#ff9156"
+			stroke-width="1"
+		/>
+		<circle
+			:cx="outHeadX"
+			:cy="outHeadY"
+			r="1.5"
+			fill="#ff9156"
+		/>
+		<text x="1" y="5">NET tx <tspan>{{ bytes(outRecent) }}</tspan></text>
+	</svg>
+</div>
 </template>
 
 <script lang="ts" setup>
-import VuneNet from './vune/net.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import bytes from '@/filters/bytes.js';
 import { genId } from '@/utility/id.js';
-
-const VuneNetHost = createVuneWebHost(VuneNet);
 
 const props = defineProps<{
 	connection: Misskey.IChannelConnection<Misskey.Channels['serverStats']>,
@@ -80,7 +118,7 @@ function onStatsLog(statsLog: Misskey.entities.ServerStatsLog) {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .oxxrhrto {
 	display: flex;
 

@@ -4,22 +4,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneReactionDetailsHost
-	:showing="showing"
-	:reaction="reaction"
-	:users="users"
-	:count="count"
-	:anchorElement="anchorElement"
-	:classes="$style"
-	:onClosed="() => emit('closed')"
-/>
+<MkTooltip ref="tooltip" :showing="showing" :anchorElement="anchorElement" :maxWidth="340" @closed="emit('closed')">
+	<div :class="$style.root">
+		<div :class="$style.reaction">
+			<MkReactionIcon :reaction="reaction" :class="$style.reactionIcon" :noStyle="true"/>
+			<div :class="$style.reactionName">{{ getReactionName(reaction) }}</div>
+		</div>
+		<div :class="$style.users">
+			<div v-for="u in users" :key="u.id" :class="$style.user">
+				<MkAvatar :class="$style.avatar" :user="u"/>
+				<MkUserName :user="u" :nowrap="true"/>
+			</div>
+			<div v-if="count > 10" :class="$style.more">+{{ count - 10 }}</div>
+		</div>
+	</div>
+</MkTooltip>
 </template>
 
 <script lang="ts" setup>
-import VuneReactionDetails from './vune/MkReactionsViewer.details.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-const VuneReactionDetailsHost = createVuneWebHost(VuneReactionDetails);
+import { } from 'vue';
 import * as Misskey from 'misskey-js';
+import { getEmojiName } from '@@/js/emojilist.js';
+import MkTooltip from './MkTooltip.vue';
+import MkReactionIcon from '@/components/MkReactionIcon.vue';
 
 defineProps<{
 	showing: boolean;
@@ -33,6 +40,13 @@ const emit = defineEmits<{
 	(ev: 'closed'): void;
 }>();
 
+function getReactionName(reaction: string): string {
+	const trimLocal = reaction.replace('@.', '');
+	if (trimLocal.startsWith(':')) {
+		return trimLocal;
+	}
+	return getEmojiName(reaction);
+}
 </script>
 
 <style lang="scss" module>

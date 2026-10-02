@@ -1,16 +1,15 @@
 # Misutgaru
 
-Misutgaru is a Misskey fork focused on a gradual Vue-to-Vune UI migration, a shared motion/material layer, and lower-overhead backend runtime behavior while preserving the Misskey federation and data-model foundation.
+Misutgaru is a Misskey fork that keeps the frontend on Vue 3 while adding fork-specific product behavior and lower-overhead backend runtime work without changing the Misskey federation and data-model foundation.
 
-The source is currently an active migration checkpoint rather than a drop-in vanilla tree. New contributors should start with:
+The source is an active fork rather than a drop-in vanilla tree. New contributors should start with:
 
 - [Current project state](docs/CURRENT_STATE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Delta from vanilla Misskey](docs/VANILLA_DELTA.md)
 - [Source map](docs/SOURCE_MAP.md)
-- [Vune migration](docs/VUNE.md)
 
-Git checkouts should initialize submodules recursively because Vune is tracked under `packages/modules`. Its animation runtime is included inside that checkout as `@vune-ui/animation`. The 2026-08-28 handoff archive includes the framework sources directly so it remains inspectable without a second download. See the current-state and verification documents before treating a build as release-validated.
+The active frontend builds directly from Vue SFCs. Vune is no longer part of the application dependency graph, build pipeline, or repository submodule layout; older Vune documents are retained only as migration history.
 
 Misutgaru remains licensed under the repository licenses and retains upstream Misskey attribution. General upstream contribution rules still apply unless this fork documents a stricter local rule.
 

@@ -1,0 +1,22 @@
+- generic [ref=e6]:
+  - generic [ref=e10]:
+    - generic [ref=e11]: 
+    - generic [ref=e12]: 어플리케이션의 접근 허가
+  - generic [ref=e17]:
+    - paragraph [ref=e18]: 어플리케이션의 접근을 허가하려면 로그인하십시오.
+    - generic [ref=e21]:
+      - generic [ref=e22]: 
+      - generic [ref=e24]:
+        - generic [ref=e26]:
+          - generic: "@"
+          - textbox "유저명" [active] [ref=e27]
+          - generic: "@pub.k-y.moe"
+        - button "계속 " [ref=e28] [cursor=pointer]:
+          - generic:
+            - text: 계속
+            - generic: 
+      - paragraph [ref=e30]: 혹은
+      - button "ﱙ 패스키로 로그인" [ref=e32] [cursor=pointer]:
+        - generic:
+          - generic: ﱙ
+          - text: 패스키로 로그인

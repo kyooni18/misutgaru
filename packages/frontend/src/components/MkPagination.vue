@@ -8,11 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div>
 		<MkPaginationControl v-if="props.withControl" :paginator="paginator" style="margin-bottom: 10px"/>
 
+		<!-- :css="prefer.s.animation" にしたいけどバグる(おそらくvueのバグ) https://github.com/misskey-dev/misskey/issues/16078 -->
 		<Transition
-			:css="false"
+			:enterActiveClass="prefer.s.animation ? $style.transition_fade_enterActive : ''"
+			:leaveActiveClass="prefer.s.animation ? $style.transition_fade_leaveActive : ''"
+			:enterFromClass="prefer.s.animation ? $style.transition_fade_enterFrom : ''"
+			:leaveToClass="prefer.s.animation ? $style.transition_fade_leaveTo : ''"
 			:mode="prefer.s.animation ? 'out-in' : undefined"
-			@enter="enter"
-			@leave="leave"
 		>
 			<MkLoading v-if="paginator.fetching.value"/>
 
@@ -23,14 +25,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 
 			<div v-else key="_root_" class="_gaps">
-				<div v-if="(direction === 'up' || direction === 'both') && upButtonVisible">
+				<div v-if="direction === 'up' || direction === 'both'" v-show="upButtonVisible">
 					<MkButton v-if="!upButtonLoading" v-appear="shouldEnableInfiniteScroll ? upButtonClick : null" :class="$style.more" primary rounded @click="upButtonClick">
 						{{ i18n.ts.loadMore }}
 					</MkButton>
 					<MkLoading v-else/>
 				</div>
 				<slot :items="getValue(paginator.items)" :fetching="paginator.fetching.value || paginator.fetchingOlder.value"></slot>
-				<div v-if="(direction === 'down' || direction === 'both') && downButtonVisible">
+				<div v-if="direction === 'down' || direction === 'both'" v-show="downButtonVisible">
 					<MkButton v-if="!downButtonLoading" v-appear="shouldEnableInfiniteScroll ? downButtonClick : null" :class="$style.more" primary rounded @click="downButtonClick">
 						{{ i18n.ts.loadMore }}
 					</MkButton>
@@ -71,8 +73,6 @@ import { prefer } from '@/preferences.js';
 import MkPullToRefresh from '@/components/MkPullToRefresh.vue';
 import MkPaginationControl from '@/components/MkPaginationControl.vue';
 import * as os from '@/os.js';
-import { Animation } from 'vune-ui';
-import { animateVuneTransition } from '@/vune/motion.js';
 
 const props = withDefaults(defineProps<MkPaginationOptions & {
 	paginator: T;
@@ -83,28 +83,6 @@ const props = withDefaults(defineProps<MkPaginationOptions & {
 	withControl: false,
 	forceDisableInfiniteScroll: false,
 });
-
-function enter(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateVuneTransition(element, [
-		{ opacity: 0 },
-		{ opacity: 1 },
-	], Animation.easeInOut(0.125), done);
-}
-
-function leave(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateVuneTransition(element, [
-		{ opacity: 1 },
-		{ opacity: 0 },
-	], Animation.easeInOut(0.125), done);
-}
 
 const shouldEnableInfiniteScroll = computed(() => {
 	return prefer.r.enableInfiniteScroll.value && !props.forceDisableInfiniteScroll;
@@ -177,6 +155,15 @@ defineSlots<{
 </script>
 
 <style lang="scss" module>
+.transition_fade_enterActive,
+.transition_fade_leaveActive {
+	transition: opacity 0.125s ease;
+}
+.transition_fade_enterFrom,
+.transition_fade_leaveTo {
+	opacity: 0;
+}
+
 .more {
 	margin-left: auto;
 	margin-right: auto;

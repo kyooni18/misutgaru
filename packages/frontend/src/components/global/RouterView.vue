@@ -21,11 +21,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { inject, nextTick, onMounted, provide, ref, shallowRef, useTemplateRef } from 'vue';
 import type { Router } from '@/router.js';
 import { prefer } from '@/preferences.js';
-import MkLoadingPage from '@/pages/vune/_loading_.vune?vue-host';
+import MkLoadingPage from '@/pages/_loading_.vue';
 import { DI } from '@/di.js';
 import { randomId } from '@/utility/random-id.js';
 import { deepEqual } from '@/utility/deep-equal.js';
-import { resolveVueRouteTarget } from '@/vune/route-target-vue.js';
 
 const props = defineProps<{
 	router?: Router;
@@ -46,7 +45,7 @@ const currentDepth = inject(DI.routerCurrentDepth, 0);
 provide(DI.routerCurrentDepth, currentDepth + 1);
 
 const current = router.current;
-const currentPageComponent = shallowRef('component' in current.route ? resolveVueRouteTarget(current.route.component) : MkLoadingPage);
+const currentPageComponent = shallowRef('component' in current.route ? current.route.component : MkLoadingPage);
 const currentPageProps = ref(current.props);
 let currentRoutePath = current.route.path;
 const key = ref(router.getCurrentFullPath());
@@ -55,7 +54,7 @@ router.useListener('change', ({ resolved }) => {
 	if (resolved == null || 'redirect' in resolved.route) return;
 	if (resolved.route.path === currentRoutePath && deepEqual(resolved.props, currentPageProps.value)) return;
 
-	currentPageComponent.value = resolveVueRouteTarget(resolved.route.component);
+	currentPageComponent.value = resolved.route.component;
 	currentPageProps.value = resolved.props;
 	key.value = router.getCurrentFullPath();
 	currentRoutePath = resolved.route.path;

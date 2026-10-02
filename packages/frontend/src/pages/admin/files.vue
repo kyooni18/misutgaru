@@ -4,28 +4,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneAdminFiles
-	:origin="origin"
-	:originDef="originDef"
-	:searchHost="searchHost"
-	:userId="userId"
-	:mimeType="type"
-	:viewMode="viewMode"
-	:paginator="paginator"
-	:hostDisabled="paginator.computedParams?.value?.origin === 'local'"
-	:headerActions="headerActions"
-	:headerTabs="headerTabs"
-	:onOrigin="setOrigin"
-	:onHost="(value: string) => searchHost = value"
-	:onUserId="(value: string) => userId = value"
-	:onMimeType="(value: string | null) => type = value"
-/>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
+		<div class="_gaps">
+			<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
+				<MkSelect v-model="origin" :items="originDef" style="margin: 0; flex: 1;">
+					<template #label>{{ i18n.ts.instance }}</template>
+				</MkSelect>
+				<MkInput v-model="searchHost" :debounce="true" type="search" style="margin: 0; flex: 1;" :disabled="paginator.computedParams?.value?.origin === 'local'">
+					<template #label>{{ i18n.ts.host }}</template>
+				</MkInput>
+			</div>
+			<div class="inputs" style="display: flex; gap: var(--MI-margin); flex-wrap: wrap;">
+				<MkInput v-model="userId" :debounce="true" type="search" style="margin: 0; flex: 1;">
+					<template #label>User ID</template>
+				</MkInput>
+				<MkInput v-model="type" :debounce="true" type="search" style="margin: 0; flex: 1;">
+					<template #label>MIME type</template>
+				</MkInput>
+			</div>
+			<MkFileListForAdmin :paginator="paginator" :viewMode="viewMode"/>
+		</div>
+	</div>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { computed, markRaw, ref } from 'vue';
-import VuneAdminFiles from './vune/files.vune?vue-host';
 import * as Misskey from 'misskey-js';
+import MkInput from '@/components/MkInput.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkFileListForAdmin from '@/components/MkFileListForAdmin.vue';
 import * as os from '@/os.js';
 import { lookupFile } from '@/utility/admin-lookup.js';
 import { i18n } from '@/i18n.js';
@@ -48,11 +57,6 @@ const type = ref<string | null>(null);
 const searchHost = ref('');
 const userId = ref('');
 const viewMode = ref<'grid' | 'list'>('grid');
-
-function setOrigin(value: 'local' | 'remote' | 'combined'): void {
-	origin.value = value;
-}
-
 const paginator = markRaw(new Paginator('admin/drive/files', {
 	limit: 10,
 	computedParams: computed(() => ({

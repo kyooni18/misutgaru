@@ -4,22 +4,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneWidgetUserListHost :showHeader="widgetProps.showHeader" :listId="widgetProps.listId" :list="list" :users="users" :fetching="fetching" :rootClass="$style.root" :onChooseList="chooseList" :onConfigure="configure"/>
+<MkContainer :showHeader="widgetProps.showHeader" class="mkw-userList">
+	<template #icon><i class="ti ti-users"></i></template>
+	<template #header>{{ list ? list.name : i18n.ts._widgets.userList }}</template>
+	<template #func="{ buttonStyleClass }"><button class="_button" :class="buttonStyleClass" @click="configure()"><i class="ti ti-settings"></i></button></template>
+
+	<div :class="$style.root">
+		<div v-if="widgetProps.listId == null" class="init">
+			<MkButton primary @click="chooseList">{{ i18n.ts._widgets._userList.chooseList }}</MkButton>
+		</div>
+		<MkLoading v-else-if="fetching"/>
+		<div v-else class="users">
+			<span v-for="user in users" :key="user.id" class="user">
+				<MkAvatar :user="user" class="avatar" indicator link preview/>
+			</span>
+		</div>
+	</div>
+</MkContainer>
 </template>
 
 <script lang="ts" setup>
-import VuneWidgetUserList from './vune/WidgetUserList.vune';
-import { createVuneWebHost } from '@/vune/compat-vue.js';
-const VuneWidgetUserListHost = createVuneWebHost(VuneWidgetUserList);
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
+import MkContainer from '@/components/MkContainer.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { useInterval } from '@@/js/use-interval.js';
 import { i18n } from '@/i18n.js';
+import MkButton from '@/components/MkButton.vue';
 
 const name = 'userList';
 

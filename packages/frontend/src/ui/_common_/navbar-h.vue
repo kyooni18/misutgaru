@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="[$style.root, acrylic ? [$style.acrylic, '_materialBar'] : null]">
+<div :class="[$style.root, acrylic ? $style.acrylic : null]">
 	<div :class="$style.body">
 		<div>
 			<button v-click-anime :class="[$style.item, $style.instance]" class="_button" @click="openInstanceMenu">
@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -58,7 +58,6 @@ import { prefer } from '@/preferences.js';
 import { getAccountMenu } from '@/accounts.js';
 import { $i } from '@/i.js';
 import { getHTMLElementOrNull } from '@/utility/get-dom-node-or-null.js';
-import { useMediaQuery } from '@/composables/use-media-query.js';
 
 const WINDOW_THRESHOLD = 1400;
 
@@ -66,7 +65,7 @@ const props = defineProps<{
 	acrylic?: boolean;
 }>();
 
-const settingsWindowed = useMediaQuery(`(min-width: ${WINDOW_THRESHOLD}px)`);
+const settingsWindowed = ref(window.innerWidth > WINDOW_THRESHOLD);
 const menu = ref(prefer.s.menu);
 // const menuDisplay = store.model('menuDisplay');
 const otherNavItemIndicated = computed<boolean>(() => {
@@ -97,6 +96,12 @@ async function openAccountMenu(ev: PointerEvent) {
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
 }
 
+onMounted(() => {
+	window.addEventListener('resize', () => {
+		settingsWindowed.value = (window.innerWidth >= WINDOW_THRESHOLD);
+	}, { passive: true });
+});
+
 </script>
 
 <style lang="scss" module>
@@ -112,9 +117,9 @@ async function openAccountMenu(ev: PointerEvent) {
 	background: var(--MI_THEME-navBg);
 
 	&.acrylic {
-		--vune-material-surface: var(--MI_THEME-navBg);
-		--vune-material-fallback-background: var(--MI_THEME-navBg);
-		background: transparent;
+		background: color(from var(--MI_THEME-bg) srgb r g b / 0.75);
+		-webkit-backdrop-filter: var(--MI-blur, blur(15px));
+		backdrop-filter: var(--MI-blur, blur(15px));
 	}
 }
 

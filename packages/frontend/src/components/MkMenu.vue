@@ -15,20 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	}"
 	@focusin.passive.stop="() => {}"
 >
-	<NativeMkMenuHost
-		:model="nativeModel"
-	/>
-	<!--
-	<div
-		v-if="false"
-		class="_popup _shadow"
-		:class="[$style.surface, materialClass]"
-		:data-vune-material="props.material ?? 'regular'"
-	>
 	<div
 		ref="itemsEl"
 		v-hotkey="keymap"
 		tabindex="0"
+		class="_popup _shadow misutgaru-material misutgaru-material--regular"
 		:class="$style.menu"
 		:style="{
 			width: (width && !asDrawer) ? `${width}px` : '',
@@ -226,8 +217,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			@mousemove="guardMouseMove"
 		></div>
 	</div>
-	</div>
-	-->
 
 	<XChild
 		v-if="childMenu" :key="childMenuKey"
@@ -235,7 +224,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:items="childMenu"
 		:anchorElement="childTarget!"
 		:rootElement="itemsEl!"
-		:material="props.material"
 		:debugDisablePredictionCone="props.debugDisablePredictionCone"
 		:debugShowPredictionCone="props.debugShowPredictionCone"
 		@actioned="childActioned"
@@ -245,29 +233,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts">
-import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, useCssModule, useTemplateRef, unref, watch, shallowRef, reactive, isRef } from 'vue';
+import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, unref, watch, shallowRef, reactive, isRef } from 'vue';
 import type { MenuItem, InnerMenuItem, MenuPending, MenuAction, MenuSwitch, MenuRadio, MenuRadioOption, MenuParent } from '@/types/menu.js';
-import MkAvatar from '@/components/global/MkAvatar.vue';
-import MkUserName from '@/components/global/MkUserName.vue';
+import type { Keymap } from '@/utility/hotkey.js';
+import MkSwitchButton from '@/components/MkSwitch.button.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { isTouchUsing } from '@/utility/touch.js';
 import { isFocusable } from '@/utility/focus.js';
 import { getNodeOrNull } from '@/utility/get-dom-node-or-null.js';
-import { Material } from '@/vune/material.js';
-import type { MaterialName } from '@/vune/material.js';
-import { createVuneComponent } from '@/vune/vue.js';
-import { VueComponent } from '@/vune/vue.js';
-import type { NativeMenuModel, NativeMenuRow } from './vune/MkMenu.types.js';
-import NativeMkMenuView from './vune/MkMenu.vune';
 
 const childrenCache = new WeakMap<MenuParent, MenuItem[]>();
 </script>
 
 <script lang="ts" setup>
 const XChild = defineAsyncComponent(() => import('./MkMenu.child.vue'));
-const NativeMkMenuHost = createVuneComponent(({ model }: { model: NativeMenuModel }) => NativeMkMenuView(model));
-const $style = useCssModule();
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -275,7 +255,6 @@ const props = defineProps<{
 	align?: 'center' | string;
 	width?: number;
 	maxHeight?: number;
-	material?: MaterialName;
 	animated?: boolean;
 	debugDisablePredictionCone?: boolean;
 	debugShowPredictionCone?: boolean;
@@ -290,28 +269,26 @@ const big = isTouchUsing;
 
 const isNestingMenu = inject<boolean>('isNestingMenu', false);
 
-const itemsEl = shallowRef<HTMLElement | null>(null);
+const itemsEl = useTemplateRef('itemsEl');
 
 const items2 = ref<InnerMenuItem[]>();
 
 const child = useTemplateRef('child');
 
-function setItemsEl(element: HTMLElement | null) {
-	itemsEl.value = element;
-}
-
-function onMenuKeydown(event: KeyboardEvent) {
-	if (event.key === 'Escape') {
-		event.preventDefault();
-		close(false);
-	} else if (event.key === 'ArrowUp' || event.key === 'k' || (event.key === 'Tab' && event.shiftKey)) {
-		event.preventDefault();
-		focusUp();
-	} else if (event.key === 'ArrowDown' || event.key === 'j' || event.key === 'Tab') {
-		event.preventDefault();
-		focusDown();
-	}
-}
+const keymap = {
+	'up|k|shift+tab': {
+		allowRepeat: true,
+		callback: () => focusUp(),
+	},
+	'down|j|tab': {
+		allowRepeat: true,
+		callback: () => focusDown(),
+	},
+	'esc': {
+		allowRepeat: true,
+		callback: () => close(false),
+	},
+} as const satisfies Keymap;
 
 const childShowingItem = ref<MenuItem | null>();
 
@@ -340,14 +317,7 @@ const childMenu = ref<MenuItem[] | null>();
 const childMenuKey = ref(0);
 const childTarget = shallowRef<HTMLElement>();
 
-function clearChildCloseTimer() {
-	if (childCloseTimer === null) return;
-	window.clearTimeout(childCloseTimer);
-	childCloseTimer = null;
-}
-
 function closeChild() {
-	clearChildCloseTimer();
 	childMenu.value = null;
 	childShowingItem.value = null;
 }
@@ -360,22 +330,16 @@ function childActioned() {
 let childCloseTimer: null | number = null;
 
 function onItemMouseEnter() {
-	clearChildCloseTimer();
 	childCloseTimer = window.setTimeout(() => {
-		childCloseTimer = null;
 		closeChild();
 	}, 300);
 }
 
 function onItemMouseLeave() {
-	clearChildCloseTimer();
+	if (childCloseTimer) window.clearTimeout(childCloseTimer);
 }
 
 async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent | KeyboardEvent) {
-	// `currentTarget` is cleared by the browser once the event handler yields.
-	// Capture the anchor before opening the async child menu so positioning does
-	// not fall back to a nested icon/text node (or `null`).
-	const anchorElement = (ev.currentTarget ?? ev.target) as HTMLElement;
 	const children: MenuItem[] = item.options.map<MenuRadioOption>(def => {
 		return {
 			type: 'radioOption',
@@ -399,12 +363,12 @@ async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent |
 	});
 
 	if (props.asDrawer) {
-		os.popupMenu(children, anchorElement).finally(() => {
+		os.popupMenu(children, ev.currentTarget ?? ev.target).finally(() => {
 			close(false);
 		});
 		emit('hide');
 	} else {
-		childTarget.value = anchorElement;
+		childTarget.value = (ev.currentTarget ?? ev.target) as HTMLElement;
 		childMenu.value = children;
 		childMenuKey.value++;
 		childShowingItem.value = item;
@@ -412,10 +376,6 @@ async function showRadioOptions(item: MenuRadio, ev: MouseEvent | PointerEvent |
 }
 
 async function showChildren(item: MenuParent, ev: MouseEvent | PointerEvent | KeyboardEvent) {
-	// Keep the actual parent row. Native event `currentTarget` becomes `null`
-	// after the async handler yields, which otherwise makes the submenu anchor
-	// depend on whichever child element was under the pointer.
-	const anchorElement = (ev.currentTarget ?? ev.target) as HTMLElement;
 	ev.stopPropagation();
 
 	const children: MenuItem[] = await (async () => {
@@ -433,12 +393,12 @@ async function showChildren(item: MenuParent, ev: MouseEvent | PointerEvent | Ke
 	childrenCache.set(item, children);
 
 	if (props.asDrawer) {
-		os.popupMenu(children, anchorElement).finally(() => {
+		os.popupMenu(children, ev.currentTarget ?? ev.target).finally(() => {
 			close(false);
 		});
 		emit('hide');
 	} else {
-		childTarget.value = anchorElement;
+		childTarget.value = (ev.currentTarget ?? ev.target) as HTMLElement;
 		// これでもリアクティビティは保たれる
 		childMenu.value = children;
 		childMenuKey.value++;
@@ -539,7 +499,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-	clearChildCloseTimer();
 	disposeHandlers();
 });
 
@@ -603,293 +562,108 @@ function onMouseMove() {
 function guardMouseMove(ev: MouseEvent) {
 	ev.stopPropagation();
 }
-
-const materials: Record<MaterialName, Material> = {
-	ultraThin: Material.ultraThin,
-	thin: Material.thin,
-	regular: Material.regular,
-	thick: Material.thick,
-	ultraThick: Material.ultraThick,
-	bar: Material.bar,
-};
-
-function menuText(value: unknown): string {
-	return String(unref(value as string) ?? '');
-}
-
-function nativeRow(item: InnerMenuItem, index: number): NativeMenuRow {
-	const key = `${index}:${item.type ?? 'button'}`;
-	const base = {
-		key,
-		text: 'text' in item ? menuText(item.text) : undefined,
-		caption: 'caption' in item ? menuText(item.caption) : undefined,
-		icon: 'icon' in item ? item.icon : undefined,
-		iconClass: $style.icon,
-		contentClass: $style.item_content,
-		textClass: [$style.item_content_text],
-		titleClass: $style.item_content_text_title,
-		captionClass: $style.item_content_text_caption,
-		caretClass: $style.caret,
-		indicatorClass: $style.indicator,
-		switchClass: [$style.switchButton, item.type === 'switch' && item.icon ? $style.caret : ''],
-		onLeave: onItemMouseLeave,
-	} satisfies Partial<NativeMenuRow>;
-
-	if (item.type === 'divider') return { key, kind: 'divider', className: [$style.divider] };
-	if (item.type === 'label') return { ...base, kind: 'label', className: [$style.label] };
-	if (item.type === 'pending') return { key, kind: 'pending', className: [$style.pending, $style.item] };
-	if (item.type === 'component') {
-		return {
-			key,
-			kind: 'component',
-			content: VueComponent(item.component, unref(item.props) ?? {}),
-		};
-	}
-
-	const hover = { onHover: onItemMouseEnter, onLeave: onItemMouseLeave };
-	if (item.type === 'link') {
-		return {
-			...base,
-			...hover,
-			kind: 'link',
-			href: item.to,
-			className: ['_button', $style.item],
-			indicate: item.indicate,
-			leading: item.avatar ? VueComponent(MkAvatar, { user: item.avatar, class: 'mk-vune-menu__avatar' }) : undefined,
-			onActivate: () => close(true),
-		};
-	}
-	if (item.type === 'a') {
-		return {
-			...base,
-			...hover,
-			kind: 'external',
-			href: item.href,
-			target: item.target,
-			download: item.download,
-			className: ['_button', $style.item],
-			indicate: item.indicate,
-			onActivate: () => close(true),
-		};
-	}
-	if (item.type === 'user') {
-		return {
-			...base,
-			...hover,
-			kind: 'button',
-			text: '',
-			active: item.active,
-			className: ['_button', $style.item, item.active ? $style.active : ''],
-			leading: VueComponent(MkAvatar, { user: item.user, class: 'mk-vune-menu__avatar' }),
-			content: VueComponent(MkUserName, { user: item.user }),
-			indicate: item.indicate,
-			onActivate: event => item.active ? close(false) : clicked(item.action, event),
-		};
-	}
-	if (item.type === 'switch') {
-		const disabled = unref(item.disabled) ?? false;
-		return {
-			...base,
-			...hover,
-			kind: 'switch',
-			className: ['_button', $style.item],
-			disabled,
-			checked: unref(item.ref),
-			onActivate: () => switchItem(item),
-		};
-	}
-	if (item.type === 'radio' || item.type === 'parent') {
-		const show = item.type === 'radio' ? showRadioOptions : showChildren;
-		return {
-			...base,
-			kind: 'parent',
-			active: childShowingItem.value === item,
-			className: ['_button', $style.item, $style.parent, childShowingItem.value === item ? $style.active : ''],
-			disabled: item.type === 'radio' ? (unref(item.disabled) ?? false) : false,
-			onHover: event => { if (!preferClick) void show(item as never, event); },
-			onMove: parentMouseMove,
-			// Opening a parent by click is important on pointer devices too: the
-			// native menu row is a real button, and relying on hover alone makes
-			// the submenu unreachable for trackpads, keyboard users, and touch
-			// emulation. `showChildren`/`showRadioOptions` still route drawers to
-			// the regular popup path.
-			onActivate: event => { void show(item as never, event); },
-		};
-	}
-	if (item.type === 'radioOption') {
-		const active = unref(item.active) ?? false;
-		return {
-			...base,
-			...hover,
-			kind: 'radio',
-			className: ['_button', $style.item, $style.radio, active ? $style.active : ''],
-			checked: active,
-			radioIconClass: [$style.radioIcon, active ? $style.radioChecked : ''],
-			onActivate: event => { if (!active) clicked(item.action, event, false); },
-		};
-	}
-
-	const active = unref(item.active) ?? false;
-	return {
-		...base,
-		...hover,
-		kind: 'button',
-		danger: item.danger,
-		className: ['_button', $style.item, item.danger ? $style.danger : '', active ? $style.active : ''],
-		active,
-		indicate: item.indicate,
-		leading: item.avatar ? VueComponent(MkAvatar, { user: item.avatar, class: 'mk-vune-menu__avatar' }) : undefined,
-		onActivate: event => active ? close(false) : clicked(item.action, event),
-	};
-}
-
-const nativeModel = computed<NativeMenuModel>(() => ({
-	rows: (items2.value ?? []).map(nativeRow),
-	material: materials[props.material ?? 'regular'],
-	animated: props.animated ?? true,
-	menuClass: $style.menu,
-	surfaceClass: $style.surface,
-	itemClass: [$style.none, $style.item].join(' '),
-	noneLabel: i18n.ts.none,
-	width: props.width && !props.asDrawer ? props.width : undefined,
-	maxHeight: props.maxHeight,
-	asDrawer: Boolean(props.asDrawer),
-	big: Boolean(big),
-	center: props.align === 'center',
-	guardClass: [$style.guard, props.debugShowPredictionCone ? $style.showGuard : ''],
-	guardClipPath: guardPolygon.value,
-	guardTop: guard.top,
-	onItemsRef: setItemsEl,
-	onKeydown: onMenuKeydown,
-	onMouseMove,
-	onMouseLeave,
-	onGuardMouseMove: guardMouseMove,
-}));
 </script>
 
 <style lang="scss" module>
 .root {
-	// Submenus are positioned relative to their owning menu. The native Vune
-	// surface no longer provides the old Vue menu's containing block, so keep
-	// the menu root as the explicit anchor for nested menus.
-	position: relative;
-
-	&.center {
-		> .menu {
-			> .item {
-				text-align: center;
-			}
-		}
+	&.center > .menu > .item {
+		text-align: center;
 	}
 
-	&:not(.asDrawer):not(.widthSpecified) {
-		> .menu {
-			max-width: 400px;
-		}
+	&:not(.asDrawer):not(.widthSpecified) > .menu {
+		width: max-content;
+		min-width: 200px;
+		max-width: calc(100vw - 32px);
 	}
 
-	&.big:not(.asDrawer) {
-		> .menu {
-			min-width: 230px;
-
-			> .item {
-				padding: 6px 20px;
-				font-size: 0.95em;
-				line-height: 24px;
-			}
-		}
+	&.big:not(.asDrawer) > .menu > .item {
+		min-height: 36px;
+		padding: 6px 12px;
+		font-size: 0.95em;
+		line-height: 24px;
 	}
 
 	&.asDrawer {
+		width: 100%;
 		max-width: 600px;
 		margin: auto;
 
 		> .menu {
-			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px) 0;
 			width: 100%;
-			border-radius: 24px;
-			corner-shape: round;
-			border-bottom-right-radius: 0;
-			border-bottom-left-radius: 0;
+			min-width: 0;
+			max-width: 600px;
+			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px);
+			border-radius: 24px 24px 0 0;
 
 			> .item {
+				width: calc(100% - 24px);
+				min-height: 44px;
+				margin-inline: 12px;
+				padding: 10px 12px;
+				border-radius: 12px;
 				font-size: 1em;
-				padding: 12px 24px;
-
-				&::before {
-					width: calc(100% - 24px);
-					border-radius: 12px;
-					corner-shape: round;
-				}
-
-				> .icon {
-					margin-right: 14px;
-					width: 24px;
-				}
+				line-height: 24px;
 			}
 
 			> .divider {
-				margin: 12px 0;
+				width: calc(100% - 24px);
+				margin: 12px;
 			}
 		}
 	}
 }
 
 .menu {
-	padding: 8px 0;
 	box-sizing: border-box;
-	max-width: 100vw;
+	width: max-content;
 	min-width: 200px;
-	corner-shape: round;
+	max-width: calc(100vw - 32px);
+	padding: 8px 0;
 	overflow: auto;
 	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	border-radius: 12px;
+	background: transparent;
+	color: var(--MI_THEME-fg);
 
 	&:focus-visible {
 		outline: none;
 	}
 }
 
-.surface {
-	max-width: 100vw;
-	overflow: hidden;
-}
-
 .item {
+	position: relative;
 	display: flex;
 	align-items: center;
-	position: relative;
-	padding: 5px 16px;
-	width: 100%;
 	box-sizing: border-box;
-	white-space: nowrap;
+	width: calc(100% - 16px);
+	min-height: 32px;
+	margin: 0 8px;
+	padding: 6px 8px;
+	border-radius: 8px;
+	color: var(--menuFg, var(--MI_THEME-fg));
 	font-size: 0.9em;
 	line-height: 20px;
 	text-align: left;
-	overflow: hidden;
-	text-overflow: ellipsis;
 	text-decoration: none !important;
-	color: var(--menuFg, var(--MI_THEME-fg));
+	white-space: normal;
+	overflow-wrap: anywhere;
+	transition: color 120ms ease;
 
 	&::before {
-		content: "";
-		display: block;
+		content: '';
 		position: absolute;
 		z-index: -1;
-		top: 0;
-		left: 0;
-		right: 0;
-		margin: auto;
-		width: calc(100% - 16px);
-		height: 100%;
-		border-radius: 6px;
-		corner-shape: round;
+		inset: 0;
+		border-radius: inherit;
+		transition: background-color 120ms ease;
 	}
 
 	&:focus-visible {
 		outline: none;
 
 		&:not(:hover):not(:active)::before {
-			outline: var(--MI_THEME-focus) solid 2px;
+			outline: 2px solid var(--MI_THEME-focus);
 			outline-offset: -2px;
 		}
 	}
@@ -898,27 +672,28 @@ const nativeModel = computed<NativeMenuModel>(() => ({
 		&:hover,
 		&:focus-visible:active,
 		&:focus-visible.active {
-			color: var(--menuHoverFg, var(--MI_THEME-accent));
 			position: relative;
-			z-index: 10; // guardより上にする
+			z-index: 10;
+			color: var(--menuHoverFg, var(--MI_THEME-accent));
 
 			&::before {
-				background-color: var(--menuHoverBg, var(--MI_THEME-accentedBg));
+				background: var(--menuHoverBg, var(--MI_THEME-accentedBg));
 			}
 		}
 
 		&:not(:focus-visible):active,
 		&:not(:focus-visible).active {
-			color: var(--menuActiveFg, var(--MI_THEME-fgOnAccent));
+			color: var(--menuActiveFg, var(--MI_THEME-accent));
 
 			&::before {
-				background-color: var(--menuActiveBg, var(--MI_THEME-accent));
+				background: var(--menuActiveBg, var(--MI_THEME-accentedBg));
 			}
 		}
 	}
 
 	&:disabled {
 		cursor: not-allowed;
+		opacity: 0.55;
 	}
 
 	&.danger {
@@ -929,21 +704,13 @@ const nativeModel = computed<NativeMenuModel>(() => ({
 		--menuActiveBg: hsl(from var(--MI_THEME-error) h s calc(l - 10));
 	}
 
-	&.radio {
-		--menuActiveFg: var(--MI_THEME-accent);
-		--menuActiveBg: var(--MI_THEME-accentedBg);
-	}
-
+	&.radio,
 	&.parent {
 		--menuActiveFg: var(--MI_THEME-accent);
 		--menuActiveBg: var(--MI_THEME-accentedBg);
 	}
 
-	&.pending {
-		pointer-events: none;
-		opacity: 0.7;
-	}
-
+	&.pending,
 	&.none {
 		pointer-events: none;
 		opacity: 0.7;
@@ -951,28 +718,33 @@ const nativeModel = computed<NativeMenuModel>(() => ({
 }
 
 .item_content {
-	width: 100%;
-	max-width: 100vw;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	width: 100%;
+	min-width: 0;
 	gap: 8px;
-	text-overflow: ellipsis;
 }
 
 .item_content_text {
-	max-width: calc(100vw - 4rem);
-}
-
-.item_content_text_title {
-	text-overflow: ellipsis;
+	flex: 1 1 auto;
+	min-width: 0;
 	overflow: hidden;
 }
 
+.item_content_text_title {
+	min-width: 0;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 .item_content_text_caption {
-	text-wrap: auto;
-	font-size: 85%;
-	opacity: 0.7;
+	max-width: 100%;
+	margin-top: 1px;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
+	font-size: 0.85em;
+	line-height: 1.25;
+	text-wrap: wrap;
 }
 
 .switchButton {
@@ -982,76 +754,86 @@ const nativeModel = computed<NativeMenuModel>(() => ({
 
 .switchText {
 	margin-left: 8px;
-	overflow: hidden;
-	text-overflow: ellipsis;
+	min-width: 0;
 }
 
 .icon {
+	display: inline-flex;
+	flex: 0 0 1.25em;
+	align-items: center;
+	justify-content: center;
 	margin-right: 8px;
 	line-height: 1;
 }
 
 .caret {
+	flex: 0 0 auto;
 	margin-left: auto;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
 }
 
 .avatar {
-	margin-right: 5px;
+	flex: 0 0 auto;
 	width: 20px;
 	height: 20px;
+	margin-right: 8px;
 }
 
 .indicator {
 	display: flex;
+	flex: 0 0 auto;
 	align-items: center;
+	margin-left: auto;
 	color: var(--MI_THEME-indicator);
 	font-size: 12px;
 }
 
 .label {
-	position: relative;
-	padding: 6px 16px;
 	box-sizing: border-box;
-	white-space: nowrap;
+	width: calc(100% - 16px);
+	margin: 0 8px;
+	padding: 6px 8px;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
 	font-size: 0.7em;
+	line-height: 1.25;
 	text-align: left;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	opacity: 0.7;
+	white-space: normal;
+	overflow-wrap: anywhere;
 	pointer-events: none;
 }
 
 .divider {
-	margin: 8px 0;
-	border-top: solid 0.5px var(--MI_THEME-divider);
+	box-sizing: border-box;
+	width: calc(100% - 16px);
+	margin: 8px;
+	border: 0;
+	border-top: 1px solid var(--MI_THEME-divider);
 }
 
 .radioIcon {
-	display: inline-block;
 	position: relative;
+	display: inline-block;
+	flex: 0 0 1em;
 	width: 1em;
 	height: 1em;
-	vertical-align: -0.125em;
+	margin: 0 8px 0 2px;
+	border: 2px solid var(--MI_THEME-divider);
 	border-radius: 50%;
-	corner-shape: round;
-	border: solid 2px var(--MI_THEME-divider);
-	background-color: var(--MI_THEME-panel);
+	background: var(--MI_THEME-panel);
 
 	&.radioChecked {
 		border-color: var(--MI_THEME-accent);
 
 		&::after {
-			content: "";
-			display: block;
+			content: '';
 			position: absolute;
 			top: 50%;
 			left: 50%;
-			transform: translate(-50%, -50%);
 			width: 50%;
 			height: 50%;
 			border-radius: 50%;
-			corner-shape: round;
-			background-color: var(--MI_THEME-accent);
+			background: var(--MI_THEME-accent);
+			transform: translate(-50%, -50%);
 		}
 	}
 }
@@ -1069,6 +851,21 @@ const nativeModel = computed<NativeMenuModel>(() => ({
 		&:hover {
 			background: #f004;
 		}
+	}
+}
+
+@media (max-width: 600px) {
+	.root:not(.asDrawer):not(.widthSpecified) > .menu {
+		width: max-content;
+		min-width: min(200px, calc(100vw - 32px));
+		max-width: calc(100vw - 32px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.item,
+	.item::before {
+		transition: none;
 	}
 }
 </style>

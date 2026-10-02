@@ -1,6 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { Group, Text } from 'vune-ui'; import MkWindow from '@/components/vune/MkWindow.vune'; import XRegisterLogs from './custom-emojis-manager.logs.vune'; import VuneIcon from '@/vune/Icon.vune'; import { i18n } from '@/i18n.js'; import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
-type Props={logs:RequestLogItem[];onClosed?:()=>void}; function close(props:Props){props.onClosed?.()}
-export struct VuneCustomEmojisManagerLocalListLogsView: View { let props:Props; init(_ props:Props){self.props=props} var body:some View { Group(){MkWindow(title:Group(){VuneIcon('ti ti-notes');Text(i18n.ts._customEmojisManager._gridCommon.registrationLogs)},onClosed:{close(props)}){XRegisterLogs({logs:props.logs,filteredLogs:props.logs,showingSuccessLogs:true,settings:{} as any})}} } }
-export default VuneCustomEmojisManagerLocalListLogsView

@@ -4,16 +4,42 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<VuneInvitations :fetching="fetching" :invitations="invitations" :bodyClass="$style.invitationBody" :avatarClass="$style.invitationBodyAvatar" :onJoin="join" :onIgnore="ignore"/>
+<div class="_gaps">
+	<div v-if="invitations.length > 0" class="_gaps_s">
+		<MkFolder v-for="invitation in invitations" :key="invitation.id" :defaultOpen="true">
+			<template #icon><i class="ti ti-users-group"></i></template>
+			<template #label>{{ invitation.room.name }}</template>
+			<template #suffix><MkTime :time="invitation.createdAt"/></template>
+			<template #footer>
+				<div class="_buttons">
+					<MkButton primary @click="join(invitation)"><i class="ti ti-plus"></i> {{ i18n.ts._chat.join }}</MkButton>
+					<MkButton danger @click="ignore(invitation)"><i class="ti ti-x"></i> {{ i18n.ts._chat.ignore }}</MkButton>
+				</div>
+			</template>
+
+			<div :class="$style.invitationBody">
+				<MkAvatar :user="invitation.room.owner" :class="$style.invitationBodyAvatar" link/>
+				<div style="flex: 1;" class="_gaps_s">
+					<MkUserName :user="invitation.room.owner"/>
+					<hr>
+					<div>{{ invitation.room.description === '' ? i18n.ts.noDescription : invitation.room.description }}</div>
+				</div>
+			</div>
+		</MkFolder>
+	</div>
+	<MkResult v-if="!fetching && invitations.length == 0" type="empty" :text="i18n.ts._chat.noInvitations"/>
+	<MkLoading v-if="fetching"/>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import VuneInvitations from './vune/home.invitations.vune?vue-host';
+import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { useRouter } from '@/router.js';
+import MkFolder from '@/components/MkFolder.vue';
 
 const router = useRouter();
 

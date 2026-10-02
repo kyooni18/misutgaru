@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { VStack, Text } from 'vune-ui';
-export struct FederationJobQueueChart: View { let domain: string; init(_ domain: string) { self.domain = domain } var body: some View { VStack(alignment: 'stretch', spacing: 0) { Text(domain) }.className('_panel mk-vune-federation-queue-chart') } }
-export default FederationJobQueueChart

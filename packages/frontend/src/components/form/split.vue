@@ -4,12 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="mk-vune-form-split" :style="{ gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}px, 1fr))` }"><slot></slot></div>
+<div :class="$style.root">
+	<slot></slot>
+</div>
 </template>
 
 <script lang="ts" setup>
 import { provide } from 'vue';
-import '@/components/vune/misskey-vune.scss';
 
 const props = withDefaults(defineProps<{
 	minWidth?: number;
@@ -19,5 +20,13 @@ const props = withDefaults(defineProps<{
 
 provide('splited', true);
 
-const minWidth = props.minWidth;
+const minWidth = props.minWidth + 'px';
 </script>
+
+<style lang="scss" module>
+.root {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(v-bind('minWidth'), 1fr));
+	grid-gap: 12px;
+}
+</style>

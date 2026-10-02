@@ -73,6 +73,12 @@ type Source = {
 		baseUrl?: string;
 		model?: string;
 	};
+	recommendation?: {
+		enabled?: boolean;
+		url?: string;
+		timeoutMs?: number;
+		preservePageBoundaries?: boolean;
+	};
 	meilisearch?: {
 		host: string;
 		port: string;
@@ -178,6 +184,12 @@ export type Config = {
 		apiKey: string;
 		baseUrl: string;
 		model: string;
+	};
+	recommendation: {
+		enabled: boolean;
+		url: string;
+		timeoutMs: number;
+		preservePageBoundaries: boolean;
 	};
 	meilisearch: {
 		host: string;
@@ -325,6 +337,10 @@ export function loadConfig(): Config {
 	const redis = convertRedisOptions(config.redis, host);
 	const openaiTranslationApiKey = config.openaiTranslation?.apiKey ?? process.env.OPENAI_API_KEY ?? '';
 	const openaiTranslationEnabled = config.openaiTranslation?.enabled ?? (process.env.OPENAI_TRANSLATION_ENABLED == null ? openaiTranslationApiKey.trim() !== '' : process.env.OPENAI_TRANSLATION_ENABLED === 'true');
+	const recommendationUrl = (config.recommendation?.url ?? process.env.MISUTGARU_RECOMMENDATION_URL ?? '').replace(/\/+$/, '');
+	const recommendationEnabled = config.recommendation?.enabled ?? (process.env.MISUTGARU_RECOMMENDATION_ENABLED == null ? recommendationUrl !== '' : process.env.MISUTGARU_RECOMMENDATION_ENABLED === 'true');
+	const recommendationTimeoutMs = config.recommendation?.timeoutMs ?? (parseInt(process.env.MISUTGARU_RECOMMENDATION_TIMEOUT_MS ?? '', 10) || 250);
+	const recommendationPreservePageBoundaries = config.recommendation?.preservePageBoundaries ?? (process.env.MISUTGARU_RECOMMENDATION_PRESERVE_PAGE_BOUNDARIES == null ? true : process.env.MISUTGARU_RECOMMENDATION_PRESERVE_PAGE_BOUNDARIES !== 'false');
 
 	return {
 		version,
@@ -361,6 +377,12 @@ export function loadConfig(): Config {
 			apiKey: openaiTranslationApiKey,
 			baseUrl: (config.openaiTranslation?.baseUrl ?? process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/+$/, ''),
 			model: config.openaiTranslation?.model ?? process.env.OPENAI_TRANSLATION_MODEL ?? 'gpt-4o-mini',
+		},
+		recommendation: {
+			enabled: recommendationEnabled && recommendationUrl !== '',
+			url: recommendationUrl,
+			timeoutMs: Math.max(25, recommendationTimeoutMs),
+			preservePageBoundaries: recommendationPreservePageBoundaries,
 		},
 		meilisearch: config.meilisearch,
 		redis,

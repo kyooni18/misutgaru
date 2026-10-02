@@ -1,5 +1,0 @@
-/* SPDX-License-Identifier: AGPL-3.0-only */
-/* @misutgaru-vune-native */
-import { Text } from 'vune-ui';
-export struct MkEllipsis: View { init() {} var body: some View { Text('…').className('mk-vune-ellipsis') } }
-export default MkEllipsis
