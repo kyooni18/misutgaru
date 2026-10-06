@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<div
 		ref="tabHighlightEl"
-		:class="[$style.tabHighlight, { [$style.animate]: prefer.s.animation && !cssAnchorSupported }]"
+		:class="[$style.tabHighlight, { [$style.animate]: prefer.s.animation }]"
 	></div>
 </div>
 </template>
@@ -57,7 +57,6 @@ export type Tab = {
 import { nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue';
 import { prefer } from '@/preferences.js';
 import { genId } from '@/utility/id.js';
-import { useLayoutMotion } from '@/motion/vue/use-layout-motion.js';
 
 const cssAnchorSupported = CSS.supports('position-anchor', '--anchor-name');
 const tabAnchorName = `--${genId()}-currentTab`;
@@ -78,7 +77,6 @@ const emit = defineEmits<{
 const el = useTemplateRef('el');
 const tabHighlightEl = useTemplateRef('tabHighlightEl');
 const tabRefs: Record<string, HTMLElement | null> = {};
-if (cssAnchorSupported) useLayoutMotion(tabHighlightEl);
 
 function getTabStyle(t: Tab) {
 	if (!cssAnchorSupported) return {};
@@ -241,7 +239,7 @@ onUnmounted(() => {
 	}
 
 	&.animate {
-		transition: opacity var(--MI-motion-duration-control) var(--MI-motion-ease-standard);
+		transition: opacity 0.2s ease;
 	}
 }
 
@@ -258,7 +256,7 @@ onUnmounted(() => {
 	overflow: hidden;
 
 	&.animate {
-		transition: width var(--MI-motion-duration-feedback) linear, padding-left var(--MI-motion-duration-feedback) linear;
+		transition: width .15s linear, padding-left .15s linear;
 	}
 }
 
@@ -272,7 +270,7 @@ onUnmounted(() => {
 	pointer-events: none;
 
 	&.animate {
-		transition: width var(--MI-motion-duration-feedback) var(--MI-motion-ease-standard), left var(--MI-motion-duration-feedback) var(--MI-motion-ease-standard);
+		transition: width 0.15s ease, left 0.15s ease;
 	}
 }
 

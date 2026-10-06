@@ -20,25 +20,19 @@ const observer = new IntersectionObserver(
 	(entries) => {
 		if (entries.some((entry) => entry.isIntersecting)) {
 			showing.value = true;
-			observer.disconnect();
 		}
 	},
 );
 
-function observeIfNeeded() {
-	if (showing.value || !rootEl.value) return;
-	observer.observe(rootEl.value);
-}
-
 onMounted(() => {
 	nextTick(() => {
-		observeIfNeeded();
+		observer.observe(rootEl.value!);
 	});
 });
 
 onActivated(() => {
 	nextTick(() => {
-		observeIfNeeded();
+		observer.observe(rootEl.value!);
 	});
 });
 

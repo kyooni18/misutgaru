@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import { calcPopupPosition } from '@/utility/popup-position.js';
 import * as os from '@/os.js';
 import MkButton from '@/components/MkButton.vue';
@@ -88,61 +88,23 @@ function setPosition() {
 	bodyEl.value.style.top = data.top + 'px';
 }
 
-let positionFrame: number | null = null;
-let resizeObserver: ResizeObserver | null = null;
-
-function schedulePosition() {
-	if (positionFrame != null) return;
-	positionFrame = window.requestAnimationFrame(() => {
-		positionFrame = null;
-		setPosition();
-	});
-}
-
-function startTracking() {
-	window.addEventListener('scroll', schedulePosition, { capture: true, passive: true });
-	window.addEventListener('resize', schedulePosition, { passive: true });
-	window.visualViewport?.addEventListener('scroll', schedulePosition, { passive: true });
-	window.visualViewport?.addEventListener('resize', schedulePosition, { passive: true });
-
-	if (typeof ResizeObserver !== 'undefined') {
-		resizeObserver = new ResizeObserver(schedulePosition);
-		if (bodyEl.value != null) resizeObserver.observe(bodyEl.value);
-		if (props.anchorElement != null) resizeObserver.observe(props.anchorElement);
-	}
-}
-
-function stopTracking() {
-	if (positionFrame != null) {
-		window.cancelAnimationFrame(positionFrame);
-		positionFrame = null;
-	}
-	resizeObserver?.disconnect();
-	resizeObserver = null;
-	window.removeEventListener('scroll', schedulePosition, true);
-	window.removeEventListener('resize', schedulePosition);
-	window.visualViewport?.removeEventListener('scroll', schedulePosition);
-	window.visualViewport?.removeEventListener('resize', schedulePosition);
-}
+let loopHandler: number | null = null;
 
 onMounted(() => {
-	startTracking();
-	void nextTick(schedulePosition);
+	nextTick(() => {
+		setPosition();
+
+		const loop = () => {
+			setPosition();
+			loopHandler = window.requestAnimationFrame(loop);
+		};
+
+		loop();
+	});
 });
 
-watch(() => [props.anchorElement, props.x, props.y, props.direction, props.title, props.description] as const, () => {
-	resizeObserver?.disconnect();
-	resizeObserver = null;
-	if (typeof ResizeObserver !== 'undefined') {
-		resizeObserver = new ResizeObserver(schedulePosition);
-		if (bodyEl.value != null) resizeObserver.observe(bodyEl.value);
-		if (props.anchorElement != null) resizeObserver.observe(props.anchorElement);
-	}
-	schedulePosition();
-}, { flush: 'post' });
-
 onUnmounted(() => {
-	stopTracking();
+	if (loopHandler != null) window.cancelAnimationFrame(loopHandler);
 });
 </script>
 
@@ -175,23 +137,11 @@ onUnmounted(() => {
 	width: calc(var(--width) + var(--padding) * 2);
 	height: calc(var(--height) + var(--padding) * 2);
 	box-sizing: border-box;
-	border: 1px solid color(from var(--MI_THEME-accent) srgb r g b / 0.75);
+	border: 1px solid transparent;
 	border-radius: 8px;
-	background: color(from var(--MI_THEME-accent) srgb r g b / 0.1);
 	box-shadow: 0 0 0 9999px #000a;
 	transition: left 0.2s ease-out, top 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out;
-
-	&::after {
-		content: '';
-		position: absolute;
-		inset: -1px;
-		border: 1px solid color(from var(--MI_THEME-accent) srgb r g b / 0.75);
-		border-radius: inherit;
-		background: color(from var(--MI_THEME-accent) srgb r g b / 0.1);
-		pointer-events: none;
-		will-change: opacity;
-		animation: blink 1s ease-in-out infinite;
-	}
+	animation: blink 1s infinite;
 }
 
 .body {
@@ -204,16 +154,12 @@ onUnmounted(() => {
 
 @keyframes blink {
 	0%, 100% {
-		opacity: 1;
+		background: color(from var(--MI_THEME-accent) srgb r g b / 0.1);
+		border: 1px solid color(from var(--MI_THEME-accent) srgb r g b / 0.75);
 	}
 	50% {
-		opacity: 0.15;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.spot::after {
-		animation: none;
+		background: transparent;
+		border: 1px solid transparent;
 	}
 }
 </style>

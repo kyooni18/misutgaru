@@ -25,20 +25,13 @@ const props = withDefaults(defineProps<{
 });
 
 let handle: ReturnType<typeof window['requestAnimationFrame']> | null = null;
-let frameTimer: number | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let visibilityObserver: IntersectionObserver | null = null;
-let disposeWebGl = () => {};
-let removeDocumentVisibilityListener = () => {};
-
-const FRAME_INTERVAL = 1000 / 30;
 
 onMounted(() => {
 	const canvas = canvasEl.value!;
-	const initialWidth = Math.max(1, Math.round(canvas.offsetWidth));
-	const initialHeight = Math.max(1, Math.round(canvas.offsetHeight));
-	canvas.width = initialWidth;
-	canvas.height = initialHeight;
+	let width = canvas.offsetWidth;
+	let height = canvas.offsetHeight;
+	canvas.width = width;
+	canvas.height = height;
 
 	const maybeGl = canvas.getContext('webgl2', { premultipliedAlpha: true });
 	if (maybeGl == null) return;
@@ -52,11 +45,7 @@ onMounted(() => {
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
 	const shaderProgram = initShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
-	if (shaderProgram == null) {
-		if (positionBuffer) gl.deleteBuffer(positionBuffer);
-		gl.getExtension('WEBGL_lose_context')?.loseContext();
-		return;
-	}
+	if (shaderProgram == null) return;
 
 	gl.useProgram(shaderProgram);
 	const u_resolution = gl.getUniformLocation(shaderProgram, 'u_resolution');
@@ -80,104 +69,45 @@ onMounted(() => {
 	gl.vertexAttribPointer(vertex, 2, gl.FLOAT, false, 0, 0);
 
 	const vertices = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
 
-	const syncCanvasSize = () => {
-		const width = Math.max(1, Math.round(canvas.offsetWidth));
-		const height = Math.max(1, Math.round(canvas.offsetHeight));
-		if (canvas.width === width && canvas.height === height) return;
-		canvas.width = width;
-		canvas.height = height;
-		gl.uniform2fv(u_resolution, [width, height]);
-		gl.viewport(0, 0, width, height);
-	};
-
-	resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(syncCanvasSize);
-	resizeObserver?.observe(canvas);
-
-	const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-	if (isChromatic() || reducedMotion) {
+	if (isChromatic()) {
 		gl.uniform1f(u_time, 0);
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	} else {
-		let intersecting = true;
-		let documentVisible = window.document.visibilityState === 'visible';
-		const active = () => intersecting && documentVisible;
+		function render(timeStamp: number) {
+			let sizeChanged = false;
+			if (Math.abs(height - canvas.offsetHeight) > 2) {
+				height = canvas.offsetHeight;
+				canvas.height = height;
+				sizeChanged = true;
+			}
+			if (Math.abs(width - canvas.offsetWidth) > 2) {
+				width = canvas.offsetWidth;
+				canvas.width = width;
+				sizeChanged = true;
+			}
+			if (sizeChanged && gl) {
+				gl.uniform2fv(u_resolution, [width, height]);
+				gl.viewport(0, 0, width, height);
+			}
 
-		const stop = () => {
-			if (handle !== null) {
-				window.cancelAnimationFrame(handle);
-				handle = null;
-			}
-			if (frameTimer !== null) {
-				window.clearTimeout(frameTimer);
-				frameTimer = null;
-			}
-		};
-		const schedule = () => {
-			if (!active() || handle !== null || frameTimer !== null) return;
-			// A decorative shader does not benefit from matching a 120/144 Hz
-			// display. Delay the next RAF instead of requesting every display frame
-			// and merely skipping most draws, which would still wake the renderer.
-			frameTimer = window.setTimeout(() => {
-				frameTimer = null;
-				if (active()) handle = window.requestAnimationFrame(render);
-			}, FRAME_INTERVAL);
-		};
-		const render = (timeStamp: number) => {
-			handle = null;
-			if (!active()) return;
 			gl.uniform1f(u_time, timeStamp);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			schedule();
-		};
-		const start = () => {
-			if (!active()) return;
-			schedule();
-		};
-		const onDocumentVisibility = () => {
-			documentVisible = window.document.visibilityState === 'visible';
-			if (documentVisible) start();
-			else stop();
-		};
-		window.document.addEventListener('visibilitychange', onDocumentVisibility);
-		removeDocumentVisibilityListener = () => window.document.removeEventListener('visibilitychange', onDocumentVisibility);
 
-		if (typeof IntersectionObserver === 'undefined') {
-			start();
-		} else {
-			visibilityObserver = new IntersectionObserver(entries => {
-				intersecting = entries.some(entry => entry.isIntersecting);
-				if (intersecting) start();
-				else stop();
-			}, { rootMargin: '128px' });
-			visibilityObserver.observe(canvas);
+			handle = window.requestAnimationFrame(render);
 		}
-	}
 
-	disposeWebGl = () => {
-		if (positionBuffer) gl.deleteBuffer(positionBuffer);
-		gl.deleteProgram(shaderProgram);
-		gl.getExtension('WEBGL_lose_context')?.loseContext();
-	};
+		handle = window.requestAnimationFrame(render);
+	}
 });
 
 onUnmounted(() => {
-	if (handle !== null) {
+	if (handle) {
 		window.cancelAnimationFrame(handle);
-		handle = null;
 	}
-	if (frameTimer !== null) {
-		window.clearTimeout(frameTimer);
-		frameTimer = null;
-	}
-	removeDocumentVisibilityListener();
-	removeDocumentVisibilityListener = () => {};
-	resizeObserver?.disconnect();
-	resizeObserver = null;
-	visibilityObserver?.disconnect();
-	visibilityObserver = null;
-	disposeWebGl();
+
+	// TODO: WebGLリソースの解放
 });
 </script>
 

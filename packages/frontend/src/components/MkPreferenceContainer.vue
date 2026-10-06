@@ -32,17 +32,20 @@ const props = withDefaults(defineProps<{
 const isAccountOverrided = ref(prefer.isAccountOverrided(props.k));
 const isSyncEnabled = ref(prefer.isSyncEnabled(props.k));
 
-function syncState() {
-	isAccountOverrided.value = prefer.isAccountOverrided(props.k);
-	isSyncEnabled.value = prefer.isSyncEnabled(props.k);
-}
-
 function showMenu(ev: PointerEvent, contextmenu?: boolean) {
+	const i = window.setInterval(() => {
+		isAccountOverrided.value = prefer.isAccountOverrided(props.k);
+		isSyncEnabled.value = prefer.isSyncEnabled(props.k);
+	}, 100);
 	if (contextmenu) {
-		void os.contextMenu(prefer.getPerPrefMenu(props.k), ev).finally(syncState);
+		os.contextMenu(prefer.getPerPrefMenu(props.k), ev).then(() => {
+			window.clearInterval(i);
+		});
 	} else {
 		os.popupMenu(prefer.getPerPrefMenu(props.k), ev.currentTarget ?? ev.target, {
-			onClosing: syncState,
+			onClosing: () => {
+				window.clearInterval(i);
+			},
 		});
 	}
 }

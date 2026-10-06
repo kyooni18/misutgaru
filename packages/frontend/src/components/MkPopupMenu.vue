@@ -11,7 +11,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:zPriority="'high'"
 	:anchorElement="anchorElement"
 	:transparentBg="true"
-	:menuAnimation="true"
 	:returnFocusTo="returnFocusTo"
 	@click="click"
 	@close="onModalClose"
@@ -24,7 +23,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:max-height="maxHeight"
 		:asDrawer="type === 'drawer'"
 		:returnFocusTo="returnFocusTo"
-		:animated="true"
 		:debugDisablePredictionCone="debugDisablePredictionCone"
 		:debugShowPredictionCone="debugShowPredictionCone"
 		:class="{ [$style.drawer]: type === 'drawer' }"
@@ -101,7 +99,6 @@ function close() {
 <style lang="scss" module>
 .drawer {
 	border-radius: 24px;
-	corner-shape: round;
 	border-bottom-right-radius: 0;
 	border-bottom-left-radius: 0;
 }

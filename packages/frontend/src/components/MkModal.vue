@@ -30,17 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		[$style.transition_modal_leaveTo]: transitionName === 'modal',
 		[$style.transition_send_leaveTo]: transitionName === 'send',
 	})"
-	:duration="transitionDuration"
-	:css="!useMenuMotion"
-	appear
-	@afterLeave="onClosed"
-	@enter="enterHook"
-	@leave="leaveHook"
-	@afterEnter="onOpened"
+	:duration="transitionDuration" appear @afterLeave="onClosed" @enter="emit('opening')" @afterEnter="onOpened"
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
 		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent }]" :style="{ zIndex }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
-		<div ref="content" data-misutgaru-popup-content :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
+		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
 		</div>
 	</div>
@@ -57,8 +51,6 @@ import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
-import { animateContextMenuTransition, animateElementTransition, contextMenuDrawerKeyframes, contextMenuRootKeyframes } from './MkContextMenu.motion.js';
-import type { ContextMenuMotionPhase } from './MkContextMenu.motion.js';
 
 function getFixedContainer(el: Element | null): Element | null {
 	if (el == null || el.tagName === 'BODY') return null;
@@ -82,7 +74,6 @@ const props = withDefaults(defineProps<{
 	transparentBg?: boolean;
 	hasInteractionWithOtherFocusTrappedEls?: boolean;
 	returnFocusTo?: HTMLElement | null;
-	menuAnimation?: boolean;
 }>(), {
 	manualShowing: null,
 	anchorElement: null,
@@ -93,7 +84,6 @@ const props = withDefaults(defineProps<{
 	transparentBg: false,
 	hasInteractionWithOtherFocusTrappedEls: false,
 	returnFocusTo: null,
-	menuAnimation: false,
 });
 
 const emit = defineEmits<{
@@ -142,71 +132,23 @@ const transitionDuration = computed((() =>
 	transitionName.value === 'send'
 		? 400
 		: transitionName.value === 'modal-popup'
-			? 300
+			? 100
 			: transitionName.value === 'modal'
-				? 300
+				? 200
 				: transitionName.value === 'modal-drawer'
-					? 300
+					? 200
 					: 0
 ));
-const useMenuMotion = computed(() => props.menuAnimation && (type.value === 'popup' || type.value === 'drawer'));
-const enterHook = computed(() => useMenuMotion.value ? enter : (_element: Element) => emit('opening'));
-const leaveHook = computed(() => useMenuMotion.value ? leave : undefined);
-
-function enter(element: Element, done: () => void) {
-	emit('opening');
-	animateMenuTransition(element, 'enter', done);
-}
-
-function leave(element: Element, done: () => void) {
-	animateMenuTransition(element, 'leave', done);
-}
-
-function animateMenuTransition(element: Element, phase: ContextMenuMotionPhase, done: () => void) {
-	const contentElement = element.querySelector<HTMLElement>('[data-misutgaru-popup-content]') ?? element;
-	const bgElement = element.querySelector<HTMLElement>('[data-testid="bg"]');
-	const keyframes = type.value === 'drawer' ? contextMenuDrawerKeyframes(phase) : contextMenuRootKeyframes(phase);
-	let pending = bgElement == null ? 1 : 2;
-	const finish = () => {
-		pending -= 1;
-		if (pending === 0) done();
-	};
-
-	animateContextMenuTransition(element, phase, finish, contentElement, keyframes);
-	if (bgElement != null) {
-		const targetFilter = window.getComputedStyle(bgElement).backdropFilter || 'none';
-		const hidden: Keyframe = { opacity: 0, backdropFilter: 'blur(0px)' };
-		const visible: Keyframe = { opacity: 1, backdropFilter: targetFilter };
-		animateElementTransition(bgElement, phase === 'enter' ? [hidden, visible] : [visible, hidden], phase, finish, 'backdrop');
-	}
-}
 
 let releaseFocusTrap: (() => void) | null = null;
 let contentClicking = false;
-let disabledAnchor: { element: HTMLElement; pointerEvents: string } | null = null;
-
-function restoreAnchorPointerEvents() {
-	if (disabledAnchor == null) return;
-	disabledAnchor.element.style.pointerEvents = disabledAnchor.pointerEvents;
-	disabledAnchor = null;
-}
-
-function disableAnchorPointerEvents(anchorElement: HTMLElement | null | undefined) {
-	restoreAnchorPointerEvents();
-	if (anchorElement == null) return;
-	disabledAnchor = {
-		element: anchorElement,
-		pointerEvents: anchorElement.style.pointerEvents,
-	};
-	anchorElement.style.pointerEvents = 'none';
-}
 
 function close(opts: { useSendAnimation?: boolean } = {}) {
 	if (opts.useSendAnimation) {
 		useSendAnime.value = true;
 	}
 
-	restoreAnchorPointerEvents();
+	if (props.anchorElement) props.anchorElement.style.pointerEvents = 'auto';
 	showing.value = false;
 	emit('close');
 }
@@ -228,6 +170,7 @@ const keymap = {
 } as const satisfies Keymap;
 
 const MARGIN = 16;
+const SCROLLBAR_THICKNESS = 16;
 
 const align = () => {
 	if (props.anchorElement == null) return;
@@ -240,8 +183,6 @@ const align = () => {
 
 	const width = content.value!.offsetWidth;
 	const height = content.value!.offsetHeight;
-	const viewportWidth = window.document.documentElement.clientWidth;
-	const viewportHeight = window.document.documentElement.clientHeight;
 
 	let left = 0;
 	let top = 0;
@@ -267,15 +208,15 @@ const align = () => {
 
 	if (fixed.value) {
 		// 画面から横にはみ出る場合
-		if (left + width > viewportWidth - MARGIN) {
-			left = viewportWidth - MARGIN - width;
+		if (left + width > (window.innerWidth - SCROLLBAR_THICKNESS)) {
+			left = (window.innerWidth - SCROLLBAR_THICKNESS) - width;
 		}
 
-		const underSpace = (viewportHeight - MARGIN) - top;
+		const underSpace = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - top;
 		const upperSpace = (anchorRect.top - MARGIN);
 
 		// 画面から縦にはみ出る場合
-		if (top + height > viewportHeight - MARGIN) {
+		if (top + height > ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN)) {
 			if (props.noOverlap && props.anchor.x === 'center') {
 				if (underSpace >= (upperSpace / 3)) {
 					maxHeight.value = underSpace;
@@ -284,22 +225,22 @@ const align = () => {
 					top = (upperSpace + MARGIN) - height;
 				}
 			} else {
-				top = (viewportHeight - MARGIN) - height;
+				top = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - height;
 			}
 		} else {
 			maxHeight.value = underSpace;
 		}
 	} else {
 		// 画面から横にはみ出る場合
-		if (left + width - window.scrollX > viewportWidth - MARGIN) {
-			left = viewportWidth - MARGIN - width + window.scrollX - 1;
+		if (left + width - window.scrollX > (window.innerWidth - SCROLLBAR_THICKNESS)) {
+			left = (window.innerWidth - SCROLLBAR_THICKNESS) - width + window.scrollX - 1;
 		}
 
-		const underSpace = (viewportHeight - MARGIN) - (top - window.scrollY);
+		const underSpace = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - (top - window.scrollY);
 		const upperSpace = (anchorRect.top - MARGIN);
 
 		// 画面から縦にはみ出る場合
-		if (top + height - window.scrollY > viewportHeight - MARGIN) {
+		if (top + height - window.scrollY > ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN)) {
 			if (props.noOverlap && props.anchor.x === 'center') {
 				if (underSpace >= (upperSpace / 3)) {
 					maxHeight.value = underSpace;
@@ -308,17 +249,20 @@ const align = () => {
 					top = window.scrollY + ((upperSpace + MARGIN) - height);
 				}
 			} else {
-				top = (viewportHeight - MARGIN) - height + window.scrollY - 1;
+				top = ((window.innerHeight - SCROLLBAR_THICKNESS) - MARGIN) - height + window.scrollY - 1;
 			}
 		} else {
 			maxHeight.value = underSpace;
 		}
 	}
 
-	const viewportLeft = (fixed.value ? 0 : window.scrollX) + MARGIN;
-	const viewportTop = fixed.value ? MARGIN : window.scrollY + MARGIN;
-	left = Math.max(viewportLeft, left);
-	top = Math.max(viewportTop, top);
+	if (top < 0) {
+		top = MARGIN;
+	}
+
+	if (left < 0) {
+		left = 0;
+	}
 
 	let transformOriginX = 'center';
 	let transformOriginY = 'center';
@@ -341,35 +285,6 @@ const align = () => {
 	content.value.style.top = top + 'px';
 };
 
-let contentMouseDownTarget: HTMLElement | null = null;
-let contentClickResetTimer: number | null = null;
-
-const onContentMouseUp = () => {
-	if (contentClickResetTimer !== null) window.clearTimeout(contentClickResetTimer);
-	// click イベントより先に mouseup イベントが発生するかもしれないのでちょっと待つ
-	contentClickResetTimer = window.setTimeout(() => {
-		contentClicking = false;
-		contentClickResetTimer = null;
-	}, 100);
-};
-
-const onContentMouseDown = () => {
-	contentClicking = true;
-	window.removeEventListener('mouseup', onContentMouseUp);
-	window.addEventListener('mouseup', onContentMouseUp, { passive: true, once: true });
-};
-
-function detachContentClickGuard() {
-	contentMouseDownTarget?.removeEventListener('mousedown', onContentMouseDown);
-	contentMouseDownTarget = null;
-	window.removeEventListener('mouseup', onContentMouseUp);
-	if (contentClickResetTimer !== null) {
-		window.clearTimeout(contentClickResetTimer);
-		contentClickResetTimer = null;
-	}
-	contentClicking = false;
-}
-
 const onOpened = () => {
 	emit('opened');
 
@@ -380,11 +295,15 @@ const onOpened = () => {
 
 		// モーダルコンテンツにマウスボタンが押され、コンテンツ外でマウスボタンが離されたときにモーダルバックグラウンドクリックと判定させないためにマウスイベントを監視しフラグ管理する
 		const el = content.value.children[0];
-		if (!(el instanceof HTMLElement)) return;
-		if (contentMouseDownTarget === el) return;
-		detachContentClickGuard();
-		contentMouseDownTarget = el;
-		el.addEventListener('mousedown', onContentMouseDown, { passive: true });
+		el.addEventListener('mousedown', ev => {
+			contentClicking = true;
+			window.addEventListener('mouseup', ev => {
+				// click イベントより先に mouseup イベントが発生するかもしれないのでちょっと待つ
+				window.setTimeout(() => {
+					contentClicking = false;
+				}, 100);
+			}, { passive: true, once: true });
+		}, { passive: true });
 	});
 };
 
@@ -397,20 +316,15 @@ const alignObserver = new ResizeObserver((entries, observer) => {
 });
 
 onMounted(() => {
-	watch(() => props.anchorElement, async (anchorElement) => {
-		fixed.value = (type.value === 'drawer') || (getFixedContainer(anchorElement) != null);
+	watch(() => props.anchorElement, async () => {
+		if (props.anchorElement) {
+			props.anchorElement.style.pointerEvents = 'none';
+		}
+		fixed.value = (type.value === 'drawer') || (getFixedContainer(props.anchorElement) != null);
 
 		await nextTick();
 
 		align();
-	}, { immediate: true });
-
-	watch([() => props.anchorElement, showing, () => props.manualShowing], ([anchorElement, showing, manualShowing]) => {
-		if (manualShowing === true || (manualShowing == null && showing === true)) {
-			disableAnchorPointerEvents(anchorElement);
-		} else {
-			restoreAnchorPointerEvents();
-		}
 	}, { immediate: true });
 
 	watch([showing, () => props.manualShowing], ([showing, manualShowing]) => {
@@ -428,15 +342,12 @@ onMounted(() => {
 	}, { immediate: true });
 
 	nextTick(() => {
-		if (content.value != null) alignObserver.observe(content.value);
+		alignObserver.observe(content.value!);
 	});
 });
 
 onUnmounted(() => {
 	alignObserver.disconnect();
-	detachContentClickGuard();
-	releaseFocusTrap?.();
-	restoreAnchorPointerEvents();
 });
 
 defineExpose({

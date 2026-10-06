@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:leaveToClass="prefer.s.animation ? $style.transition_toast_leaveTo : ''"
 		appear @afterLeave="emit('closed')"
 	>
-		<div v-if="showing" class="misutgaru-material misutgaru-material--thin" :class="$style.root" :style="{ zIndex }">
+		<div v-if="showing" class="_acrylic" :class="$style.root" :style="{ zIndex }">
 			<div style="padding: 16px 24px;">
 				{{ message }}
 			</div>
@@ -65,11 +65,9 @@ onMounted(() => {
 	min-width: 300px;
 	max-width: calc(100% - 32px);
 	width: min-content;
-	box-shadow: 0 4px 16px var(--MI_THEME-shadow);
-	border-radius: var(--MI-radius);
-	corner-shape: round;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	border-radius: 8px;
 	overflow: clip;
-	--misutgaru-material-fallback: var(--MI_THEME-bg);
 	text-align: center;
 	pointer-events: none;
 }

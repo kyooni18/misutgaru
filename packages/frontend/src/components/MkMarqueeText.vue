@@ -4,14 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div ref="wrapEl" :class="$style.wrap">
+<div :class="$style.wrap">
 	<span
 		ref="contentEl"
 		:class="[$style.content, {
-			[$style.paused]: paused || !animationActive,
+			[$style.paused]: paused,
 			[$style.reverse]: reverse,
 		}]"
-		:style="{ '--marquee-distance': marqueeDistance }"
 	>
 		<span v-for="key in repeat" :key="key" :class="$style.text">
 			<slot></slot>
@@ -21,8 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
-import { useAnimationActivity } from '@/composables/use-animation-activity.js';
+import { onMounted, useTemplateRef, watch } from 'vue';
 
 const props = withDefaults(defineProps<{
 	duration?: number;
@@ -37,42 +35,26 @@ const props = withDefaults(defineProps<{
 });
 
 const contentEl = useTemplateRef('contentEl');
-const wrapEl = useTemplateRef('wrapEl');
-const animationActive = useAnimationActivity(wrapEl);
-const marqueeDistance = computed(() => `${-(100 / Math.max(1, props.repeat))}%`);
-let resizeObserver: ResizeObserver | null = null;
 
 function calcDuration() {
 	if (contentEl.value == null) return;
-	const eachLength = contentEl.value.offsetWidth / Math.max(1, props.repeat);
-	if (!Number.isFinite(eachLength) || eachLength <= 0) return;
+	const eachLength = contentEl.value.offsetWidth / props.repeat;
 	const factor = 3000;
 	const duration = props.duration / ((1 / eachLength) * factor);
 	contentEl.value.style.animationDuration = `${duration}s`;
 }
 
-watch(() => [props.duration, props.repeat], calcDuration);
+watch(() => props.duration, calcDuration);
 
-onMounted(() => {
-	calcDuration();
-	if (typeof ResizeObserver !== 'undefined' && contentEl.value) {
-		resizeObserver = new ResizeObserver(calcDuration);
-		resizeObserver.observe(contentEl.value);
-	}
-});
-
-onBeforeUnmount(() => {
-	resizeObserver?.disconnect();
-	resizeObserver = null;
-});
+onMounted(calcDuration);
 </script>
 
 <style lang="scss" module>
 .wrap {
 	overflow: clip;
-	contain: layout paint;
+	animation-play-state: running;
 
-	&:hover .content {
+	&:hover {
 		animation-play-state: paused;
 	}
 }
@@ -80,27 +62,28 @@ onBeforeUnmount(() => {
 .content {
 	display: inline-block;
 	white-space: nowrap;
-	will-change: transform;
-	animation-name: marquee;
-	animation-timing-function: linear;
-	animation-iteration-count: infinite;
-	animation-play-state: running;
+	animation-play-state: inherit;
 }
 
 .text {
 	display: inline-block;
+	animation-name: marquee;
+	animation-timing-function: linear;
+	animation-iteration-count: infinite;
+	animation-duration: inherit;
+	animation-play-state: inherit;
 }
 
-.paused {
+.paused .text {
 	animation-play-state: paused;
 }
 
-.reverse {
+.reverse .text {
 	animation-direction: reverse;
 }
 
 @keyframes marquee {
-	0% { transform: translate3d(0, 0, 0); }
-	100% { transform: translate3d(var(--marquee-distance), 0, 0); }
+	0% { transform: translateX(0); }
+	100% { transform: translateX(-100%); }
 }
 </style>

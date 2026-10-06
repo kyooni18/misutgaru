@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, onUnmounted, ref, useTemplateRef } from 'vue';
+import { defineAsyncComponent, ref, useTemplateRef } from 'vue';
 import XCommon from './_common_/common.vue';
 import { genId } from '@/utility/id.js';
 import XSidebar from '@/ui/_common_/navbar.vue';
@@ -119,7 +119,6 @@ import { mainRouter } from '@/router.js';
 import { columns, layout, columnTypes, switchProfileMenu, addColumn as addColumnToStore, deleteProfile as deleteProfile_ } from '@/deck.js';
 import { shouldSuggestRestoreBackup } from '@/preferences/utility.js';
 import { shouldSuggestReload } from '@/utility/reload-suggest.js';
-import { useMediaQuery } from '@/composables/use-media-query.js';
 import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
 
@@ -140,8 +139,7 @@ const columnComponents = {
 	chat: XChatColumn,
 };
 
-const previousNavHook = mainRouter.navHook;
-const deckNavHook = (path: string, flag?: Parameters<NonNullable<typeof mainRouter.navHook>>[1]): boolean => {
+mainRouter.navHook = (path, flag): boolean => {
 	if (flag === 'forcePage') return false;
 	const noMainColumn = !columns.value.some(x => x.type === 'main');
 	if (prefer.s['deck.navWindow'] || noMainColumn) {
@@ -150,9 +148,11 @@ const deckNavHook = (path: string, flag?: Parameters<NonNullable<typeof mainRout
 	}
 	return false;
 };
-mainRouter.navHook = deckNavHook;
 
-const isMobile = useMediaQuery('(max-width: 500px)');
+const isMobile = ref(window.innerWidth <= 500);
+window.addEventListener('resize', () => {
+	isMobile.value = window.innerWidth <= 500;
+});
 
 // ポインターイベント非対応用に初期値はUAから出す
 const snapScroll = ref(deviceKind === 'smartphone' || deviceKind === 'tablet');
@@ -208,11 +208,6 @@ function pointerEvent(ev: PointerEvent) {
 }
 
 window.document.addEventListener('pointerdown', pointerEvent, { passive: true });
-
-onUnmounted(() => {
-	window.document.removeEventListener('pointerdown', pointerEvent);
-	if (mainRouter.navHook === deckNavHook) mainRouter.navHook = previousNavHook;
-});
 
 function onWheel(ev: WheelEvent) {
 	// WheelEvent はマウスからしか発火しないのでスナップスクロールは無効化する

@@ -150,10 +150,8 @@ const steps = computed(() => {
 
 const tooltipForDragShowing = ref(false);
 const tooltipForHoverShowing = ref(false);
-let activeDragCleanup: (() => void) | null = null;
 
 onBeforeUnmount(() => {
-	activeDragCleanup?.();
 	// 何らかの問題で表示されっぱなしでもコンポーネントを離れたら消えるように
 	tooltipForDragShowing.value = false;
 	tooltipForHoverShowing.value = false;
@@ -185,7 +183,6 @@ function onMousedown(ev: MouseEvent | TouchEvent) {
 	if (props.disabled) return; // Prevent interaction if disabled
 
 	ev.preventDefault();
-	activeDragCleanup?.();
 
 	tooltipForDragShowing.value = true;
 
@@ -220,19 +217,13 @@ function onMousedown(ev: MouseEvent | TouchEvent) {
 
 	let beforeValue = finalValue.value;
 
-	const cleanupDrag = () => {
-		if (style.isConnected) style.remove();
+	const onMouseup = () => {
+		window.document.head.removeChild(style);
 		tooltipForDragShowing.value = false;
 		window.removeEventListener('mousemove', onDrag);
 		window.removeEventListener('touchmove', onDrag);
 		window.removeEventListener('mouseup', onMouseup);
 		window.removeEventListener('touchend', onMouseup);
-		window.removeEventListener('touchcancel', onMouseup);
-		if (activeDragCleanup === cleanupDrag) activeDragCleanup = null;
-	};
-
-	const onMouseup = () => {
-		cleanupDrag();
 
 		// 値が変わってたら通知
 		if (beforeValue !== finalValue.value) {
@@ -240,13 +231,11 @@ function onMousedown(ev: MouseEvent | TouchEvent) {
 			emit('dragEnded', finalValue.value);
 		}
 	};
-	activeDragCleanup = cleanupDrag;
 
 	window.addEventListener('mousemove', onDrag);
 	window.addEventListener('touchmove', onDrag);
 	window.addEventListener('mouseup', onMouseup, { once: true });
 	window.addEventListener('touchend', onMouseup, { once: true });
-	window.addEventListener('touchcancel', onMouseup, { once: true });
 
 	if (lastClickTime == null) {
 		lastClickTime = Date.now();

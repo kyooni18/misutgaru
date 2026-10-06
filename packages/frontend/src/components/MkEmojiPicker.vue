@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div
-	class="omfetrab misutgaru-material misutgaru-material--regular"
+	class="omfetrab _popup"
 	:class="['s' + size, 'w' + width, 'h' + height, { asDrawer, asWindow }]"
 	:style="{ maxHeight: maxHeight ? maxHeight + 'px' : undefined }"
 >
@@ -617,8 +617,6 @@ defineExpose({
 	--rows: 8;
 	--pickerPeek: clamp(28px, 8%, 40px);
 	--pickerGap: 8px;
-	--misutgaru-material-surface: var(--MI_THEME-panel);
-	--misutgaru-material-fallback: var(--MI_THEME-panel);
 
 	display: flex;
 	flex-direction: column;
@@ -628,7 +626,7 @@ defineExpose({
 	min-width: 0;
 	min-height: 0;
 	overflow: hidden;
-	border-radius: 18px;
+	border-radius: var(--MI-radius);
 	corner-shape: round;
 	color: var(--MI_THEME-fg);
 

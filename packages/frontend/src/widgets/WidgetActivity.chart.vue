@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 const props = defineProps<{
 	activity: {
 		total: number;
@@ -53,29 +53,16 @@ const pointsReply = ref<string>();
 const pointsRenote = ref<string>();
 const pointsTotal = ref<string>();
 
-let dragCleanup: (() => void) | null = null;
-let renderRaf = 0;
-
 function dragListen(fn: (ev: MouseEvent | TouchEvent) => void) {
-	dragCleanup?.();
-	const clear = () => {
-		window.removeEventListener('mousemove', fn);
-		window.removeEventListener('mouseleave', clear);
-		window.removeEventListener('mouseup', clear);
-		if (dragCleanup === clear) dragCleanup = null;
-	};
-	dragCleanup = clear;
-	window.addEventListener('mousemove', fn, { passive: true });
-	window.addEventListener('mouseleave', clear);
-	window.addEventListener('mouseup', clear);
+	window.addEventListener('mousemove', fn);
+	window.addEventListener('mouseleave', dragClear.bind(null, fn));
+	window.addEventListener('mouseup', dragClear.bind(null, fn));
 }
 
-function scheduleRender() {
-	if (renderRaf !== 0) return;
-	renderRaf = window.requestAnimationFrame(() => {
-		renderRaf = 0;
-		render();
-	});
+function dragClear(fn: (ev: MouseEvent | TouchEvent) => void) {
+	window.removeEventListener('mousemove', fn);
+	window.removeEventListener('mouseleave', dragClear as any);
+	window.removeEventListener('mouseup', dragClear as any);
 }
 
 function getPositionX(event: MouseEvent | TouchEvent) {
@@ -104,7 +91,7 @@ function onMousedown(ev: MouseEvent) {
 		pos.value = Math.min(0, basePos + moveLeft);
 		if (pos.value < -(((props.activity.length - 1) * zoom.value) - viewBoxX.value)) pos.value = -(((props.activity.length - 1) * zoom.value) - viewBoxX.value);
 
-		scheduleRender();
+		render();
 	});
 }
 
@@ -119,16 +106,8 @@ function render() {
 	}
 }
 
-watch(() => props.activity, scheduleRender, { deep: true });
-
-
 onMounted(() => {
 	render();
-});
-
-onBeforeUnmount(() => {
-	dragCleanup?.();
-	if (renderRaf !== 0) window.cancelAnimationFrame(renderRaf);
 });
 </script>
 

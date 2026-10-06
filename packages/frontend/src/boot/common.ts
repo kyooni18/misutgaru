@@ -199,7 +199,7 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	}, { immediate: true });
 
 	watch(prefer.r.useBlurEffectForModal, v => {
-		window.document.documentElement.style.setProperty('--MI-modalBgFilter', v ? 'blur(1px)' : 'none');
+		window.document.documentElement.style.setProperty('--MI-modalBgFilter', v ? 'blur(4px)' : 'none');
 	}, { immediate: true });
 
 	watch(prefer.r.useBlurEffect, v => {

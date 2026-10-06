@@ -91,58 +91,15 @@ function afterLeave(el: Element) {
 }
 
 const calcOmit = () => {
+	if (omitted.value || ignoreOmit.value || props.maxHeight == null) return;
 	if (!contentEl.value) return;
-	if (ignoreOmit.value || props.maxHeight == null) {
-		omitted.value = false;
-		return;
-	}
-	const height = Math.max(contentEl.value.scrollHeight, contentEl.value.getBoundingClientRect().height);
+	const height = contentEl.value.offsetHeight;
 	omitted.value = height > props.maxHeight;
 };
 
-function syncLayout() {
-	if (!rootEl.value) return;
-	const headerHeight = props.showHeader ? headerEl.value?.offsetHeight ?? 0 : 0;
-	rootEl.value.style.minHeight = `${headerHeight}px`;
-	rootEl.value.style.flexBasis = showBody.value ? 'auto' : `${headerHeight}px`;
-	if (props.maxHeight == null) {
-		rootEl.value.style.removeProperty('--maxHeight');
-	} else {
-		rootEl.value.style.setProperty('--maxHeight', `${props.maxHeight}px`);
-	}
-}
-
-const layoutObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => {
-	syncLayout();
+const omitObserver = new ResizeObserver((entries, observer) => {
 	calcOmit();
 });
-const mutationObserver = layoutObserver || typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(() => {
-	syncLayout();
-	calcOmit();
-});
-const onWindowResize = () => {
-	syncLayout();
-	calcOmit();
-};
-const onMediaLoad = () => {
-	if (!layoutObserver) onWindowResize();
-};
-
-function observeLayoutElements() {
-	layoutObserver?.disconnect();
-	mutationObserver?.disconnect();
-	for (const element of [headerEl.value, contentEl.value]) {
-		if (!element) continue;
-		layoutObserver?.observe(element);
-		mutationObserver?.observe(element, { attributes: true, childList: true, characterData: true, subtree: true });
-	}
-}
-
-watch([showBody, () => props.showHeader, () => props.maxHeight], () => {
-	syncLayout();
-	calcOmit();
-	observeLayoutElements();
-}, { flush: 'post' });
 
 function showMore() {
 	ignoreOmit.value = true;
@@ -150,26 +107,28 @@ function showMore() {
 }
 
 onMounted(() => {
-	syncLayout();
+	watch(showBody, v => {
+		if (!rootEl.value) return;
+		const headerHeight = props.showHeader ? headerEl.value?.offsetHeight ?? 0 : 0;
+		rootEl.value.style.minHeight = `${headerHeight}px`;
+		if (v) {
+			rootEl.value.style.flexBasis = 'auto';
+		} else {
+			rootEl.value.style.flexBasis = `${headerHeight}px`;
+		}
+	}, {
+		immediate: true,
+	});
+
+	if (rootEl.value) rootEl.value.style.setProperty('--maxHeight', props.maxHeight + 'px');
+
 	calcOmit();
-	observeLayoutElements();
-	if (!layoutObserver) {
-		window.addEventListener('resize', onWindowResize, { passive: true });
-		rootEl.value?.addEventListener('load', onMediaLoad, true);
-		rootEl.value?.addEventListener('loadedmetadata', onMediaLoad, true);
-		rootEl.value?.addEventListener('loadeddata', onMediaLoad, true);
-	}
+
+	if (contentEl.value) omitObserver.observe(contentEl.value);
 });
 
 onUnmounted(() => {
-	layoutObserver?.disconnect();
-	mutationObserver?.disconnect();
-	if (!layoutObserver) {
-		window.removeEventListener('resize', onWindowResize);
-		rootEl.value?.removeEventListener('load', onMediaLoad, true);
-		rootEl.value?.removeEventListener('loadedmetadata', onMediaLoad, true);
-		rootEl.value?.removeEventListener('loadeddata', onMediaLoad, true);
-	}
+	omitObserver.disconnect();
 });
 </script>
 

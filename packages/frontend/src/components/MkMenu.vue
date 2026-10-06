@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		ref="itemsEl"
 		v-hotkey="keymap"
 		tabindex="0"
-		class="_popup _shadow misutgaru-material misutgaru-material--regular"
+		class="_popup _shadow"
 		:class="$style.menu"
 		:style="{
 			width: (width && !asDrawer) ? `${width}px` : '',
@@ -255,7 +255,6 @@ const props = defineProps<{
 	align?: 'center' | string;
 	width?: number;
 	maxHeight?: number;
-	animated?: boolean;
 	debugDisablePredictionCone?: boolean;
 	debugShowPredictionCone?: boolean;
 }>();
@@ -566,64 +565,72 @@ function guardMouseMove(ev: MouseEvent) {
 
 <style lang="scss" module>
 .root {
-	&.center > .menu > .item {
-		text-align: center;
+	&.center {
+		> .menu {
+			> .item {
+				text-align: center;
+			}
+		}
 	}
 
-	&:not(.asDrawer):not(.widthSpecified) > .menu {
-		width: max-content;
-		min-width: 200px;
-		max-width: calc(100vw - 32px);
+	&:not(.asDrawer):not(.widthSpecified) {
+		> .menu {
+			max-width: 400px;
+		}
 	}
 
-	&.big:not(.asDrawer) > .menu > .item {
-		min-height: 36px;
-		padding: 6px 12px;
-		font-size: 0.95em;
-		line-height: 24px;
+	&.big:not(.asDrawer) {
+		> .menu {
+			min-width: 230px;
+
+			> .item {
+				padding: 6px 20px;
+				font-size: 0.95em;
+				line-height: 24px;
+			}
+		}
 	}
 
 	&.asDrawer {
-		width: 100%;
 		max-width: 600px;
 		margin: auto;
 
 		> .menu {
+			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px) 0;
 			width: 100%;
-			min-width: 0;
-			max-width: 600px;
-			padding: 12px 0 max(env(safe-area-inset-bottom, 0px), 12px);
-			border-radius: 24px 24px 0 0;
+			border-radius: 24px;
+			border-bottom-right-radius: 0;
+			border-bottom-left-radius: 0;
 
 			> .item {
-				width: calc(100% - 24px);
-				min-height: 44px;
-				margin-inline: 12px;
-				padding: 10px 12px;
-				border-radius: 12px;
 				font-size: 1em;
-				line-height: 24px;
+				padding: 12px 24px;
+
+				&::before {
+					width: calc(100% - 24px);
+					border-radius: 12px;
+				}
+
+				> .icon {
+					margin-right: 14px;
+					width: 24px;
+				}
 			}
 
 			> .divider {
-				width: calc(100% - 24px);
-				margin: 12px;
+				margin: 12px 0;
 			}
 		}
 	}
 }
 
 .menu {
-	box-sizing: border-box;
-	width: max-content;
-	min-width: 200px;
-	max-width: calc(100vw - 32px);
 	padding: 8px 0;
+	box-sizing: border-box;
+	max-width: 100vw;
+	min-width: 200px;
 	overflow: auto;
 	overscroll-behavior: contain;
-	scrollbar-width: thin;
-	border-radius: 12px;
-	color: var(--MI_THEME-fg);
 
 	&:focus-visible {
 		outline: none;
@@ -631,38 +638,40 @@ function guardMouseMove(ev: MouseEvent) {
 }
 
 .item {
-	position: relative;
 	display: flex;
 	align-items: center;
+	position: relative;
+	padding: 5px 16px;
+	width: 100%;
 	box-sizing: border-box;
-	width: calc(100% - 16px);
-	min-height: 32px;
-	margin: 0 8px;
-	padding: 6px 8px;
-	border-radius: 8px;
-	color: var(--menuFg, var(--MI_THEME-fg));
+	white-space: nowrap;
 	font-size: 0.9em;
 	line-height: 20px;
 	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	text-decoration: none !important;
-	white-space: normal;
-	overflow-wrap: anywhere;
-	transition: color 120ms ease;
+	color: var(--menuFg, var(--MI_THEME-fg));
 
 	&::before {
-		content: '';
+		content: "";
+		display: block;
 		position: absolute;
 		z-index: -1;
-		inset: 0;
-		border-radius: inherit;
-		transition: background-color 120ms ease;
+		top: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
+		width: calc(100% - 16px);
+		height: 100%;
+		border-radius: 6px;
 	}
 
 	&:focus-visible {
 		outline: none;
 
 		&:not(:hover):not(:active)::before {
-			outline: 2px solid var(--MI_THEME-focus);
+			outline: var(--MI_THEME-focus) solid 2px;
 			outline-offset: -2px;
 		}
 	}
@@ -671,28 +680,27 @@ function guardMouseMove(ev: MouseEvent) {
 		&:hover,
 		&:focus-visible:active,
 		&:focus-visible.active {
-			position: relative;
-			z-index: 10;
 			color: var(--menuHoverFg, var(--MI_THEME-accent));
+			position: relative;
+			z-index: 10; // guardより上にする
 
 			&::before {
-				background: var(--menuHoverBg, var(--MI_THEME-accentedBg));
+				background-color: var(--menuHoverBg, var(--MI_THEME-accentedBg));
 			}
 		}
 
 		&:not(:focus-visible):active,
 		&:not(:focus-visible).active {
-			color: var(--menuActiveFg, var(--MI_THEME-accent));
+			color: var(--menuActiveFg, var(--MI_THEME-fgOnAccent));
 
 			&::before {
-				background: var(--menuActiveBg, var(--MI_THEME-accentedBg));
+				background-color: var(--menuActiveBg, var(--MI_THEME-accent));
 			}
 		}
 	}
 
 	&:disabled {
 		cursor: not-allowed;
-		opacity: 0.55;
 	}
 
 	&.danger {
@@ -703,13 +711,21 @@ function guardMouseMove(ev: MouseEvent) {
 		--menuActiveBg: hsl(from var(--MI_THEME-error) h s calc(l - 10));
 	}
 
-	&.radio,
+	&.radio {
+		--menuActiveFg: var(--MI_THEME-accent);
+		--menuActiveBg: var(--MI_THEME-accentedBg);
+	}
+
 	&.parent {
 		--menuActiveFg: var(--MI_THEME-accent);
 		--menuActiveBg: var(--MI_THEME-accentedBg);
 	}
 
-	&.pending,
+	&.pending {
+		pointer-events: none;
+		opacity: 0.7;
+	}
+
 	&.none {
 		pointer-events: none;
 		opacity: 0.7;
@@ -717,33 +733,28 @@ function guardMouseMove(ev: MouseEvent) {
 }
 
 .item_content {
+	width: 100%;
+	max-width: 100vw;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	width: 100%;
-	min-width: 0;
 	gap: 8px;
+	text-overflow: ellipsis;
 }
 
 .item_content_text {
-	flex: 1 1 auto;
-	min-width: 0;
-	overflow: hidden;
+	max-width: calc(100vw - 4rem);
 }
 
 .item_content_text_title {
-	min-width: 0;
-	white-space: normal;
-	overflow-wrap: anywhere;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 
 .item_content_text_caption {
-	max-width: 100%;
-	margin-top: 1px;
-	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
-	font-size: 0.85em;
-	line-height: 1.25;
-	text-wrap: wrap;
+	text-wrap: auto;
+	font-size: 85%;
+	opacity: 0.7;
 }
 
 .switchButton {
@@ -753,86 +764,74 @@ function guardMouseMove(ev: MouseEvent) {
 
 .switchText {
 	margin-left: 8px;
-	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .icon {
-	display: inline-flex;
-	flex: 0 0 1.25em;
-	align-items: center;
-	justify-content: center;
 	margin-right: 8px;
 	line-height: 1;
 }
 
 .caret {
-	flex: 0 0 auto;
 	margin-left: auto;
-	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
 }
 
 .avatar {
-	flex: 0 0 auto;
+	margin-right: 5px;
 	width: 20px;
 	height: 20px;
-	margin-right: 8px;
 }
 
 .indicator {
 	display: flex;
-	flex: 0 0 auto;
 	align-items: center;
-	margin-left: auto;
 	color: var(--MI_THEME-indicator);
 	font-size: 12px;
 }
 
 .label {
+	position: relative;
+	padding: 6px 16px;
 	box-sizing: border-box;
-	width: calc(100% - 16px);
-	margin: 0 8px;
-	padding: 6px 8px;
-	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
+	white-space: nowrap;
 	font-size: 0.7em;
-	line-height: 1.25;
 	text-align: left;
-	white-space: normal;
-	overflow-wrap: anywhere;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: 0.7;
 	pointer-events: none;
 }
 
 .divider {
-	box-sizing: border-box;
-	width: calc(100% - 16px);
-	margin: 8px;
-	border: 0;
-	border-top: 1px solid var(--MI_THEME-divider);
+	margin: 8px 0;
+	border-top: solid 0.5px var(--MI_THEME-divider);
 }
 
 .radioIcon {
-	position: relative;
 	display: inline-block;
-	flex: 0 0 1em;
+	position: relative;
 	width: 1em;
 	height: 1em;
-	margin: 0 8px 0 2px;
-	border: 2px solid var(--MI_THEME-divider);
+	vertical-align: -0.125em;
 	border-radius: 50%;
-	background: var(--MI_THEME-panel);
+	border: solid 2px var(--MI_THEME-divider);
+	background-color: var(--MI_THEME-panel);
 
 	&.radioChecked {
 		border-color: var(--MI_THEME-accent);
 
 		&::after {
-			content: '';
+			content: "";
+			display: block;
 			position: absolute;
 			top: 50%;
 			left: 50%;
+			transform: translate(-50%, -50%);
 			width: 50%;
 			height: 50%;
 			border-radius: 50%;
-			background: var(--MI_THEME-accent);
-			transform: translate(-50%, -50%);
+			background-color: var(--MI_THEME-accent);
 		}
 	}
 }
@@ -850,21 +849,6 @@ function guardMouseMove(ev: MouseEvent) {
 		&:hover {
 			background: #f004;
 		}
-	}
-}
-
-@media (max-width: 600px) {
-	.root:not(.asDrawer):not(.widthSpecified) > .menu {
-		width: max-content;
-		min-width: min(200px, calc(100vw - 32px));
-		max-width: calc(100vw - 32px);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.item,
-	.item::before {
-		transition: none;
 	}
 }
 </style>

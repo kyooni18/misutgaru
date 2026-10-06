@@ -104,7 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -116,7 +116,6 @@ import { useRouter } from '@/router.js';
 import { prefer } from '@/preferences.js';
 import { getAccountMenu } from '@/accounts.js';
 import { $i } from '@/i.js';
-import { useMediaQuery } from '@/composables/use-media-query.js';
 
 const router = useRouter();
 
@@ -129,8 +128,7 @@ const emit = defineEmits<{
 	(ev: 'widgetButtonClick'): void;
 }>();
 
-const narrowViewport = useMediaQuery('(max-width: 1279px)');
-const forceIconOnly = computed(() => !props.asDrawer && narrowViewport.value);
+const forceIconOnly = ref(!props.asDrawer && window.innerWidth <= 1279);
 const iconOnly = computed(() => {
 	return !props.asDrawer && (forceIconOnly.value || (store.r.menuDisplay.value === 'sideIcon'));
 });
@@ -141,6 +139,16 @@ const otherMenuItemIndicated = computed(() => {
 		if (navbarItemDef[def].indicated) return true;
 	}
 	return false;
+});
+
+function calcViewState() {
+	forceIconOnly.value = window.innerWidth <= 1279;
+}
+
+window.addEventListener('resize', calcViewState);
+
+watch(store.r.menuDisplay, () => {
+	calcViewState();
 });
 
 function toggleIconOnly() {
@@ -360,7 +368,7 @@ function menuEdit() {
 
 	&:hover {
 		color: var(--MI_THEME-fgHighlighted);
-		padding: 10px;
+
 		.subButtonIcon {
 			opacity: 1;
 		}
@@ -608,7 +616,6 @@ function menuEdit() {
 	.itemText {
 		position: relative;
 		font-size: 0.9em;
-		padding-inline: 4px;
 	}
 
 	.subButtons {

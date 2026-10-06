@@ -6,13 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <Transition
 	appear
-	:css="false"
-	@enter="enter"
-	@leave="leave"
-	@afterLeave="onClosed"
+	:enterActiveClass="prefer.s.animation ? $style.transition_fade_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_fade_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_fade_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_fade_leaveTo : ''"
 >
-	<div v-if="showing" ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
-		<MkMenu :items="items" :align="'left'" :animated="true" @close="close"/>
+	<div ref="rootEl" :class="$style.root" :style="{ zIndex }" @contextmenu.prevent.stop="() => {}">
+		<MkMenu :items="items" :align="'left'" @close="emit('closed')"/>
 	</div>
 </Transition>
 </template>
@@ -24,7 +24,6 @@ import type { MenuItem } from '@/types/menu.js';
 import { elementContains } from '@/utility/element-contains.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { animateContextMenuTransition } from './MkContextMenu.motion.js';
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -36,63 +35,38 @@ const emit = defineEmits<{
 }>();
 
 const rootEl = useTemplateRef('rootEl');
-const showing = ref(true);
+
 const zIndex = ref<number>(os.claimZIndex('high'));
-const VIEWPORT_MARGIN = 16;
 
-function close() {
-	showing.value = false;
-}
-
-function onClosed() {
-	emit('closed');
-}
-
-function enter(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateContextMenuTransition(element, 'enter', done);
-}
-
-function leave(element: Element, done: () => void) {
-	if (!prefer.s.animation) {
-		done();
-		return;
-	}
-	animateContextMenuTransition(element, 'leave', done);
-}
+const SCROLLBAR_THICKNESS = 16;
 
 onMounted(() => {
-	const root = rootEl.value;
-	if (!root) return;
+	let left = props.ev.pageX + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
+	let top = props.ev.pageY + 1; // 間違って右ダブルクリックした場合に意図せずアイテムがクリックされるのを防ぐため + 1
 
-	let left = props.ev.pageX + 1;
-	let top = props.ev.pageY + 1;
-	const width = root.offsetWidth;
-	const height = root.offsetHeight;
-	const viewportLeft = window.scrollX;
-	const viewportTop = window.scrollY;
-	const viewportRight = viewportLeft + window.document.documentElement.clientWidth - VIEWPORT_MARGIN;
-	const viewportBottom = viewportTop + window.document.documentElement.clientHeight - VIEWPORT_MARGIN;
-	let opensLeft = false;
-	let opensUp = false;
+	const width = rootEl.value!.offsetWidth;
+	const height = rootEl.value!.offsetHeight;
 
-	if (left + width > viewportRight) {
-		left = viewportRight - width;
-		opensLeft = true;
-	}
-	if (top + height > viewportBottom) {
-		top = viewportBottom - height;
-		opensUp = true;
+	if (left + width - window.scrollX >= (window.innerWidth - SCROLLBAR_THICKNESS)) {
+		left = (window.innerWidth - SCROLLBAR_THICKNESS) - width + window.scrollX;
 	}
 
-	left = Math.max(viewportLeft + VIEWPORT_MARGIN, left);
-	top = Math.max(viewportTop + VIEWPORT_MARGIN, top);
-	root.style.top = `${top}px`;
-	root.style.left = `${left}px`;
-	root.style.transformOrigin = `${opensLeft ? 'right' : 'left'} ${opensUp ? 'bottom' : 'top'}`;
+	if (top + height - window.scrollY >= (window.innerHeight - SCROLLBAR_THICKNESS)) {
+		top = (window.innerHeight - SCROLLBAR_THICKNESS) - height + window.scrollY;
+	}
+
+	if (top < 0) {
+		top = 0;
+	}
+
+	if (left < 0) {
+		left = 0;
+	}
+
+	if (rootEl.value) {
+		rootEl.value.style.top = `${top}px`;
+		rootEl.value.style.left = `${left}px`;
+	}
 
 	window.document.body.addEventListener('mousedown', onMousedown);
 });
@@ -102,13 +76,23 @@ onBeforeUnmount(() => {
 });
 
 function onMousedown(evt: MouseEvent) {
-	if (!elementContains(rootEl.value, evt.target as Element) && (rootEl.value !== evt.target)) close();
+	if (!elementContains(rootEl.value, evt.target as Element) && (rootEl.value !== evt.target)) emit('closed');
 }
 </script>
 
 <style lang="scss" module>
+.transition_fade_enterActive,
+.transition_fade_leaveActive {
+	transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	transform-origin: left top;
+}
+.transition_fade_enterFrom,
+.transition_fade_leaveTo {
+	opacity: 0;
+	transform: scale(0.9);
+}
+
 .root {
 	position: absolute;
-	transform-origin: left top;
 }
 </style>

@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 <span v-if="!fetching" :class="$style.root">
 	<template v-if="display === 'marquee'">
 		<Transition
-			:css="prefer.s.animation"
 			:enterActiveClass="$style.transition_change_enterActive"
 			:leaveActiveClass="$style.transition_change_leaveActive"
 			:enterFromClass="$style.transition_change_enterFrom"
@@ -38,7 +37,6 @@ import { useInterval } from '@@/js/use-interval.js';
 import MkMarqueeText from '@/components/MkMarqueeText.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
-import { prefer } from '@/preferences.js';
 import { notePage } from '@/filters/note.js';
 
 const props = defineProps<{
@@ -78,7 +76,7 @@ useInterval(tick, Math.max(5000, props.refreshIntervalSec * 1000), {
 .transition_change_leaveActive {
 	position: absolute;
 	top: 0;
-  transition: opacity 1s ease, transform 1s ease;
+  transition: all 1s ease;
 }
 .transition_change_enterFrom {
 	opacity: 0;
