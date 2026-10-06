@@ -421,6 +421,11 @@ const keymap = {
 	font-size: 1.05em;
 	overflow: clip;
 	contain: content;
+	transition: background-color var(--MI-dur) var(--MI-easeOut);
+
+	&:hover {
+		background-color: color-mix(in srgb, var(--MI_THEME-fg) 2%, transparent);
+	}
 
 	&:focus-visible {
 		outline: none;
@@ -463,7 +468,7 @@ const keymap = {
 			margin-bottom: 0 !important;
 			background: var(--MI_THEME-popup);
 			border-radius: 8px;
-			box-shadow: 0px 4px 32px var(--MI_THEME-shadow);
+			box-shadow: var(--MI-elev2);
 		}
 
 		.footerButton {
@@ -736,12 +741,16 @@ const keymap = {
 	padding: 8px;
 	color: color-mix(in srgb, var(--MI_THEME-panel), var(--MI_THEME-fg) 70%); // opacityなど不透明度で表現するとレンダリングパフォーマンスに影響するので通常の色の混合で代用
 
+	border-radius: 999px;
+	transition: color var(--MI-durFast) var(--MI-easeOut), background-color var(--MI-durFast) var(--MI-easeOut);
+
 	&:not(:last-child) {
-		margin-right: 28px;
+		margin-right: 20px;
 	}
 
 	&:hover {
-		color: var(--MI_THEME-fgHighlighted);
+		color: var(--MI_THEME-accent);
+		background-color: var(--MI-accentWash);
 	}
 }
 

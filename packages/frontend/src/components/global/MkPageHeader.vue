@@ -134,16 +134,16 @@ onUnmounted(() => {
 <style lang="scss" module>
 .root {
 	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
-	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
-	backdrop-filter: var(--MI-blur, blur(15px));
-	border-bottom: solid 0.5px transparent;
+	-webkit-backdrop-filter: var(--MI-blur, saturate(1.3) blur(18px));
+	backdrop-filter: var(--MI-blur, saturate(1.3) blur(18px));
+	border-bottom: solid 1px var(--MI-hairline);
 	width: 100%;
 	color: var(--MI_THEME-pageHeaderFg);
 }
 
 @container style(--MI_THEME-pageHeaderBg: var(--MI_THEME-bg)) {
 	.root {
-		border-bottom: solid 0.5px var(--MI_THEME-divider);
+		border-bottom: solid 1px var(--MI-hairline);
 	}
 }
 

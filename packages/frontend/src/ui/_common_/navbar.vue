@@ -473,6 +473,8 @@ function menuEdit() {
 			bottom: 0;
 			border-radius: 999px;
 			background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+			box-shadow: inset 0 1px 0 var(--MI-highlight), 0 6px 16px -6px var(--MI-accentGlow);
+			transition: filter var(--MI-dur) var(--MI-easeOut), box-shadow var(--MI-dur) var(--MI-easeOut);
 		}
 
 		&:focus-visible {
@@ -486,7 +488,7 @@ function menuEdit() {
 
 		&:hover, &.active {
 			&::before {
-				background: hsl(from var(--MI_THEME-accent) h s calc(l + 10));
+				filter: brightness(1.08);
 			}
 		}
 	}
@@ -538,7 +540,7 @@ function menuEdit() {
 
 	.divider {
 		margin: 16px 16px;
-		border-top: solid 0.5px var(--MI_THEME-divider);
+		border-top: solid 1px var(--MI-hairline);
 	}
 
 	.item {
@@ -587,7 +589,8 @@ function menuEdit() {
 				right: 0;
 				bottom: 0;
 				border-radius: 999px;
-				background: var(--MI_THEME-accentedBg);
+				background: linear-gradient(90deg, var(--MI_THEME-accentedBg), color-mix(in srgb, var(--MI_THEME-accentedBg) 55%, transparent));
+				box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 14%, transparent);
 			}
 		}
 	}

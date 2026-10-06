@@ -217,7 +217,7 @@ onUnmounted(() => {
 	padding: 0 10px;
 	height: 100%;
 	font-weight: normal;
-	opacity: 0.7;
+	opacity: 0.65;
 
 	&:hover {
 		opacity: 1;
@@ -228,7 +228,7 @@ onUnmounted(() => {
 	}
 
 	&.animate {
-		transition: opacity 0.2s ease;
+		transition: opacity var(--MI-dur) var(--MI-easeOut);
 	}
 }
 
@@ -253,13 +253,14 @@ onUnmounted(() => {
 	position: absolute;
 	bottom: 0;
 	height: 3px;
-	background: var(--MI_THEME-accent);
+	background: linear-gradient(90deg, var(--MI_THEME-accent), hsl(from var(--MI_THEME-accent) h s calc(l + 14)));
+	box-shadow: 0 0 10px -1px var(--MI-accentGlow);
 	border-radius: 999px;
 	transition: none;
 	pointer-events: none;
 
 	&.animate {
-		transition: width 0.15s ease, left 0.15s ease;
+		transition: width 0.3s var(--MI-easeOut), left 0.3s var(--MI-easeOut);
 	}
 
 	&.tabHighlightUpper {

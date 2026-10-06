@@ -20,6 +20,11 @@
 	--MI-elev1: 0 0 0 1px var(--MI-hairline), 0 1px 2px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 4px 14px -6px var(--MI_THEME-shadow);
 	--MI-elev2: 0 0 0 1px var(--MI-hairline), 0 2px 6px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 16px 40px -12px var(--MI_THEME-shadow);
 	--MI-easeOut: cubic-bezier(0.23, 1, 0.32, 1);
+	--MI-durFast: 120ms;
+	--MI-dur: 220ms;
+	--MI-accentWash: color-mix(in srgb, var(--MI_THEME-accent) 8%, transparent);
+	--MI-accentGlow: color-mix(in srgb, var(--MI_THEME-accent) 40%, transparent);
+	--MI-panelGradient: linear-gradient(180deg, color-mix(in srgb, #fff 3%, var(--MI_THEME-panel)), var(--MI_THEME-panel) 140px);
 
 	// switch dynamically
 	--MI-minBottomSpacingMobile: calc(72px + max(12px, env(safe-area-inset-bottom, 0px)));
@@ -45,6 +50,8 @@ html {
 	touch-action: manipulation;
 	scroll-behavior: smooth;
 	background-color: var(--MI_THEME-bg);
+	background-image: radial-gradient(120% 420px at 50% -80px, color-mix(in srgb, var(--MI_THEME-accent) 7%, transparent), transparent 70%);
+	background-repeat: no-repeat;
 	color: var(--MI_THEME-fg);
 	accent-color: var(--MI_THEME-accent);
 
@@ -376,7 +383,7 @@ rt {
 }
 
 ._panel {
-	background: var(--MI_THEME-panel);
+	background: var(--MI-panelGradient);
 	border-radius: var(--MI-radius);
 	box-shadow: var(--MI-elev1), inset 0 1px 0 var(--MI-highlight);
 	overflow: clip;
@@ -774,4 +781,22 @@ html[data-color-scheme=dark] ._woodenFrame {
 @keyframes mfm-rainbow {
 	0% { filter: hue-rotate(0deg) contrast(150%) saturate(150%); }
 	100% { filter: hue-rotate(360deg) contrast(150%) saturate(150%); }
+}
+
+
+// Shared polish: focus ring, scrollbars, selection, reduced motion
+:focus-visible {
+	outline-color: var(--MI_THEME-focus);
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--MI_THEME-fg) 22%, transparent) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
 }
