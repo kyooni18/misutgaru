@@ -397,20 +397,40 @@ onUnmounted(() => {
 	display: flex;
 	flex-shrink: 0;
 	align-items: center;
-	height: 32px;
+	height: var(--height, 50px);
 	padding: 0 10px;
-	border-radius: 999px;
 	white-space: nowrap;
 	position: relative;
-	color: color-mix(in srgb, var(--MI_THEME-pageHeaderFg) 70%, transparent);
-	transition: background-color 0.25s var(--MI-easeOut), color 0.25s var(--MI-easeOut);
+	opacity: 0.65;
+	transition: opacity 0.25s var(--MI-easeOut);
+
+	// original tab underline, in the text colour rather than the accent
+	&::after {
+		content: "";
+		position: absolute;
+		left: 10px;
+		right: 10px;
+		bottom: 0;
+		height: 3px;
+		border-radius: 999px;
+		background: currentColor;
+		transform: scaleX(0);
+		transition: transform 0.4s var(--MI-easeOut);
+		pointer-events: none;
+	}
+
+	&:hover {
+		opacity: 1;
+	}
 }
 
 .selTab.selActive,
 .sectionTab.sectionActive {
-	font-weight: 600;
-	color: var(--MI_THEME-pageHeaderFg);
-	background: var(--MI_THEME-panelHighlight);
+	opacity: 1;
+
+	&::after {
+		transform: scaleX(1);
+	}
 }
 
 // labels: only the active item shows its name, others stay icon-only
@@ -447,7 +467,6 @@ onUnmounted(() => {
 		padding-inline: 12px;
 		opacity: 1;
 		pointer-events: auto;
-		color: var(--MI_THEME-pageHeaderFg);
 	}
 
 	> .selTitle {
