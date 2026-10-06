@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<StackingRouterView v-if="prefer.s['experimental.stackingRouterView']" :class="$style.content"/>
 			<RouterView v-else :class="$style.content"/>
-			<XMobileFooterMenu v-if="isMobile" ref="navFooter" v-model:drawerMenuShowing="drawerMenuShowing" v-model:widgetsShowing="widgetsShowing"/>
+			<XMobilePostButton v-if="isMobile"/>
 		</div>
 
 		<div v-if="showWidgetsSide && !pageMetadata?.needWideArea" :class="$style.widgets">
@@ -38,7 +38,7 @@ import { instanceName } from '@@/js/config.js';
 import { isLink } from '@@/js/is-link.js';
 import XCommon from './_common_/common.vue';
 import type { PageMetadata } from '@/page.js';
-import XMobileFooterMenu from '@/ui/_common_/mobile-footer-menu.vue';
+import XMobilePostButton from '@/ui/_common_/mobile-post-button.vue';
 import XPreferenceRestore from '@/ui/_common_/PreferenceRestore.vue';
 import XReloadSuggestion from '@/ui/_common_/ReloadSuggestion.vue';
 import XThemePreviewing from '@/ui/_common_/ThemePreviewing.vue';
@@ -92,6 +92,11 @@ provideMetadataReceiver((metadataGetter) => {
 provideReactiveMetadata(pageMetadata);
 
 const drawerMenuShowing = ref(false);
+provide(DI.mobileShell, {
+	openDrawer: () => { drawerMenuShowing.value = true; },
+	openWidgets: () => { widgetsShowing.value = true; },
+	isMobile,
+});
 
 mainRouter.on('change', () => {
 	drawerMenuShowing.value = false;

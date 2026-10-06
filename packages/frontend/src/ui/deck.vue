@@ -77,7 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<XNavbarH v-if="!isMobile && prefer.r['deck.navbarPosition'].value === 'bottom'" :acrylic="withWallpaper"/>
 
-			<XMobileFooterMenu v-if="isMobile" v-model:drawerMenuShowing="drawerMenuShowing" v-model:widgetsShowing="widgetsShowing"/>
+			<XMobilePostButton v-if="isMobile"/>
 		</div>
 	</div>
 
@@ -86,12 +86,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, ref, useTemplateRef } from 'vue';
+import { defineAsyncComponent, provide, ref, useTemplateRef } from 'vue';
+import { DI } from '@/di.js';
 import XCommon from './_common_/common.vue';
 import { genId } from '@/utility/id.js';
 import XSidebar from '@/ui/_common_/navbar.vue';
 import XNavbarH from '@/ui/_common_/navbar-h.vue';
-import XMobileFooterMenu from '@/ui/_common_/mobile-footer-menu.vue';
+import XMobilePostButton from '@/ui/_common_/mobile-post-button.vue';
 import XTitlebar from '@/ui/_common_/titlebar.vue';
 import XPreferenceRestore from '@/ui/_common_/PreferenceRestore.vue';
 import XReloadSuggestion from '@/ui/_common_/ReloadSuggestion.vue';
@@ -159,6 +160,11 @@ const snapScroll = ref(deviceKind === 'smartphone' || deviceKind === 'tablet');
 const withWallpaper = prefer.s['deck.wallpaper'] != null;
 const drawerMenuShowing = ref(false);
 const widgetsShowing = ref(false);
+provide(DI.mobileShell, {
+	openDrawer: () => { drawerMenuShowing.value = true; },
+	openWidgets: () => { widgetsShowing.value = true; },
+	isMobile,
+});
 const gap = prefer.r['deck.columnGap'];
 
 /*

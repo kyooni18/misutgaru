@@ -662,9 +662,9 @@ function guardMouseMove(ev: MouseEvent) {
 		left: 0;
 		right: 0;
 		margin: auto;
-		width: calc(100% - 12px);
+		width: calc(100% - 16px);
 		height: 100%;
-		border-radius: 8px;
+		border-radius: 6px;
 		transition: background-color 0.12s var(--MI-easeOut);
 	}
 

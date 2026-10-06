@@ -247,10 +247,10 @@ export const PREF_DEF = definePreferences({
 		default: 'auto' as 'auto' | 'popup' | 'drawer',
 	},
 	useBlurEffectForModal: {
-		default: true,
+		default: false,
 	},
 	useBlurEffect: {
-		default: true,
+		default: false,
 	},
 	useStickyIcons: {
 		default: true,

@@ -7,7 +7,7 @@
  */
 
 :root {
-	--MI-radius: 10px;
+	--MI-radius: 12px;
 	--MI-fontDisplay: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Noto Serif KR', 'Noto Serif CJK KR', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
 	--MI-marginFull: 16px;
 	--MI-marginHalf: 10px;
@@ -18,14 +18,13 @@
 	--MI-hairline: color-mix(in srgb, var(--MI_THEME-fg) 9%, transparent);
 	--MI-hairlineStrong: color-mix(in srgb, var(--MI_THEME-fg) 16%, transparent);
 	--MI-highlight: color-mix(in srgb, #fff 7%, transparent);
-	--MI-elev1: 0 0 0 1px var(--MI-hairline), 0 1px 2px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 4px 14px -6px var(--MI_THEME-shadow);
-	--MI-elev2: 0 0 0 1px var(--MI-hairline), 0 2px 6px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 16px 40px -12px var(--MI_THEME-shadow);
+	--MI-elev1: 0 0 0 1px var(--MI-hairline);
+	--MI-elev2: 0 0 0 1px var(--MI-hairline), 0 10px 28px -10px var(--MI_THEME-shadow);
 	--MI-easeOut: cubic-bezier(0.23, 1, 0.32, 1);
 	--MI-durFast: 120ms;
 	--MI-dur: 220ms;
 	--MI-accentWash: color-mix(in srgb, var(--MI_THEME-accent) 8%, transparent);
 	--MI-accentGlow: color-mix(in srgb, var(--MI_THEME-accent) 22%, transparent);
-	--MI-panelGradient: linear-gradient(180deg, color-mix(in srgb, #fff 3%, var(--MI_THEME-panel)), var(--MI_THEME-panel) 140px);
 
 	// switch dynamically
 	--MI-minBottomSpacingMobile: calc(72px + max(12px, env(safe-area-inset-bottom, 0px)));
@@ -52,8 +51,6 @@ html {
 	touch-action: manipulation;
 	scroll-behavior: smooth;
 	background-color: var(--MI_THEME-bg);
-	background-image: radial-gradient(120% 420px at 50% -80px, color-mix(in srgb, var(--MI_THEME-accent) 4.5%, transparent), transparent 70%);
-	background-repeat: no-repeat;
 	color: var(--MI_THEME-fg);
 	accent-color: var(--MI_THEME-accent);
 
@@ -339,7 +336,6 @@ rt {
 	@extend ._button;
 	color: var(--MI_THEME-fgOnAccent);
 	background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
-	box-shadow: inset 0 1px 0 var(--MI-highlight), 0 1px 2px color-mix(in srgb, var(--MI_THEME-accent) 35%, transparent);
 	transition: background 0.15s var(--MI-easeOut), box-shadow 0.15s var(--MI-easeOut);
 
 	&:not(:disabled):hover {
@@ -385,9 +381,9 @@ rt {
 }
 
 ._panel {
-	background: var(--MI-panelGradient);
+	background: var(--MI_THEME-panel);
 	border-radius: var(--MI-radius);
-	box-shadow: var(--MI-elev1), inset 0 1px 0 var(--MI-highlight);
+	box-shadow: var(--MI-elev1);
 	overflow: clip;
 }
 
@@ -447,8 +443,8 @@ rt {
 
 ._popup {
 	background: var(--MI_THEME-popup);
-	border-radius: calc(var(--MI-radius) + 2px);
-	box-shadow: var(--MI-elev2), inset 0 1px 0 var(--MI-highlight);
+	border-radius: var(--MI-radius);
+	box-shadow: var(--MI-elev2);
 	contain: content;
 }
 

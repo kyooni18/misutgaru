@@ -471,9 +471,8 @@ function menuEdit() {
 			left: 0;
 			right: 0;
 			bottom: 0;
-			border-radius: 10px;
+			border-radius: 999px;
 			background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
-			box-shadow: inset 0 1px 0 var(--MI-highlight), 0 6px 16px -6px var(--MI-accentGlow);
 			transition: filter var(--MI-dur) var(--MI-easeOut), box-shadow var(--MI-dur) var(--MI-easeOut);
 		}
 
@@ -588,7 +587,7 @@ function menuEdit() {
 				left: 0;
 				right: 0;
 				bottom: 0;
-				border-radius: 10px;
+				border-radius: 999px;
 				background: linear-gradient(90deg, var(--MI_THEME-accentedBg), color-mix(in srgb, var(--MI_THEME-accentedBg) 55%, transparent));
 				box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 14%, transparent);
 			}
@@ -799,7 +798,7 @@ function menuEdit() {
 				left: 0;
 				right: 0;
 				bottom: 0;
-				border-radius: 10px;
+				border-radius: 999px;
 				background: var(--MI_THEME-accentedBg);
 			}
 

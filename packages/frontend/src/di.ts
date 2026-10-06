@@ -7,7 +7,14 @@ import type { InjectionKey, Ref, ComputedRef } from 'vue';
 import type { PageMetadata } from '@/page.js';
 import type { Router } from '@/router.js';
 
+export type MobileShell = {
+	openDrawer: () => void;
+	openWidgets: () => void;
+	isMobile: Ref<boolean>;
+};
+
 export const DI = {
+	mobileShell: Symbol() as InjectionKey<MobileShell>,
 	routerCurrentDepth: Symbol() as InjectionKey<number>,
 	router: Symbol() as InjectionKey<Router>,
 	mock: Symbol() as InjectionKey<boolean>,

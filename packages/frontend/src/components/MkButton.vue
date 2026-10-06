@@ -143,7 +143,7 @@ function onMousedown(evt: MouseEvent): void {
 	font-size: 95%;
 	text-decoration: none;
 	background: var(--MI_THEME-buttonBg);
-	border-radius: 7px;
+	border-radius: 5px;
 	overflow: clip;
 	box-sizing: border-box;
 	box-shadow: 0 0 0 1px var(--MI-hairline), inset 0 1px 0 var(--MI-highlight);
@@ -189,7 +189,7 @@ function onMousedown(evt: MouseEvent): void {
 		font-weight: bold;
 		color: var(--MI_THEME-fgOnAccent) !important;
 		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 70%, #000), inset 0 1px 0 var(--MI-highlight), 0 2px 6px -2px color-mix(in srgb, var(--MI_THEME-accent) 55%, transparent);
+		box-shadow: 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 70%, #000);
 
 		&:not(:disabled):hover {
 			background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
@@ -302,7 +302,7 @@ function onMousedown(evt: MouseEvent): void {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	border-radius: 8px;
+	border-radius: 6px;
 	overflow: clip;
 	pointer-events: none;
 }

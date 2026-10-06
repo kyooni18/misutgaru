@@ -741,7 +741,7 @@ const keymap = {
 	padding: 8px;
 	color: color-mix(in srgb, var(--MI_THEME-panel), var(--MI_THEME-fg) 70%); // opacityなど不透明度で表現するとレンダリングパフォーマンスに影響するので通常の色の混合で代用
 
-	border-radius: 8px;
+	border-radius: 999px;
 	transition: color var(--MI-durFast) var(--MI-easeOut), background-color var(--MI-durFast) var(--MI-easeOut);
 
 	&:not(:last-child) {

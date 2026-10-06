@@ -6,12 +6,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-if="show" ref="el" :class="[$style.root]">
 	<div :class="[$style.upper, { [$style.slim]: narrow, [$style.thin]: thin_ }]">
+		<button v-if="mobileNav" class="_button" :class="$style.button" :aria-label="i18n.ts.menu" @click="shell?.openDrawer()">
+			<i class="ti ti-menu-2"></i>
+			<span v-if="menuIndicated" :class="$style.indicator" class="_blink"><i class="_indicatorCircle"></i></span>
+		</button>
 		<div v-if="!thin_ && (narrow || deviceKind === 'smartphone') && props.displayMyAvatar && $i" class="_button" @click="openAccountMenu">
 			<MkAvatar :class="$style.avatar" :user="$i"/>
 		</div>
-		<div v-else-if="!thin_ && narrow && !hideTitle" :class="$style.buttons"></div>
+		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
 
-		<template v-if="pageMetadata">
+		<template v-if="compactTimelineBar">
+			<button v-if="!tabsExpanded" class="_button" :class="$style.tabChip" @click="tabsExpanded = true">
+				<i v-if="currentTab?.icon" :class="currentTab.icon"></i>
+				<span class="_nowrap">{{ currentTab?.title }}</span>
+				<i class="ti ti-chevron-down" :class="$style.chevron"></i>
+			</button>
+			<XTabs v-else :class="[$style.tabs, $style.tabsExpanded]" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
+			<div :class="$style.buttons">
+				<template v-if="!tabsExpanded">
+					<button v-for="action in actions" :key="action.icon" v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon"></i></button>
+					<button class="_button" :class="$style.button" :aria-label="i18n.ts.notifications" @click="mainRouter.push('/my/notifications')">
+						<i class="ti ti-bell"></i>
+						<span v-if="$i?.hasUnreadNotification" :class="$style.indicator" class="_blink">
+							<span class="_indicateCounter" :class="$style.indicateValueIcon">{{ $i.unreadNotificationsCount > 99 ? '99+' : $i.unreadNotificationsCount }}</span>
+						</span>
+					</button>
+					<button class="_button" :class="$style.button" :aria-label="i18n.ts.widgets" @click="shell?.openWidgets()"><i class="ti ti-apps"></i></button>
+				</template>
+				<button v-else class="_button" :class="$style.button" @click="tabsExpanded = false"><i class="ti ti-chevron-up"></i></button>
+			</div>
+		</template>
+
+		<template v-else-if="pageMetadata">
 			<div v-if="!hideTitle" :class="$style.titleContainer" @click="top">
 				<div v-if="pageMetadata.avatar" :class="$style.titleAvatarContainer">
 					<MkAvatar :class="$style.titleAvatar" :user="pageMetadata.avatar" indicator/>
@@ -28,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<XTabs v-if="!narrow || hideTitle" :class="$style.tabs" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
 		</template>
-		<div v-if="(!thin_ && narrow && !hideTitle) || (actions && actions.length > 0)" :class="$style.buttons">
+		<div v-if="!compactTimelineBar && ((!thin_ && narrow && !hideTitle) || (actions && actions.length > 0))" :class="$style.buttons">
 			<template v-for="action in actions">
 				<button v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon"></i></button>
 			</template>
@@ -58,7 +84,10 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed } from 'vue';
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch } from 'vue';
+import { i18n } from '@/i18n.js';
+import { mainRouter } from '@/router.js';
+import { navbarItemDef } from '@/navbar.js';
 import { scrollToTop } from '@@/js/scroll.js';
 import XTabs from './MkPageHeader.tabs.vue';
 import { getAccountMenu } from '@/accounts.js';
@@ -85,6 +114,20 @@ const thin_ = props.thin || inject('shouldHeaderThin', false);
 const el = useTemplateRef('el');
 const narrow = ref(false);
 const hasTabs = computed(() => props.tabs.length > 0);
+const shell = inject(DI.mobileShell, null);
+// Phone shell: the bottom bar is gone, so nav / notifications / widgets live up here.
+const mobileNav = computed(() => shell != null && shell.isMobile.value && narrow.value && !thin_ && $i != null);
+const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvatar && hasTabs.value);
+const tabsExpanded = ref(false);
+const currentTab = computed(() => props.tabs.find(t => t.key === props.tab) ?? props.tabs[0]);
+watch(() => props.tab, () => { tabsExpanded.value = false; });
+const menuIndicated = computed(() => {
+	for (const def in navbarItemDef) {
+		if (def === 'notifications') continue;
+		if (navbarItemDef[def].indicated) return true;
+	}
+	return false;
+});
 const hasActions = computed(() => props.actions && props.actions.length > 0);
 const show = computed(() => {
 	return !hideTitle.value || hasTabs.value || hasActions.value;
@@ -133,9 +176,7 @@ onUnmounted(() => {
 
 <style lang="scss" module>
 .root {
-	background: color(from var(--MI_THEME-pageHeaderBg) srgb r g b / 0.75);
-	-webkit-backdrop-filter: var(--MI-blur, saturate(1.3) blur(18px));
-	backdrop-filter: var(--MI-blur, saturate(1.3) blur(18px));
+	background: var(--MI_THEME-pageHeaderBg);
 	border-bottom: solid 1px var(--MI-hairline);
 	width: 100%;
 	color: var(--MI_THEME-pageHeaderFg);
@@ -225,7 +266,7 @@ onUnmounted(() => {
 	width: calc(var(--height) - 8px);
 	box-sizing: border-box;
 	position: relative;
-	border-radius: 5px;
+	border-radius: 999px;
 
 	&:hover {
 		background: rgba(0, 0, 0, 0.05);
@@ -275,6 +316,52 @@ onUnmounted(() => {
 	margin-right: 8px;
 	width: 16px;
 	text-align: center;
+}
+
+.indicator {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	color: var(--MI_THEME-indicator);
+	font-size: 8px;
+	pointer-events: none;
+
+	&:has(.indicateValueIcon) {
+		animation: none;
+		top: 2px;
+		right: 0;
+		font-size: 10px;
+	}
+}
+
+.tabChip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	height: 32px;
+	margin-right: auto;
+	padding: 0 12px;
+	border-radius: 999px;
+	font-weight: 600;
+	background: var(--MI_THEME-panelHighlight);
+	transition: background-color var(--MI-durFast) var(--MI-easeOut);
+
+	&:active {
+		background: var(--MI_THEME-accentedBg);
+	}
+}
+
+.chevron {
+	font-size: 0.85em;
+	opacity: 0.6;
+}
+
+.tabsExpanded {
+	flex: 1;
+	min-width: 0;
+	margin: 0 !important;
+	padding: 0 !important;
 }
 
 .title {
