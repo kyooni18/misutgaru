@@ -623,7 +623,6 @@ function guardMouseMove(ev: MouseEvent) {
 	overscroll-behavior: contain;
 	scrollbar-width: thin;
 	border-radius: 12px;
-	background: transparent;
 	color: var(--MI_THEME-fg);
 
 	&:focus-visible {
