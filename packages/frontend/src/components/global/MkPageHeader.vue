@@ -147,7 +147,8 @@ const selectorEl = useTemplateRef('selectorEl');
 // keep the active timeline in view when the strip scrolls
 watch(() => [props.tab, mobileSection.value], async () => {
 	await nextTick();
-	activeTabEl.value?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+	// wait for the strip's own transition so scrolling does not fight layout
+	window.setTimeout(() => activeTabEl.value?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }), 320);
 });
 
 function onSelectorClick(t: Tab, ev: MouseEvent) {
@@ -229,6 +230,7 @@ onUnmounted(() => {
 }
 
 .upper {
+	contain: layout;
 	--height: 50px;
 	--margin: var(--MI-margin);
 	display: flex;
@@ -382,7 +384,7 @@ onUnmounted(() => {
 	min-width: 0;
 	overflow-x: auto;
 	scrollbar-width: none;
-	transition: max-width 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+	transition: max-width 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
 	max-width: 100%;
 
 	&.selectorCollapsed {
@@ -415,7 +417,7 @@ onUnmounted(() => {
 		border-radius: 999px;
 		background: currentColor;
 		transform: scaleX(0);
-		transition: transform 0.4s var(--MI-easeOut);
+		transition: transform 0.3s var(--MI-easeOut);
 		pointer-events: none;
 	}
 
@@ -438,7 +440,7 @@ onUnmounted(() => {
 	display: grid;
 	grid-template-columns: 0fr;
 	opacity: 0;
-	transition: grid-template-columns 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut), margin 0.4s var(--MI-easeOut);
+	transition: grid-template-columns 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut), margin 0.3s var(--MI-easeOut);
 
 	> span {
 		min-width: 0;
@@ -460,7 +462,7 @@ onUnmounted(() => {
 	overflow: hidden;
 	opacity: 0;
 	pointer-events: none;
-	transition: max-width 0.4s var(--MI-easeOut), padding 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+	transition: max-width 0.3s var(--MI-easeOut), padding 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
 
 	&.sectionShown {
 		max-width: 140px;

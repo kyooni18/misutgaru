@@ -40,6 +40,7 @@ import type { BasicTimelineType } from '@/timelines.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
 import MkMobileNotifications from '@/components/MkMobileNotifications.vue';
 import { mobileSection } from '@/utility/mobile-section.js';
+import type { MobileSection } from '@/utility/mobile-section.js';
 import { DI } from '@/di.js';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import MkPostForm from '@/components/MkPostForm.vue';
@@ -63,7 +64,18 @@ const srcWhenNotSignin = ref<'local' | 'global'>(isAvailableBasicTimeline('local
 const XWidgets = defineAsyncComponent(() => import('@/ui/_common_/widgets.vue'));
 const shell = inject(DI.mobileShell, null);
 // On phones, notifications and widgets are views of this page rather than drawers.
-const mobileView = computed(() => shell?.isMobile.value ? mobileSection.value : 'timeline');
+const mobileView = ref<MobileSection>('timeline');
+// Swap the heavy main view only after the header animation has had its frames,
+// otherwise mounting the list competes with the transition and it stutters.
+let swapTimer: number | null = null;
+watch([() => mobileSection.value, () => shell?.isMobile.value], ([section, isMobile]) => {
+	if (swapTimer != null) window.clearTimeout(swapTimer);
+	const next = isMobile ? section : 'timeline';
+	swapTimer = window.setTimeout(() => {
+		swapTimer = null;
+		mobileView.value = next as MobileSection;
+	}, 220);
+}, { immediate: true });
 
 const src = computed<TimelinePageSrc>({
 	get: () => ($i ? store.r.tl.value.src : srcWhenNotSignin.value),
