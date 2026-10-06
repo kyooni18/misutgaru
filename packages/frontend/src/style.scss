@@ -13,6 +13,14 @@
 
 	--MI-margin: var(--MI-marginFull);
 
+	// Refinement tokens: hairline edges and layered, low-contrast elevation
+	--MI-hairline: color-mix(in srgb, var(--MI_THEME-fg) 9%, transparent);
+	--MI-hairlineStrong: color-mix(in srgb, var(--MI_THEME-fg) 16%, transparent);
+	--MI-highlight: color-mix(in srgb, #fff 7%, transparent);
+	--MI-elev1: 0 0 0 1px var(--MI-hairline), 0 1px 2px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 4px 14px -6px var(--MI_THEME-shadow);
+	--MI-elev2: 0 0 0 1px var(--MI-hairline), 0 2px 6px color-mix(in srgb, var(--MI_THEME-shadow) 55%, transparent), 0 16px 40px -12px var(--MI_THEME-shadow);
+	--MI-easeOut: cubic-bezier(0.23, 1, 0.32, 1);
+
 	// switch dynamically
 	--MI-minBottomSpacingMobile: calc(72px + max(12px, env(safe-area-inset-bottom, 0px)));
 	--MI-minBottomSpacing: var(--MI-minBottomSpacingMobile);
@@ -29,6 +37,9 @@ html {
 	font-size: 14px;
 	line-height: 1.35;
 	text-size-adjust: 100%;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	font-variant-numeric: tabular-nums;
 	tab-size: 2;
 	-webkit-text-size-adjust: 100%;
 	touch-action: manipulation;
@@ -289,7 +300,7 @@ rt {
 }
 
 ._shadow {
-	box-shadow: 0px 4px 32px var(--MI_THEME-shadow) !important;
+	box-shadow: var(--MI-elev2) !important;
 }
 
 ._button {
@@ -318,14 +329,17 @@ rt {
 ._buttonPrimary {
 	@extend ._button;
 	color: var(--MI_THEME-fgOnAccent);
-	background: var(--MI_THEME-accent);
+	background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
+	box-shadow: inset 0 1px 0 var(--MI-highlight), 0 1px 2px color-mix(in srgb, var(--MI_THEME-accent) 35%, transparent);
+	transition: background 0.15s var(--MI-easeOut), box-shadow 0.15s var(--MI-easeOut);
 
 	&:not(:disabled):hover {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
 	}
 
 	&:not(:disabled):active {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l - 5));
+		background: hsl(from var(--MI_THEME-accent) h s calc(l - 4));
+		box-shadow: inset 0 1px 2px color-mix(in srgb, #000 25%, transparent);
 	}
 }
 
@@ -364,6 +378,7 @@ rt {
 ._panel {
 	background: var(--MI_THEME-panel);
 	border-radius: var(--MI-radius);
+	box-shadow: var(--MI-elev1), inset 0 1px 0 var(--MI-highlight);
 	overflow: clip;
 }
 
@@ -408,8 +423,13 @@ rt {
 	padding: 10px;
 	box-sizing: border-box;
 	text-align: center;
-	border: solid 0.5px var(--MI_THEME-divider);
+	border: solid 1px var(--MI-hairlineStrong);
 	border-radius: var(--MI-radius);
+	transition: border-color 0.15s var(--MI-easeOut), background 0.15s var(--MI-easeOut);
+
+	&:hover {
+		border-color: color-mix(in srgb, var(--MI_THEME-accent) 55%, transparent);
+	}
 
 	&:active {
 		border-color: var(--MI_THEME-accent);
@@ -418,7 +438,8 @@ rt {
 
 ._popup {
 	background: var(--MI_THEME-popup);
-	border-radius: var(--MI-radius);
+	border-radius: calc(var(--MI-radius) + 2px);
+	box-shadow: var(--MI-elev2), inset 0 1px 0 var(--MI-highlight);
 	contain: content;
 }
 

@@ -141,13 +141,13 @@ function onMousedown(evt: MouseEvent): void {
 	text-align: center;
 	font-weight: normal;
 	font-size: 95%;
-	box-shadow: none;
 	text-decoration: none;
 	background: var(--MI_THEME-buttonBg);
-	border-radius: 5px;
+	border-radius: 8px;
 	overflow: clip;
 	box-sizing: border-box;
-	transition: background 0.1s ease;
+	box-shadow: 0 0 0 1px var(--MI-hairline), inset 0 1px 0 var(--MI-highlight);
+	transition: background 0.15s var(--MI-easeOut), box-shadow 0.15s var(--MI-easeOut), transform 0.1s var(--MI-easeOut);
 
 	&:hover {
 		text-decoration: none;
@@ -159,6 +159,7 @@ function onMousedown(evt: MouseEvent): void {
 
 	&:not(:disabled):active {
 		background: var(--MI_THEME-buttonHoverBg);
+		transform: translateY(0.5px);
 	}
 
 	&.iconOnly {
@@ -187,14 +188,15 @@ function onMousedown(evt: MouseEvent): void {
 	&.primary {
 		font-weight: bold;
 		color: var(--MI_THEME-fgOnAccent) !important;
-		background: var(--MI_THEME-accent);
+		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
+		box-shadow: 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 70%, #000), inset 0 1px 0 var(--MI-highlight), 0 2px 6px -2px color-mix(in srgb, var(--MI_THEME-accent) 55%, transparent);
 
 		&:not(:disabled):hover {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+			background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
 		}
 
 		&:not(:disabled):active {
-			background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+			background: hsl(from var(--MI_THEME-accent) h s calc(l - 3));
 		}
 	}
 
@@ -231,6 +233,7 @@ function onMousedown(evt: MouseEvent): void {
 
 	&.transparent {
 		background: transparent;
+		box-shadow: none;
 	}
 
 	&.gradate {
@@ -299,7 +302,7 @@ function onMousedown(evt: MouseEvent): void {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	border-radius: 6px;
+	border-radius: 8px;
 	overflow: clip;
 	pointer-events: none;
 }

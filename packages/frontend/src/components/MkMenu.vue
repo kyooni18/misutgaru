@@ -625,7 +625,7 @@ function guardMouseMove(ev: MouseEvent) {
 }
 
 .menu {
-	padding: 8px 0;
+	padding: 6px 0;
 	box-sizing: border-box;
 	max-width: 100vw;
 	min-width: 200px;
@@ -662,9 +662,10 @@ function guardMouseMove(ev: MouseEvent) {
 		left: 0;
 		right: 0;
 		margin: auto;
-		width: calc(100% - 16px);
+		width: calc(100% - 12px);
 		height: 100%;
-		border-radius: 6px;
+		border-radius: 8px;
+		transition: background-color 0.12s var(--MI-easeOut);
 	}
 
 	&:focus-visible {
@@ -804,8 +805,8 @@ function guardMouseMove(ev: MouseEvent) {
 }
 
 .divider {
-	margin: 8px 0;
-	border-top: solid 0.5px var(--MI_THEME-divider);
+	margin: 6px 12px;
+	border-top: solid 1px var(--MI-hairline);
 }
 
 .radioIcon {
