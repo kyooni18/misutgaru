@@ -5,7 +5,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader v-model:tab="src" :actions="headerActions" :tabs="$i ? headerTabs : headerTabsWhenNotLogin" :swipable="true" :displayMyAvatar="true" :canOmitTitle="true">
-	<div class="_spacer" style="--MI_SPACER-w: 800px;">
+	<div v-if="mobileView === 'notifications'" class="_spacer" style="--MI_SPACER-w: 800px;">
+		<MkMobileNotifications/>
+	</div>
+	<div v-else-if="mobileView === 'widgets'" class="_spacer" style="--MI_SPACER-w: 800px;">
+		<XWidgets/>
+	</div>
+	<div v-show="mobileView === 'timeline'" class="_spacer" style="--MI_SPACER-w: 800px;">
 		<MkTip v-if="isBasicTimeline(src)" :k="`tl.${src}`" style="margin-bottom: var(--MI-margin);">
 			{{ i18n.ts._timelineDescription[src] }}
 		</MkTip>
@@ -27,11 +33,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, provide, useTemplateRef, ref, onMounted, onActivated } from 'vue';
+import { computed, watch, provide, inject, useTemplateRef, ref, onMounted, onActivated, defineAsyncComponent } from 'vue';
 import type { Tab } from '@/components/global/MkPageHeader.tabs.vue';
 import type { MenuItem } from '@/types/menu.js';
 import type { BasicTimelineType } from '@/timelines.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
+import MkMobileNotifications from '@/components/MkMobileNotifications.vue';
+import { mobileSection } from '@/utility/mobile-section.js';
+import { DI } from '@/di.js';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import MkPostForm from '@/components/MkPostForm.vue';
 import * as os from '@/os.js';
@@ -51,6 +60,11 @@ const tlComponent = useTemplateRef('tlComponent');
 type TimelinePageSrc = BasicTimelineType | `list:${string}`;
 
 const srcWhenNotSignin = ref<'local' | 'global'>(isAvailableBasicTimeline('local') ? 'local' : 'global');
+const XWidgets = defineAsyncComponent(() => import('@/ui/_common_/widgets.vue'));
+const shell = inject(DI.mobileShell, null);
+// On phones, notifications and widgets are views of this page rather than drawers.
+const mobileView = computed(() => shell?.isMobile.value ? mobileSection.value : 'timeline');
+
 const src = computed<TimelinePageSrc>({
 	get: () => ($i ? store.r.tl.value.src : srcWhenNotSignin.value),
 	set: (x) => saveSrc(x),

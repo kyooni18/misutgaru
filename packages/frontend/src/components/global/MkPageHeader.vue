@@ -10,37 +10,52 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i class="ti ti-menu-2"></i>
 			<span v-if="menuIndicated" :class="$style.indicator" class="_blink"><i class="_indicatorCircle"></i></span>
 		</button>
-		<div v-if="!thin_ && (narrow || deviceKind === 'smartphone') && props.displayMyAvatar && $i" class="_button" @click="openAccountMenu">
+		<div v-if="!thin_ && (narrow || deviceKind === 'smartphone') && props.displayMyAvatar && $i" class="_button" :class="$style.fixed" @click="openAccountMenu">
 			<MkAvatar :class="$style.avatar" :user="$i"/>
 		</div>
 		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
 
 		<template v-if="compactTimelineBar">
-			<div :class="[$style.selector, { [$style.selectorExpanded]: tabsExpanded }]">
+			<div ref="selectorEl" :class="[$style.selector, { [$style.selectorCollapsed]: mobileSection !== 'timeline' }]">
 				<button
 					v-for="t in tabs"
 					:key="t.key"
+					:ref="el => { if (t.key === tab) activeTabEl = el as HTMLElement | null; }"
 					class="_button"
-					:class="[$style.selTab, { [$style.selActive]: t.key === tab, [$style.selNoIcon]: !t.icon }]"
-					:aria-expanded="t.key === tab ? tabsExpanded : undefined"
+					:class="[$style.selTab, { [$style.selActive]: t.key === tab }]"
+					:tabindex="mobileSection === 'timeline' ? 0 : -1"
 					@click="ev => onSelectorClick(t, ev)"
 				>
 					<i v-if="t.icon" :class="t.icon"></i>
 					<span :class="$style.selTitle"><span>{{ t.title }}</span></span>
-					<i v-if="t.key === tab" class="ti ti-chevron-down" :class="$style.chevron"></i>
 				</button>
 			</div>
-			<div :class="[$style.collapsible, { [$style.collapsed]: tabsExpanded }]">
-				<div :class="$style.buttons">
-					<button v-for="action in actions" :key="action.icon" v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon"></i></button>
-					<button class="_button" :class="$style.button" :aria-label="i18n.ts.notifications" @click="mainRouter.push('/my/notifications')">
-						<i class="ti ti-bell"></i>
-						<span v-if="$i?.hasUnreadNotification" :class="$style.indicator" class="_blink">
-							<span class="_indicateCounter" :class="$style.indicateValueIcon">{{ $i.unreadNotificationsCount > 99 ? '99+' : $i.unreadNotificationsCount }}</span>
-						</span>
-					</button>
-					<button class="_button" :class="$style.button" :aria-label="i18n.ts.widgets" @click="shell?.openWidgets()"><i class="ti ti-apps"></i></button>
-				</div>
+			<button class="_button" :class="[$style.sectionTab, $style.timelineLabel, { [$style.sectionShown]: mobileSection !== 'timeline' }]" :tabindex="mobileSection !== 'timeline' ? 0 : -1" @click="mobileSection = 'timeline'">
+				<span :class="$style.selTitle"><span>{{ i18n.ts.timeline }}</span></span>
+			</button>
+			<div :class="$style.sectionButtons">
+				<template v-if="mobileSection === 'timeline'">
+					<button
+						v-for="action in actions"
+						:key="action.icon"
+						v-tooltip.noDelay="action.text"
+						class="_button"
+						:class="[$style.button, { [$style.highlighted]: action.highlighted }]"
+						@click.stop="action.handler"
+						@touchstart="preventDrag"
+					><i :class="action.icon"></i></button>
+				</template>
+				<button class="_button" :class="[$style.sectionTab, { [$style.sectionActive]: mobileSection === 'notifications' }]" :aria-label="i18n.ts.notifications" @click="mobileSection = 'notifications'">
+					<i class="ti ti-bell"></i>
+					<span :class="$style.selTitle"><span>{{ i18n.ts.notifications }}</span></span>
+					<span v-if="$i?.hasUnreadNotification && mobileSection !== 'notifications'" :class="$style.indicator" class="_blink">
+						<span class="_indicateCounter" :class="$style.indicateValueIcon">{{ $i.unreadNotificationsCount > 99 ? '99+' : $i.unreadNotificationsCount }}</span>
+					</span>
+				</button>
+				<button class="_button" :class="[$style.sectionTab, { [$style.sectionActive]: mobileSection === 'widgets' }]" :aria-label="i18n.ts.widgets" @click="mobileSection = 'widgets'">
+					<i class="ti ti-apps"></i>
+					<span :class="$style.selTitle"><span>{{ i18n.ts.widgets }}</span></span>
+				</button>
 			</div>
 		</template>
 
@@ -91,7 +106,8 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch } from 'vue';
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch, nextTick } from 'vue';
+import { mobileSection } from '@/utility/mobile-section.js';
 import { i18n } from '@/i18n.js';
 import { mainRouter } from '@/router.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -125,21 +141,19 @@ const shell = inject(DI.mobileShell, null);
 // Phone shell: the bottom bar is gone, so nav / notifications / widgets live up here.
 const mobileNav = computed(() => shell != null && shell.isMobile.value && narrow.value && !thin_ && $i != null);
 const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvatar && hasTabs.value);
-const tabsExpanded = ref(false);
-const currentTab = computed(() => props.tabs.find(t => t.key === props.tab) ?? props.tabs[0]);
-watch(() => props.tab, () => { tabsExpanded.value = false; });
+const activeTabEl = ref<HTMLElement | null>(null);
+const selectorEl = useTemplateRef('selectorEl');
+
+// keep the active timeline in view when the strip scrolls
+watch(() => [props.tab, mobileSection.value], async () => {
+	await nextTick();
+	activeTabEl.value?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+});
 
 function onSelectorClick(t: Tab, ev: MouseEvent) {
-	if (t.key === props.tab) {
-		// the current timeline toggles the selector
-		tabsExpanded.value = !tabsExpanded.value;
-		return;
-	}
-	if (t.onClick) {
-		t.onClick(ev as PointerEvent);
-	}
+	mobileSection.value = 'timeline';
+	if (t.onClick) t.onClick(ev as PointerEvent);
 	emit('update:tab', t.key);
-	tabsExpanded.value = false;
 }
 const menuIndicated = computed(() => {
 	for (const def in navbarItemDef) {
@@ -278,7 +292,12 @@ onUnmounted(() => {
 	margin: 0 8px;
 }
 
+.fixed {
+	flex-shrink: 0;
+}
+
 .button {
+	flex-shrink: 0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -354,65 +373,52 @@ onUnmounted(() => {
 	}
 }
 
+// timeline strip: icons, the current one labelled; folds away when another section is open
 .selector {
 	display: flex;
 	align-items: center;
 	gap: 2px;
+	flex: 0 1 auto;
 	min-width: 0;
-	margin-right: auto;
 	overflow-x: auto;
 	scrollbar-width: none;
+	transition: max-width 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+	max-width: 100%;
+
+	&.selectorCollapsed {
+		max-width: 0;
+		opacity: 0;
+		pointer-events: none;
+	}
 }
 
-.selTab {
+.selTab,
+.sectionTab {
 	display: flex;
 	flex-shrink: 0;
 	align-items: center;
-	gap: 6px;
 	height: 32px;
 	padding: 0 10px;
 	border-radius: 999px;
 	white-space: nowrap;
-	overflow: hidden;
+	position: relative;
 	color: color-mix(in srgb, var(--MI_THEME-pageHeaderFg) 70%, transparent);
-	max-width: 0;
-	padding-inline: 0;
-	opacity: 0;
-	pointer-events: none;
-	transition:
-		max-width 0.38s var(--MI-easeOut),
-		padding 0.38s var(--MI-easeOut),
-		opacity 0.28s var(--MI-easeOut),
-		background-color 0.2s var(--MI-easeOut),
-		color 0.2s var(--MI-easeOut);
-
-	&.selActive {
-		max-width: 220px;
-		padding-inline: 12px;
-		opacity: 1;
-		pointer-events: auto;
-		font-weight: 600;
-		color: var(--MI_THEME-pageHeaderFg);
-		background: var(--MI_THEME-panelHighlight);
-	}
+	transition: background-color 0.25s var(--MI-easeOut), color 0.25s var(--MI-easeOut);
 }
 
-.selectorExpanded .selTab {
-	max-width: 220px;
-	padding-inline: 10px;
-	opacity: 1;
-	pointer-events: auto;
-
-	&.selActive {
-		padding-inline: 12px;
-	}
+.selTab.selActive,
+.sectionTab.sectionActive {
+	font-weight: 600;
+	color: var(--MI_THEME-pageHeaderFg);
+	background: var(--MI_THEME-panelHighlight);
 }
 
-// only the active timeline shows its name; the rest stay icon-only
+// labels: only the active item shows its name, others stay icon-only
 .selTitle {
 	display: grid;
-	grid-template-columns: 1fr;
-	transition: grid-template-columns 0.38s var(--MI-easeOut), opacity 0.28s var(--MI-easeOut);
+	grid-template-columns: 0fr;
+	opacity: 0;
+	transition: grid-template-columns 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut), margin 0.4s var(--MI-easeOut);
 
 	> span {
 		min-width: 0;
@@ -420,38 +426,40 @@ onUnmounted(() => {
 	}
 }
 
-.selTab:not(.selActive):not(.selNoIcon) .selTitle {
-	grid-template-columns: 0fr;
-	opacity: 0;
-}
-
-.chevron {
-	font-size: 0.85em;
-	opacity: 0.55;
-	transition: transform 0.38s var(--MI-easeOut);
-}
-
-.selectorExpanded .chevron {
-	transform: rotate(180deg);
-}
-
-// notifications / widgets slide away while the selector is open
-.collapsible {
-	display: grid;
+.selActive > .selTitle,
+.sectionActive > .selTitle,
+.sectionShown > .selTitle {
 	grid-template-columns: 1fr;
-	flex-shrink: 0;
-	transition: grid-template-columns 0.38s var(--MI-easeOut), opacity 0.28s var(--MI-easeOut);
+	opacity: 1;
+	margin-left: 6px;
+}
 
-	> * {
-		min-width: 0;
-		overflow: hidden;
+.timelineLabel {
+	max-width: 0;
+	padding-inline: 0;
+	overflow: hidden;
+	opacity: 0;
+	pointer-events: none;
+	transition: max-width 0.4s var(--MI-easeOut), padding 0.4s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+
+	&.sectionShown {
+		max-width: 140px;
+		padding-inline: 12px;
+		opacity: 1;
+		pointer-events: auto;
+		color: var(--MI_THEME-pageHeaderFg);
 	}
 
-	&.collapsed {
-		grid-template-columns: 0fr;
-		opacity: 0;
-		pointer-events: none;
+	> .selTitle {
+		margin-left: 0;
 	}
+}
+
+.sectionButtons {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 2px;
 }
 
 .title {
