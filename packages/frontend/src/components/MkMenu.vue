@@ -681,7 +681,7 @@ function guardMouseMove(ev: MouseEvent) {
 		&:hover,
 		&:focus-visible:active,
 		&:focus-visible.active {
-			color: var(--menuHoverFg, var(--MI_THEME-accent));
+			color: var(--menuHoverFg, var(--MI_THEME-fgHighlighted));
 			position: relative;
 			z-index: 10; // guardより上にする
 

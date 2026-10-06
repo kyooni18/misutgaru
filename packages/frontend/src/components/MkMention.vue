@@ -49,7 +49,6 @@ const avatarUrl = computed(() => prefer.s.disableShowingAnimatedImages || prefer
 	border-radius: 999px;
 	color: var(--MI_THEME-mention);
 	background: color(from var(--MI_THEME-mention) srgb r g b / 0.1);
-	box-shadow: inset 0 0 0 1px color(from var(--MI_THEME-mention) srgb r g b / 0.16);
 
 	&.isMe {
 		color: var(--MI_THEME-mentionMe);

@@ -749,8 +749,8 @@ const keymap = {
 	}
 
 	&:hover {
-		color: var(--MI_THEME-accent);
-		background-color: var(--MI-accentWash);
+		color: var(--MI_THEME-fgHighlighted);
+		background-color: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
 	}
 }
 

@@ -8,12 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.container">
 		<svg :class="[$style.spinner, $style.bg]" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
 			<g transform="matrix(1.125,0,0,1.125,12,12)">
-				<circle cx="64" cy="64" r="64" style="fill:none;stroke:currentColor;stroke-width:21.33px;"/>
+				<circle cx="64" cy="64" r="64" style="fill:none;stroke:currentColor;stroke-width:14px;"/>
 			</g>
 		</svg>
 		<svg :class="[$style.spinner, $style.fg, { [$style.static]: static }]" viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg">
 			<g transform="matrix(1.125,0,0,1.125,12,12)">
-				<path d="M128,64C128,28.654 99.346,0 64,0C99.346,0 128,28.654 128,64Z" style="fill:none;stroke:currentColor;stroke-width:21.33px;"/>
+				<path d="M128,64C128,28.654 99.346,0 64,0C99.346,0 128,28.654 128,64Z" style="fill:none;stroke:currentColor;stroke-width:14px;"/>
 			</g>
 		</svg>
 	</div>
@@ -39,6 +39,10 @@ const props = withDefaults(defineProps<{
 </script>
 
 <style lang="scss" module>
+@keyframes loadingIn {
+	to { opacity: 0.8; }
+}
+
 @keyframes spinner {
 	0% {
 		transform: rotate(0deg);
@@ -49,25 +53,30 @@ const props = withDefaults(defineProps<{
 }
 
 .root {
-	padding: 32px;
+	padding: 24px;
 	text-align: center;
 	cursor: wait;
 
-	--size: 38px;
+	--size: 22px;
+
+	// Quiet by default: fades in only if loading takes a moment, neutral colour.
+	opacity: 0;
+	animation: loadingIn 0.25s ease 0.4s forwards;
+	color: var(--MI_THEME-fg);
 
 	&.colored {
-		color: var(--MI_THEME-accent);
+		color: var(--MI_THEME-fg);
 	}
 
 	&.inline {
 		display: inline;
 		padding: 0;
-		--size: 32px;
+		--size: 20px;
 	}
 
 	&.mini {
 		padding: 16px;
-		--size: 32px;
+		--size: 20px;
 	}
 
 	&.em {
@@ -99,11 +108,11 @@ const props = withDefaults(defineProps<{
 }
 
 .bg {
-	opacity: 0.275;
+	opacity: 0.12;
 }
 
 .fg {
-	animation: spinner 0.5s linear infinite;
+	animation: spinner 0.9s linear infinite;
 
 	&.static {
 		animation-play-state: paused;
