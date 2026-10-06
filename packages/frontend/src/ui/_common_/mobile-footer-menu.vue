@@ -128,7 +128,7 @@ watch(rootEl, () => {
 	max-width: 42px;
 	margin: auto;
 	align-content: center;
-	border-radius: 100%;
+	border-radius: 14px;
 	transition: background-color var(--MI-durFast) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut), filter var(--MI-durFast) var(--MI-easeOut);
 
 	&:hover {

@@ -143,7 +143,7 @@ function onMousedown(evt: MouseEvent): void {
 	font-size: 95%;
 	text-decoration: none;
 	background: var(--MI_THEME-buttonBg);
-	border-radius: 8px;
+	border-radius: 7px;
 	overflow: clip;
 	box-sizing: border-box;
 	box-shadow: 0 0 0 1px var(--MI-hairline), inset 0 1px 0 var(--MI-highlight);

@@ -279,7 +279,11 @@ onUnmounted(() => {
 
 .title {
 	min-width: 0;
-	line-height: 1.1;
+	line-height: 1.2;
+	font-family: var(--MI-fontDisplay);
+	font-weight: 600;
+	font-size: 1.08em;
+	letter-spacing: 0.02em;
 }
 
 .subtitle {

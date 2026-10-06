@@ -7,7 +7,8 @@
  */
 
 :root {
-	--MI-radius: 12px;
+	--MI-radius: 10px;
+	--MI-fontDisplay: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Noto Serif KR', 'Noto Serif CJK KR', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
 	--MI-marginFull: 16px;
 	--MI-marginHalf: 10px;
 
@@ -23,7 +24,7 @@
 	--MI-durFast: 120ms;
 	--MI-dur: 220ms;
 	--MI-accentWash: color-mix(in srgb, var(--MI_THEME-accent) 8%, transparent);
-	--MI-accentGlow: color-mix(in srgb, var(--MI_THEME-accent) 40%, transparent);
+	--MI-accentGlow: color-mix(in srgb, var(--MI_THEME-accent) 22%, transparent);
 	--MI-panelGradient: linear-gradient(180deg, color-mix(in srgb, #fff 3%, var(--MI_THEME-panel)), var(--MI_THEME-panel) 140px);
 
 	// switch dynamically
@@ -38,9 +39,10 @@
 html {
 	overflow: auto;
 	overflow-wrap: break-word;
-	font-family: 'Hiragino Maru Gothic Pro', "BIZ UDGothic", Roboto, HelveticaNeue, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Hiragino Sans', 'BIZ UDGothic', Roboto, HelveticaNeue, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 	font-size: 14px;
-	line-height: 1.35;
+	line-height: 1.5;
+	letter-spacing: 0.003em;
 	text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
@@ -50,7 +52,7 @@ html {
 	touch-action: manipulation;
 	scroll-behavior: smooth;
 	background-color: var(--MI_THEME-bg);
-	background-image: radial-gradient(120% 420px at 50% -80px, color-mix(in srgb, var(--MI_THEME-accent) 7%, transparent), transparent 70%);
+	background-image: radial-gradient(120% 420px at 50% -80px, color-mix(in srgb, var(--MI_THEME-accent) 4.5%, transparent), transparent 70%);
 	background-repeat: no-repeat;
 	color: var(--MI_THEME-fg);
 	accent-color: var(--MI_THEME-accent);

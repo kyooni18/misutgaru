@@ -252,9 +252,9 @@ onUnmounted(() => {
 .tabHighlight {
 	position: absolute;
 	bottom: 0;
-	height: 3px;
+	height: 2px;
 	background: linear-gradient(90deg, var(--MI_THEME-accent), hsl(from var(--MI_THEME-accent) h s calc(l + 14)));
-	box-shadow: 0 0 10px -1px var(--MI-accentGlow);
+	box-shadow: 0 0 8px -1px var(--MI-accentGlow);
 	border-radius: 999px;
 	transition: none;
 	pointer-events: none;
