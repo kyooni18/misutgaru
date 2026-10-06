@@ -686,7 +686,7 @@ function guardMouseMove(ev: MouseEvent) {
 			z-index: 10; // guardより上にする
 
 			&::before {
-				background-color: var(--menuHoverBg, var(--MI_THEME-accentedBg));
+				background-color: var(--menuHoverBg, color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent));
 			}
 		}
 

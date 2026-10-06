@@ -26,8 +26,6 @@ type ThemeManagerEvents = {
 	'requestUpdateThemeCache': (theme: Theme, compiled: CompiledTheme) => void;
 };
 
-const TONED_DOWN_KEYS = new Set<string>(['accent', 'buttonGradateA', 'buttonGradateB', 'link', 'mention', 'renote']);
-
 class ThemeManager extends EventEmitter<ThemeManagerEvents> {
 	/** 現在常用しているテーマ */
 	private _theme: Theme | null = null;
@@ -161,9 +159,7 @@ class ThemeManager extends EventEmitter<ThemeManagerEvents> {
 		for (const key of themeProps) {
 			const value = this.currentCompiledTheme[key];
 			if (value) {
-				// Calm saturated accent colours slightly so they read as highlights rather than glare.
-				const shown = TONED_DOWN_KEYS.has(key) ? `oklch(from ${value.toString()} calc(l * 0.95) calc(c * 0.72) h)` : value.toString();
-				window.document.documentElement.style.setProperty(`--MI_THEME-${key}`, shown);
+				window.document.documentElement.style.setProperty(`--MI_THEME-${key}`, value.toString());
 			} else {
 				window.document.documentElement.style.removeProperty(`--MI_THEME-${key}`);
 			}

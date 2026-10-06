@@ -574,7 +574,7 @@ function menuEdit() {
 		}
 
 		&:hover, &.active, &:focus {
-			color: var(--MI_THEME-accent);
+			color: var(--MI_THEME-fgHighlighted);
 
 			&::before {
 				content: "";
@@ -588,8 +588,7 @@ function menuEdit() {
 				right: 0;
 				bottom: 0;
 				border-radius: 999px;
-				background: linear-gradient(90deg, var(--MI_THEME-accentedBg), color-mix(in srgb, var(--MI_THEME-accentedBg) 55%, transparent));
-				box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 14%, transparent);
+				background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
 			}
 		}
 	}
@@ -785,7 +784,7 @@ function menuEdit() {
 
 		&:hover, &.active, &:focus {
 			text-decoration: none;
-			color: var(--MI_THEME-accent);
+			color: var(--MI_THEME-fgHighlighted);
 
 			&::before {
 				content: "";
@@ -799,7 +798,7 @@ function menuEdit() {
 				right: 0;
 				bottom: 0;
 				border-radius: 999px;
-				background: var(--MI_THEME-accentedBg);
+				background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
 			}
 
 			> .icon,
