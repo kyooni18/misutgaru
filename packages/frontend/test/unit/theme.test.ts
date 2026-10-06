@@ -24,6 +24,9 @@ vi.mock('@/os.js', () => ({
 	alert: vi.fn(),
 }));
 
+// accent is calmed when applied to the DOM
+const toned = (c?: string) => `oklch(from ${c} calc(l * 0.95) calc(c * 0.72) h)`;
+
 const cloneTheme = <T>(value: T): T => structuredClone(value);
 
 const createTheme = (base: 'light' | 'dark', options: {
@@ -115,7 +118,7 @@ describe('ThemeManager', () => {
 		assert.strictEqual(themeManager.isPreviewMode, true);
 		assert.strictEqual(isPreviewMode.value, true);
 		assert.strictEqual(document.documentElement.dataset.colorScheme, 'dark');
-		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), themeManager.currentCompiledTheme?.accent);
+		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), toned(themeManager.currentCompiledTheme?.accent));
 		assert.strictEqual(window.localStorage.getItem('theme'), cachedTheme);
 		assert.strictEqual(window.localStorage.getItem('themeId'), cachedThemeId);
 	});
@@ -139,7 +142,7 @@ describe('ThemeManager', () => {
 		assert.strictEqual(themeManager.isPreviewMode, false);
 		assert.strictEqual(isPreviewMode.value, false);
 		assert.strictEqual(document.documentElement.dataset.colorScheme, 'light');
-		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), themeManager.currentCompiledTheme?.accent);
+		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), toned(themeManager.currentCompiledTheme?.accent));
 		assert.strictEqual(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content'), originalCompiledThemeColor);
 		assert.strictEqual(window.localStorage.getItem('themeId'), primaryTheme.id);
 	});
@@ -156,7 +159,7 @@ describe('ThemeManager', () => {
 		assert.strictEqual(themeManager.isPreviewMode, false);
 		assert.strictEqual(isPreviewMode.value, false);
 		assert.strictEqual(document.documentElement.dataset.colorScheme, 'dark');
-		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), themeManager.currentCompiledTheme?.accent);
+		assert.strictEqual(document.documentElement.style.getPropertyValue('--MI_THEME-accent'), toned(themeManager.currentCompiledTheme?.accent));
 		assert.strictEqual(window.localStorage.getItem('themeId'), replacementTheme.id);
 	});
 
