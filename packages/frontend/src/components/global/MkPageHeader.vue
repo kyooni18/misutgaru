@@ -16,7 +16,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
 
 		<template v-if="compactTimelineBar">
-			<div ref="selectorEl" :class="[$style.selector, { [$style.selectorCollapsed]: mobileSection !== 'timeline' }]">
+			<div :class="[$style.selectorWrap, { [$style.selectorCollapsed]: mobileSection !== 'timeline', [$style.fadeStart]: canScrollStart, [$style.fadeEnd]: canScrollEnd }]">
+			<div ref="selectorEl" :class="$style.selector" @scroll.passive="updateFades">
 				<button
 					v-for="t in tabs"
 					:key="t.key"
@@ -29,6 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-if="t.icon" :class="t.icon"></i>
 					<span :class="$style.selTitle"><span>{{ t.title }}</span></span>
 				</button>
+			</div>
 			</div>
 			<button class="_button" :class="[$style.sectionTab, $style.timelineLabel, { [$style.sectionShown]: mobileSection !== 'timeline' }]" :tabindex="mobileSection !== 'timeline' ? 0 : -1" @click="mobileSection = 'timeline'">
 				<span :class="$style.selTitle"><span>{{ i18n.ts.timeline }}</span></span>
@@ -106,7 +108,7 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch, nextTick } from 'vue';
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch } from 'vue';
 import { mobileSection } from '@/utility/mobile-section.js';
 import { i18n } from '@/i18n.js';
 import { mainRouter } from '@/router.js';
@@ -144,11 +146,37 @@ const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvat
 const activeTabEl = ref<HTMLElement | null>(null);
 const selectorEl = useTemplateRef('selectorEl');
 
-// keep the active timeline in view when the strip scrolls
-watch(() => [props.tab, mobileSection.value], async () => {
-	await nextTick();
+const canScrollStart = ref(false);
+const canScrollEnd = ref(false);
+
+function updateFades() {
+	const el = selectorEl.value;
+	if (!el) return;
+	canScrollStart.value = el.scrollLeft > 2;
+	canScrollEnd.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+}
+
+// centre the active item; clamped by the browser so it is never clipped at the ends
+function centerActive() {
+	const strip = selectorEl.value;
+	const item = activeTabEl.value;
+	if (!strip || !item) return;
+	const left = item.offsetLeft - (strip.clientWidth - item.offsetWidth) / 2;
+	strip.scrollTo({ left, behavior: 'smooth' });
+}
+
+let centerTimer: number | null = null;
+function scheduleCenter(delay: number) {
+	if (centerTimer != null) window.clearTimeout(centerTimer);
 	// wait for the strip's own transition so scrolling does not fight layout
-	window.setTimeout(() => activeTabEl.value?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }), 320);
+	centerTimer = window.setTimeout(() => { centerTimer = null; centerActive(); updateFades(); }, delay);
+}
+
+watch(() => [props.tab, mobileSection.value], () => scheduleCenter(320));
+watch(selectorEl, (el) => {
+	if (!el) return;
+	scheduleCenter(60);
+	new ResizeObserver(updateFades).observe(el);
 });
 
 function onSelectorClick(t: Tab, ev: MouseEvent) {
@@ -376,22 +404,60 @@ onUnmounted(() => {
 }
 
 // timeline strip: icons, the current one labelled; folds away when another section is open
-.selector {
-	display: flex;
-	align-items: center;
-	gap: 2px;
+.selectorWrap {
+	position: relative;
 	flex: 0 1 auto;
 	min-width: 0;
-	overflow-x: auto;
-	scrollbar-width: none;
-	transition: max-width 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
 	max-width: 100%;
+	overflow: hidden;
+	transition: max-width 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
 
 	&.selectorCollapsed {
 		max-width: 0;
 		opacity: 0;
 		pointer-events: none;
 	}
+
+	// progressive blur at the edges where the strip continues
+	&::before,
+	&::after {
+		content: "";
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 36px;
+		z-index: 1;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.25s var(--MI-easeOut);
+		-webkit-backdrop-filter: blur(5px);
+		backdrop-filter: blur(5px);
+	}
+
+	&::before {
+		left: 0;
+		-webkit-mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
+		mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
+	}
+
+	&::after {
+		right: 0;
+		-webkit-mask-image: linear-gradient(to left, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
+		mask-image: linear-gradient(to left, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
+	}
+
+	&.fadeStart::before,
+	&.fadeEnd::after {
+		opacity: 1;
+	}
+}
+
+.selector {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	overflow-x: auto;
+	scrollbar-width: none;
 }
 
 .selTab,
