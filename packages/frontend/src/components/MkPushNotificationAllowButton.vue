@@ -135,22 +135,32 @@ async function subscribe() {
 async function unsubscribe() {
 	if (!pushSubscription.value) return;
 
-	const endpoint = pushSubscription.value.endpoint;
+	const subscription = pushSubscription.value;
+	const keys = getPushSubscriptionKeys(subscription);
+	if (!keys) {
+		alert({
+			type: 'error',
+			title: i18n.ts.somethingHappened,
+			text: i18n.ts.pushNotificationNotSupported,
+		});
+		return;
+	}
+	const params = { endpoint: subscription.endpoint, ...keys };
 	const accounts = await getAccounts();
 
 	pushRegistrationInServer.value = undefined;
 
 	if ($i && accounts.length >= 2) {
 		await apiWithDialog('sw/unregister', {
-			endpoint,
+			...params,
 		}, $i.token);
 		// Keep the browser subscription for other accounts, but let this
 		// component expose the subscribe action for the current account again.
 		pushSubscription.value = null;
 	} else {
-		await pushSubscription.value.unsubscribe();
+		await subscription.unsubscribe();
 		await apiWithDialog('sw/unregister', {
-			endpoint,
+			...params,
 		}, null);
 		pushSubscription.value = null;
 	}
@@ -169,10 +179,13 @@ async function initializePushState() {
 		// key. Remove that local/server registration now so the subscribe action
 		// remains available instead of being hidden by show-registration.
 		if (pushSubscription.value && !pushSubscriptionUsesVapidKey(pushSubscription.value, instance.swPublickey)) {
-			const staleEndpoint = pushSubscription.value.endpoint;
+			const staleSubscription = pushSubscription.value;
+			const staleKeys = getPushSubscriptionKeys(staleSubscription);
 			pushRegistrationInServer.value = undefined;
-			await misskeyApi('sw/unregister', { endpoint: staleEndpoint }).catch(() => undefined);
-			await pushSubscription.value.unsubscribe().catch(() => undefined);
+			if (staleKeys) {
+				await misskeyApi('sw/unregister', { endpoint: staleSubscription.endpoint, ...staleKeys }).catch(() => undefined);
+			}
+			await staleSubscription.unsubscribe().catch(() => undefined);
 			pushSubscription.value = null;
 		}
 

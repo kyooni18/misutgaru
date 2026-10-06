@@ -9,6 +9,7 @@ import { store } from '@/store.js';
 import { waiting } from '@/os.js';
 import { unisonReload } from '@/utility/unison-reload.js';
 import { clear } from '@/utility/idb-proxy.js';
+import { getPushSubscriptionKeys } from '@/utility/push-notifications.js';
 import { $i } from '@/i.js';
 
 export async function signout() {
@@ -56,16 +57,19 @@ export async function signout() {
 
 		for (const push of subscriptions) {
 			try {
-				await window.fetch(`${apiUrl}/sw/unregister`, {
-					method: 'POST',
-					body: JSON.stringify({
-						i: $i.token,
-						endpoint: push.endpoint,
-					}),
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				});
+				const keys = getPushSubscriptionKeys(push);
+				if (keys) {
+					await window.fetch(`${apiUrl}/sw/unregister`, {
+						method: 'POST',
+						body: JSON.stringify({
+							endpoint: push.endpoint,
+							...keys,
+						}),
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					});
+				}
 			} finally {
 				// Remove the browser-side subscription as well. Otherwise the next
 				// account can inherit an endpoint that still belongs to this one.

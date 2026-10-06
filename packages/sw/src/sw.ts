@@ -164,9 +164,11 @@ globalThis.addEventListener('pushsubscriptionchange', ev => {
 
 		const accounts = await get<StoredAccount[]>('accounts').catch(() => undefined);
 		if (!accounts || accounts.length === 0) return;
+		const oldSubscription = event.oldSubscription;
+		const oldEndpoint = oldSubscription?.endpoint;
+		const oldKeys = oldSubscription ? getPushSubscriptionKeys(oldSubscription) : null;
 
 		await Promise.allSettled(accounts.map(async account => {
-			const oldEndpoint = event.oldSubscription?.endpoint;
 			let sendReadMessage = false;
 
 			if (oldEndpoint) {
@@ -177,8 +179,8 @@ globalThis.addEventListener('pushsubscriptionchange', ev => {
 					// The old registration may already have expired.
 				}
 
-				if (oldEndpoint !== nextSubscription.endpoint) {
-					await swos.api('sw/unregister', account.id, { endpoint: oldEndpoint }).catch(() => undefined);
+				if (oldEndpoint !== nextSubscription.endpoint && oldKeys) {
+					await swos.api('sw/unregister', account.id, { endpoint: oldEndpoint, ...oldKeys }).catch(() => undefined);
 				}
 			}
 

@@ -232,6 +232,13 @@ async function run() {
 		out: () => {
 			// nop
 		},
+		err: (err) => {
+			os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+				text: String(err),
+			});
+		},
 		log: () => {
 			// nop
 		},
@@ -245,7 +252,8 @@ async function run() {
 	} catch (err) {
 		os.alert({
 			type: 'error',
-			text: 'Syntax error :(',
+			title: i18n.ts.error,
+			text: String(err),
 		});
 		return;
 	}
@@ -254,8 +262,8 @@ async function run() {
 	} catch (err: any) {
 		os.alert({
 			type: 'error',
-			title: 'AiScript Error',
-			text: err.message,
+			title: i18n.ts.error,
+			text: String(err),
 		});
 	}
 }

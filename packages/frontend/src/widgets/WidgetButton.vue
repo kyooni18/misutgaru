@@ -65,6 +65,13 @@ async function run() {
 		out: (value) => {
 			// nop
 		},
+		err: (err) => {
+			os.alert({
+				type: 'error',
+				title: i18n.ts.error,
+				text: String(err),
+			});
+		},
 		log: (type, params) => {
 			// nop
 		},
@@ -76,7 +83,8 @@ async function run() {
 	} catch (err) {
 		os.alert({
 			type: 'error',
-			text: 'Syntax error :(',
+			title: i18n.ts.error,
+			text: String(err),
 		});
 		return;
 	}
@@ -85,7 +93,8 @@ async function run() {
 	} catch (err) {
 		os.alert({
 			type: 'error',
-			text: err instanceof Error ? err.message : String(err),
+			title: i18n.ts.error,
+			text: String(err),
 		});
 	}
 }
