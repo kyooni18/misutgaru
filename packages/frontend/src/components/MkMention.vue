@@ -45,10 +45,11 @@ const avatarUrl = computed(() => prefer.s.disableShowingAnimatedImages || prefer
 <style lang="scss" module>
 .root {
 	display: inline-block;
-	padding: 4px 8px 4px 4px;
+	padding: 1px 8px 1px 3px;
 	border-radius: 999px;
 	color: var(--MI_THEME-mention);
 	background: color(from var(--MI_THEME-mention) srgb r g b / 0.1);
+	box-shadow: inset 0 0 0 1px color(from var(--MI_THEME-mention) srgb r g b / 0.16);
 
 	&.isMe {
 		color: var(--MI_THEME-mentionMe);

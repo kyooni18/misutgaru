@@ -331,6 +331,14 @@ definePage(() => ({
 .tl {
 	background: var(--MI_THEME-bg);
 	border-radius: var(--MI-radius);
+	box-shadow: var(--MI-elev1);
 	overflow: clip;
+
+	// phones: run the feed edge to edge instead of a boxed card
+	@media (max-width: 520px) {
+		margin-inline: -12px;
+		border-radius: 0;
+		box-shadow: 0 -1px 0 var(--MI-hairline);
+	}
 }
 </style>

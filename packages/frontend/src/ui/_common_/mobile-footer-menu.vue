@@ -84,9 +84,11 @@ watch(rootEl, () => {
 	grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
 	width: 100%;
 	box-sizing: border-box;
-	background: var(--MI_THEME-navBg);
+	background: color-mix(in srgb, var(--MI_THEME-navBg) 82%, transparent);
+	-webkit-backdrop-filter: saturate(1.3) blur(18px);
+	backdrop-filter: saturate(1.3) blur(18px);
 	color: var(--MI_THEME-navFg);
-	border-top: solid 0.5px var(--MI_THEME-divider);
+	border-top: solid 1px var(--MI-hairline);
 }
 
 .item {
@@ -104,13 +106,15 @@ watch(rootEl, () => {
 		.itemInner {
 			background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
 			color: var(--MI_THEME-fgOnAccent);
+			box-shadow: inset 0 1px 0 var(--MI-highlight), 0 6px 16px -4px var(--MI-accentGlow);
 
 			&:hover {
-				background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+				filter: brightness(1.08);
 			}
 
 			&:active {
-				background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+				filter: brightness(0.94);
+				transform: scale(0.96);
 			}
 		}
 	}
@@ -125,6 +129,7 @@ watch(rootEl, () => {
 	margin: auto;
 	align-content: center;
 	border-radius: 100%;
+	transition: background-color var(--MI-durFast) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut), filter var(--MI-durFast) var(--MI-easeOut);
 
 	&:hover {
 		background: var(--MI_THEME-panelHighlight);
