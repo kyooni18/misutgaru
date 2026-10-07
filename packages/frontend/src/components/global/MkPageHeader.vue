@@ -17,6 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<template v-if="compactTimelineBar">
 			<div :class="[$style.selectorWrap, { [$style.selectorCollapsed]: mobileSection !== 'timeline', [$style.fadeStart]: canScrollStart, [$style.fadeEnd]: canScrollEnd }]">
+			<div :class="[$style.edge, $style.edgeStart]" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+			<div :class="[$style.edge, $style.edgeEnd]" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 			<div ref="selectorEl" :class="$style.selector" @scroll.passive="updateFades">
 				<button
 					v-for="t in tabs"
@@ -436,38 +438,65 @@ onUnmounted(() => {
 		transition: opacity 0.16s var(--MI-easeOut), max-width 0s 0.16s;
 	}
 
-	// progressive blur at the edges where the strip continues
-	&::before,
-	&::after {
-		content: "";
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		width: 36px;
-		z-index: 1;
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 0.25s var(--MI-easeOut);
-		-webkit-backdrop-filter: blur(5px);
-		backdrop-filter: blur(5px);
-	}
-
-	&::before {
-		left: 0;
-		-webkit-mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
-		mask-image: linear-gradient(to right, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
-	}
-
-	&::after {
-		right: 0;
-		-webkit-mask-image: linear-gradient(to left, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
-		mask-image: linear-gradient(to left, #000 0%, rgb(0 0 0 / 55%) 45%, transparent 100%);
-	}
-
-	&.fadeStart::before,
-	&.fadeEnd::after {
+	&.fadeStart > .edgeStart,
+	&.fadeEnd > .edgeEnd {
 		opacity: 1;
 	}
+}
+
+// progressive blur: four stacked layers, blur growing toward the edge
+.edge {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 1;
+	width: 44px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.25s var(--MI-easeOut);
+
+	> i {
+		position: absolute;
+		inset: 0;
+	}
+
+	> i:nth-child(1) {
+		-webkit-backdrop-filter: blur(1px);
+		backdrop-filter: blur(1px);
+		mask-image: linear-gradient(var(--dir), #000 0%, #000 60%, transparent 100%);
+		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 60%, transparent 100%);
+	}
+
+	> i:nth-child(2) {
+		-webkit-backdrop-filter: blur(2px);
+		backdrop-filter: blur(2px);
+		mask-image: linear-gradient(var(--dir), #000 0%, #000 40%, transparent 70%);
+		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 40%, transparent 70%);
+	}
+
+	> i:nth-child(3) {
+		-webkit-backdrop-filter: blur(4px);
+		backdrop-filter: blur(4px);
+		mask-image: linear-gradient(var(--dir), #000 0%, #000 20%, transparent 45%);
+		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 20%, transparent 45%);
+	}
+
+	> i:nth-child(4) {
+		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: blur(8px);
+		mask-image: linear-gradient(var(--dir), #000 0%, transparent 25%);
+		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, transparent 25%);
+	}
+}
+
+.edgeStart {
+	--dir: to right;
+	left: 0;
+}
+
+.edgeEnd {
+	--dir: to left;
+	right: 0;
 }
 
 .selector {
