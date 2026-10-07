@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button class="_button" :class="[$style.sectionTab, $style.timelineLabel, { [$style.sectionShown]: mobileSection !== 'timeline' }]" :tabindex="mobileSection !== 'timeline' ? 0 : -1" @click="mobileSection = 'timeline'">
 				<span :class="$style.selTitle"><span>{{ i18n.ts.timeline }}</span></span>
 			</button>
-			<div :class="$style.sectionButtons">
+			<div ref="sectionButtonsEl" :class="$style.sectionButtons">
 				<template v-if="mobileSection === 'timeline'">
 					<button
 						v-for="action in actions"
@@ -108,7 +108,7 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch } from 'vue';
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch, nextTick } from 'vue';
 import { mobileSection } from '@/utility/mobile-section.js';
 import { i18n } from '@/i18n.js';
 import { mainRouter } from '@/router.js';
@@ -145,6 +145,20 @@ const mobileNav = computed(() => shell != null && shell.isMobile.value && narrow
 const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvatar && hasTabs.value);
 const activeTabEl = ref<HTMLElement | null>(null);
 const selectorEl = useTemplateRef('selectorEl');
+
+const sectionButtonsEl = useTemplateRef('sectionButtonsEl');
+
+// Strip and "timeline" label crossfade (opacity only); the buttons that shift as a result
+// glide with a transform so no width is animated.
+watch(mobileSection, async () => {
+	const el = sectionButtonsEl.value;
+	if (!el) return;
+	const first = el.getBoundingClientRect().left;
+	await nextTick();
+	const delta = first - el.getBoundingClientRect().left;
+	if (Math.abs(delta) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+	el.animate([{ transform: `translateX(${delta}px)` }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+}, { flush: 'pre' });
 
 const canScrollStart = ref(false);
 const canScrollEnd = ref(false);
@@ -412,12 +426,14 @@ onUnmounted(() => {
 	min-width: 0;
 	max-width: 100%;
 	overflow: hidden;
-	transition: max-width 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 
 	&.selectorCollapsed {
 		max-width: 0;
 		opacity: 0;
 		pointer-events: none;
+		// collapse the box only once it has faded out
+		transition: opacity 0.16s var(--MI-easeOut), max-width 0s 0.16s;
 	}
 
 	// progressive blur at the edges where the strip continues
@@ -530,13 +546,14 @@ onUnmounted(() => {
 	overflow: hidden;
 	opacity: 0;
 	pointer-events: none;
-	transition: max-width 0.3s var(--MI-easeOut), padding 0.3s var(--MI-easeOut), opacity 0.3s var(--MI-easeOut);
+	transition: opacity 0.16s var(--MI-easeOut), max-width 0s 0.16s, padding 0s 0.16s;
 
 	&.sectionShown {
 		max-width: 140px;
 		padding-inline: 12px;
 		opacity: 1;
 		pointer-events: auto;
+		transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 	}
 
 	> .selTitle {
