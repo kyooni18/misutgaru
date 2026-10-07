@@ -335,10 +335,12 @@ onUnmounted(() => {
 	width: calc(var(--height) - 8px);
 	box-sizing: border-box;
 	position: relative;
-	border-radius: 999px;
+	border-radius: 5px;
 
-	&:hover {
-		background: rgba(0, 0, 0, 0.05);
+	@media (hover: hover) {
+		&:hover {
+			background: rgba(0, 0, 0, 0.05);
+		}
 	}
 
 	&.highlighted {
