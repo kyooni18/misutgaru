@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
 
 		<template v-if="compactTimelineBar">
-			<div :class="[$style.selectorWrap, { [$style.selectorCollapsed]: mobileSection !== 'timeline', [$style.fadeStart]: canScrollStart, [$style.fadeEnd]: canScrollEnd }]">
+			<div :class="[$style.selectorWrap, { [$style.selectorCollapsed]: mobileSection !== 'timeline' }]">
 			<div ref="selectorEl" :class="$style.selector" @scroll.passive="onStripScroll">
 				<button
 					v-for="t in tabs"
@@ -160,43 +160,56 @@ watch(mobileSection, async () => {
 	el.animate([{ transform: `translateX(${delta}px)` }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
 }, { flush: 'pre' });
 
-const canScrollStart = ref(false);
-const canScrollEnd = ref(false);
-
-const EDGE_ZONE = 36;
+// Snap picker: the item nearest the centre is the selection. Items shrink, dim and blur with
+// distance from the centre; releasing the scroll selects whatever settled there.
+const PICKER_RANGE = 96;
 let effectFrame = 0;
 
-// Progressive blur without backdrop-filter: items blur and fade as they near an edge
-// where the strip continues (no clipping box, no edge halos).
-function applyEdgeEffects() {
+function applyPickerEffects() {
 	effectFrame = 0;
 	const strip = selectorEl.value;
 	if (!strip) return;
 	const sRect = strip.getBoundingClientRect();
+	const cx = sRect.left + sRect.width / 2;
 	for (const item of Array.from(strip.children) as HTMLElement[]) {
 		const r = item.getBoundingClientRect();
-		const dStart = canScrollStart.value ? r.left - sRect.left : Infinity;
-		const dEnd = canScrollEnd.value ? sRect.right - r.right : Infinity;
-		const t = Math.min(1, Math.max(0, 1 - Math.min(dStart, dEnd) / EDGE_ZONE));
-		item.style.filter = t > 0.02 ? `blur(${(t * 5).toFixed(2)}px)` : '';
-		item.style.opacity = t > 0.02 ? String(1 - t * 0.6) : '';
-		item.style.transition = t > 0.02 ? 'none' : '';
+		const t = Math.min(1, Math.abs(r.left + r.width / 2 - cx) / PICKER_RANGE);
+		item.style.transition = 'none';
+		item.style.transform = `scale(${(1 - t * 0.2).toFixed(3)})`;
+		item.style.opacity = String((1 - t * 0.65).toFixed(3));
+		item.style.filter = t > 0.05 ? `blur(${(t * 2.6).toFixed(2)}px)` : '';
 	}
 }
 
 function updateFades() {
-	const el = selectorEl.value;
-	if (!el) return;
-	canScrollStart.value = el.scrollLeft > 2;
-	canScrollEnd.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
-	if (effectFrame === 0) effectFrame = window.requestAnimationFrame(applyEdgeEffects);
+	if (effectFrame === 0) effectFrame = window.requestAnimationFrame(applyPickerEffects);
+}
+
+let settleTimer: number | null = null;
+
+function selectCentered() {
+	settleTimer = null;
+	const strip = selectorEl.value;
+	if (!strip || mobileSection.value !== 'timeline') return;
+	const sRect = strip.getBoundingClientRect();
+	const cx = sRect.left + sRect.width / 2;
+	let best = -1;
+	let bestDist = Infinity;
+	Array.from(strip.children).forEach((child, i) => {
+		const r = child.getBoundingClientRect();
+		const d = Math.abs(r.left + r.width / 2 - cx);
+		if (d < bestDist) { bestDist = d; best = i; }
+	});
+	const picked = props.tabs[best];
+	if (picked?.key && picked.key !== props.tab) emit('update:tab', picked.key);
 }
 
 function onStripScroll() {
 	updateFades();
+	if (settleTimer != null) window.clearTimeout(settleTimer);
+	settleTimer = window.setTimeout(selectCentered, 140);
 }
 
-// centre the active item; clamped by the browser so it is never clipped at the ends
 function centerActive() {
 	const strip = selectorEl.value;
 	const item = activeTabEl.value;
@@ -221,6 +234,7 @@ watch(selectorEl, (el) => {
 
 function onSelectorClick(t: Tab, ev: MouseEvent) {
 	mobileSection.value = 'timeline';
+	(ev.currentTarget as HTMLElement | null)?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 	if (t.onClick) t.onClick(ev as PointerEvent);
 	emit('update:tab', t.key);
 }
@@ -452,14 +466,6 @@ onUnmounted(() => {
 	min-width: 0;
 	max-width: 100%;
 
-	&.fadeStart > .selector {
-		--fadeStart: 18px;
-	}
-
-	&.fadeEnd > .selector {
-		--fadeEnd: 18px;
-	}
-
 	&.selectorCollapsed {
 		flex-grow: 0;
 		max-width: 0;
@@ -482,10 +488,17 @@ onUnmounted(() => {
 	gap: 2px;
 	overflow-x: auto;
 	scrollbar-width: none;
-	--fadeStart: 0px;
-	--fadeEnd: 0px;
-	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fadeStart), #000 calc(100% - var(--fadeEnd)), transparent 100%);
-	mask-image: linear-gradient(to right, transparent 0, #000 var(--fadeStart), #000 calc(100% - var(--fadeEnd)), transparent 100%);
+	scroll-snap-type: x mandatory;
+	overscroll-behavior-x: contain;
+	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+	mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+
+	// spacers let the first and last item reach the centre
+	&::before,
+	&::after {
+		content: "";
+		flex: 0 0 calc(50% - 22px);
+	}
 	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 }
 
@@ -499,6 +512,7 @@ onUnmounted(() => {
 	white-space: nowrap;
 	position: relative;
 	opacity: 0.65;
+	scroll-snap-align: center;
 	transition: opacity 0.25s var(--MI-easeOut);
 
 	// original tab underline, in the text colour rather than the accent

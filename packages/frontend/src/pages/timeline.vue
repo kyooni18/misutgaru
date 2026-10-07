@@ -132,7 +132,7 @@ const withSensitive = computed<boolean>({
 
 const showFixedPostForm = prefer.model('showFixedPostForm');
 
-async function chooseList(ev: PointerEvent): Promise<void> {
+async function listMenuItems(): Promise<MenuItem[]> {
 	const lists = await userListsCache.fetch();
 	const items: (MenuItem | undefined)[] = [
 		...lists.map(list => ({
@@ -148,10 +148,10 @@ async function chooseList(ev: PointerEvent): Promise<void> {
 			to: '/my/lists',
 		},
 	];
-	os.popupMenu(items.filter(i => i != null), ev.currentTarget ?? ev.target);
+	return items.filter(i => i != null) as MenuItem[];
 }
 
-async function chooseAntenna(ev: PointerEvent): Promise<void> {
+async function antennaMenuItems(): Promise<MenuItem[]> {
 	const antennas = await antennasCache.fetch();
 	const items: (MenuItem | undefined)[] = [
 		...antennas.map(antenna => ({
@@ -168,10 +168,10 @@ async function chooseAntenna(ev: PointerEvent): Promise<void> {
 			to: '/my/antennas',
 		},
 	];
-	os.popupMenu(items.filter(i => i != null), ev.currentTarget ?? ev.target);
+	return items.filter(i => i != null) as MenuItem[];
 }
 
-async function chooseChannel(ev: PointerEvent): Promise<void> {
+async function channelMenuItems(): Promise<MenuItem[]> {
 	const channels = await favoritedChannelsCache.fetch();
 	const items: (MenuItem | undefined)[] = [
 		...channels.map(channel => {
@@ -193,7 +193,7 @@ async function chooseChannel(ev: PointerEvent): Promise<void> {
 			to: '/channels/new',
 		},
 	];
-	os.popupMenu(items.filter(i => i != null), ev.currentTarget ?? ev.target);
+	return items.filter(i => i != null) as MenuItem[];
 }
 
 function saveSrc(newSrc: TimelinePageSrc): void {
@@ -230,12 +230,44 @@ onActivated(() => {
 	switchTlIfNeeded();
 });
 
+async function chooseList(ev: PointerEvent): Promise<void> {
+	os.popupMenu(await listMenuItems(), (ev.currentTarget ?? ev.target) as HTMLElement);
+}
+async function chooseAntenna(ev: PointerEvent): Promise<void> {
+	os.popupMenu(await antennaMenuItems(), (ev.currentTarget ?? ev.target) as HTMLElement);
+}
+async function chooseChannel(ev: PointerEvent): Promise<void> {
+	os.popupMenu(await channelMenuItems(), (ev.currentTarget ?? ev.target) as HTMLElement);
+}
+
 const headerActions = computed<PageHeaderItem[]>(() => {
 	const items: PageHeaderItem[] = [{
 		icon: 'ti ti-dots',
 		text: i18n.ts.options,
 		handler: (ev) => {
 			const menuItems: MenuItem[] = [];
+
+			if ($i && shell?.isMobile.value) {
+				// the picker only holds timelines; lists, antennas and channels live here on phones
+				menuItems.push({
+					type: 'parent',
+					icon: 'ti ti-list',
+					text: i18n.ts.lists,
+					children: listMenuItems,
+				}, {
+					type: 'parent',
+					icon: 'ti ti-antenna',
+					text: i18n.ts.antennas,
+					children: antennaMenuItems,
+				}, {
+					type: 'parent',
+					icon: 'ti ti-device-tv',
+					text: i18n.ts.channel,
+					children: channelMenuItems,
+				}, {
+					type: 'divider',
+				});
+			}
 
 			menuItems.push({
 				type: 'switch',
@@ -315,7 +347,7 @@ const headerTabs = computed(() => [...(prefer.r.pinnedUserLists.value.map(l => (
 	title: i18n.ts.channel,
 	iconOnly: true,
 	onClick: chooseChannel,
-}] as Tab[]);
+}].filter(t => !(shell?.isMobile.value && 'onClick' in t)) as Tab[]);
 
 const headerTabsWhenNotLogin = computed(() => [...availableBasicTimelines().map(tl => ({
 	key: tl,
