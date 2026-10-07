@@ -17,9 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<template v-if="compactTimelineBar">
 			<div :class="[$style.selectorWrap, { [$style.selectorCollapsed]: mobileSection !== 'timeline', [$style.fadeStart]: canScrollStart, [$style.fadeEnd]: canScrollEnd }]">
-			<div :class="[$style.edge, $style.edgeStart]" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-			<div :class="[$style.edge, $style.edgeEnd]" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-			<div ref="selectorEl" :class="$style.selector" @scroll.passive="updateFades">
+			<div ref="selectorEl" :class="$style.selector" @scroll.passive="onStripScroll">
 				<button
 					v-for="t in tabs"
 					:key="t.key"
@@ -165,11 +163,37 @@ watch(mobileSection, async () => {
 const canScrollStart = ref(false);
 const canScrollEnd = ref(false);
 
+const EDGE_ZONE = 36;
+let effectFrame = 0;
+
+// Progressive blur without backdrop-filter: items blur and fade as they near an edge
+// where the strip continues (no clipping box, no edge halos).
+function applyEdgeEffects() {
+	effectFrame = 0;
+	const strip = selectorEl.value;
+	if (!strip) return;
+	const sRect = strip.getBoundingClientRect();
+	for (const item of Array.from(strip.children) as HTMLElement[]) {
+		const r = item.getBoundingClientRect();
+		const dStart = canScrollStart.value ? r.left - sRect.left : Infinity;
+		const dEnd = canScrollEnd.value ? sRect.right - r.right : Infinity;
+		const t = Math.min(1, Math.max(0, 1 - Math.min(dStart, dEnd) / EDGE_ZONE));
+		item.style.filter = t > 0.02 ? `blur(${(t * 5).toFixed(2)}px)` : '';
+		item.style.opacity = t > 0.02 ? String(1 - t * 0.6) : '';
+		item.style.transition = t > 0.02 ? 'none' : '';
+	}
+}
+
 function updateFades() {
 	const el = selectorEl.value;
 	if (!el) return;
 	canScrollStart.value = el.scrollLeft > 2;
 	canScrollEnd.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+	if (effectFrame === 0) effectFrame = window.requestAnimationFrame(applyEdgeEffects);
+}
+
+function onStripScroll() {
+	updateFades();
 }
 
 // centre the active item; clamped by the browser so it is never clipped at the ends
@@ -424,12 +448,20 @@ onUnmounted(() => {
 // timeline strip: icons, the current one labelled; folds away when another section is open
 .selectorWrap {
 	position: relative;
-	flex: 0 1 auto;
+	flex: 1 1 0;
 	min-width: 0;
 	max-width: 100%;
-	z-index: 0;
+
+	&.fadeStart > .selector {
+		--fadeStart: 18px;
+	}
+
+	&.fadeEnd > .selector {
+		--fadeEnd: 18px;
+	}
 
 	&.selectorCollapsed {
+		flex-grow: 0;
 		max-width: 0;
 		overflow: hidden;
 		pointer-events: none;
@@ -442,75 +474,18 @@ onUnmounted(() => {
 		}
 	}
 
-	&.fadeStart > .edgeStart,
-	&.fadeEnd > .edgeEnd {
-		opacity: 1;
-	}
 }
 
-// progressive blur: four stacked layers, blur growing toward the edge
-.edge {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	z-index: 1;
-	width: 44px;
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.25s var(--MI-easeOut);
-
-	> i {
-		position: absolute;
-		inset: 0;
-	}
-
-	> i:nth-child(1) {
-		-webkit-backdrop-filter: blur(1px);
-		backdrop-filter: blur(1px);
-		mask-image: linear-gradient(var(--dir), #000 0%, #000 60%, transparent 100%);
-		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 60%, transparent 100%);
-	}
-
-	> i:nth-child(2) {
-		-webkit-backdrop-filter: blur(2px);
-		backdrop-filter: blur(2px);
-		mask-image: linear-gradient(var(--dir), #000 0%, #000 40%, transparent 70%);
-		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 40%, transparent 70%);
-	}
-
-	> i:nth-child(3) {
-		-webkit-backdrop-filter: blur(4px);
-		backdrop-filter: blur(4px);
-		mask-image: linear-gradient(var(--dir), #000 0%, #000 20%, transparent 45%);
-		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, #000 20%, transparent 45%);
-	}
-
-	> i:nth-child(4) {
-		-webkit-backdrop-filter: blur(8px);
-		backdrop-filter: blur(8px);
-		mask-image: linear-gradient(var(--dir), #000 0%, transparent 25%);
-		-webkit-mask-image: linear-gradient(var(--dir), #000 0%, transparent 25%);
-	}
-}
-
-.edgeStart {
-	--dir: to right;
-	left: 0;
-}
-
-.edgeEnd {
-	--dir: to left;
-	right: 0;
-}
-
-// the scroll view sits below the edge blur; its padding lets the first/last item rest clear of it
 .selector {
 	display: flex;
 	align-items: center;
 	gap: 2px;
-	padding-inline: 44px;
 	overflow-x: auto;
 	scrollbar-width: none;
+	--fadeStart: 0px;
+	--fadeEnd: 0px;
+	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fadeStart), #000 calc(100% - var(--fadeEnd)), transparent 100%);
+	mask-image: linear-gradient(to right, transparent 0, #000 var(--fadeStart), #000 calc(100% - var(--fadeEnd)), transparent 100%);
 	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 }
 
