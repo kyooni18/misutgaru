@@ -427,15 +427,19 @@ onUnmounted(() => {
 	flex: 0 1 auto;
 	min-width: 0;
 	max-width: 100%;
-	overflow: hidden;
-	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
+	z-index: 0;
 
 	&.selectorCollapsed {
 		max-width: 0;
-		opacity: 0;
+		overflow: hidden;
 		pointer-events: none;
 		// collapse the box only once it has faded out
-		transition: opacity 0.16s var(--MI-easeOut), max-width 0s 0.16s;
+		transition: max-width 0s 0.16s;
+
+		> .selector {
+			opacity: 0;
+			transition: opacity 0.16s var(--MI-easeOut);
+		}
 	}
 
 	&.fadeStart > .edgeStart,
@@ -499,12 +503,15 @@ onUnmounted(() => {
 	right: 0;
 }
 
+// the scroll view sits below the edge blur; its padding lets the first/last item rest clear of it
 .selector {
 	display: flex;
 	align-items: center;
 	gap: 2px;
+	padding-inline: 44px;
 	overflow-x: auto;
 	scrollbar-width: none;
+	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 }
 
 .selTab,
