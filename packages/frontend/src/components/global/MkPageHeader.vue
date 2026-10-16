@@ -31,6 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.selTitle"><span>{{ t.title }}</span></span>
 				</button>
 			</div>
+			<span :class="$style.selIndicator" aria-hidden="true"></span>
 			</div>
 			<button class="_button" :class="[$style.sectionTab, $style.timelineLabel, { [$style.sectionShown]: mobileSection !== 'timeline' }]" :tabindex="mobileSection !== 'timeline' ? 0 : -1" @click="mobileSection = 'timeline'">
 				<span :class="$style.selTitle"><span>{{ i18n.ts.timeline }}</span></span>
@@ -215,6 +216,8 @@ function centerActive() {
 	const item = activeTabEl.value;
 	if (!strip || !item) return;
 	const left = item.offsetLeft - (strip.clientWidth - item.offsetWidth) / 2;
+	// already settled there by the user's own swipe: don't nudge it again
+	if (Math.abs(strip.scrollLeft - left) < 2) return;
 	strip.scrollTo({ left, behavior: 'smooth' });
 }
 
@@ -225,7 +228,8 @@ function scheduleCenter(delay: number) {
 	centerTimer = window.setTimeout(() => { centerTimer = null; centerActive(); updateFades(); }, delay);
 }
 
-watch(() => [props.tab, mobileSection.value], () => scheduleCenter(320));
+watch(() => props.tab, () => scheduleCenter(0));
+watch(mobileSection, () => scheduleCenter(320));
 watch(selectorEl, (el) => {
 	if (!el) return;
 	scheduleCenter(60);
@@ -502,7 +506,7 @@ onUnmounted(() => {
 	&::before,
 	&::after {
 		content: "";
-		flex: 0 0 calc(50% - 22px);
+		flex: 0 0 50%;
 	}
 	transition: opacity 0.2s var(--MI-easeOut) 0.06s;
 }
@@ -542,6 +546,27 @@ onUnmounted(() => {
 	}
 }
 
+.selTab::after {
+	display: none;
+}
+
+.selIndicator {
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	width: 22px;
+	height: 3px;
+	margin-left: -11px;
+	border-radius: 999px 999px 0 0;
+	background: var(--MI_THEME-accent);
+	pointer-events: none;
+	transition: opacity 0.16s var(--MI-easeOut);
+
+	.selectorCollapsed > & {
+		opacity: 0;
+	}
+}
+
 .selTab.selActive,
 .sectionTab.sectionActive {
 	opacity: 1;
@@ -565,7 +590,8 @@ onUnmounted(() => {
 	}
 }
 
-.selActive > .selTitle,
+// picker items keep their labels so widths never change mid-snap
+.selTab > .selTitle,
 .sectionActive > .selTitle,
 .sectionShown > .selTitle {
 	grid-template-columns: 1fr;

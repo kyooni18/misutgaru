@@ -22,8 +22,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:note="note"
 			:threadContext="true"
 			:showControls="true"
-			:showReplyButton="false"
-			:allowReply="false"
 			:showAdditionalLayout="false"
 		/>
 	</div>
@@ -32,8 +30,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:note="appearNote.reply"
 		:threadContext="true"
 		:showControls="true"
-		:showReplyButton="false"
-		:allowReply="false"
 		:showAdditionalLayout="false"
 	/>
 	<MkNoteSub v-else-if="!props.threadContext && appearNote.replyId && appearNote.reply" :note="appearNote.reply" :class="$style.replyTo"/>
@@ -100,8 +96,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:note="child"
 				:threadContext="true"
 				:showControls="true"
-				:showReplyButton="false"
-				:allowReply="false"
 				:showAdditionalLayout="false"
 			/>
 		</section>
@@ -121,8 +115,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						:note="note"
 						:threadContext="true"
 						:showControls="true"
-						:showReplyButton="false"
-						:allowReply="false"
 						:showAdditionalLayout="false"
 					/>
 				</div>
