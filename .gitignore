@@ -9,6 +9,8 @@
 node_modules
 report.*.json
 
+backup.tar.xz
+
 # Yarn
 .yarn/*
 !.yarn/patches

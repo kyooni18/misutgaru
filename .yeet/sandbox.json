@@ -10,10 +10,10 @@
   "environment": {},
   "secretIDs": [],
   "limits": {
-    "wallTimeSeconds": 900,
-    "maxStdoutBytes": 8388608,
-    "maxStderrBytes": 8388608,
-    "maxMemoryBytes": 4294967296,
-    "maxProcesses": 64
+    "wallTimeSeconds": 30,
+    "maxStdoutBytes": 1048576,
+    "maxStderrBytes": 1048576,
+    "maxMemoryBytes": 536870912,
+    "maxProcesses": 32
   }
 }
