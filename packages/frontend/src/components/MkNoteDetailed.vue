@@ -403,6 +403,26 @@ const keymap = {
 .replyTo {
 	opacity: 0.7;
 	padding-bottom: 0;
+
+	// joins the parent's avatar to this note's avatar
+	&::after {
+		content: "";
+		position: absolute;
+		left: calc(32px + 18px);
+		top: calc(16px + 38px + 6px);
+		bottom: -12px;
+		width: 2px;
+		border-radius: 999px;
+		background: var(--MI-hairlineStrong);
+		pointer-events: none;
+	}
+}
+
+@container (max-width: 450px) {
+	.replyTo::after {
+		left: calc(16px + 18px);
+		top: calc(14px + 38px + 6px);
+	}
 }
 
 .replyToMore {

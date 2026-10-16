@@ -239,7 +239,7 @@ onUnmounted(() => {
 	}
 
 	&.animate {
-		transition: opacity 0.2s ease;
+		transition: opacity var(--MI-dur) var(--MI-easeOut);
 	}
 }
 
@@ -256,7 +256,7 @@ onUnmounted(() => {
 	overflow: hidden;
 
 	&.animate {
-		transition: width .15s linear, padding-left .15s linear;
+		transition: width 0.25s var(--MI-easeOut), padding-left 0.25s var(--MI-easeOut);
 	}
 }
 
@@ -265,12 +265,13 @@ onUnmounted(() => {
 	bottom: 0;
 	height: 3px;
 	background: var(--MI_THEME-accent);
-	border-radius: 999px;
+	// a short pill centred under the tab rather than a full-width rule
+	clip-path: inset(0 max(0px, calc(50% - 12px)) round 2px 2px 0 0);
 	transition: none;
 	pointer-events: none;
 
 	&.animate {
-		transition: width 0.15s ease, left 0.15s ease;
+		transition: width 0.3s var(--MI-easeOut), left 0.3s var(--MI-easeOut);
 	}
 }
 

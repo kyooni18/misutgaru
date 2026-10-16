@@ -100,5 +100,11 @@ definePage(() => ({
 .notifications {
 	border-radius: var(--MI-radius);
 	overflow: clip;
+
+	// phones: flat and edge-to-edge, matching the timeline
+	@media (max-width: 520px) {
+		margin: -12px -12px 0;
+		border-radius: 0;
+	}
 }
 </style>

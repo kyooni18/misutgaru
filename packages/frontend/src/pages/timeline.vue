@@ -395,6 +395,11 @@ definePage(() => ({
 
 	@media (max-width: 520px) {
 		margin-inline: -12px;
+
+		// sit flush under the header instead of leaving a strip of page background
+		&:first-child {
+			margin-top: -12px;
+		}
 	}
 }
 </style>
