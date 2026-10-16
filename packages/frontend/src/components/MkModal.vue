@@ -132,11 +132,11 @@ const transitionDuration = computed((() =>
 	transitionName.value === 'send'
 		? 400
 		: transitionName.value === 'modal-popup'
-			? 100
+			? 160
 			: transitionName.value === 'modal'
-				? 200
+				? 260
 				: transitionName.value === 'modal-drawer'
-					? 200
+					? 320
 					: 0
 ));
 
@@ -384,12 +384,12 @@ defineExpose({
 .transition_modal_enterActive,
 .transition_modal_leaveActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.26s var(--MI-easeOut) !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.2s, transform 0.2s !important;
+		transition: opacity 0.2s var(--MI-easeOut), transform 0.26s var(--MI-easeOut) !important;
 	}
 }
 .transition_modal_enterFrom,
@@ -402,19 +402,19 @@ defineExpose({
 		pointer-events: none;
 		opacity: 0;
 		transform-origin: var(--transformOrigin);
-		transform: scale(0.9);
+		transform: scale(0.96) translateY(6px);
 	}
 }
 
 .transition_modalPopup_enterActive,
 .transition_modalPopup_leaveActive {
 	> .bg {
-		transition: opacity 0.1s !important;
+		transition: opacity 0.16s var(--MI-easeOut) !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1), transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
+		transition: opacity 0.12s var(--MI-easeOut), transform 0.16s var(--MI-easeOut) !important;
 	}
 }
 .transition_modalPopup_enterFrom,
@@ -427,26 +427,26 @@ defineExpose({
 		pointer-events: none;
 		opacity: 0;
 		transform-origin: var(--transformOrigin);
-		transform: scale(0.9);
+		transform: scale(0.95);
 	}
 }
 
 .transition_modalDrawer_enterActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.32s var(--MI-easeOut) !important;
 	}
 
 	> .content {
-		transition: transform 0.2s cubic-bezier(0,.5,0,1) !important;
+		transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
 	}
 }
 .transition_modalDrawer_leaveActive {
 	> .bg {
-		transition: opacity 0.2s !important;
+		transition: opacity 0.32s var(--MI-easeOut) !important;
 	}
 
 	> .content {
-		transition: transform 0.2s cubic-bezier(0,.5,0,1) !important;
+		transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
 	}
 }
 .transition_modalDrawer_enterFrom,

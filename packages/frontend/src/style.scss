@@ -332,11 +332,15 @@ rt {
 	}
 }
 
+._buttonPrimary:not(:disabled):active {
+	transform: scale(0.98);
+}
+
 ._buttonPrimary {
 	@extend ._button;
 	color: var(--MI_THEME-fgOnAccent);
 	background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
-	transition: background 0.15s var(--MI-easeOut), box-shadow 0.15s var(--MI-easeOut);
+	transition: background var(--MI-dur) var(--MI-easeOut), box-shadow var(--MI-dur) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut);
 
 	&:not(:disabled):hover {
 		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
@@ -430,7 +434,7 @@ rt {
 	text-align: center;
 	border: solid 1px var(--MI-hairlineStrong);
 	border-radius: var(--MI-radius);
-	transition: border-color 0.15s var(--MI-easeOut), background 0.15s var(--MI-easeOut);
+	transition: border-color var(--MI-dur) var(--MI-easeOut), background var(--MI-dur) var(--MI-easeOut);
 
 	&:hover {
 		border-color: color-mix(in srgb, var(--MI_THEME-accent) 55%, transparent);
@@ -528,7 +532,7 @@ rt {
 ._zoom {
 	transition-duration: 0.5s, 0.5s;
 	transition-property: opacity, transform;
-	transition-timing-function: cubic-bezier(0,.5,.5,1);
+	transition-timing-function: var(--MI-easeOut);
 }
 
 ._woodenFrame {
