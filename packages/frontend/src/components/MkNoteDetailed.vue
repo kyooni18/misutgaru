@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	v-if="!muted && !hideByPlugin && !isDeleted"
 	ref="rootEl"
 	v-hotkey="keymap"
-	:class="$style.root"
+	:class="[$style.root, { [$style.thread]: props.threadContext }]"
 	tabindex="0"
 >
 	<div v-if="!props.threadContext && appearNote.replyId && (props.autoLoadThread || (appearNote.reply && appearNote.reply.replyId))">
@@ -453,33 +453,87 @@ const keymap = {
 }
 
 .note {
-	padding: 32px;
+	--pad: 32px;
+	padding: var(--pad);
 	font-size: 1.2em;
 }
 
+// ancestors / continuation: compact, joined by a line running from avatar to avatar
+.thread {
+	> .note {
+		--MI-noteAvatarSize: 42px;
+		position: relative;
+		padding-top: 16px;
+		padding-bottom: 4px;
+		font-size: 1em;
+	}
+
+	&:not(:last-child) > .note::before {
+		content: "";
+		position: absolute;
+		left: calc(var(--pad) + 20px);
+		top: calc(16px + 42px + 6px);
+		bottom: -10px;
+		width: 2px;
+		border-radius: 999px;
+		background: var(--MI-hairlineStrong);
+		pointer-events: none;
+	}
+}
+
+.thread:not(:last-child) {
+	overflow: visible;
+	contain: layout style;
+}
+
 .continuation {
-	border-top: solid 0.5px var(--MI_THEME-divider);
+	border-top: solid 1px var(--MI-hairline);
 }
 
 .reply:not(:first-child) {
-	border-top: solid 0.5px var(--MI_THEME-divider);
+	border-top: solid 1px var(--MI-hairline);
 }
 
 .tabs {
-	border-top: solid 0.5px var(--MI_THEME-divider);
-	border-bottom: solid 0.5px var(--MI_THEME-divider);
+	border-top: solid 1px var(--MI-hairline);
+	border-bottom: solid 1px var(--MI-hairline);
 	display: flex;
 }
 
 .tab {
 	flex: 1;
-	padding: 12px 8px;
-	border-top: solid 2px transparent;
-	border-bottom: solid 2px transparent;
+	position: relative;
+	padding: 13px 8px;
+	font-size: 0.95em;
+	opacity: 0.6;
+	transition: opacity var(--MI-dur) var(--MI-easeOut);
+
+	&::after {
+		content: "";
+		position: absolute;
+		left: 50%;
+		bottom: -1px;
+		width: 28px;
+		height: 3px;
+		margin-left: -14px;
+		border-radius: 999px 999px 0 0;
+		background: var(--MI_THEME-accent);
+		transform: scaleX(0);
+		transition: transform var(--MI-dur) var(--MI-easeOut);
+	}
+
+	&:hover {
+		opacity: 0.85;
+	}
 }
 
 .tabActive {
-	border-bottom: solid 2px var(--MI_THEME-accent);
+	opacity: 1;
+	font-weight: 600;
+
+	&::after {
+		transform: scaleX(1);
+	}
 }
 
 .tab_renotes {
@@ -498,13 +552,15 @@ const keymap = {
 }
 
 .reactionTab {
-	padding: 4px 6px;
-	border: solid 1px var(--MI_THEME-divider);
-	border-radius: 6px;
+	padding: 4px 8px;
+	border: solid 1px var(--MI-hairlineStrong);
+	border-radius: 999px;
+	transition: border-color var(--MI-durFast) var(--MI-easeOut), background var(--MI-durFast) var(--MI-easeOut);
 }
 
 .reactionTabActive {
 	border-color: var(--MI_THEME-accent);
+	background: var(--MI-accentWash);
 }
 
 @container (max-width: 500px) {
@@ -519,7 +575,7 @@ const keymap = {
 	}
 
 	.note {
-		padding: 16px;
+		--pad: 16px;
 	}
 
 }

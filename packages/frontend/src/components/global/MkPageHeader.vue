@@ -175,9 +175,9 @@ function applyPickerEffects() {
 		const r = item.getBoundingClientRect();
 		const t = Math.min(1, Math.abs(r.left + r.width / 2 - cx) / PICKER_RANGE);
 		item.style.transition = 'none';
-		item.style.transform = `scale(${(1 - t * 0.2).toFixed(3)})`;
-		item.style.opacity = String((1 - t * 0.65).toFixed(3));
-		item.style.filter = t > 0.05 ? `blur(${(t * 2.6).toFixed(2)}px)` : '';
+		item.style.transform = `scale(${(1 - t * 0.14).toFixed(3)})`;
+		item.style.opacity = String((1 - t * 0.6).toFixed(3));
+		item.style.filter = t > 0.05 ? `blur(${(t * 1.4).toFixed(2)}px)` : '';
 	}
 }
 
@@ -385,16 +385,21 @@ onUnmounted(() => {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: var(--height);
+	height: calc(var(--height) - 8px);
 	width: calc(var(--height) - 8px);
 	box-sizing: border-box;
 	position: relative;
-	border-radius: 5px;
+	border-radius: 999px;
+	transition: background var(--MI-durFast) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut);
 
 	@media (hover: hover) {
 		&:hover {
-			background: rgba(0, 0, 0, 0.05);
+			background: var(--MI-hairline);
 		}
+	}
+
+	&:active {
+		transform: scale(0.92);
 	}
 
 	&.highlighted {
@@ -519,14 +524,16 @@ onUnmounted(() => {
 	&::after {
 		content: "";
 		position: absolute;
-		left: 10px;
-		right: 10px;
+		left: 50%;
 		bottom: 0;
+		width: 22px;
 		height: 3px;
-		border-radius: 999px;
-		background: currentColor;
+		margin-left: -11px;
+		border-radius: 999px 999px 0 0;
+		background: var(--MI_THEME-accent);
 		transform: scaleX(0);
-		transition: transform 0.3s var(--MI-easeOut);
+		opacity: 0;
+		transition: transform 0.3s var(--MI-easeOut), opacity 0.2s var(--MI-easeOut);
 		pointer-events: none;
 	}
 
@@ -541,6 +548,7 @@ onUnmounted(() => {
 
 	&::after {
 		transform: scaleX(1);
+		opacity: 1;
 	}
 }
 

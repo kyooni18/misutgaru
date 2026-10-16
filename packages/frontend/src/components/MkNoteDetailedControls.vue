@@ -143,13 +143,17 @@ function handleReply(): void {
 	margin: 0;
 	padding: 6px;
 	opacity: 0.7;
+	border-radius: 999px;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), color var(--MI-durFast) var(--MI-easeOut), background var(--MI-durFast) var(--MI-easeOut);
 
 	&:not(:last-child) {
 		margin-right: 24px;
 	}
 
 	&:hover {
+		opacity: 1;
 		color: var(--MI_THEME-fgHighlighted);
+		background: var(--MI-hairline);
 	}
 }
 

@@ -796,6 +796,13 @@ html[data-color-scheme=dark] ._woodenFrame {
 	scrollbar-color: color-mix(in srgb, var(--MI_THEME-fg) 22%, transparent) transparent;
 }
 
+// touch screens draw their own overlay indicator; a docked bar only eats width
+@media (pointer: coarse) {
+	* {
+		scrollbar-width: none;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after {
 		transition-duration: 0.01ms !important;

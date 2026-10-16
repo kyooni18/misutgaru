@@ -149,8 +149,8 @@ defineExpose({ openGallery });
 .noteHeaderAvatar {
 	display: block;
 	flex-shrink: 0;
-	width: 58px;
-	height: 58px;
+	width: var(--MI-noteAvatarSize, 58px);
+	height: var(--MI-noteAvatarSize, 58px);
 }
 
 .noteHeaderBody {
