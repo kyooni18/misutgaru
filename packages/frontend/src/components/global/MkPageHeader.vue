@@ -474,6 +474,10 @@ onUnmounted(() => {
 	flex: 1 1 0;
 	min-width: 0;
 	max-width: 100%;
+	// edge fade lives on this static box, not on the scroller: WebKit leaves 1px seams
+	// when a masked element scrolls while its children animate filters
+	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+	mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
 
 	&.selectorCollapsed {
 		flex-grow: 0;
@@ -499,8 +503,9 @@ onUnmounted(() => {
 	scrollbar-width: none;
 	scroll-snap-type: x mandatory;
 	overscroll-behavior-x: contain;
-	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
-	mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+	// own compositing layer so per-item blur/scale never re-tiles the header
+	isolation: isolate;
+	transform: translateZ(0);
 
 	// spacers let the first and last item reach the centre
 	&::before,
