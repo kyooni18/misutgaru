@@ -241,6 +241,9 @@ if ($i) {
 	left: 0;
 	z-index: 1001;
 	height: 100dvh;
+	padding-top: env(safe-area-inset-top, 0px);
+	box-sizing: border-box;
+	background: var(--MI_THEME-navBg);
 }
 
 .widgetsDrawerBg {
@@ -254,7 +257,7 @@ if ($i) {
 	z-index: 1001;
 	width: 310px;
 	height: 100dvh;
-	padding: var(--MI-margin) var(--MI-margin) calc(var(--MI-margin) + env(safe-area-inset-bottom, 0px)) !important;
+	padding: calc(var(--MI-margin) + env(safe-area-inset-top, 0px)) var(--MI-margin) calc(var(--MI-margin) + env(safe-area-inset-bottom, 0px)) !important;
 	box-sizing: border-box;
 	overflow: auto;
 	overscroll-behavior: contain;

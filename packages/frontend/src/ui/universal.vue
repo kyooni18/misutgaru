@@ -134,6 +134,9 @@ $widgets-hide-threshold: 1090px;
 
 .root {
 	height: 100dvh;
+	// home-screen app runs with viewport-fit=cover: keep the header clear of the status bar
+	padding-top: env(safe-area-inset-top, 0px);
+	box-sizing: border-box;
 	overflow: clip;
 	contain: strict;
 	display: flex;
