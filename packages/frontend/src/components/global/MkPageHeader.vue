@@ -161,7 +161,7 @@ watch(mobileSection, async () => {
 	el.animate([{ transform: `translateX(${delta}px)` }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
 }, { flush: 'pre' });
 
-// Snap picker: the item nearest the centre is the selection. Items shrink, dim and blur with
+// Snap picker: the item nearest the centre is the selection. Items shrink and dim with
 // distance from the centre; releasing the scroll selects whatever settled there.
 const PICKER_RANGE = 96;
 let effectFrame = 0;
@@ -178,7 +178,6 @@ function applyPickerEffects() {
 		item.style.transition = 'none';
 		item.style.transform = `scale(${(1 - t * 0.14).toFixed(3)})`;
 		item.style.opacity = String((1 - t * 0.6).toFixed(3));
-		item.style.filter = t > 0.05 ? `blur(${(t * 1.4).toFixed(2)}px)` : '';
 	}
 }
 
@@ -503,7 +502,8 @@ onUnmounted(() => {
 	scrollbar-width: none;
 	scroll-snap-type: x mandatory;
 	overscroll-behavior-x: contain;
-	// own compositing layer so per-item blur/scale never re-tiles the header
+	// own compositing layer so per-item scale never re-tiles the header
+	// (no per-frame filter: WebKit leaves stale edge columns from filtered layers mid-scroll)
 	isolation: isolate;
 	transform: translateZ(0);
 
