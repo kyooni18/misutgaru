@@ -30,6 +30,12 @@ export const meta = {
 			id: '38769596-efe2-4faf-9bec-abbb3f2cd9ba',
 		},
 
+		incorrectToken: {
+			message: 'Incorrect two-factor authentication code.',
+			code: 'INCORRECT_TOKEN',
+			id: 'a9c2a5b5-0a4e-4a8d-9a3e-6f1f6c2a7d41',
+		},
+
 		twoFactorNotEnabled: {
 			message: '2fa not enabled.',
 			code: 'TWO_FACTOR_NOT_ENABLED',
@@ -76,13 +82,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			if (profile.twoFactorEnabled) {
 				if (token == null) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 
 				try {
-					await this.userAuthService.twoFactorAuthenticate(profile, token);
+					await this.userAuthService.twoFactorAuthenticate(profile, token.trim());
 				} catch (_) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 			}
 
