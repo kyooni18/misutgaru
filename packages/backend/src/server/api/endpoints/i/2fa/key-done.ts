@@ -13,6 +13,7 @@ import type { UserProfilesRepository, UserSecurityKeysRepository } from '@/model
 import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
 
 export const meta = {
 	requireCredential: true,
@@ -24,6 +25,24 @@ export const meta = {
 			message: 'Incorrect password.',
 			code: 'INCORRECT_PASSWORD',
 			id: '0d7ec6d2-e652-443e-a7bf-9ee9a0cd77b0',
+		},
+
+		incorrectToken: {
+			message: 'Incorrect two-factor authentication code.',
+			code: 'INCORRECT_TOKEN',
+			id: 'a9c2a5b5-0a4e-4a8d-9a3e-6f1f6c2a7d41',
+		},
+
+		registrationExpired: {
+			message: 'Security key registration expired. Please start again.',
+			code: 'REGISTRATION_EXPIRED',
+			id: 'c3e1f0a2-4b7d-4e8a-9f2c-1d5b6a7e8f90',
+		},
+
+		verificationFailed: {
+			message: 'Security key verification failed.',
+			code: 'VERIFICATION_FAILED',
+			id: 'e4b2d1c3-5a6f-4b7e-8c9d-0a1b2c3d4e5f',
 		},
 
 		twoFactorNotEnabled: {
@@ -76,13 +95,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			if (profile.twoFactorEnabled) {
 				if (token == null) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 
 				try {
-					await this.userAuthService.twoFactorAuthenticate(profile, token);
+					await this.userAuthService.twoFactorAuthenticate(profile, token.trim());
 				} catch (_) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 			}
 
@@ -95,7 +114,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.twoFactorNotEnabled);
 			}
 
-			const keyInfo = await this.webAuthnService.verifyRegistration(me.id, ps.credential);
+			let keyInfo;
+			try {
+				keyInfo = await this.webAuthnService.verifyRegistration(me.id, ps.credential);
+			} catch (err) {
+				if (err instanceof IdentifiableError && err.id === '7dbfb66c-9216-4e2b-9c27-cef2ac8efb84') {
+					throw new ApiError(meta.errors.registrationExpired);
+				}
+				throw new ApiError(meta.errors.verificationFailed);
+			}
 			const keyId = keyInfo.credentialID;
 
 			await this.userSecurityKeysRepository.insert({
