@@ -19,6 +19,12 @@ export const meta = {
 	secure: true,
 
 	errors: {
+		incorrectToken: {
+			message: 'Incorrect two-factor authentication code.',
+			code: 'INCORRECT_TOKEN',
+			id: 'a9c2a5b5-0a4e-4a8d-9a3e-6f1f6c2a7d41',
+		},
+
 		incorrectPassword: {
 			message: 'Incorrect password.',
 			code: 'INCORRECT_PASSWORD',
@@ -52,13 +58,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (profile.twoFactorEnabled) {
 				if (token == null) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 
 				try {
-					await this.userAuthService.twoFactorAuthenticate(profile, token);
+					await this.userAuthService.twoFactorAuthenticate(profile, token.trim());
 				} catch (_) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.incorrectToken);
 				}
 			}
 
