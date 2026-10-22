@@ -71,7 +71,7 @@ describe('UserWebhookService', () => {
 					LoggerService,
 					GlobalEventService,
 					{
-						provide: QueueService, useFactory: () => ({ userWebhookDeliver: vi.fn() }),
+						provide: QueueService, useFactory: () => ({ userWebhookDeliverMany: vi.fn() }),
 					},
 				],
 			})
@@ -262,8 +262,8 @@ describe('UserWebhookService', () => {
 				});
 				await service.enqueueUserWebhook(webhook.userId, 'note', { foo: 'bar' } as any);
 
-				expect(queueService.userWebhookDeliver).toHaveBeenCalledTimes(1);
-				expect(queueService.userWebhookDeliver.mock.calls[0][0] as MiWebhook).toEqual(webhook);
+				expect(queueService.userWebhookDeliverMany).toHaveBeenCalledTimes(1);
+				expect(queueService.userWebhookDeliverMany.mock.calls[0][0] as MiWebhook[]).toEqual([webhook]);
 			});
 
 			test('非アクティブなWebhookはキューに追加されない', async () => {
@@ -273,7 +273,8 @@ describe('UserWebhookService', () => {
 				});
 				await service.enqueueUserWebhook(webhook.userId, 'note', { foo: 'bar' } as any);
 
-				expect(queueService.userWebhookDeliver).not.toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany).toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany.mock.calls.every(([webhooks]) => webhooks.length === 0)).toBe(true);
 			});
 
 			test('未許可のイベント種別が渡された場合はWebhookはキューに追加されない', async () => {
@@ -288,7 +289,8 @@ describe('UserWebhookService', () => {
 				await service.enqueueUserWebhook(webhook1.userId, 'renote', { foo: 'bar' } as any);
 				await service.enqueueUserWebhook(webhook2.userId, 'renote', { foo: 'bar' } as any);
 
-				expect(queueService.userWebhookDeliver).not.toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany).toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany.mock.calls.every(([webhooks]) => webhooks.length === 0)).toBe(true);
 			});
 
 			test('ユーザIDが異なるWebhookはキューに追加されない', async () => {
@@ -298,7 +300,8 @@ describe('UserWebhookService', () => {
 				});
 				await service.enqueueUserWebhook(idService.gen(), 'note', { foo: 'bar' } as any);
 
-				expect(queueService.userWebhookDeliver).not.toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany).toHaveBeenCalled();
+				expect(queueService.userWebhookDeliverMany.mock.calls.every(([webhooks]) => webhooks.length === 0)).toBe(true);
 			});
 
 			test('混在した時、有効かつ許可されたイベント種別のみ', async () => {
@@ -325,8 +328,8 @@ describe('UserWebhookService', () => {
 				});
 				await service.enqueueUserWebhook(userId, 'note', { foo: 'bar' } as any);
 
-				expect(queueService.userWebhookDeliver).toHaveBeenCalledTimes(1);
-				expect(queueService.userWebhookDeliver.mock.calls[0][0] as MiWebhook).toEqual(webhook1);
+				expect(queueService.userWebhookDeliverMany).toHaveBeenCalledTimes(1);
+				expect(queueService.userWebhookDeliverMany.mock.calls[0][0] as MiWebhook[]).toEqual([webhook1]);
 			});
 		});
 	});

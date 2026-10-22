@@ -74,7 +74,7 @@ describe('SystemWebhookService', () => {
 					LoggerService,
 					GlobalEventService,
 					{
-						provide: QueueService, useFactory: () => ({ systemWebhookDeliver: vi.fn() }),
+						provide: QueueService, useFactory: () => ({ systemWebhookDeliverMany: vi.fn() }),
 					},
 					{
 						provide: ModerationLogService, useFactory: () => ({ log: () => Promise.resolve() }),
@@ -317,8 +317,8 @@ describe('SystemWebhookService', () => {
 				});
 				await service.enqueueSystemWebhook('abuseReport', { foo: 'bar' } as any);
 
-				expect(queueService.systemWebhookDeliver).toHaveBeenCalledTimes(1);
-				expect(queueService.systemWebhookDeliver.mock.calls[0][0] as MiSystemWebhook).toEqual(webhook);
+				expect(queueService.systemWebhookDeliverMany).toHaveBeenCalledTimes(1);
+				expect(queueService.systemWebhookDeliverMany.mock.calls[0][0] as MiSystemWebhook[]).toEqual([webhook]);
 			});
 
 			test('非アクティブなWebhookはキューに追加されない', async () => {
@@ -328,7 +328,8 @@ describe('SystemWebhookService', () => {
 				});
 				await service.enqueueSystemWebhook('abuseReport', { foo: 'bar' } as any);
 
-				expect(queueService.systemWebhookDeliver).not.toHaveBeenCalled();
+				expect(queueService.systemWebhookDeliverMany).toHaveBeenCalled();
+				expect(queueService.systemWebhookDeliverMany.mock.calls.every(([webhooks]) => webhooks.length === 0)).toBe(true);
 			});
 
 			test('未許可のイベント種別が渡された場合はWebhookはキューに追加されない', async () => {
@@ -342,7 +343,8 @@ describe('SystemWebhookService', () => {
 				});
 				await service.enqueueSystemWebhook('abuseReport', { foo: 'bar' } as any);
 
-				expect(queueService.systemWebhookDeliver).not.toHaveBeenCalled();
+				expect(queueService.systemWebhookDeliverMany).toHaveBeenCalled();
+				expect(queueService.systemWebhookDeliverMany.mock.calls.every(([webhooks]) => webhooks.length === 0)).toBe(true);
 			});
 
 			test('混在した時、有効かつ許可されたイベント種別のみ', async () => {
@@ -364,8 +366,8 @@ describe('SystemWebhookService', () => {
 				});
 				await service.enqueueSystemWebhook('abuseReport', { foo: 'bar' } as any);
 
-				expect(queueService.systemWebhookDeliver).toHaveBeenCalledTimes(1);
-				expect(queueService.systemWebhookDeliver.mock.calls[0][0] as MiSystemWebhook).toEqual(webhook1);
+				expect(queueService.systemWebhookDeliverMany).toHaveBeenCalledTimes(1);
+				expect(queueService.systemWebhookDeliverMany.mock.calls[0][0] as MiSystemWebhook[]).toEqual([webhook1]);
 			});
 
 			test('除外指定した場合は送信されない', async () => {
@@ -380,8 +382,8 @@ describe('SystemWebhookService', () => {
 
 				await service.enqueueSystemWebhook('abuseReport', { foo: 'bar' } as any, { excludes: [webhook2.id] });
 
-				expect(queueService.systemWebhookDeliver).toHaveBeenCalledTimes(1);
-				expect(queueService.systemWebhookDeliver.mock.calls[0][0] as MiSystemWebhook).toEqual(webhook1);
+				expect(queueService.systemWebhookDeliverMany).toHaveBeenCalledTimes(1);
+				expect(queueService.systemWebhookDeliverMany.mock.calls[0][0] as MiSystemWebhook[]).toEqual([webhook1]);
 			});
 		});
 
