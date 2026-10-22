@@ -36,3 +36,9 @@ Spring assessment from the sampled curves: navbar overshoot is approximately 3% 
 The mobile header Widgets action navigates to a page, not this drawer. To verify the actual common widget drawer, the browser probe set the existing universal component's `widgetsShowing` ref through Vue's development instance, then closed it using its real backdrop. No application source was changed for the probe.
 
 Not covered: subjective physical-device feel, FAB initial mount pop-in, query/hash navigation exclusion, and rapid reversal stress testing.
+
+## Navigation clarity follow-up
+
+The next design pass replaces the mobile snap-scrolling timeline picker and shifting icon labels with a stable two-row header: explicit source menu above three persistently labelled section buttons. This intentionally trades 58px of vertical space for discoverability and 44px-or-larger touch targets. Section content now updates directly instead of waiting for a 220ms header-animation timer. The expanded sidebar uses quieter rounded-rectangle selections; the mobile compose button uses a solid theme accent and softer shadow.
+
+Standalone Chromium checks at widths 320, 390, 768 and 1440 found no header horizontal overflow. At 320px all section targets are 44px tall; with a 20px root font they grow to 55px without horizontal overflow. Verified source selection Home → Local → Home, keyboard Enter opening the source menu, all three section buttons, actual widget content, and restoration of the timeline when resizing to desktop. No page errors occurred in the interaction probe. Reduced-motion layout was also exercised. Drawer, navbar, page and FAB trajectory measurements above remain scoped to their earlier commits.

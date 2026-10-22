@@ -62,8 +62,8 @@ onUnmounted(() => {
 	border-radius: 100%;
 	font-size: 18px;
 	color: var(--MI_THEME-fgOnAccent);
-	background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
-	box-shadow: 0 6px 16px -6px var(--MI_THEME-shadow);
+	background: var(--MI_THEME-accent);
+	box-shadow: 0 4px 12px -4px var(--MI_THEME-shadow);
 	transition:
 		filter var(--MI-durFast) var(--MI-easeOut),
 		opacity var(--MI-dur) var(--MI-easeOut),

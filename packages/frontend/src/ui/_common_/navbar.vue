@@ -604,7 +604,7 @@ function menuEdit() {
 	}
 
 	.divider {
-		margin: 16px 16px;
+		margin: 12px 24px;
 		border-top: solid 1px var(--MI-hairline);
 	}
 
@@ -613,6 +613,7 @@ function menuEdit() {
 		display: block;
 		padding-left: 30px;
 		line-height: 2.85rem;
+		font-weight: 500;
 		text-overflow: ellipsis;
 		overflow: hidden;
 		white-space: nowrap;
@@ -642,7 +643,7 @@ function menuEdit() {
 		&::before {
 			content: "";
 			display: block;
-			width: calc(100% - 34px);
+			width: calc(100% - 24px);
 			height: 100%;
 			margin: auto;
 			position: absolute;
@@ -650,8 +651,8 @@ function menuEdit() {
 			left: 0;
 			right: 0;
 			bottom: 0;
-			border-radius: 999px;
-			background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+			border-radius: 12px;
+			background: color-mix(in srgb, var(--MI_THEME-fg) 5%, transparent);
 			opacity: 0;
 			transform: scale(0.96);
 			transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut);
@@ -674,7 +675,10 @@ function menuEdit() {
 	}
 
 	.activePill {
-		width: calc(100% - 34px);
+		width: calc(100% - 24px);
+		border-radius: 12px;
+		background: color-mix(in srgb, var(--MI_THEME-accent) 10%, var(--MI_THEME-navBg));
+		box-shadow: none;
 	}
 
 	.itemIcon {
@@ -880,7 +884,7 @@ function menuEdit() {
 			right: 0;
 			bottom: 0;
 			border-radius: 999px;
-			background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+			background: color-mix(in srgb, var(--MI_THEME-fg) 5%, transparent);
 			opacity: 0;
 			transform: scale(0.8);
 			transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut);
