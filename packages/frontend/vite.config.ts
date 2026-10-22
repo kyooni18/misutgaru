@@ -1,5 +1,6 @@
 import path from 'path';
 import pluginVue from '@vitejs/plugin-vue';
+import { munPlugin } from '@mun/vite';
 import pluginGlsl from 'vite-plugin-glsl';
 import { replacePlugin } from 'rolldown/plugins';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -23,7 +24,7 @@ const configPath = path.resolve(import.meta.dirname, '../../.config', process.en
 const url = process.env.NODE_ENV === 'development' ? (loadYaml(await fsp.readFile(configPath, 'utf-8')) as any).url : null;
 const host = url ? (new URL(url)).hostname : undefined;
 
-const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.json5', '.svg', '.sass', '.scss', '.css', '.vue'];
+const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.json5', '.svg', '.sass', '.scss', '.css', '.vue', '.mun'];
 
 function getBundleVisualizerPlugin(): PluginOption[] {
 	if (process.env.FRONTEND_BUNDLE_VISUALIZER !== 'true') return [];
@@ -145,6 +146,8 @@ export function getConfig(): UserConfig {
 		plugins: [
 			pluginWatchLocales(),
 			...searchIndexes.map(options => pluginCreateSearchIndex(options)),
+			// Secondary UI framework: compile only .mun sources, never the Vue/TS app code.
+			munPlugin({ include: /\.mun(\?.*)?$/ }),
 			pluginVue(),
 			pluginRemoveUnrefI18n(),
 			pluginUnwindCssModuleClassName(),
@@ -164,6 +167,8 @@ export function getConfig(): UserConfig {
 
 		resolve: {
 			extensions,
+			// Mün is linked from a local checkout; keep a single Vue runtime.
+			dedupe: ['vue'],
 			alias: {
 				'@/': import.meta.dirname + '/src/',
 				'@@/': import.meta.dirname + '/../frontend-shared/',
