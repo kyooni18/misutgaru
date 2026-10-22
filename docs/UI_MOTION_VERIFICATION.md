@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # UI motion verification
 
 Scope: drawer polish commit `75be73c8b` and prior shell motion `927e6965e`.
