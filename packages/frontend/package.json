@@ -24,6 +24,7 @@
 		"@misskey-dev/browser-image-resizer": "2024.1.0",
 		"@misskey-dev/emoji-data": "17.0.3",
 		"@misskey-dev/tagcanvas-es": "0.1.2",
+		"@misutgaru/core": "workspace:*",
 		"@sentry/vue": "10.72.0",
 		"@simplewebauthn/browser": "13.3.0",
 		"@syuilo/aiscript": "1.2.1",
@@ -61,7 +62,7 @@
 		"punycode.js": "2.3.1",
 		"qr-code-styling": "1.9.2",
 		"qr-scanner": "1.4.2",
-		"sanitize-html": "2.17.7",
+		"sanitize-html": "2.18.1",
 		"seedrandom": "3.0.5",
 		"shiki": "4.4.3",
 		"textarea-caret": "3.1.0",
@@ -69,8 +70,7 @@
 		"tinycolor2": "1.6.0",
 		"v-code-diff": "1.16.0",
 		"vue": "3.5.42",
-		"wanakana": "5.3.1",
-		"@misutgaru/core": "workspace:*"
+		"wanakana": "5.3.1"
 	},
 	"devDependencies": {
 		"@misskey-dev/emoji-assets": "17.0.3",
@@ -137,7 +137,7 @@
 		"storybook-addon-misskey-theme": "github:misskey-dev/storybook-addon-misskey-theme",
 		"tsx": "4.23.13",
 		"typescript": "6.0.3",
-		"vite": "8.2.2",
+		"vite": "8.2.4",
 		"vite-plugin-glsl": "1.6.1",
 		"vite-plugin-turbosnap": "1.0.3",
 		"vitest": "4.1.11",

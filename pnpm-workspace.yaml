@@ -55,6 +55,74 @@ minimumReleaseAgeExclude:
   - slacc-win32-x64-msvc
   - '@typescript/native-preview*'
   - undici@6.28.1 || 7.29.1 # そのうち消す
+  # Exact-version exceptions for this reviewed security lockfile; retain the global delay.
+  - '@aws-sdk/checksums@3.1001.5'
+  - '@aws-sdk/core@3.978.5'
+  - '@aws-sdk/credential-provider-env@3.972.76'
+  - '@aws-sdk/credential-provider-http@3.972.78'
+  - '@aws-sdk/credential-provider-ini@3.973.21'
+  - '@aws-sdk/credential-provider-login@3.972.83'
+  - '@aws-sdk/credential-provider-node@3.972.88'
+  - '@aws-sdk/credential-provider-process@3.972.76'
+  - '@aws-sdk/credential-provider-sso@3.973.20'
+  - '@aws-sdk/credential-provider-web-identity@3.972.82'
+  - '@aws-sdk/middleware-sdk-s3@3.972.81'
+  - '@aws-sdk/nested-clients@3.997.50'
+  - '@aws-sdk/signature-v4-multi-region@3.996.49'
+  - '@aws-sdk/token-providers@3.1155.0'
+  - '@aws-sdk/types@3.975.0'
+  - '@cropper/element-canvas@2.3.1'
+  - '@cropper/element-crosshair@2.3.1'
+  - '@cropper/element-grid@2.3.1'
+  - '@cropper/element-handle@2.3.1'
+  - '@cropper/element-image@2.3.1'
+  - '@cropper/element-selection@2.3.1'
+  - '@cropper/element-shade@2.3.1'
+  - '@cropper/element-viewer@2.3.1'
+  - '@cropper/element@2.3.1'
+  - '@cropper/elements@2.3.1'
+  - '@cropper/utils@2.3.1'
+  - '@fastify/accept-negotiator@2.1.2'
+  - '@fastify/busboy@3.2.4'
+  - '@fastify/forwarded@3.1.2'
+  - '@fastify/send@4.2.0'
+  - '@opentelemetry/api@1.10.0'
+  - '@oxc-project/types@0.155.0'
+  - '@rolldown/binding-android-arm-eabi@1.2.15'
+  - '@rolldown/binding-android-arm64@1.2.15'
+  - '@rolldown/binding-darwin-arm64@1.2.15'
+  - '@rolldown/binding-darwin-x64@1.2.15'
+  - '@rolldown/binding-freebsd-x64@1.2.15'
+  - '@rolldown/binding-linux-arm-gnueabihf@1.2.15'
+  - '@rolldown/binding-linux-arm64-gnu@1.2.15'
+  - '@rolldown/binding-linux-arm64-musl@1.2.15'
+  - '@rolldown/binding-linux-ppc64-gnu@1.2.15'
+  - '@rolldown/binding-linux-s390x-gnu@1.2.15'
+  - '@rolldown/binding-linux-x64-gnu@1.2.15'
+  - '@rolldown/binding-linux-x64-musl@1.2.15'
+  - '@rolldown/binding-openharmony-arm64@1.2.15'
+  - '@rolldown/binding-win32-arm64-msvc@1.2.15'
+  - '@rolldown/binding-win32-x64-msvc@1.2.15'
+  - '@shikijs/vscode-textmate@10.1.0'
+  - '@smithy/core@3.36.2'
+  - '@typescript-eslint/tsconfig-utils@8.72.0'
+  - '@typescript-eslint/types@8.72.0'
+  - 'asn1js@3.1.0'
+  - 'fast-json-stringify@7.1.2'
+  - 'fast-uri@3.1.9'
+  - 'fast-uri@4.2.3'
+  - 'ignore@7.0.13'
+  - 'joi@18.3.0'
+  - 'nan@2.30.0'
+  - 'node-abi@3.100.0'
+  - 'postcss-selector-parser@7.1.7'
+  - 'postcss@8.5.31'
+  - 'ret@0.5.1'
+  - 'rolldown@1.2.15'
+  - 'set-cookie-parser@3.2.1'
+  - 'strtok3@10.6.2'
+  - 'undici@8.12.3'
+  - 'vite@8.3.5'
 overrides:
   '@aiscript-dev/aiscript-languageserver': '-'
   chokidar: 5.0.0
@@ -62,6 +130,13 @@ overrides:
   undici@^7: 7.29.1
   undici@^6: 6.28.1
   '@tabler/icons-webfont>sharp': '-'
+  # Upstreams pin older releases; constrain only these vulnerable dependency edges.
+  'ip-cidr>ip-address': 10.7.4
+  '@syuilo/aiscript>uuid': 11.1.1
+  'sass>immutable': 5.1.9
+  'sass-embedded>immutable': 5.1.9
+  '@misskey-dev/sharp-read-bmp>sharp': 0.35.5
+  '@misskey-dev/summaly>fastify': 5.12.5
 engineStrict: true
 saveExact: true
 shellEmulator: true
