@@ -1,0 +1,18 @@
+{
+	"name": "@misutgaru/progressive-blur-element",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@mun/core": "link:/Users/kyooni18/Code/Mun/packages/core"
+	},
+	"devDependencies": {
+		"typescript": "5.9.3"
+	}
+}

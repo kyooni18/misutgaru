@@ -1416,6 +1416,16 @@ importers:
 
   packages/misutgaru-core: {}
 
+  packages/progressive-blur-element:
+    dependencies:
+      '@mun/core':
+        specifier: link:/Users/kyooni18/Code/Mun/packages/core
+        version: link:../../../Mun/packages/core
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/sw:
     dependencies:
       esbuild:
