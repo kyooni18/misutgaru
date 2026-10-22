@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
 <style lang="scss" module>
 .folderToggleEnterActive, .folderToggleLeaveActive {
 	overflow-y: clip;
-	transition: opacity 0.5s, height 0.5s !important;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), height var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut) !important;
 }
 
 .folderToggleEnterFrom, .folderToggleLeaveTo {

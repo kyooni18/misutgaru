@@ -131,12 +131,12 @@ onMounted(() => {
 <style lang="scss" module>
 .transition_popup_enterActive,
 .transition_popup_leaveActive {
-	transition: opacity 0.15s, transform 0.15s !important;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut) !important;
 }
 .transition_popup_enterFrom,
 .transition_popup_leaveTo {
 	opacity: 0;
-	transform: scale(0.9);
+	transform: translateY(4px);
 }
 
 .root {

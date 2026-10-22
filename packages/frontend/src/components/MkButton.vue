@@ -146,7 +146,7 @@ function onMousedown(evt: MouseEvent): void {
 	border-radius: 5px;
 	overflow: clip;
 	box-sizing: border-box;
-	box-shadow: 0 0 0 1px var(--MI-hairline), inset 0 1px 0 var(--MI-highlight);
+	box-shadow: 0 0 0 1px var(--MI-hairline);
 	transition: background 0.15s var(--MI-easeOut), box-shadow 0.15s var(--MI-easeOut), transform 0.1s var(--MI-easeOut);
 
 	&:hover {
@@ -188,11 +188,11 @@ function onMousedown(evt: MouseEvent): void {
 	&.primary {
 		font-weight: bold;
 		color: var(--MI_THEME-fgOnAccent) !important;
-		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--MI_THEME-accent) 70%, #000);
+		background: var(--MI_THEME-accent);
+		box-shadow: none;
 
 		&:not(:disabled):hover {
-			background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
+			background: hsl(from var(--MI_THEME-accent) h s calc(l + 3));
 		}
 
 		&:not(:disabled):active {
@@ -239,14 +239,16 @@ function onMousedown(evt: MouseEvent): void {
 	&.gradate {
 		font-weight: bold;
 		color: var(--MI_THEME-fgOnAccent) !important;
-		background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+		background: var(--MI-actionGradient);
 
 		&:not(:disabled):hover {
-			background: linear-gradient(90deg, hsl(from var(--MI_THEME-buttonGradateA) h s calc(l + 5)), hsl(from var(--MI_THEME-buttonGradateB) h s calc(l + 5)));
+			background: var(--MI-actionGradient);
+			filter: brightness(1.04);
 		}
 
 		&:not(:disabled):active {
-			background: linear-gradient(90deg, hsl(from var(--MI_THEME-buttonGradateA) h s calc(l + 5)), hsl(from var(--MI_THEME-buttonGradateB) h s calc(l + 5)));
+			background: var(--MI-actionGradient);
+			filter: brightness(0.96);
 		}
 	}
 
@@ -315,7 +317,7 @@ function onMousedown(evt: MouseEvent): void {
 	background: rgba(0, 0, 0, 0.1);
 	opacity: 1;
 	transform: scale(1);
-	transition: all 0.5s cubic-bezier(0,.5,0,1);
+	transition: transform var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut), opacity var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut);
 }
 
 .content {

@@ -83,13 +83,13 @@ function onMousedown(evt: MouseEvent) {
 <style lang="scss" module>
 .transition_fade_enterActive,
 .transition_fade_leaveActive {
-	transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut);
 	transform-origin: left top;
 }
 .transition_fade_enterFrom,
 .transition_fade_leaveTo {
 	opacity: 0;
-	transform: scale(0.9);
+	transform: scale(0.98);
 }
 
 .root {

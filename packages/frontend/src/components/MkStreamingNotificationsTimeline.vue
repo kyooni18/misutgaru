@@ -194,11 +194,11 @@ defineExpose({
 
 <style lang="scss" module>
 .transition_x_move {
-	transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+	transition: transform var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut);
 }
 
 .transition_x_enterActive {
-	transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+	transition: transform var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut), opacity var(--MI-dur) var(--MI-easeOut);
 
 	&.content,
 	.content {
@@ -213,7 +213,7 @@ defineExpose({
 
 .transition_x_enterFrom {
 	opacity: 0;
-	transform: translateY(max(-64px, -100%));
+	transform: translateY(-8px);
 }
 
 @supports (interpolate-size: allow-keywords) {

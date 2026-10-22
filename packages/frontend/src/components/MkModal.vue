@@ -128,17 +128,19 @@ const transitionName = computed((() =>
 					: 'modal'
 		: ''
 ));
-const transitionDuration = computed((() =>
-	transitionName.value === 'send'
-		? 400
-		: transitionName.value === 'modal-popup'
-			? 160
-			: transitionName.value === 'modal'
-				? 260
-				: transitionName.value === 'modal-drawer'
-					? 320
-					: 0
-));
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const reducedMotion = ref(reducedMotionQuery.matches);
+const syncReducedMotion = () => { reducedMotion.value = reducedMotionQuery.matches; };
+reducedMotionQuery.addEventListener('change', syncReducedMotion);
+onUnmounted(() => reducedMotionQuery.removeEventListener('change', syncReducedMotion));
+
+// Vue must release focus and remove the backdrop when the CSS exit actually ends.
+const transitionDuration = computed(() => {
+	if (!prefer.s.animation || reducedMotion.value) return 0;
+	if (transitionName.value === 'modal-drawer') return { enter: 280, leave: 180 };
+	if (transitionName.value === 'modal-popup') return { enter: 160, leave: 120 };
+	return { enter: 220, leave: 160 };
+});
 
 let releaseFocusTrap: (() => void) | null = null;
 let contentClicking = false;
@@ -360,12 +362,12 @@ defineExpose({
 .transition_send_enterActive,
 .transition_send_leaveActive {
 	> .bg {
-		transition: opacity 0.3s !important;
+		transition: opacity 160ms var(--MI-easeOut) !important;
 	}
 
 	> .content {
     transform: translateY(0px);
-		transition: opacity 0.3s ease-in, transform 0.3s cubic-bezier(.5,-0.5,1,.5) !important;
+		transition: opacity 160ms var(--MI-easeOut), transform 160ms var(--MI-easeOut) !important;
 	}
 }
 .transition_send_enterFrom,
@@ -377,19 +379,19 @@ defineExpose({
 	> .content {
 		pointer-events: none;
 		opacity: 0;
-		transform: translateY(-300px);
+		transform: translateY(-12px);
 	}
 }
 
 .transition_modal_enterActive,
 .transition_modal_leaveActive {
 	> .bg {
-		transition: opacity 0.26s var(--MI-easeOut) !important;
+		transition: opacity 220ms var(--MI-easeOut) !important;
 	}
 
 	> .content {
 		transform-origin: var(--transformOrigin);
-		transition: opacity 0.2s var(--MI-easeOut), transform 0.26s var(--MI-easeOut) !important;
+		transition: opacity 160ms var(--MI-easeOut), transform 220ms var(--MI-easeOut) !important;
 	}
 }
 .transition_modal_enterFrom,
@@ -402,7 +404,7 @@ defineExpose({
 		pointer-events: none;
 		opacity: 0;
 		transform-origin: var(--transformOrigin);
-		transform: scale(0.96) translateY(6px);
+		transform: scale(0.98) translateY(4px);
 	}
 }
 
@@ -427,26 +429,26 @@ defineExpose({
 		pointer-events: none;
 		opacity: 0;
 		transform-origin: var(--transformOrigin);
-		transform: scale(0.95);
+		transform: scale(0.98);
 	}
 }
 
 .transition_modalDrawer_enterActive {
 	> .bg {
-		transition: opacity 0.32s var(--MI-easeOut) !important;
+		transition: opacity 280ms var(--MI-easeOut) !important;
 	}
 
 	> .content {
-		transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
+		transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 	}
 }
 .transition_modalDrawer_leaveActive {
 	> .bg {
-		transition: opacity 0.32s var(--MI-easeOut) !important;
+		transition: opacity 180ms var(--MI-easeOut) !important;
 	}
 
 	> .content {
-		transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
+		transition: transform 180ms cubic-bezier(.4,0,1,1) !important;
 	}
 }
 .transition_modalDrawer_enterFrom,
@@ -459,6 +461,15 @@ defineExpose({
 		pointer-events: none;
 		transform: translateY(100%);
 	}
+}
+
+.transition_modal_leaveActive > .bg,
+.transition_modal_leaveActive > .content {
+	transition-duration: 160ms !important;
+}
+.transition_modalPopup_leaveActive > .bg,
+.transition_modalPopup_leaveActive > .content {
+	transition-duration: 120ms !important;
 }
 
 .root {

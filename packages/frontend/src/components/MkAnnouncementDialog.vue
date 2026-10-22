@@ -70,17 +70,20 @@ async function ok() {
 }
 
 function onBgClick() {
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+	rootEl.value?.getAnimations().forEach(animation => animation.cancel());
 	rootEl.value?.animate([{
 		offset: 0,
 		transform: 'scale(1)',
 	}, {
 		offset: 0.5,
-		transform: 'scale(1.1)',
+		transform: 'scale(1.015)',
 	}, {
 		offset: 1,
 		transform: 'scale(1)',
 	}], {
-		duration: 100,
+		duration: 180,
+		easing: 'ease-out',
 	});
 }
 

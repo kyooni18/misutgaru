@@ -58,7 +58,7 @@ const toggle = () => {
 .root {
 	position: relative;
 	display: flex;
-	transition: all 0.2s ease;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut);
 	user-select: none;
 
 	&:hover {

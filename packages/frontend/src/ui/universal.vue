@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<XAnnouncements v-if="$i"/>
 				<XStatusBars :class="$style.statusbars"/>
 			</div>
-			<div ref="contentEl" :class="$style.content">
+			<div :class="$style.content">
 				<StackingRouterView v-if="prefer.s['experimental.stackingRouterView']" :class="$style.contentInner"/>
 				<RouterView v-else :class="$style.contentInner"/>
 			</div>
@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, provide, onMounted, computed, ref, useTemplateRef } from 'vue';
+import { defineAsyncComponent, provide, onMounted, computed, ref } from 'vue';
 import { instanceName } from '@@/js/config.js';
 import { isLink } from '@@/js/is-link.js';
 import XCommon from './_common_/common.vue';
@@ -100,21 +100,10 @@ provide(DI.mobileShell, {
 	isMobile,
 });
 
-const contentEl = useTemplateRef('contentEl');
-let lastPath = mainRouter.getCurrentFullPath().split(/[?#]/)[0];
-
+// Navigation replaces the route content itself. Do not animate its entire parent:
+// doing so also moves the sticky header and stacks animations on rapid navigation.
 mainRouter.on('change', () => {
 	drawerMenuShowing.value = false;
-
-	// Settle each new page in with a short rise; query/hash-only changes (tab switches etc.) stay still.
-	const path = mainRouter.getCurrentFullPath().split(/[?#]/)[0];
-	if (path === lastPath) return;
-	lastPath = path;
-	if (!prefer.s.animation || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-	contentEl.value?.animate([
-		{ opacity: 0, transform: 'translateY(10px)' },
-		{ opacity: 1, transform: 'none' },
-	], { duration: 280, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
 });
 
 if (window.innerWidth > 1024) {

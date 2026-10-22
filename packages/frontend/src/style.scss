@@ -20,11 +20,14 @@
 	--MI-highlight: color-mix(in srgb, #fff 7%, transparent);
 	--MI-elev1: 0 0 0 1px var(--MI-hairline);
 	--MI-elev2: 0 0 0 1px var(--MI-hairline), 0 10px 28px -10px var(--MI_THEME-shadow);
-	--MI-easeOut: cubic-bezier(0.23, 1, 0.32, 1);
-	--MI-durFast: 120ms;
-	--MI-dur: 220ms;
+	--MI-easeOut: var(--MI-motion-ease-standard, cubic-bezier(.2,.8,.2,1));
+	--MI-durFast: var(--MI-motion-duration-feedback, 120ms);
+	--MI-dur: var(--MI-motion-duration-control, 180ms);
 	--MI-accentWash: color-mix(in srgb, var(--MI_THEME-accent) 8%, transparent);
 	--MI-accentGlow: color-mix(in srgb, var(--MI_THEME-accent) 22%, transparent);
+	// Gradation is opt-in for special actions, not a surface or selection treatment.
+	// Keep the theme's hue relationship, with a restrained rather than full-strength shift.
+	--MI-actionGradient: linear-gradient(135deg, var(--MI_THEME-buttonGradateA), color-mix(in srgb, var(--MI_THEME-buttonGradateA) 75%, var(--MI_THEME-buttonGradateB)));
 
 	// switch dynamically
 	--MI-minBottomSpacingMobile: calc(72px + max(12px, env(safe-area-inset-bottom, 0px)));
@@ -339,11 +342,11 @@ rt {
 ._buttonPrimary {
 	@extend ._button;
 	color: var(--MI_THEME-fgOnAccent);
-	background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 4)), var(--MI_THEME-accent));
+	background: var(--MI_THEME-accent);
 	transition: background var(--MI-dur) var(--MI-easeOut), box-shadow var(--MI-dur) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut);
 
 	&:not(:disabled):hover {
-		background: linear-gradient(180deg, hsl(from var(--MI_THEME-accent) h s calc(l + 8)), hsl(from var(--MI_THEME-accent) h s calc(l + 3)));
+		background: hsl(from var(--MI_THEME-accent) h s calc(l + 3));
 	}
 
 	&:not(:disabled):active {
@@ -355,14 +358,16 @@ rt {
 ._buttonGradate {
 	@extend ._buttonPrimary;
 	color: var(--MI_THEME-fgOnAccent);
-	background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+	background: var(--MI-actionGradient);
 
 	&:not(:disabled):hover {
-		background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+		background: var(--MI-actionGradient);
+		filter: brightness(1.04);
 	}
 
 	&:not(:disabled):active {
-		background: linear-gradient(90deg, hsl(from var(--MI_THEME-accent) h s calc(l + 5)), hsl(from var(--MI_THEME-accent) h s calc(l + 5)));
+		background: var(--MI-actionGradient);
+		filter: brightness(0.96);
 	}
 }
 
@@ -807,5 +812,9 @@ html[data-color-scheme=dark] ._woodenFrame {
 	*, *::before, *::after {
 		transition-duration: 0.01ms !important;
 		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		animation-delay: 0ms !important;
+		transition-delay: 0ms !important;
+		scroll-behavior: auto !important;
 	}
 }

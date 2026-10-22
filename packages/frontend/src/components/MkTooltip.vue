@@ -96,12 +96,12 @@ onUnmounted(() => {
 .transition_tooltip_leaveActive {
 	opacity: 1;
 	transform: scale(1);
-	transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+	transition: opacity var(--MI-durFast) var(--MI-easeOut);
 }
 .transition_tooltip_enterFrom,
 .transition_tooltip_leaveTo {
 	opacity: 0;
-	transform: scale(0.75);
+	transform: none;
 }
 
 .root {

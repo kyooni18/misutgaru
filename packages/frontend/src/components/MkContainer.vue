@@ -136,7 +136,7 @@ onUnmounted(() => {
 .transition_toggle_enterActive,
 .transition_toggle_leaveActive {
 	overflow-y: clip;
-	transition: opacity 0.5s, height 0.5s !important;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), height var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut) !important;
 }
 .transition_toggle_enterFrom,
 .transition_toggle_leaveTo {

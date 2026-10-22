@@ -67,13 +67,13 @@ onUnmounted(() => {
 	transition:
 		filter var(--MI-durFast) var(--MI-easeOut),
 		opacity var(--MI-dur) var(--MI-easeOut),
-		transform 380ms cubic-bezier(0.34, 1.4, 0.5, 1);
-	animation: pop-in 420ms cubic-bezier(0.34, 1.4, 0.5, 1) backwards;
+		transform var(--MI-dur) var(--MI-easeOut);
+	animation: pop-in var(--MI-dur) var(--MI-easeOut) backwards;
 
 	&.tucked {
 		opacity: 0;
 		pointer-events: none;
-		transform: translateY(calc(100% + 24px)) scale(0.6);
+		transform: translateY(16px);
 		transition:
 			opacity var(--MI-dur) var(--MI-easeOut),
 			transform var(--MI-dur) cubic-bezier(0.4, 0, 1, 1);
@@ -101,7 +101,7 @@ onUnmounted(() => {
 @keyframes pop-in {
 	from {
 		opacity: 0;
-		transform: scale(0.4) rotate(-45deg);
+		transform: translateY(8px);
 	}
 }
 </style>

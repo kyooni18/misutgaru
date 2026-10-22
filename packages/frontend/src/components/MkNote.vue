@@ -761,11 +761,11 @@ const keymap = {
 	}
 
 	> i {
-		transition: transform 260ms cubic-bezier(0.34, 1.5, 0.5, 1);
+		transition: transform var(--MI-durFast) var(--MI-easeOut);
 	}
 
 	&:active > i {
-		transform: scale(0.82);
+		transform: scale(0.94);
 		transition-duration: var(--MI-durFast);
 	}
 }

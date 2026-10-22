@@ -321,8 +321,7 @@ function menuEdit() {
 	right: 0;
 	margin: 0 auto;
 	border-radius: 999px;
-	background: color-mix(in srgb, var(--MI_THEME-accent) 14%, transparent);
-	box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--MI_THEME-accent) 30%, transparent);
+	background: color-mix(in srgb, var(--MI_THEME-navFg) 8%, transparent);
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity var(--MI-dur) var(--MI-easeOut);
@@ -334,8 +333,8 @@ function menuEdit() {
 	&.activePillAnimated {
 		transition:
 			opacity var(--MI-dur) var(--MI-easeOut),
-			transform 420ms cubic-bezier(0.34, 1.32, 0.5, 1),
-			height 420ms cubic-bezier(0.34, 1.32, 0.5, 1);
+			transform var(--MI-dur) var(--MI-easeOut),
+			height var(--MI-dur) var(--MI-easeOut);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -538,7 +537,7 @@ function menuEdit() {
 			right: 0;
 			bottom: 0;
 			border-radius: 999px;
-			background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+			background: var(--MI_THEME-accent);
 			transition: filter var(--MI-dur) var(--MI-easeOut), box-shadow var(--MI-dur) var(--MI-easeOut);
 		}
 
@@ -677,8 +676,6 @@ function menuEdit() {
 	.activePill {
 		width: calc(100% - 24px);
 		border-radius: 12px;
-		background: color-mix(in srgb, var(--MI_THEME-accent) 10%, var(--MI_THEME-navBg));
-		box-shadow: none;
 	}
 
 	.itemIcon {
@@ -796,7 +793,7 @@ function menuEdit() {
 			width: 52px;
 			aspect-ratio: 1/1;
 			border-radius: 100%;
-			background: linear-gradient(90deg, var(--MI_THEME-buttonGradateA), var(--MI_THEME-buttonGradateB));
+			background: var(--MI_THEME-accent);
 		}
 
 		&:focus-visible {

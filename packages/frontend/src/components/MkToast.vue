@@ -47,12 +47,12 @@ onMounted(() => {
 <style lang="scss" module>
 .transition_toast_enterActive,
 .transition_toast_leaveActive {
-	transition: opacity 0.3s, transform 0.3s !important;
+	transition: opacity var(--MI-dur) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut) !important;
 }
 .transition_toast_enterFrom,
 .transition_toast_leaveTo {
 	opacity: 0;
-	transform: translateY(-100%);
+	transform: translateY(-8px);
 }
 
 .root {

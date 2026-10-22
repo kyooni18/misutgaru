@@ -299,7 +299,7 @@ const headerActions = computed<PageHeaderItem[]>(() => {
 		},
 	}];
 
-	if (deviceKind === 'desktop') {
+	if (deviceKind === 'desktop' && !shell?.isMobile.value) {
 		items.unshift({
 			icon: 'ti ti-refresh',
 			text: i18n.ts.reload,

@@ -16,23 +16,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.animate]: prefer.s.animation
 			}]"
 			:style="getTabStyle(t)"
-			@mousedown="(ev) => onTabMousedown(t, ev)"
 			@click="(ev) => onTabClick(t, ev)"
 		>
 			<div :class="$style.tabInner">
 				<i v-if="t.icon" :class="[$style.tabIcon, t.icon]"></i>
-				<div
-					v-if="!t.iconOnly || (!prefer.s.animation && t.key === tab)"
-					:class="$style.tabTitle"
-				>
-					{{ t.title }}
-				</div>
-				<Transition
-					v-else mode="in-out" @enter="enter" @afterEnter="afterEnter" @leave="leave"
-					@afterLeave="afterLeave"
-				>
-					<div v-show="t.key === tab" :class="[$style.tabTitle, $style.animate]">{{ t.title }}</div>
-				</Transition>
+				<div :class="[$style.tabTitle, { [$style.collapsed]: t.iconOnly && t.key !== tab }]"><span>{{ t.title }}</span></div>
 			</div>
 		</button>
 	</div>
@@ -89,13 +77,6 @@ function getTabStyle(t: Tab) {
 	}
 }
 
-function onTabMousedown(tab: Tab, ev: MouseEvent): void {
-	// ユーザビリティの観点からmousedown時にはonClickは呼ばない
-	if (tab.key) {
-		emit('update:tab', tab.key);
-	}
-}
-
 function onTabClick(t: Tab, ev: PointerEvent): void {
 	emit('tabClick', t.key);
 
@@ -136,51 +117,12 @@ function onTabWheel(ev: WheelEvent) {
 	return false;
 }
 
-let entering = false;
-
-async function enter(el: Element) {
-	if (!(el instanceof HTMLElement)) return;
-	entering = true;
-	const elementWidth = el.getBoundingClientRect().width;
-	el.style.width = '0';
-	el.style.paddingLeft = '0';
-	el.offsetWidth; // reflow
-	el.style.width = `${elementWidth}px`;
-	el.style.paddingLeft = '';
-	nextTick(() => {
-		entering = false;
-	});
-
-	window.setTimeout(renderTab, 170);
-}
-
-function afterEnter(el: Element) {
-	if (!(el instanceof HTMLElement)) return;
-	// element.style.width = '';
-}
-
-async function leave(el: Element) {
-	if (!(el instanceof HTMLElement)) return;
-	const elementWidth = el.getBoundingClientRect().width;
-	el.style.width = `${elementWidth}px`;
-	el.style.paddingLeft = '';
-	el.offsetWidth; // reflow
-	el.style.width = '0';
-	el.style.paddingLeft = '0';
-}
-
-function afterLeave(el: Element) {
-	if (!(el instanceof HTMLElement)) return;
-	el.style.width = '';
-}
-
 let ro2: ResizeObserver | null;
 
 onMounted(() => {
 	if (!cssAnchorSupported) {
 		watch([() => props.tab, () => props.tabs], () => {
 			nextTick(() => {
-				if (entering) return;
 				renderTab();
 			});
 		}, {
@@ -194,6 +136,7 @@ onMounted(() => {
 				}
 			});
 			ro2.observe(props.rootEl);
+			for (const tab of Object.values(tabRefs)) if (tab) ro2.observe(tab);
 		}
 	}
 });
@@ -251,15 +194,21 @@ onUnmounted(() => {
 	align-items: center;
 }
 
-.tabIcon + .tabTitle {
-	padding-left: 4px;
-}
-
 .tabTitle {
-	overflow: hidden;
+	display: grid;
+	grid-template-columns: 1fr;
+	opacity: 1;
+	transition: grid-template-columns var(--MI-dur) var(--MI-easeOut), opacity var(--MI-durFast) var(--MI-easeOut);
 
-	&.animate {
-		transition: width 0.25s var(--MI-easeOut), padding-left 0.25s var(--MI-easeOut);
+	> span {
+		min-width: 0;
+		overflow: hidden;
+		padding-left: 4px;
+	}
+
+	&.collapsed {
+		grid-template-columns: 0fr;
+		opacity: 0;
 	}
 }
 

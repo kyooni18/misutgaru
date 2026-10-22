@@ -6,7 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-if="show" ref="el" :class="[$style.root]">
 	<div :class="[$style.upper, { [$style.slim]: narrow, [$style.thin]: thin_, [$style.mobileToolbar]: compactTimelineBar }]">
-		<button v-if="mobileNav" class="_button" :class="$style.button" :aria-label="i18n.ts.menu" @click="shell?.openDrawer()">
+		<button v-if="compactTimelineBar && mobileSection !== 'timeline'" v-tooltip.noDelay="i18n.ts.timeline" class="_button" :class="$style.button" :aria-label="i18n.ts.timeline" @click="mobileSection = 'timeline'">
+			<i class="ti ti-arrow-left" aria-hidden="true"></i>
+		</button>
+		<button v-else-if="mobileNav" class="_button" :class="$style.button" :aria-label="i18n.ts.menu" @click="shell?.openDrawer()">
 			<i class="ti ti-menu-2"></i>
 			<span v-if="menuIndicated" :class="$style.indicator" class="_blink"><i class="_indicatorCircle"></i></span>
 		</button>
@@ -16,15 +19,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
 
 		<template v-if="compactTimelineBar">
-			<button v-if="mobileSection === 'timeline'" class="_button" :class="$style.timelinePicker" aria-haspopup="menu" :aria-label="`${i18n.ts.timeline}: ${activeTimeline?.title ?? i18n.ts.timeline}`" @click="openTimelineMenu">
-				<span :class="$style.pickerTitle">{{ activeTimeline?.title ?? i18n.ts.timeline }}</span>
-				<i class="ti ti-chevron-down" :class="$style.pickerChevron" aria-hidden="true"></i>
-			</button>
-			<div v-else :class="$style.sectionHeading">{{ mobileSection === 'notifications' ? i18n.ts.notifications : i18n.ts.widgets }}</div>
+			<div :class="$style.headingSlot">
+				<Transition :enterActiveClass="$style.headingEnterActive" :leaveActiveClass="$style.headingLeaveActive" :enterFromClass="$style.headingEnterFrom" :leaveToClass="$style.headingLeaveTo">
+					<div v-if="mobileSection === 'timeline'" key="timeline" ref="sourceStrip" :class="$style.sourceStrip" role="group" :aria-label="i18n.ts.timeline">
+						<button v-for="source in tabs" :key="source.key" v-tooltip.noDelay="source.title" class="_button" :class="[$style.sourceButton, { [$style.sourceSelected]: source.key === tab }]" :aria-label="source.title" :aria-pressed="source.key === tab" @click="selectSource(source, $event)">
+							<i v-if="source.icon" :class="source.icon" aria-hidden="true"></i>
+							<span :class="{ [$style.sourceLabel]: source.icon }" @transitionend="revealSource"><span>{{ source.title }}</span></span>
+						</button>
+					</div>
+					<div v-else :key="mobileSection" :class="$style.sectionHeading">{{ mobileSection === 'notifications' ? i18n.ts.notifications : i18n.ts.widgets }}</div>
+				</Transition>
+			</div>
 			<div :class="$style.toolbarActions">
 				<template v-if="mobileSection === 'timeline'">
 					<button v-for="action in actions" :key="action.icon" v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" :aria-label="action.text" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon" aria-hidden="true"></i></button>
 				</template>
+			</div>
+			<div :class="$style.sectionButtons" :aria-label="i18n.ts.menu" role="group">
+				<button v-tooltip.noDelay="i18n.ts.notifications" class="_button" :class="[$style.button, { [$style.sectionActive]: mobileSection === 'notifications' }]" :aria-label="i18n.ts.notifications" :aria-pressed="mobileSection === 'notifications'" @click="mobileSection = 'notifications'">
+					<i class="ti ti-bell" aria-hidden="true"></i>
+					<span v-if="$i?.hasUnreadNotification" :class="$style.unreadDot" :aria-label="String($i.unreadNotificationsCount)"></span>
+				</button>
+				<button v-tooltip.noDelay="i18n.ts.widgets" class="_button" :class="[$style.button, { [$style.sectionActive]: mobileSection === 'widgets' }]" :aria-label="i18n.ts.widgets" :aria-pressed="mobileSection === 'widgets'" @click="mobileSection = 'widgets'">
+					<i class="ti ti-apps" aria-hidden="true"></i>
+				</button>
 			</div>
 		</template>
 
@@ -51,18 +69,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</div>
 	</div>
-	<div v-if="compactTimelineBar" :class="$style.sectionBar" :aria-label="i18n.ts.menu" role="group">
-		<button class="_button" :class="[$style.sectionTab, { [$style.sectionActive]: mobileSection === 'timeline' }]" :aria-pressed="mobileSection === 'timeline'" @click="mobileSection = 'timeline'">
-			<i class="ti ti-home" aria-hidden="true"></i><span>{{ i18n.ts.timeline }}</span>
-		</button>
-		<button class="_button" :class="[$style.sectionTab, { [$style.sectionActive]: mobileSection === 'notifications' }]" :aria-pressed="mobileSection === 'notifications'" @click="mobileSection = 'notifications'">
-			<i class="ti ti-bell" aria-hidden="true"></i><span>{{ i18n.ts.notifications }}</span>
-			<span v-if="$i?.hasUnreadNotification" :class="$style.unreadDot" :aria-label="String($i.unreadNotificationsCount)"></span>
-		</button>
-		<button class="_button" :class="[$style.sectionTab, { [$style.sectionActive]: mobileSection === 'widgets' }]" :aria-pressed="mobileSection === 'widgets'" @click="mobileSection = 'widgets'">
-			<i class="ti ti-apps" aria-hidden="true"></i><span>{{ i18n.ts.widgets }}</span>
-		</button>
-	</div>
 	<div v-if="!compactTimelineBar && (narrow && !hideTitle) && hasTabs" :class="[$style.lower, { [$style.slim]: narrow, [$style.thin]: thin_ }]">
 		<XTabs :class="$style.tabs" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
 	</div>
@@ -87,8 +93,9 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed } from 'vue';
+import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch, nextTick } from 'vue';
 import { mobileSection } from '@/utility/mobile-section.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 import { navbarItemDef } from '@/navbar.js';
 import { scrollToTop } from '@@/js/scroll.js';
@@ -119,22 +126,28 @@ const narrow = ref(false);
 const hasTabs = computed(() => props.tabs.length > 0);
 const shell = inject(DI.mobileShell, null);
 // Phone shell: the bottom bar is gone, so nav / notifications / widgets live up here.
-const mobileNav = computed(() => shell != null && shell.isMobile.value && narrow.value && !thin_ && $i != null);
+const mobileNav = computed(() => shell != null && shell.isMobile.value && !thin_ && $i != null);
 const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvatar && hasTabs.value);
-// Explicit selection avoids changing feeds while swiping or resizing the header.
-const activeTimeline = computed(() => props.tabs.find(t => t.key === props.tab));
+const sourceStrip = useTemplateRef('sourceStrip');
 
-function openTimelineMenu(ev: PointerEvent) {
-	os.popupMenu(props.tabs.map(t => ({
-		text: t.title,
-		icon: t.icon,
-		active: t.key === props.tab,
-		action: (event: PointerEvent) => {
-			if (t.onClick) t.onClick(event);
-			if (t.key) emit('update:tab', t.key);
-		},
-	})), ev.currentTarget ?? ev.target);
+function selectSource(source: Tab, ev: PointerEvent) {
+	if (source.onClick) source.onClick(ev);
+	if (source.key) emit('update:tab', source.key);
 }
+
+// Scroll only the strip, never the document or feed. Swiping does not select a source.
+async function revealSource() {
+	await nextTick();
+	const strip = sourceStrip.value;
+	const selected = strip?.querySelector<HTMLElement>('[aria-pressed="true"]');
+	if (!strip || !selected) return;
+	const viewport = strip.getBoundingClientRect();
+	const item = selected.getBoundingClientRect();
+	const delta = item.left < viewport.left ? item.left - viewport.left : item.right > viewport.right ? item.right - viewport.right : 0;
+	strip.scrollBy({ left: delta, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches || !prefer.s.animation ? 'instant' : 'smooth' });
+}
+
+watch([() => props.tab, sourceStrip], revealSource, { flush: 'post' });
 
 const menuIndicated = computed(() => {
 	for (const def in navbarItemDef) {
@@ -178,6 +191,7 @@ onMounted(() => {
 		ro = new ResizeObserver((entries, observer) => {
 			if (el.value && el.value.parentElement && window.document.body.contains(el.value as HTMLElement)) {
 				narrow.value = el.value.parentElement.offsetWidth < 500;
+				void revealSource();
 			}
 		});
 		ro.observe(el.value.parentElement as HTMLElement);
@@ -194,6 +208,7 @@ onUnmounted(() => {
 	background: var(--MI_THEME-pageHeaderBg);
 	border-bottom: solid 1px var(--MI-hairline);
 	width: 100%;
+	container-type: inline-size;
 	color: var(--MI_THEME-pageHeaderFg);
 }
 
@@ -297,7 +312,7 @@ onUnmounted(() => {
 	}
 
 	&:active {
-		transform: scale(0.92);
+		transform: scale(0.97);
 	}
 
 	&.highlighted {
@@ -363,31 +378,122 @@ onUnmounted(() => {
 }
 
 .mobileToolbar {
-	--height: 56px;
-	--margin: 4px;
+	// Grow with text size and available space without introducing a second row.
+	--height: clamp(52px, calc(3rem + 1cqi), 64px);
+	--margin: clamp(2px, 0.6cqi, 4px);
 	box-sizing: border-box;
-	padding-inline: 8px;
+	padding-inline: clamp(4px, 1.5cqi, 12px);
+
+	.button {
+		width: max(44px, 2.75rem);
+		height: max(44px, 2.75rem);
+		transition: background 160ms var(--MI-easeOut), color 160ms var(--MI-easeOut), transform 120ms var(--MI-easeOut);
+	}
 }
 
-.timelinePicker,
+.headingSlot {
+	display: grid;
+	flex: 1;
+	min-width: 0;
+	align-items: center;
+
+	> * {
+		grid-area: 1 / 1;
+		min-width: 0;
+	}
+}
+
+.headingEnterActive {
+	transition: opacity var(--MI-durFast) var(--MI-easeOut);
+}
+
+.headingLeaveActive {
+	transition: opacity var(--MI-durFast) var(--MI-easeOut);
+	pointer-events: none;
+	visibility: hidden;
+}
+
+.headingEnterFrom {
+	opacity: 0;
+}
+
+.headingLeaveTo {
+	opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.headingEnterActive,
+	.headingLeaveActive,
+	.mobileToolbar .button {
+		transition: none;
+	}
+
+	.headingEnterFrom,
+	.headingLeaveTo {
+		transform: none;
+	}
+}
+
 .sectionHeading {
 	flex: 1;
 	min-width: 0;
-	font-size: 1.1em;
+	font-size: 1.05em;
 	font-weight: 600;
 	text-align: start;
 }
 
-.timelinePicker {
+.sourceStrip {
 	display: flex;
-	align-items: center;
-	gap: 8px;
-	min-height: 44px;
-	padding-inline: 8px;
-	border-radius: 10px;
+	min-width: 0;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scrollbar-width: none;
+	&::-webkit-scrollbar { display: none; }
 }
 
-.pickerTitle,
+.sourceButton {
+	position: relative;
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	min-width: 44px;
+	min-height: max(44px, 2.75rem);
+	padding: 0 10px;
+	box-sizing: border-box;
+	border-radius: 8px;
+	font-weight: 600;
+	white-space: nowrap;
+	color: var(--MI_THEME-pageHeaderFg);
+
+	&.sourceSelected {
+		color: var(--MI_THEME-pageHeaderFg);
+		background: var(--MI-hairline);
+	}
+}
+
+.sourceLabel {
+	display: grid;
+	grid-template-columns: 0fr;
+	opacity: 0;
+	transition: grid-template-columns var(--MI-dur) var(--MI-easeOut), opacity var(--MI-durFast) var(--MI-easeOut);
+
+	> span {
+		min-width: 0;
+		overflow: hidden;
+		&::before { content: '\00a0'; }
+	}
+}
+.sourceSelected .sourceLabel {
+	grid-template-columns: 1fr;
+	opacity: 1;
+}
+
+@container (min-width: 460px) {
+	.sourceLabel { grid-template-columns: 1fr; opacity: 1; }
+}
+
 .sectionHeading {
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -398,70 +504,43 @@ onUnmounted(() => {
 	padding-inline: 8px;
 }
 
-.pickerChevron {
-	flex: none;
-	font-size: 0.75em;
-	opacity: 0.6;
-}
-
 .toolbarActions {
 	display: flex;
 	flex: none;
 }
 
-.sectionBar {
+.sectionButtons {
 	display: flex;
-	gap: 4px;
-	padding: 0 12px 8px;
+	flex: none;
+	gap: 2px;
 }
 
-.sectionTab {
-	display: flex;
-	flex: 1 1 0;
-	min-width: 0;
-	min-height: 44px;
-	justify-content: center;
-	align-items: center;
-	gap: 6px;
-	padding: 6px;
-	border-radius: 10px;
-	font-size: 0.85em;
-	line-height: 1.25;
-	color: var(--MI_THEME-fg);
-	transition: background var(--MI-durFast) var(--MI-easeOut);
+.button.sectionActive {
+	color: var(--MI_THEME-pageHeaderFg);
+	background: color-mix(in srgb, var(--MI_THEME-pageHeaderFg) 9%, transparent);
 
-	> span:not(.unreadDot) {
-		min-width: 0;
-		overflow-wrap: anywhere;
-	}
-
-	> i {
-		flex: none;
-	}
-
-	&.sectionActive {
-		color: var(--MI_THEME-accent);
-		background: var(--MI_THEME-accentedBg);
-		font-weight: 600;
-	}
-}
-
-@media (max-width: 360px) {
-	.sectionTab > i {
-		display: none;
+	&::after {
+		content: "";
+		position: absolute;
+		inset-inline: 18px;
+		bottom: 4px;
+		height: 2px;
+		border-radius: 2px;
+		background: currentColor;
 	}
 }
 
 .unreadDot {
-	flex: none;
+	position: absolute;
+	top: 9px;
+	inset-inline-end: 9px;
 	width: 6px;
 	height: 6px;
 	border-radius: 50%;
 	background: var(--MI_THEME-indicator);
 }
 
-.timelinePicker,
-.sectionTab,
+.sourceButton,
 .button {
 	&:focus-visible {
 		outline: 2px solid var(--MI_THEME-focus);
@@ -470,8 +549,7 @@ onUnmounted(() => {
 }
 
 @media (hover: hover) {
-	.timelinePicker:hover,
-	.sectionTab:not(.sectionActive):hover {
+	.sourceButton:hover {
 		background: var(--MI-hairline);
 	}
 }

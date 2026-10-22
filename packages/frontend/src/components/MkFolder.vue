@@ -212,7 +212,7 @@ watch(opened, (isOpened) => {
 .transition_toggle_enterActive,
 .transition_toggle_leaveActive {
 	overflow-y: hidden; // 子要素のmarginが突き出るため clip を使ってはいけない
-	transition: opacity 0.3s, height 0.3s;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut), height var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut);
 }
 
 @supports (interpolate-size: allow-keywords) {
