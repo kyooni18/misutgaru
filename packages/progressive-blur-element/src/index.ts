@@ -14,8 +14,8 @@
  * a backdrop root.
  */
 
-import { Element, defineView, initializer } from '@mun/core/compat';
-import type { ViewValue } from '@mun/core/compat';
+import { Animation, Element, Transition, defineView, initializer } from '@mun/core/compat';
+import type { MunStyleProperties, ViewValue } from '@mun/core/compat';
 
 export type ProgressiveBlurLayer = {
 	/** Distance from the content edge where this layer starts fading (px). */
@@ -52,6 +52,18 @@ export type ProgressiveBlurOptions = ProgressiveBlurShape & {
 	/** Explicit layers; overrides quality and the shape options. */
 	readonly layers?: readonly ProgressiveBlurLayer[];
 	readonly quality?: ProgressiveBlurQuality;
+	/**
+	 * Drives every blur change through Mun's motion engine: strength/spread/falloff
+	 * changes retarget in place, and appear/disappear uses it unless `transition`
+	 * carries its own animation. null snaps. Default: Animation.smooth(0.28).
+	 */
+	readonly animation?: Animation | null;
+	/**
+	 * How each layer appears/disappears when `active` toggles. Default: each layer
+	 * ramps its backdrop blur from 0 to its own strength (Transition.modifier).
+	 * Mun's Transition.opacity / Transition.blur / combined() also work.
+	 */
+	readonly transition?: Transition;
 	/** Corner radius of the content the blur hugs (px). Default: 18. */
 	readonly radius?: number;
 	readonly className?: string;
@@ -99,7 +111,7 @@ export function resolveProgressiveBlurQuality(quality: ProgressiveBlurQuality = 
 }
 
 const layerSets = new Map<string, readonly ProgressiveBlurLayer[]>();
-const layerStyles = new Map<string, string>();
+const layerStyles = new Map<string, MunStyleProperties>();
 
 function resolveLayers(options: ProgressiveBlurOptions): readonly ProgressiveBlurLayer[] {
 	if (options.layers) return options.layers;
@@ -130,29 +142,39 @@ function easedRamp(fade: number, mirrored = false): string {
 	return stops.join(', ');
 }
 
-function blurLayerStyle(layer: ProgressiveBlurLayer, radius: number): string {
+function backdrop(blur: number): MunStyleProperties {
+	const filter = `blur(${blur}px)`;
+	return { backdropFilter: filter, WebkitBackdropFilter: filter } as MunStyleProperties;
+}
+
+function blurLayerStyle(layer: ProgressiveBlurLayer, radius: number): MunStyleProperties {
 	const key = `${layer.from}|${layer.to}|${layer.blur}|${radius}`;
 	const cached = layerStyles.get(key);
 	if (cached) return cached;
 	// The box extends to `to`; the mask ramps in over this layer's band only.
 	const fade = layer.to - layer.from;
-	const filter = `blur(${layer.blur}px)`;
 	const horizontal = `linear-gradient(to right, ${easedRamp(fade)}, ${easedRamp(fade, true)})`;
-	const vertical = horizontal.replace('to right', 'to bottom');
-	const style = [
-		'position:absolute',
-		`inset:-${layer.to}px`,
-		`border-radius:${radius + layer.to}px`,
-		'pointer-events:none',
-		`backdrop-filter:${filter}`,
-		`-webkit-backdrop-filter:${filter}`,
-		`mask-image:${horizontal},${vertical}`,
-		'mask-composite:intersect',
-		`-webkit-mask-image:${horizontal},${vertical}`,
-		'-webkit-mask-composite:source-in',
-	].join(';');
+	const mask = `${horizontal},${horizontal.replace('to right', 'to bottom')}`;
+	// Static geometry only. The backdrop blur goes through .style() so Mun's
+	// .animation(_:value:) domain sees it as a motion property.
+	const style = Object.freeze({
+		position: 'absolute',
+		inset: `-${layer.to}px`,
+		borderRadius: `${radius + layer.to}px`,
+		pointerEvents: 'none',
+		maskImage: mask,
+		maskComposite: 'intersect',
+		WebkitMaskImage: mask,
+		WebkitMaskComposite: 'source-in',
+	} as MunStyleProperties);
 	layerStyles.set(key, style);
 	return style;
+}
+
+const defaultAnimation = Animation.smooth(0.28);
+
+function layerTransition(layer: ProgressiveBlurLayer): Transition {
+	return Transition.modifier(backdrop(0), backdrop(layer.blur));
 }
 
 type Props = { options: ProgressiveBlurOptions; content: ViewValue };
@@ -166,8 +188,19 @@ export const ProgressiveBlurElement = defineView<Props, [ProgressiveBlurOptions,
 	body: ({ options, content }) => {
 		const radius = options.radius ?? 18;
 		const layers = resolveLayers(options);
+		const animation = options.animation === undefined ? defaultAnimation : options.animation;
 		const blur = options.active
-			? layers.map(layer => Element('div', { className: 'pbe-blur', 'aria-hidden': 'true', style: blurLayerStyle(layer, radius) }))
+			? layers.map((layer, index) => {
+				const transition = options.transition ?? layerTransition(layer);
+				return Element('div', { className: 'pbe-blur', 'aria-hidden': 'true', 'data-band': index, style: blurLayerStyle(layer, radius) })
+					.style(backdrop(layer.blur))
+					// Band index identity: a strength edit retargets the same element
+					// instead of the reconciler morphing neighbours into each other.
+					.id(`pbe-band-${index}`)
+					.transition(animation && !transition.descriptor.animation ? transition.animation(animation) : transition)
+					// Keyed on the layer geometry so strength/spread edits animate as one move.
+					.animation(animation, `${layer.from}|${layer.to}|${layer.blur}`);
+			})
 			: [];
 		return Element('div', {
 			className: ['pbe', options.className].filter(Boolean).join(' '),
@@ -176,6 +209,6 @@ export const ProgressiveBlurElement = defineView<Props, [ProgressiveBlurOptions,
 			style: 'position:relative;isolation:auto',
 		},
 		...blur,
-		Element('div', { className: 'pbe-content', style: 'position:relative' }, content));
+		Element('div', { className: 'pbe-content', style: 'position:relative' }, content).id('pbe-content'));
 	},
 });
