@@ -18,7 +18,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-apps ti-fw"></i>
 			</button>
 		</div>
-		<div :class="$style.middle">
+		<div ref="middleEl" :class="$style.middle">
+			<span :class="[$style.activePill, { [$style.activePillShown]: pill.shown, [$style.activePillAnimated]: pill.animated }]" :style="{ transform: `translateY(${pill.top}px)`, height: `${pill.height}px`, '--pillHeight': `${pill.height}px` }" aria-hidden="true"></span>
 			<MkA v-tooltip.noDelay.right="i18n.ts.timeline" :class="$style.item" :activeClass="$style.active" to="/" exact>
 				<i :class="$style.itemIcon" class="ti ti-home ti-fw" style="view-transition-name: navbar-homeIcon;"></i><span :class="$style.itemText">{{ i18n.ts.timeline }}</span>
 			</MkA>
@@ -104,7 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, useCssModule, useTemplateRef, watch } from 'vue';
 import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
@@ -140,6 +141,39 @@ const otherMenuItemIndicated = computed(() => {
 	}
 	return false;
 });
+
+// A single pill slides between items instead of each item lighting up on its own.
+const middleEl = useTemplateRef('middleEl');
+const pill = reactive({ top: 0, height: 0, shown: false, animated: false });
+
+function updatePill() {
+	const container = middleEl.value;
+	const active = container?.querySelector<HTMLElement>(`.${CSS.escape(activeClass)}`);
+	if (container == null || active == null) {
+		pill.shown = false;
+		return;
+	}
+	pill.top = active.offsetTop;
+	pill.height = active.offsetHeight;
+	// Only glide once the pill is already on screen, so the first placement doesn't sweep in from the top.
+	if (pill.shown) pill.animated = true;
+	pill.shown = true;
+}
+
+const activeClass = useCssModule().active;
+const pillObserver = new ResizeObserver(() => updatePill());
+
+onMounted(() => {
+	if (middleEl.value) pillObserver.observe(middleEl.value);
+	updatePill();
+});
+
+onUnmounted(() => {
+	pillObserver.disconnect();
+});
+
+router.useListener('change', () => nextTick(updatePill));
+watch([iconOnly, prefer.r.menu], () => nextTick(updatePill));
 
 function calcViewState() {
 	forceIconOnly.value = window.innerWidth <= 1279;
@@ -275,8 +309,40 @@ function menuEdit() {
 }
 
 .middle {
+	position: relative;
 	flex: 1;
 	direction: ltr;
+}
+
+.activePill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--MI_THEME-accent) 14%, transparent);
+	box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--MI_THEME-accent) 30%, transparent);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--MI-dur) var(--MI-easeOut);
+
+	&.activePillShown {
+		opacity: 1;
+	}
+
+	&.activePillAnimated {
+		transition:
+			opacity var(--MI-dur) var(--MI-easeOut),
+			transform 420ms cubic-bezier(0.34, 1.32, 0.5, 1),
+			height 420ms cubic-bezier(0.34, 1.32, 0.5, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		&.activePillAnimated {
+			transition: opacity var(--MI-dur) var(--MI-easeOut);
+		}
+	}
 }
 
 .bottom {
@@ -573,30 +639,50 @@ function menuEdit() {
 			}
 		}
 
-		&:hover, &.active, &:focus {
-			color: var(--MI_THEME-fgHighlighted);
+		&::before {
+			content: "";
+			display: block;
+			width: calc(100% - 34px);
+			height: 100%;
+			margin: auto;
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+			opacity: 0;
+			transform: scale(0.96);
+			transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut);
+		}
 
+		&:hover, &.active, &:focus-visible {
+			color: var(--MI_THEME-fgHighlighted);
+		}
+
+		&:hover:not(.active), &:focus-visible {
 			&::before {
-				content: "";
-				display: block;
-				width: calc(100% - 34px);
-				height: 100%;
-				margin: auto;
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				border-radius: 999px;
-				background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+				opacity: 1;
+				transform: none;
 			}
 		}
+
+		&:active > .itemIcon {
+			transform: scale(0.88);
+		}
+	}
+
+	.activePill {
+		width: calc(100% - 34px);
 	}
 
 	.itemIcon {
 		position: relative;
 		width: 32px;
 		margin-right: 8px;
+		display: inline-block;
+		transition: transform var(--MI-durFast) var(--MI-easeOut);
 	}
 
 	.itemIndicator {
@@ -782,36 +868,54 @@ function menuEdit() {
 			}
 		}
 
-		&:hover, &.active, &:focus {
+		&::before {
+			content: "";
+			display: block;
+			height: 100%;
+			aspect-ratio: 1;
+			margin: auto;
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+			opacity: 0;
+			transform: scale(0.8);
+			transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut);
+		}
+
+		&:hover, &.active, &:focus-visible {
 			text-decoration: none;
 			color: var(--MI_THEME-fgHighlighted);
 
-			&::before {
-				content: "";
-				display: block;
-				height: 100%;
-				aspect-ratio: 1;
-				margin: auto;
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				border-radius: 999px;
-				background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
-			}
-
-			> .icon,
-			> .text {
+			> .itemIcon {
 				opacity: 1;
 			}
 		}
+
+		&:hover:not(.active), &:focus-visible {
+			&::before {
+				opacity: 1;
+				transform: none;
+			}
+		}
+
+		&:active > .itemIcon {
+			transform: scale(0.86);
+		}
+	}
+
+	.activePill {
+		width: var(--pillHeight);
 	}
 
 	.itemIcon {
 		display: block;
 		margin: 0 auto;
 		opacity: 0.7;
+		transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-easeOut);
 	}
 
 	.itemText {

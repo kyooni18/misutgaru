@@ -466,6 +466,7 @@ const keymap = {
 			right: 12px;
 			padding: 0 4px;
 			margin-bottom: 0 !important;
+			margin-left: 0;
 			background: var(--MI_THEME-popup);
 			border-radius: 8px;
 			box-shadow: var(--MI-elev2);
@@ -733,10 +734,16 @@ const keymap = {
 }
 
 .footer {
+	display: flex;
+	align-items: center;
 	margin-bottom: -14px;
+	// Pull the row left by the button padding so the first icon lines up with the note text.
+	margin-left: -8px;
 }
 
 .footerButton {
+	display: inline-flex;
+	align-items: center;
 	margin: 0;
 	padding: 8px;
 	color: color-mix(in srgb, var(--MI_THEME-panel), var(--MI_THEME-fg) 70%); // opacityなど不透明度で表現するとレンダリングパフォーマンスに影響するので通常の色の混合で代用
@@ -751,6 +758,15 @@ const keymap = {
 	&:hover {
 		color: var(--MI_THEME-fgHighlighted);
 		background-color: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent);
+	}
+
+	> i {
+		transition: transform 260ms cubic-bezier(0.34, 1.5, 0.5, 1);
+	}
+
+	&:active > i {
+		transform: scale(0.82);
+		transition-duration: var(--MI-durFast);
 	}
 }
 
@@ -793,6 +809,13 @@ const keymap = {
 
 	.footer {
 		margin-bottom: -8px;
+		// Spread the actions across the column so they're easy to hit with a thumb.
+		justify-content: space-between;
+		max-width: 360px;
+	}
+
+	.footerButton:not(:last-child) {
+		margin-right: 0;
 	}
 }
 
