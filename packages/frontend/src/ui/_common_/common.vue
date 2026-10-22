@@ -174,47 +174,48 @@ if ($i) {
 
 <style lang="scss" module>
 .transition_menuDrawerBg_enterActive,
-.transition_menuDrawerBg_leaveActive {
-	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+.transition_widgetsDrawerBg_enterActive {
+	transition: opacity 260ms ease-out;
+}
+.transition_menuDrawerBg_leaveActive,
+.transition_widgetsDrawerBg_leaveActive {
+	transition: opacity 180ms ease-in;
 }
 .transition_menuDrawerBg_enterFrom,
-.transition_menuDrawerBg_leaveTo {
-	opacity: 0;
-}
-
-.transition_menuDrawer_enterActive,
-.transition_menuDrawer_leaveActive {
-	opacity: 1;
-	transform: translateX(0);
-	transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.transition_menuDrawer_enterFrom,
-.transition_menuDrawer_leaveTo {
-	opacity: 0;
-	transform: translateX(-240px);
-}
-
-.transition_widgetsDrawerBg_enterActive,
-.transition_widgetsDrawerBg_leaveActive {
-	opacity: 1;
-	transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
-}
+.transition_menuDrawerBg_leaveTo,
 .transition_widgetsDrawerBg_enterFrom,
 .transition_widgetsDrawerBg_leaveTo {
 	opacity: 0;
 }
 
-.transition_widgetsDrawer_enterActive,
-.transition_widgetsDrawer_leaveActive {
-	opacity: 1;
-	transform: translateX(0);
-	transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+.transition_menuDrawer_enterActive,
+.transition_widgetsDrawer_enterActive {
+	transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+.transition_menuDrawer_leaveActive,
+.transition_widgetsDrawer_leaveActive {
+	transition: transform 180ms cubic-bezier(0.4, 0, 1, 1);
+	pointer-events: none;
+}
+.transition_menuDrawer_enterFrom,
+.transition_menuDrawer_leaveTo,
 .transition_widgetsDrawer_enterFrom,
 .transition_widgetsDrawer_leaveTo {
-	opacity: 0;
-	transform: translateX(-240px);
+	// Use the panel width: the widgets drawer is wider than the navigation drawer.
+	transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.transition_menuDrawerBg_enterActive,
+	.transition_menuDrawerBg_leaveActive,
+	.transition_widgetsDrawerBg_enterActive,
+	.transition_widgetsDrawerBg_leaveActive,
+	.transition_menuDrawer_enterActive,
+	.transition_menuDrawer_leaveActive,
+	.transition_widgetsDrawer_enterActive,
+	.transition_widgetsDrawer_leaveActive {
+		transition: none;
+	}
 }
 
 .transition_notification_move,
