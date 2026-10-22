@@ -66,7 +66,9 @@ export function progressiveBlurLayers(bands: number, edgeBlur = 6.5, reach = 96,
 		const from = k * width;
 		const blur = Math.sqrt(target(from) ** 2 - target(from + width) ** 2);
 		if (blur < MIN_LAYER_BLUR) continue;
-		layers.push({ from, reach: from + width, blur: Math.round(blur * 100) / 100 });
+		// Fade across two band widths centred on the band, so neighbouring ramps
+		// overlap instead of meeting edge to edge (which reads as a ring).
+		layers.push({ from: Math.max(0, from - width / 2), reach: from + width * 1.5, blur: Math.round(blur * 100) / 100 });
 	}
 	if (layers.length > 0) layers[0] = { ...layers[0], saturate };
 	return layers;
@@ -101,6 +103,22 @@ function resolveLayers(options: ProgressiveBlurOptions): readonly ProgressiveBlu
 	return layers;
 }
 
+/**
+ * Smoothstep ramp as gradient stops. A linear ramp has slope kinks at both ends,
+ * which the eye picks up as hard lines (Mach bands); smoothstep has zero slope there.
+ */
+function easedRamp(fade: number, mirrored = false): string {
+	const steps = 8;
+	const stops: string[] = [];
+	for (let i = 0; i <= steps; i++) {
+		const t = i / steps;
+		const alpha = Math.round(t * t * (3 - 2 * t) * 1000) / 1000;
+		const at = mirrored ? `calc(100% - ${Math.round(fade * (1 - t) * 10) / 10}px)` : `${Math.round(fade * t * 10) / 10}px`;
+		stops.push(`rgba(0,0,0,${mirrored ? Math.round((1 - alpha) * 1000) / 1000 : alpha}) ${at}`);
+	}
+	return stops.join(', ');
+}
+
 function haloLayerStyle(layer: ProgressiveBlurLayer, radius: number): string {
 	const key = `${layer.from}|${layer.reach}|${layer.blur}|${layer.saturate}|${radius}`;
 	const cached = layerStyles.get(key);
@@ -108,7 +126,7 @@ function haloLayerStyle(layer: ProgressiveBlurLayer, radius: number): string {
 	// The box extends to `reach`; the mask ramps in over this layer's band only.
 	const fade = layer.reach - layer.from;
 	const filter = layer.saturate == null ? `blur(${layer.blur}px)` : `blur(${layer.blur}px) saturate(${layer.saturate}%)`;
-	const horizontal = `linear-gradient(to right, transparent, #000 ${fade}px, #000 calc(100% - ${fade}px), transparent)`;
+	const horizontal = `linear-gradient(to right, ${easedRamp(fade)}, ${easedRamp(fade, true)})`;
 	const vertical = horizontal.replace('to right', 'to bottom');
 	const style = [
 		'position:absolute',
