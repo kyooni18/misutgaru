@@ -230,11 +230,15 @@ export async function popupAsyncWithDialog<T extends Component>(
 	} catch (err) {
 		window.clearTimeout(timer);
 		closeWaiting();
-		alert({
+		// A failed chunk fetch usually means this tab predates a deploy, so offer a reload that picks up the new chunks.
+		const { canceled } = await confirm({
 			type: 'error',
 			title: i18n.ts.somethingHappened,
 			text: 'CODE: ASYNC_COMP_LOAD_FAIL',
+			okText: i18n.ts.reload,
+			cancelText: i18n.ts.cancel,
 		});
+		if (!canceled) window.location.reload();
 		throw err;
 	}
 
