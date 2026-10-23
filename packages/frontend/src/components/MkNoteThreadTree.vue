@@ -76,12 +76,35 @@ onMounted(() => {
 // replies hang off a guide line dropped from the parent's avatar centre
 .nested, .more {
 	margin-left: calc(var(--MI-threadIndent) + 20px);
+}
+
+.more {
 	border-left: solid 2px var(--MI-hairlineStrong);
 }
 
 .nested {
 	--MI-threadPad: 16px;
 	--MI-threadIndent: 16px;
+
+	// each reply carries its own segment of the guide line; the last one
+	// stops at its avatar with a curved elbow instead of running to the bottom
+	> .item::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		border-left: solid 2px var(--MI-hairlineStrong);
+		pointer-events: none;
+	}
+
+	> .item:last-of-type::before {
+		bottom: auto;
+		width: 12px;
+		height: calc(16px + 21px);
+		border-bottom: solid 2px var(--MI-hairlineStrong);
+		border-bottom-left-radius: 12px;
+	}
 
 	&:empty {
 		display: none;
