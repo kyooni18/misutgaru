@@ -14,7 +14,7 @@
  * a backdrop root.
  */
 
-import { Animation, Element, Transition, defineView, initializer } from '@mun/core/compat';
+import { Animation, Element, defineView, initializer } from '@mun/core/compat';
 import type { MunStyleProperties, ViewValue } from '@mun/core/compat';
 
 export type ProgressiveBlurLayer = {
@@ -53,17 +53,10 @@ export type ProgressiveBlurOptions = ProgressiveBlurShape & {
 	readonly layers?: readonly ProgressiveBlurLayer[];
 	readonly quality?: ProgressiveBlurQuality;
 	/**
-	 * Drives every blur change through Mun's motion engine: strength/spread/falloff
-	 * changes retarget in place, and appear/disappear uses it unless `transition`
-	 * carries its own animation. null snaps. Default: Animation.smooth(0.28).
+	 * Drives every blur change, including `active` toggles, through Mun's motion
+	 * engine. null snaps. Default: Animation.smooth(0.28).
 	 */
 	readonly animation?: Animation | null;
-	/**
-	 * How each layer appears/disappears when `active` toggles. Default: each layer
-	 * ramps its backdrop blur from 0 to its own strength (Transition.modifier).
-	 * Mun's Transition.opacity / Transition.blur / combined() also work.
-	 */
-	readonly transition?: Transition;
 	/** Corner radius of the content the blur hugs (px). Default: 18. */
 	readonly radius?: number;
 	readonly className?: string;
@@ -173,9 +166,9 @@ function blurLayerStyle(layer: ProgressiveBlurLayer, radius: number): MunStylePr
 
 const defaultAnimation = Animation.smooth(0.28);
 
-function layerTransition(layer: ProgressiveBlurLayer): Transition {
-	return Transition.modifier(backdrop(0), backdrop(layer.blur));
-}
+// Hosts that map .animation() to a CSS transition leave backdrop-filter out of
+// transition-property, so the blur would snap without this override.
+const blurTransitionProperty = Object.freeze({ transitionProperty: 'backdrop-filter, -webkit-backdrop-filter' } as MunStyleProperties);
 
 type Props = { options: ProgressiveBlurOptions; content: ViewValue };
 
@@ -189,19 +182,18 @@ export const ProgressiveBlurElement = defineView<Props, [ProgressiveBlurOptions,
 		const radius = options.radius ?? 18;
 		const layers = resolveLayers(options);
 		const animation = options.animation === undefined ? defaultAnimation : options.animation;
-		const blur = options.active
-			? layers.map((layer, index) => {
-				const transition = options.transition ?? layerTransition(layer);
-				return Element('div', { className: 'pbe-blur', 'aria-hidden': 'true', 'data-band': index, style: blurLayerStyle(layer, radius) })
-					.style(backdrop(layer.blur))
-					// Band index identity: a strength edit retargets the same element
-					// instead of the reconciler morphing neighbours into each other.
-					.id(`pbe-band-${index}`)
-					.transition(animation && !transition.descriptor.animation ? transition.animation(animation) : transition)
-					// Keyed on the layer geometry so strength/spread edits animate as one move.
-					.animation(animation, `${layer.from}|${layer.to}|${layer.blur}`);
-			})
-			: [];
+		// Bands stay mounted while inactive at blur 0, so toggling `active` is a value
+		// change the motion engine animates rather than an insert/remove that the
+		// Vue host does not transition.
+		const blur = layers.map((layer, index) => {
+			const band = Element('div', { className: 'pbe-blur', 'aria-hidden': 'true', 'data-band': index, style: blurLayerStyle(layer, radius) })
+				.style(backdrop(options.active ? layer.blur : 0))
+				// Band index identity: a strength edit retargets the same element
+				// instead of the reconciler morphing neighbours into each other.
+				.id(`pbe-band-${index}`)
+				.animation(animation, `${options.active}|${layer.from}|${layer.to}|${layer.blur}`);
+			return animation ? band.style(blurTransitionProperty) : band;
+		});
 		return Element('div', {
 			className: ['pbe', options.className].filter(Boolean).join(' '),
 			'data-active': options.active,
