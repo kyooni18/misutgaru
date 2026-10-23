@@ -6,17 +6,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.root">
 	<div v-for="child in children" :key="child.id" :class="$style.item">
-		<!-- wrapped so the note is :last-child and doesn't draw the ancestor-chain line -->
-		<div>
-			<MkNoteDetailed
-				:note="child"
-				:threadContext="true"
-				:showControls="true"
-				:showAdditionalLayout="false"
-			/>
-		</div>
+		<!-- the note draws its avatar line only when followed by replies, joining the guide line below -->
+		<MkNoteDetailed
+			:note="child"
+			:threadContext="true"
+			:showControls="true"
+			:showAdditionalLayout="false"
+		/>
 		<MkNoteThreadTree
-			v-if="depth < maxDepth"
+			v-if="child.repliesCount > 0 && depth < maxDepth"
 			:class="$style.nested"
 			:noteId="child.id"
 			:depth="depth + 1"
