@@ -89,15 +89,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:onMenu="showMenu"
 			/>
 		</article>
-		<section v-if="showContinuation && repliesLoaded && replies.length > 0" :class="$style.continuation" :aria-label="i18n.ts.replies">
-			<MkNoteDetailed
-				v-for="child in continuation"
-				:key="child.id"
-				:note="child"
-				:threadContext="true"
-				:showControls="true"
-				:showAdditionalLayout="false"
-			/>
+		<section v-if="showContinuation" :class="$style.continuation" :aria-label="i18n.ts.replies">
+			<MkNoteThreadTree :noteId="appearNote.id"/>
 		</section>
 		<div v-if="showAdditionalLayout" :class="$style.tabs">
 			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
@@ -107,17 +100,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-if="showAdditionalLayout">
 			<div v-if="tab === 'replies'">
 				<div v-if="!repliesLoaded" style="padding: 16px">
-					<MkLoading v-if="repliesLoading" mini/>
-					<MkButton v-else style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
+					<MkButton style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
 				</div>
-				<div v-for="note in replies" :key="note.id" :class="$style.reply">
-					<MkNoteDetailed
-						:note="note"
-						:threadContext="true"
-						:showControls="true"
-						:showAdditionalLayout="false"
-					/>
-				</div>
+				<MkNoteThreadTree v-if="repliesLoaded" :noteId="appearNote.id"/>
 			</div>
 			<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
 				<MkPagination :paginator="renotesPaginator" :forceDisableInfiniteScroll="true">
@@ -176,6 +161,7 @@ import type { MkNoteDetailedControlRefs } from '@/components/MkNoteDetailedContr
 
 // コンポーネント外部の依存関係
 import MkNoteSub from '@/components/MkNoteSub.vue';
+import MkNoteThreadTree from '@/components/MkNoteThreadTree.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
@@ -288,23 +274,11 @@ const reactionsPaginator = markRaw(new Paginator('notes/reactions', {
 	})),
 }));
 
-const replies = ref<Misskey.entities.Note[]>([]);
 const repliesLoaded = ref(false);
-const repliesLoading = ref(false);
-const continuation = computed(() => replies.value.toReversed());
 
 function loadReplies() {
-	if (repliesLoaded.value || repliesLoading.value) return;
-	repliesLoading.value = true;
-	void misskeyApi('notes/children', {
-		noteId: appearNote.id,
-		limit: 30,
-	}).then(res => {
-		replies.value = res;
-		repliesLoaded.value = true;
-	}).finally(() => {
-		repliesLoading.value = false;
-	});
+	// the tree component fetches (and recursively expands) the replies by itself
+	repliesLoaded.value = true;
 }
 
 const conversation = ref<Misskey.entities.Note[]>([]);
@@ -331,7 +305,6 @@ function loadConversation() {
 onMounted(() => {
 	if (!props.autoLoadThread) return;
 	loadConversation();
-	loadReplies();
 });
 
 // キーボードショートカットマップ
@@ -477,13 +450,19 @@ const keymap = {
 		position: relative;
 		padding-top: 16px;
 		padding-bottom: 4px;
+		padding-left: var(--MI-threadPad, var(--pad));
 		font-size: 1em;
+
+		// body and footer sit beside the avatar column so the thread line runs in a clear gutter
+		> :not(:first-child) {
+			margin-left: calc(42px + 16px);
+		}
 	}
 
 	&:not(:last-child) > .note::before {
 		content: "";
 		position: absolute;
-		left: calc(var(--pad) + 20px);
+		left: calc(var(--MI-threadPad, var(--pad)) + 20px);
 		top: calc(16px + 42px + 6px);
 		bottom: -10px;
 		width: 2px;
