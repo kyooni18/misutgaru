@@ -33,8 +33,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:duration="transitionDuration" appear @afterLeave="onClosed" @enter="emit('opening')" @afterEnter="onOpened"
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
-		<MkProgressiveBlur v-if="useBackdropBlur" variant="viewport" :origin="type === 'drawer' ? '50% 100%' : '50% 50%'" :class="$style.backdropBlur" :style="{ zIndex }"/>
-		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent, }]" :style="{ zIndex }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
+		<MkProgressiveBlur v-if="useBackdropBlur" variant="viewport" :origin="backdropOrigin" :class="$style.backdropBlur" :style="{ zIndex }"/>
+		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent, [$style.bgProgressive]: useBackdropBlur }]" :style="{ zIndex, '--backdropOrigin': backdropOrigin }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
 		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
 		</div>
@@ -124,6 +124,7 @@ const type = computed<ModalTypes>(() => {
 const isEnableBgTransparent = computed(() => props.transparentBg && (type.value === 'popup'));
 // Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
 const useBackdropBlur = computed(() => prefer.s.useBlurEffectForModal && !isEnableBgTransparent.value && !props.noBgBlur);
+const backdropOrigin = computed(() => type.value === 'drawer' ? '50% 100%' : '50% 50%');
 const transitionName = computed((() =>
 	prefer.s.animation
 		? useSendAnime.value
@@ -511,6 +512,12 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 }
 
 .bg {
+	// With the progressive blur, the dim follows it: full near the modal, lighter
+	// toward the screen edges, instead of one flat floor over everything.
+	&.bgProgressive {
+		mask-image: radial-gradient(ellipse 90% 90% at var(--backdropOrigin), black 25%, rgb(0 0 0 / 40%) 100%);
+	}
+
 	&.bgTransparent {
 		background: transparent;
 		-webkit-backdrop-filter: none;

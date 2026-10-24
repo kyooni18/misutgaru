@@ -236,6 +236,12 @@ if ($i) {
 	transform: translateX(calc(-1 * var(--notificationSlideOffset, 250px)));
 }
 
+.menuDrawerBg,
+.widgetsDrawerBg {
+	// Dim most beside the drawer and fade toward the far edge, like the modal floor.
+	mask-image: linear-gradient(to right, black 0, black 240px, rgb(0 0 0 / 40%) 100%);
+}
+
 .menuDrawerBg {
 	z-index: 1001;
 }
