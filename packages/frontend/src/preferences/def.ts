@@ -246,7 +246,8 @@ export const PREF_DEF = definePreferences({
 	menuStyle: {
 		default: 'auto' as 'auto' | 'popup' | 'drawer',
 	},
-	useBlurEffectForModal: {
+	// Renamed from useBlurEffectForModal so saved profiles pick up the new default.
+	useProgressiveBlurForModal: {
 		default: true,
 	},
 	useBlurEffect: {

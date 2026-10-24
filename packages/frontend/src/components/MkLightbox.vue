@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<!-- v-ifを使うとfalseになったとき(transitionが行われている間)子コンポーネントの更新が停止するのか子コンポーネントがアニメーションされなくなる -->
 	<div v-show="showing" ref="rootEl" v-hotkey.global="keymap" :class="$style.root" :style="{ zIndex }">
-		<MkProgressiveBlur v-if="prefer.s.useBlurEffectForModal" variant="viewport" :class="$style.backdropBlur"/>
+		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" variant="viewport" :class="$style.backdropBlur"/>
 		<div :class="[$style.bg]" class="_modalBg"></div>
 		<div ref="mainEl" :class="$style.main">
 			<div

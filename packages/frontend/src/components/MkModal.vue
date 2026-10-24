@@ -123,7 +123,7 @@ const type = computed<ModalTypes>(() => {
 });
 const isEnableBgTransparent = computed(() => props.transparentBg && (type.value === 'popup'));
 // Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
-const useBackdropBlur = computed(() => prefer.s.useBlurEffectForModal && !isEnableBgTransparent.value && !props.noBgBlur);
+const useBackdropBlur = computed(() => prefer.s.useProgressiveBlurForModal && !isEnableBgTransparent.value && !props.noBgBlur);
 const backdropOrigin = computed(() => type.value === 'drawer' ? '50% 100%' : '50% 50%');
 const transitionName = computed((() =>
 	prefer.s.animation

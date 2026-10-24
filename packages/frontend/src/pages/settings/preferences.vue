@@ -676,7 +676,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</SearchMarker>
 
 						<SearchMarker :keywords="['blur', 'modal']">
-							<MkPreferenceContainer k="useBlurEffectForModal">
+							<MkPreferenceContainer k="useProgressiveBlurForModal">
 								<MkSwitch v-model="useBlurEffectForModal">
 									<template #label><SearchLabel>{{ i18n.ts.useBlurEffectForModal }}</SearchLabel></template>
 									<template #caption><SearchText>{{ i18n.ts.turnOffToImprovePerformance }}</SearchText></template>
@@ -954,7 +954,7 @@ const enableSeasonalScreenEffect = prefer.model('enableSeasonalScreenEffect');
 const showAvatarDecorations = prefer.model('showAvatarDecorations');
 const nsfw = prefer.model('nsfw');
 const emojiStyle = prefer.model('emojiStyle');
-const useBlurEffectForModal = prefer.model('useBlurEffectForModal');
+const useBlurEffectForModal = prefer.model('useProgressiveBlurForModal');
 const useBlurEffect = prefer.model('useBlurEffect');
 const defaultFollowWithReplies = prefer.model('defaultFollowWithReplies');
 const chatShowSenderName = prefer.model('chat.showSenderName');
