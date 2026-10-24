@@ -755,3 +755,32 @@ export { CurrentComponent as default };
 	expect(output).toContain('}), []);');
 	expect(output).not.toContain('$style');
 });
+
+it('should keep cssModules when setup() reads them with useCssModule()', () => {
+	const code = `
+import { a as useCssModule, b as defineComponent, c as _export_sfc, d as h } from './runtime.js';
+
+const CurrentComponent = /* @__PURE__ */ _export_sfc(defineComponent({
+  __name: "CurrentComponent",
+  setup() {
+    const $style = useCssModule();
+    const renderView = () => view({ c: $style });
+    return (e, n) => h("div", {
+      class: normalizeClass(e.$style.root)
+    }, null, 2);
+  }
+}), [["__cssModules", {
+  "$style": {
+    root: "x1234"
+  }
+}]]);
+
+export { CurrentComponent as default };
+`.slice(1);
+	const ast = parseAst(code, { sourceType: 'module' });
+	const magicString = new RolldownMagicString(code);
+	unwindCssModuleClassName(ast, magicString);
+	const output = magicString.toString();
+	expect(output).toContain('class: "x1234"');
+	expect(output).toContain('__cssModules');
+});

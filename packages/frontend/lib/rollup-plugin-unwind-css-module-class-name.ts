@@ -429,6 +429,17 @@ export function unwindCssModuleClassName(ast: ESTree.Node, magicString: Rolldown
 				return found;
 			});
 			if (hasRemainingCssModuleReference) return;
+			// setup() may read the map at runtime (e.g. to pass classes to a Mün view);
+			// removing it would leave every such class undefined.
+			let callsUseCssModule = false;
+			walk(options, {
+				enter(childNode: ESTree.Node) {
+					if (childNode.type !== 'CallExpression' || childNode.callee.type !== 'Identifier' || childNode.callee.name !== 'useCssModule') return;
+					callsUseCssModule = true;
+					this.skip();
+				},
+			});
+			if (callsUseCssModule) return;
 			//#region
 			if (node.declarations[0].init.arguments[1].elements.length === 1) {
 				if (componentNode.type === 'Identifier') {
