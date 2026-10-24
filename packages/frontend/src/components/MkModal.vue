@@ -512,10 +512,9 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 }
 
 .bg {
-	// With the progressive blur, the dim follows it: full near the modal, lighter
-	// toward the screen edges, instead of one flat floor over everything.
+	// The progressive blur is the whole backdrop: no dim floor over the page.
 	&.bgProgressive {
-		mask-image: radial-gradient(ellipse 90% 90% at var(--backdropOrigin), black 25%, rgb(0 0 0 / 40%) 100%);
+		background: transparent;
 	}
 
 	&.bgTransparent {

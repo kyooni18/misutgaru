@@ -12,11 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<div
 		v-if="drawerMenuShowing"
-		:class="$style.menuDrawerBg"
+		:class="[$style.menuDrawerBg, { [$style.blurFloor]: prefer.s.useProgressiveBlurForModal }]"
 		class="_modalBg"
 		@click="drawerMenuShowing = false"
 		@touchstart.passive="drawerMenuShowing = false"
-	></div>
+	>
+		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" variant="viewport" origin="0% 50%"/>
+	</div>
 </Transition>
 
 <Transition
@@ -38,11 +40,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<div
 		v-if="widgetsShowing"
-		:class="$style.widgetsDrawerBg"
+		:class="[$style.widgetsDrawerBg, { [$style.blurFloor]: prefer.s.useProgressiveBlurForModal }]"
 		class="_modalBg"
 		@click="widgetsShowing = false"
 		@touchstart.passive="widgetsShowing = false"
-	></div>
+	>
+		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" variant="viewport" origin="0% 50%"/>
+	</div>
 </Transition>
 
 <Transition
@@ -179,17 +183,26 @@ if ($i) {
 <style lang="scss" module>
 .transition_menuDrawerBg_enterActive,
 .transition_widgetsDrawerBg_enterActive {
-	transition: opacity 260ms ease-out;
+	transition: opacity 260ms ease-out, --MI-fade 260ms ease-out;
 }
 .transition_menuDrawerBg_leaveActive,
 .transition_widgetsDrawerBg_leaveActive {
-	transition: opacity 180ms ease-in;
+	transition: opacity 180ms ease-in, --MI-fade 180ms ease-in;
 }
+// A blurred floor fades by blur strength: opacity would cut the blur off from the page.
 .transition_menuDrawerBg_enterFrom,
 .transition_menuDrawerBg_leaveTo,
 .transition_widgetsDrawerBg_enterFrom,
 .transition_widgetsDrawerBg_leaveTo {
-	opacity: 0;
+	--MI-fade: 0;
+
+	&:not(.blurFloor) {
+		opacity: 0;
+	}
+}
+
+.blurFloor {
+	background: transparent;
 }
 
 .transition_menuDrawer_enterActive,
@@ -234,12 +247,6 @@ if ($i) {
 .transition_notification_leaveTo {
 	opacity: 0;
 	transform: translateX(calc(-1 * var(--notificationSlideOffset, 250px)));
-}
-
-.menuDrawerBg,
-.widgetsDrawerBg {
-	// Dim most beside the drawer and fade toward the far edge, like the modal floor.
-	mask-image: linear-gradient(to right, black 0, black 240px, rgb(0 0 0 / 40%) 100%);
 }
 
 .menuDrawerBg {
