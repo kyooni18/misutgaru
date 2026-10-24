@@ -18,6 +18,7 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import { MfmService } from "@/core/MfmService.js";
 import { parse as mfmParse } from 'mfm-js';
+import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 
 @Injectable()
 export class FeedService {
@@ -58,7 +59,11 @@ export class FeedService {
 			},
 			order: { id: -1 },
 			take: 20,
-		}) as MiNote[];
+		}).then(notes => notes.filter(note => {
+			const createdAt = this.idService.parse(note.id).date;
+			return !shouldHideNoteByTime(user.makeNotesHiddenBefore, createdAt)
+				&& !shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, createdAt);
+		})) as MiNote[];
 
 		const fileIds = [...new Set(notes.flatMap(note => note.fileIds))];
 		const fetchedFiles: MiDriveFile[] = fileIds.length > 0

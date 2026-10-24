@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:1.30
+    image: nginx:1.31
     volumes:
       - type: bind
         source: ./certificates/rootCA.crt
@@ -115,7 +115,10 @@ services:
       retries: 20
 
   db:
-    image: postgres:18-alpine
+    image: misutgaru-postgres:18.6-brotli1.2.1
+    build:
+      context: ../../..
+      dockerfile: docker/postgres.Dockerfile
     env_file:
       - ./.config/docker.env
     volumes:

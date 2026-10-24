@@ -8,7 +8,7 @@ import * as Redis from 'ioredis';
 import { DataSource } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { MiUser } from '@/models/User.js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
 import { IdService } from '@/core/IdService.js';
 import { MiHashtag } from '@/models/Hashtag.js';
 import type { HashtagsRepository, MiMeta } from '@/models/_.js';
@@ -55,7 +55,7 @@ export class HashtagService {
 	@bindThis
 	public async updateHashtags(user: { id: MiUser['id']; host: MiUser['host']; }, tags: string[]) {
 		if (tags.length === 0) return;
-		const normalizedTags = tags.map(tag => normalizeForSearch(tag));
+		const normalizedTags = tags.map(tag => normalizeTag(tag));
 		void this.updateHashtagsRankingMany(normalizedTags, user.id);
 		await this.#incrementHashTags(user, [...new Set(normalizedTags)], this.getUpdatingHashtagColumns(false));
 	}
@@ -64,8 +64,8 @@ export class HashtagService {
 	public async updateUsertags(user: MiUser, tags: string[]) {
 		const inputTags = new Set(tags);
 		const removedTags = user.tags.filter(tag => !inputTags.has(tag));
-		const normalizedAddedTags = tags.map(tag => normalizeForSearch(tag));
-		const normalizedRemovedTags = removedTags.map(tag => normalizeForSearch(tag));
+		const normalizedAddedTags = tags.map(tag => normalizeTag(tag));
+		const normalizedRemovedTags = removedTags.map(tag => normalizeTag(tag));
 		const columns = this.getUpdatingHashtagColumns(true);
 		void this.updateHashtagsRankingMany([...normalizedAddedTags, ...normalizedRemovedTags], user.id);
 		// Preserve the old add-then-remove ordering for case-variant tags that
@@ -76,7 +76,7 @@ export class HashtagService {
 
 	@bindThis
 	public async updateHashtag(user: { id: MiUser['id']; host: MiUser['host']; }, tag: string, isUserAttached = false, inc = true) {
-		tag = normalizeForSearch(tag);
+		tag = normalizeTag(tag);
 
 		void this.updateHashtagsRankingMany([tag], user.id);
 		await (inc
@@ -173,12 +173,12 @@ export class HashtagService {
 
 	@bindThis
 	public async updateHashtagsRanking(hashtag: string, userId: MiUser['id']): Promise<void> {
-		await this.updateHashtagsRankingMany([normalizeForSearch(hashtag)], userId);
+		await this.updateHashtagsRankingMany([normalizeTag(hashtag)], userId);
 	}
 
 	private async updateHashtagsRankingMany(hashtags: string[], userId: MiUser['id']): Promise<void> {
 		if (hashtags.length === 0) return;
-		const hiddenTags = new Set(this.meta.hiddenTags.map(tag => normalizeForSearch(tag)));
+		const hiddenTags = new Set(this.meta.hiddenTags.map(tag => normalizeTag(tag)));
 		const candidates = hashtags.filter(hashtag => !hiddenTags.has(hashtag) && !this.utilityService.isKeyWordIncluded(hashtag, this.meta.sensitiveWords));
 		if (candidates.length === 0) return;
 

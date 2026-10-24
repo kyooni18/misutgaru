@@ -104,7 +104,7 @@ import * as Misskey from 'misskey-js';
 import type { ReactiveNoteData } from '@/composables/use-note-capture.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { DI } from '@/di.js';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';

@@ -114,9 +114,9 @@ export class AntennaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async addNoteToAntennas(note: MiNote, noteUser: { id: MiUser['id']; username: string; host: string | null; isBot: boolean; }): Promise<void> {
+	public async addNoteToAntennas(note: MiNote, noteUser: { id: MiUser['id']; username: string; host: string | null; isBot: boolean; }): Promise<MiAntenna[]> {
 		const antennas = await this.getAntennas();
-		if (antennas.length === 0) return;
+		if (antennas.length === 0) return [];
 
 		const context = this.createMatchContext(note);
 		const matches = await Promise.all(antennas.map(antenna => this.checkHitAntennaWithContext(antenna, note, noteUser, context)));
@@ -127,10 +127,11 @@ export class AntennaService implements OnApplicationShutdown {
 			if (!matches[i]) continue;
 			const antenna = antennas[i];
 			this.fanoutTimelineService.push(`antennaTimeline:${antenna.id}`, note.id, 200, redisPipeline);
-			this.globalEventService.publishAntennaStream(antenna.id, 'note', note);
 		}
 
 		redisPipeline.exec();
+
+		return antennas.filter((_, index) => matches[index]);
 	}
 
 	// NOTE: フォローしているユーザーのノート、リストのユーザーのノート、グループのユーザーのノート指定はパフォーマンス上の理由で無効になっている

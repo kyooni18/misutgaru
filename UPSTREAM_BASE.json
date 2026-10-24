@@ -1,8 +1,8 @@
 {
 	"repository": "https://github.com/misskey-dev/misskey.git",
-	"ref": "2026.9.0",
-	"version": "2026.9.0",
-	"snapshotDate": "2026-09-06",
-	"commit": "bd9eb7c77942ef11749a04e7a5f24bee935d764b",
-	"note": "Pinned to the vanilla Misskey 2026.9.0 release tag."
+	"ref": "2026.10.1",
+	"version": "2026.10.1",
+	"snapshotDate": "2026-10-24",
+	"commit": "4840fa6d576128ba916ba69169258ca177d40faf",
+	"note": "Official release tag verified with git ls-remote; integrated with explicit 2026.9.0 content merge base because original fork history was imported."
 }

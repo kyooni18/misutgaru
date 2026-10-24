@@ -30,7 +30,7 @@ import MkAvatar from '@/components/global/MkAvatar.vue';
 import MkUserName from '@/components/global/MkUserName.vue';
 import MkAcct from '@/components/global/MkAcct.vue';
 import Mfm from '@/components/global/MkMfm.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { getUserMenu } from '@/utility/get-user-menu.js';

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { monitorEventLoopDelay, performance, type IntervalHistogram } from 'node:perf_hooks';
+import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
 
 export interface DiagnosticDistributionSnapshot {
 	readonly count: number;
@@ -35,7 +35,7 @@ const MAX_TRACES = 128;
 const MAX_DISTRIBUTION_SAMPLES = 128;
 const NS_PER_MS = 1_000_000;
 
-let eventLoopDelayHistogram: IntervalHistogram | undefined;
+let eventLoopDelayHistogram: ReturnType<typeof monitorEventLoopDelay> | undefined;
 
 function eventLoopDelaySnapshot() {
 	if (!eventLoopDelayHistogram) {

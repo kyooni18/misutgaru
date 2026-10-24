@@ -33,7 +33,7 @@ import { ref, onMounted } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkNoteDetailed from '@/components/MkNoteDetailed.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { notePage } from '@/filters/note.js';
+import { notePage } from '@@/js/note.js';
 import { i18n } from '@/i18n.js';
 
 // Recursively renders the replies of a note as a vertical tree feed.

@@ -1,5 +1,5 @@
 {
-  "version": "2026.9.0",
+  "version": "2026.10.1",
   "scope": {
     "migrations": "packages/backend/migration/**",
     "entityModels": "packages/backend/src/models/*.ts",
@@ -7,8 +7,8 @@
     "decoratedBackendSources": "packages/backend/src/**/*.ts containing TypeORM schema decorators",
     "entityRegistry": "packages/backend/src/postgres.ts#entities + DataSource entities/migrations options"
   },
-  "fileCount": 426,
-  "aggregateSha256": "e260f1f80d47e37e809dc0e57ac2b0e79387a2a0cee252609bc1ae3a81e9c4a7",
+  "fileCount": 429,
+  "aggregateSha256": "e82262b1efef76e42d7497931fa1470e22dbca3aed8acda148dfaac8ac0ea5d6",
   "runtime": {
     "entityRegistrySha256": "35ad6549c1ced4bd44e68153ce0cb0e8da0f6d3f796e0071cd599be962ede884",
     "dataSourceSchemaOptionsSha256": "a57e5c87358b2dead32f665b8d07e9f80cbb81636fd6feb6ed43b2a1ad5ef7c7"
@@ -359,12 +359,15 @@
     "packages/backend/migration/1780059833698-NoteIdIndexForPinAndFavorite.js": "688ee795faf83953413d3be26b430ef59cb88d5f08e6864c596e15f56ca4ab4a",
     "packages/backend/migration/1780488454126-sensitiveMediaDetectionExternalService.js": "8c33af6aa5ddf13782807978b2ed84ff56c64cc062413be315634e5ec03c6b0f",
     "packages/backend/migration/1782581064131-urlPreviewSensitiveList.js": "64a98b38bcb7e8c11a10b890fd4656f99cdbcf8f9285d9bf9818e0da40be9277",
+    "packages/backend/migration/1783913268595-AutoArchiveAnnouncements.js": "18ff0cd6a9bbcc5c1d081dc92b3a6f00ab35eafbbc5a112259a5916efd983cd8",
     "packages/backend/migration/1784899839024-HashtagTableDefaults.js": "52b53e35fabe8c0c9c38e649f706eadb26a70081175e1aa825791a9403658b02",
+    "packages/backend/migration/1790477603333-UserProfilePasswordComment.js": "a88ef5b88ffb608ceec2a9615953fa5c9b24ea7280a9bb57e4592dbc948d5f7e",
+    "packages/backend/migration/1791109435844-FollowApprovalByAccountAge.js": "0eece3ffe873dbcd117fff3eaf4c2a2bdab7402a95be4c710ca2639e26bd0992",
     "packages/backend/src/models/AbuseReportNotificationRecipient.ts": "d92bf22a027cf12e6cccb4168e83a84c672713ba6822816dc4e13796872d9059",
     "packages/backend/src/models/AbuseUserReport.ts": "a083723b8cab4afd73cfe9037549b00a29d0c074eddb9fc06ad5898e0508d49c",
     "packages/backend/src/models/AccessToken.ts": "467f26599f3faeedf670163be022ed3280fa0b706515c0a21ccd5424cf0bc073",
     "packages/backend/src/models/Ad.ts": "968fa9b07cc300acf9d32ebaa9a71530d362d658b0264e920456bb7465baefa7",
-    "packages/backend/src/models/Announcement.ts": "a7dbcb7ff9aa6a7113f1bd008cb8f90f0159a4418784043ac7a86db9d9670e04",
+    "packages/backend/src/models/Announcement.ts": "74ebb2c97c3ce6ec893dd65cf15bb3cff1687d0b939619b8a61a77a630bf6489",
     "packages/backend/src/models/AnnouncementRead.ts": "46dddc3731d70bf062fd74cdf8283e0b86da665bb94f4c86a4364d89ff98cef6",
     "packages/backend/src/models/Antenna.ts": "78c483736614bd03d9fb3c0a439fcea7a6a0eadab90e4640ebb66f6271ec1f5d",
     "packages/backend/src/models/App.ts": "5e7aa9987e35ed21a0a65de57c9bf3d63f13c5c83f204dc19b7a5264d8e6b46f",
@@ -434,13 +437,13 @@
     "packages/backend/src/models/UserMemo.ts": "be96c785faa88f9bd2613c137f9ea8b268dc2bb8f3b8803bf5c764dbcad7e494",
     "packages/backend/src/models/UserNotePining.ts": "88b35d6a010530807d4f1e347a02cceb4b7026695c41c0d7e7c4712c868e8d90",
     "packages/backend/src/models/UserPending.ts": "afad5d5f8994bd949d3a86a54ef8923b52b41e8d9189096c45dd0610f79a571e",
-    "packages/backend/src/models/UserProfile.ts": "10426dd5d6f24b14c7b2100988759044126a92556cb58758382559350dcffc2e",
+    "packages/backend/src/models/UserProfile.ts": "afd7f32c99016cdd613a90b066570079db140d88a62f096267daea20ef2126ba",
     "packages/backend/src/models/UserPublickey.ts": "5cb1dae60e5814cf41202d02c44d1cd685dee29c2e22eab02e57af54342c4b95",
     "packages/backend/src/models/UserSecurityKey.ts": "c854bb68167e33861cebbe83089a2791da269cca74cac56e5ea45bb26c62330b",
     "packages/backend/src/models/Webhook.ts": "109604689d80426bcab64164367698d3d012afb9263c997ec88f5ec5f9403324",
     "packages/backend/src/models/_.ts": "03554499d5eb569d3267040967d67959d1b1072abed11cd016094f6510032b26",
     "packages/backend/src/models/util/id.ts": "9700330b93195e8242fcc364c38bf98aa0c2a3995ac81ced8cefa5e5e4bc49d8"
   },
-  "generatedFrom": "vanilla Misskey 2026.9.0",
+  "generatedFrom": "vanilla Misskey 2026.10.1",
   "note": "Generated from vanilla Misskey. Misutgaru must keep migrations, TypeORM entity models, schema-shaping model utilities, every TypeORM-decorated backend source, the entity registry, and the DataSource schema options identical."
 }

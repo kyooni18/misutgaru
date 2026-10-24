@@ -61,6 +61,7 @@ const { widgetProps, configure } = useWidgetPropsManager(name,
 );
 
 const parser = new Parser();
+let aiscript: Interpreter;
 
 const logs = ref<{
 	id: string;
@@ -72,10 +73,10 @@ function pushLog(type: 'print' | 'end' | 'error', text: string): void {
 	logs.value.push({ id: genId(), text, type });
 }
 
-function processError(err: unknown): void {
+function processError(title: string, err: unknown): void {
 	const text = String(err);
 	pushLog('error', text);
-	os.alert({ type: 'error', title: i18n.ts.error, text });
+	os.alert({ type: 'error', title, text });
 }
 
 const run = async () => {
@@ -90,7 +91,7 @@ const run = async () => {
 			pushLog('print', value.type === 'str' ? value.value : utils.valToString(value));
 		},
 		err: (err) => {
-			processError(err);
+			processError('AiScript Error', err);
 		},
 		log: (type, params) => {
 			if (type === 'end') {
@@ -103,13 +104,13 @@ const run = async () => {
 	try {
 		ast = parser.parse(widgetProps.script);
 	} catch (err: any) {
-		processError(err);
+		processError('Syntax Error', err);
 		return;
 	}
 	try {
 		await aiscript.exec(ast);
 	} catch (err: any) {
-		processError(err);
+		processError('AiScript Internal Error', err);
 	}
 };
 
@@ -166,6 +167,8 @@ defineExpose<WidgetComponentExpose>({
 			display: none;
 		}
 
+		> .log.print {
+		}
 		> .log.end {
 			opacity: 0.7;
 		}

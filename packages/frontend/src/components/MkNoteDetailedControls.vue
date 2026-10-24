@@ -101,7 +101,7 @@ import * as Misskey from 'misskey-js';
 import type { ReactiveNoteData } from '@/composables/use-note-capture.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
-import { notePage } from '@/filters/note.js';
+import { notePage } from '@@/js/note.js';
 import number from '@/filters/number.js';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
 

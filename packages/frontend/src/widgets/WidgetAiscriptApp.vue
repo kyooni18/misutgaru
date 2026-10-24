@@ -82,7 +82,7 @@ async function run() {
 		err: (err) => {
 			os.alert({
 				type: 'error',
-				title: i18n.ts.error,
+				title: 'AiScript Error',
 				text: String(err),
 			});
 		},
@@ -97,8 +97,8 @@ async function run() {
 	} catch (err) {
 		isSyntaxError.value = true;
 		os.alert({
-				type: 'error',
-				title: i18n.ts.error,
+			type: 'error',
+			title: 'Syntax Error',
 			text: String(err),
 		});
 		return;
@@ -108,7 +108,7 @@ async function run() {
 	} catch (err) {
 		os.alert({
 			type: 'error',
-			title: i18n.ts.error,
+			title: 'AiScript Internal Error',
 			text: String(err),
 		});
 	}

@@ -11,5 +11,7 @@ test('translation contracts normalize endpoint and bound image output', () => {
 		text: '안녕',
 		images: [{ fileId: 'file-a', kind: 'description', sourceLang: 'unknown', text: 'sky' }],
 	});
-	assert.equal(threadWindowDefaults.width, 640);
+	// The preserved local UI work widened thread popups to 760px.
+	assert.equal(threadWindowDefaults.width, 760);
+	assert.ok(threadWindowDefaults.minWidth <= threadWindowDefaults.width);
 });

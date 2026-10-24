@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 
 import { describe, expect, test } from 'vitest';
-import { adaptiveTimeResolution } from '@/composables/use-lowres-time.js';
+import { adaptiveTimeResolution } from '@@/js/use-lowres-time.js';
 
 describe('adaptiveTimeResolution', () => {
 	const now = Date.UTC(2026, 7, 30, 12, 0, 0);

@@ -11,7 +11,7 @@ import { DI } from '@/di-symbols.js';
 import type { MiAccessToken } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { parseRedisStreamEvent } from '@/misc/redis-event.js';
-import { MiLocalUser } from '@/models/User.js';
+import type { MiLocalUser } from '@/models/User.js';
 import { UserService } from '@/core/UserService.js';
 import { AuthenticateService, AuthenticationError } from './AuthenticateService.js';
 import MainStreamConnection, { ConnectionRequest } from './stream/Connection.js';
@@ -173,6 +173,8 @@ export class StreamingApiServerService {
 	public attach(server: http.Server): void {
 		this.#wss = new WebSocket.WebSocketServer({
 			noServer: true,
+			maxPayload: 1024 * 1024, // 1MiB
+			perMessageDeflate: false,
 		});
 
 		server.on('upgrade', async (request, socket, head) => {

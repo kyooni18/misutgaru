@@ -8,7 +8,8 @@ RUN cargo build --release
 FROM debian:bookworm-slim
 
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends ca-certificates curl \
+	&& apt-get install -y --no-install-recommends ca-certificates curl libbrotli1 \
+	&& dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libbrotli1)" ge '1.0.9-2+deb12u1' \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& useradd --system --uid 10001 --create-home recommendation \
 	&& mkdir -p /data \

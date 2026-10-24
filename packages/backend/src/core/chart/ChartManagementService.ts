@@ -20,6 +20,7 @@ import PerUserReactionsChart from './charts/per-user-reactions.js';
 import PerUserFollowingChart from './charts/per-user-following.js';
 import PerUserDriveChart from './charts/per-user-drive.js';
 import ApRequestChart from './charts/ap-request.js';
+import { ChartLoggerService } from './ChartLoggerService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 @Injectable()
@@ -43,6 +44,8 @@ export class ChartManagementService implements OnApplicationShutdown {
 		private perUserFollowingChart: PerUserFollowingChart,
 		private perUserDriveChart: PerUserDriveChart,
 		private apRequestChart: ApRequestChart,
+
+		private chartLoggerService: ChartLoggerService,
 	) {
 		this.charts = [
 			this.federationChart,
@@ -61,12 +64,21 @@ export class ChartManagementService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async start() {
-		// Periodically flush in-memory chart data to the DB.
-		this.saveIntervalId = setInterval(async () => {
-			for (const chart of this.charts) {
+	private async saveAll(): Promise<void> {
+		for (const chart of this.charts) {
+			try {
 				await chart.save();
+			} catch (err) {
+				this.chartLoggerService.logger.error('Failed to save chart:', { err });
 			}
+		}
+	}
+
+	@bindThis
+	public async start() {
+		// 20分おきにメモリ情報をDBに書き込み
+		this.saveIntervalId = setInterval(() => {
+			this.saveAll();
 		}, 1000 * 60 * 20);
 	}
 
@@ -74,9 +86,7 @@ export class ChartManagementService implements OnApplicationShutdown {
 	public async dispose(): Promise<void> {
 		clearInterval(this.saveIntervalId);
 		if (process.env.NODE_ENV !== 'test') {
-			for (const chart of this.charts) {
-				await chart.save();
-			}
+			await this.saveAll();
 		}
 	}
 

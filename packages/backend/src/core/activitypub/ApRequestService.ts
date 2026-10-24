@@ -124,7 +124,9 @@ export class ApRequestCreator {
 		for (const header of includeHeaders) {
 			const key = header.toLowerCase();
 			if (key === '(request-target)') {
-				results.push(`(request-target): ${request.method.toLowerCase()} ${request.pathname}`);
+				const url = new URL(request.url);
+				const query = url.search || (url.href.split('#', 1)[0].endsWith('?') ? '?' : '');
+				results.push(`(request-target): ${request.method.toLowerCase()} ${url.pathname}${query}`);
 			} else {
 				results.push(`${key}: ${request.headers[key]}`);
 			}

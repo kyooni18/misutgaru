@@ -1,10 +1,13 @@
-# syntax = docker/dockerfile:1.23
+# syntax = docker/dockerfile:1.27
 
 ARG NODE_VERSION=26.12.1-trixie
 
 # build assets & compile TypeScript
 
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION} AS native-builder
+
+# Node 26.12.1 backports CVE-2026-111497 while reporting Brotli 1.2.0.
+RUN node -e "require('node:assert/strict').equal(require('node:zlib').constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH, -17)"
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 	--mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -56,6 +59,8 @@ RUN rm -rf .git/
 
 FROM --platform=$TARGETPLATFORM node:${NODE_VERSION} AS target-builder
 
+RUN node -e "require('node:assert/strict').equal(require('node:zlib').constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH, -17)"
+
 RUN apt-get update \
 	&& apt-get install -yqq --no-install-recommends \
 	build-essential
@@ -80,6 +85,8 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
 
 FROM --platform=$TARGETPLATFORM node:${NODE_VERSION}-slim AS runner
 
+RUN node -e "require('node:assert/strict').equal(require('node:zlib').constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH, -17)"
+
 ARG UID="991"
 ARG GID="991"
 
@@ -87,7 +94,8 @@ ENV PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
-	ffmpeg tini curl libjemalloc-dev libjemalloc2 \
+	ffmpeg tini curl libbrotli1 libjemalloc-dev libjemalloc2 \
+	&& dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libbrotli1)" ge '1.1.0-2+deb13u1' \
 	&& ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so \
 	&& groupadd -g "${GID}" misskey \
 	&& useradd -l -u "${UID}" -g "${GID}" -m -d /misskey misskey \

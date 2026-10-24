@@ -15,6 +15,7 @@ import { bindThis } from '@/decorators.js';
 import { RedisKVCache } from '@/misc/cache.js';
 import { CacheInvalidationService } from '@/core/CacheInvalidationService.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { HttpRequestService } from '@/core/HttpRequestService.js';
 
 // Defined also packages/sw/types.ts#L13
 type PushNotificationsTypes = {
@@ -133,6 +134,7 @@ export class PushNotificationService implements OnApplicationShutdown {
 
 		loggerService: LoggerService,
 		private cacheInvalidationService: CacheInvalidationService,
+		private httpRequestService: HttpRequestService,
 	) {
 		this.logger = loggerService.getLogger('push');
 		this.subscriptionsCache = new RedisKVCache<MiSwSubscription[]>(this.redisClient, 'userSwSubscriptions', {
@@ -143,6 +145,21 @@ export class PushNotificationService implements OnApplicationShutdown {
 			fromRedisConverter: (value) => JSON.parse(value),
 			invalidationBus: this.cacheInvalidationService,
 		});
+	}
+
+	@bindThis
+	public isValidEndpoint(endpoint: string): boolean {
+		let url: URL;
+		try {
+			url = new URL(endpoint);
+		} catch {
+			return false;
+		}
+
+		if (url.protocol !== 'https:') return false;
+		if (url.username !== '' || url.password !== '') return false;
+
+		return true;
 	}
 
 	@bindThis
@@ -195,6 +212,8 @@ export class PushNotificationService implements OnApplicationShutdown {
 				'readAllNotifications',
 			].includes(type) && !subscription.sendReadMessage) return;
 
+			if (!this.isValidEndpoint(subscription.endpoint)) return;
+
 			const pushSubscription = {
 				endpoint: subscription.endpoint,
 				keys: {
@@ -205,7 +224,7 @@ export class PushNotificationService implements OnApplicationShutdown {
 
 			try {
 				await push.sendNotification(pushSubscription, payload, {
-					proxy: this.config.proxy,
+					agent: this.httpRequestService.getAgentForHttps(new URL(subscription.endpoint)),
 					// A delayed read-all event must not clear notifications created
 					// after the user initiated the action.
 					TTL: type === 'readAllNotifications' ? 60 : 60 * 60 * 24,

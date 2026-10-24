@@ -97,10 +97,10 @@ function pushLog(type: 'print' | 'end' | 'error', text: string): void {
 	logs.value.push({ id: Math.random(), text, type });
 }
 
-function processError(err: unknown): void {
+function processError(title: string, err: unknown): void {
 	const text = String(err);
 	pushLog('error', text);
-	os.alert({ type: 'error', title: i18n.ts.error, text });
+	os.alert({ type: 'error', title, text });
 }
 
 watch(code, () => {
@@ -139,7 +139,7 @@ async function run() {
 			pushLog('print', value.type === 'str' ? value.value : utils.valToString(value));
 		},
 		err: (err) => {
-			processError(err);
+			processError('AiScript Error', err);
 		},
 		log: (type, params) => {
 			switch (type) {
@@ -156,14 +156,14 @@ async function run() {
 	try {
 		ast = parser.parse(code.value);
 	} catch (err: any) {
-		processError(err);
+		processError('Syntax Error', err);
 		return;
 	}
 	try {
 		await aiscript.exec(ast);
 	} catch (err: any) {
 		// in case AiScript Interpreter has some bug
-		processError(err);
+		processError('AiScript Internal Error', err);
 	}
 }
 
@@ -225,6 +225,8 @@ definePage(() => ({
 	padding: 16px;
 
 	&:global {
+		> .log.print {
+		}
 		> .log.end {
 			opacity: 0.7;
 		}
