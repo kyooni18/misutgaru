@@ -303,9 +303,8 @@ rt {
 	left: 0;
 	width: 100%;
 	height: 100%;
+	// Blur is a sibling MkProgressiveBlur (variant="viewport"), never a uniform filter here.
 	background: var(--MI_THEME-modalBg);
-	-webkit-backdrop-filter: var(--MI-modalBgFilter);
-	backdrop-filter: var(--MI-modalBgFilter);
 }
 
 ._shadow {

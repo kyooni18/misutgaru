@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<!-- v-ifを使うとfalseになったとき(transitionが行われている間)子コンポーネントの更新が停止するのか子コンポーネントがアニメーションされなくなる -->
 	<div v-show="showing" ref="rootEl" v-hotkey.global="keymap" :class="$style.root" :style="{ zIndex }">
+		<MkProgressiveBlur v-if="prefer.s.useBlurEffectForModal" variant="viewport" :class="$style.backdropBlur"/>
 		<div :class="[$style.bg]" class="_modalBg"></div>
 		<div ref="mainEl" :class="$style.main">
 			<div
@@ -53,6 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, watch, nextTick, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 import * as Misskey from 'misskey-js';
 import XItem from './MkLightbox.item.vue';
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 import type { Content } from './MkLightbox.types.js';
 import type { Keymap } from '@/utility/hotkey.js';
 import * as os from '@/os.js';
@@ -247,14 +249,16 @@ defineExpose({
 <style lang="scss" module>
 .transition_root_enterActive,
 .transition_root_leaveActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity v-bind("closeAnimDuration + 'ms'"); // 子Itemコンポーネントがフェードイン/アウトするdurationと合わせる
 	}
 }
 .transition_root_enterFrom,
 .transition_root_leaveTo {
 	pointer-events: none;
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		opacity: 0;
 	}
 }

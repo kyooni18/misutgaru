@@ -5,6 +5,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
+	:enterActiveClass="prefer.s.animation ? $style.transition_drawerBlur_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_drawerBlur_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_drawerBlur_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_drawerBlur_leaveTo : ''"
+>
+	<MkProgressiveBlur v-if="drawerMenuShowing && prefer.s.useBlurEffectForModal" variant="viewport" origin="0% 50%" :class="$style.drawerBlur"/>
+</Transition>
+
+<Transition
 	:enterActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_enterActive : ''"
 	:leaveActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_leaveActive : ''"
 	:enterFromClass="prefer.s.animation ? $style.transition_menuDrawerBg_enterFrom : ''"
@@ -28,6 +37,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div v-if="drawerMenuShowing" :class="$style.menuDrawer">
 		<XNavbar style="height: 100%;" :asDrawer="true" :showWidgetButton="false"/>
 	</div>
+</Transition>
+
+<Transition
+	:enterActiveClass="prefer.s.animation ? $style.transition_drawerBlur_enterActive : ''"
+	:leaveActiveClass="prefer.s.animation ? $style.transition_drawerBlur_leaveActive : ''"
+	:enterFromClass="prefer.s.animation ? $style.transition_drawerBlur_enterFrom : ''"
+	:leaveToClass="prefer.s.animation ? $style.transition_drawerBlur_leaveTo : ''"
+>
+	<MkProgressiveBlur v-if="widgetsShowing && prefer.s.useBlurEffectForModal" variant="viewport" origin="0% 50%" :class="$style.drawerBlur"/>
 </Transition>
 
 <Transition
@@ -119,6 +137,7 @@ import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
 import { store } from '@/store.js';
 import XNavbar from '@/ui/_common_/navbar.vue';
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 
 const XStreamIndicator = defineAsyncComponent(() => import('./stream-indicator.vue'));
 const XWidgets = defineAsyncComponent(() => import('./widgets.vue'));
@@ -173,14 +192,19 @@ if ($i) {
 </script>
 
 <style lang="scss" module>
+// Fade the blur bands, not their parent: parent opacity < 1 is a backdrop root.
+.transition_drawerBlur_enterActive > *,
 .transition_menuDrawerBg_enterActive,
 .transition_widgetsDrawerBg_enterActive {
 	transition: opacity 260ms ease-out;
 }
+.transition_drawerBlur_leaveActive > *,
 .transition_menuDrawerBg_leaveActive,
 .transition_widgetsDrawerBg_leaveActive {
 	transition: opacity 180ms ease-in;
 }
+.transition_drawerBlur_enterFrom > *,
+.transition_drawerBlur_leaveTo > *,
 .transition_menuDrawerBg_enterFrom,
 .transition_menuDrawerBg_leaveTo,
 .transition_widgetsDrawerBg_enterFrom,
@@ -206,6 +230,8 @@ if ($i) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.transition_drawerBlur_enterActive > *,
+	.transition_drawerBlur_leaveActive > *,
 	.transition_menuDrawerBg_enterActive,
 	.transition_menuDrawerBg_leaveActive,
 	.transition_widgetsDrawerBg_enterActive,
@@ -232,6 +258,7 @@ if ($i) {
 	transform: translateX(calc(-1 * var(--notificationSlideOffset, 250px)));
 }
 
+.drawerBlur,
 .menuDrawerBg {
 	z-index: 1001;
 }

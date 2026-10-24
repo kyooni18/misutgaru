@@ -122,7 +122,7 @@ const type = computed<ModalTypes>(() => {
 	}
 });
 const isEnableBgTransparent = computed(() => props.transparentBg && (type.value === 'popup'));
-// Replaces the uniform --MI-modalBgFilter so modal backdrops match ProgressiveBlur elsewhere.
+// Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
 const useBackdropBlur = computed(() => prefer.s.useBlurEffectForModal && !isEnableBgTransparent.value && !props.noBgBlur);
 const transitionName = computed((() =>
 	prefer.s.animation
@@ -539,10 +539,6 @@ defineExpose({
 }
 
 .bg {
-	// Blur comes from .backdropBlur; the uniform filter would stack on it.
-	-webkit-backdrop-filter: none;
-	backdrop-filter: none;
-
 	&.bgTransparent {
 		background: transparent;
 		-webkit-backdrop-filter: none;
