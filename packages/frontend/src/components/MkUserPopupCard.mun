@@ -1,0 +1,96 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+// Mun view for the avatar hover card (ported from the template of MkUserPopup.vue).
+// Data fetching, positioning and the enter/leave transition stay in the Vue shell;
+// Vue-only widgets (avatar, links, Mfm, follow button) are embedded with Component().
+// The card is wrapped in ProgressiveBlurElement so the page behind its edge softly blurs.
+
+import { Element } from '@mun/core/compat'
+import { Component } from '@mun/vue'
+import { ProgressiveBlurElement } from '@misutgaru/progressive-blur-element'
+
+const c = {
+  card: 'mkup-card',
+  banner: 'mkup-banner',
+  followed: 'mkup-followed',
+  avatarBack: 'mkup-avatarBack',
+  avatar: 'mkup-avatar',
+  title: 'mkup-title',
+  name: 'mkup-name',
+  username: 'mkup-username',
+  description: 'mkup-description',
+  mfm: 'mkup-mfm',
+  status: 'mkup-status',
+  statusItemLabel: 'mkup-statusItemLabel',
+  statusItem: 'mkup-statusItem',
+  menu: 'mkup-menu',
+  follow: 'mkup-follow',
+}
+
+export function userPopupCard(ctx) {
+  const { user, error, showing, components, text } = ctx
+
+  const body = () => {
+    if (error) return Component(components.MkError, { onRetry: ctx.onRetry })
+    if (user == null) return Element('div', null, Component(components.MkLoading))
+
+    const page = ctx.userPage(user)
+    const banner = Element('div', {
+      className: c.banner,
+      style: user.bannerUrl ? { backgroundImage: `url(${ctx.bannerUrl})` } : undefined,
+    }, ctx.showFollowsYou ? Element('span', { className: c.followed }, text.followsYou) : null)
+
+    const avatarBack = Element('svg', { viewBox: '0 0 128 128', class: c.avatarBack },
+      Element('g', { transform: 'matrix(1.6,0,0,1.6,-38.4,-51.2)' },
+        Element('path', {
+          d: 'M64,32C81.661,32 96,46.339 96,64C95.891,72.184 104,72 104,72C104,72 74.096,80 64,80C52.755,80 24,72 24,72C24,72 31.854,72.018 32,64C32,46.339 46.339,32 64,32Z',
+          style: 'fill: var(--MI_THEME-popup);',
+        })))
+
+    const avatar = Component(components.MkA, { to: page },
+      Component(components.MkAvatar, { class: c.avatar, user, indicator: true }))
+
+    const title = Element('div', { className: c.title },
+      Component(components.MkA, { class: c.name, to: page },
+        Component(components.MkUserName, { user, nowrap: false })),
+      Element('div', { className: c.username }, Component(components.MkAcct, { user })))
+
+    const description = Element('div', { className: c.description },
+      user.description
+        ? Component(components.Mfm, { class: c.mfm, text: user.description, author: user })
+        : Element('div', { style: 'opacity: 0.7;' }, text.noAccountDescription))
+
+    const statusItem = (label, count, to) =>
+      Component(components.MkA, { class: c.statusItem, to },
+        Element('div', { className: c.statusItemLabel }, label),
+        Element('div', null, count))
+    const status = Element('div', { className: c.status },
+      statusItem(text.notes, ctx.number(user.notesCount), ctx.userPage(user, 'notes')),
+      ctx.showFollowing ? statusItem(text.following, ctx.number(user.followingCount), ctx.userPage(user, 'following')) : null,
+      ctx.showFollowers ? statusItem(text.followers, ctx.number(user.followersCount), ctx.userPage(user, 'followers')) : null)
+
+    const menu = Element('button', { className: `_button ${c.menu}`, onClick: ctx.onMenu },
+      Element('i', { className: 'ti ti-dots' }))
+    const follow = ctx.showFollowButton
+      ? Component(components.MkFollowButton, {
+        user,
+        'onUpdate:user': ctx.onUpdateUser,
+        class: c.follow,
+        mini: true,
+      })
+      : null
+
+    return Element('div', null, banner, avatarBack, avatar, title, description, status, menu, follow)
+  }
+
+  return ProgressiveBlurElement({
+    active: showing && ctx.blur,
+    strength: 6,
+    spread: 28,
+    radius: 12,
+    quality: 'auto',
+  }, Element('div', { className: `${c.card} _popup _shadow` }, body()))
+}

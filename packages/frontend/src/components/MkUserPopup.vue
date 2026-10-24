@@ -9,58 +9,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:leaveActiveClass="prefer.s.animation ? $style.transition_popup_leaveActive : ''"
 	:enterFromClass="prefer.s.animation ? $style.transition_popup_enterFrom : ''"
 	:leaveToClass="prefer.s.animation ? $style.transition_popup_leaveTo : ''"
-	appear @afterLeave="emit('closed')"
+	appear @beforeEnter="onBeforeEnter" @enter="onEnter" @leave="onLeave" @afterLeave="emit('closed')"
 >
-	<div v-if="showing" :class="$style.root" class="_popup _shadow" :style="{ zIndex, top: top + 'px', left: left + 'px' }" @mouseover="() => { emit('mouseover'); }" @mouseleave="() => { emit('mouseleave'); }">
-		<MkError v-if="error" @retry="fetchUser()"/>
-		<div v-else-if="user != null">
-			<div :class="$style.banner" :style="user.bannerUrl ? { backgroundImage: `url(${prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(user.bannerUrl) : user.bannerUrl})` } : ''">
-				<span v-if="$i && $i.id != user.id && user.isFollowed" :class="$style.followed">{{ i18n.ts.followsYou }}</span>
-			</div>
-			<svg viewBox="0 0 128 128" :class="$style.avatarBack">
-				<g transform="matrix(1.6,0,0,1.6,-38.4,-51.2)">
-					<path d="M64,32C81.661,32 96,46.339 96,64C95.891,72.184 104,72 104,72C104,72 74.096,80 64,80C52.755,80 24,72 24,72C24,72 31.854,72.018 32,64C32,46.339 46.339,32 64,32Z" style="fill: var(--MI_THEME-popup);"/>
-				</g>
-			</svg>
-			<MkA :to="userPage(user)">
-				<MkAvatar :class="$style.avatar" :user="user" indicator/>
-			</MkA>
-			<div :class="$style.title">
-				<MkA :class="$style.name" :to="userPage(user)"><MkUserName :user="user" :nowrap="false"/></MkA>
-				<div :class="$style.username"><MkAcct :user="user"/></div>
-			</div>
-			<div :class="$style.description">
-				<Mfm v-if="user.description" :class="$style.mfm" :text="user.description" :author="user"/>
-				<div v-else style="opacity: 0.7;">{{ i18n.ts.noAccountDescription }}</div>
-			</div>
-			<div :class="$style.status">
-				<MkA :class="$style.statusItem" :to="userPage(user, 'notes')">
-					<div :class="$style.statusItemLabel">{{ i18n.ts.notes }}</div>
-					<div>{{ number(user.notesCount) }}</div>
-				</MkA>
-				<MkA v-if="isFollowingVisibleForMe(user)" :class="$style.statusItem" :to="userPage(user, 'following')">
-					<div :class="$style.statusItemLabel">{{ i18n.ts.following }}</div>
-					<div>{{ number(user.followingCount) }}</div>
-				</MkA>
-				<MkA v-if="isFollowersVisibleForMe(user)" :class="$style.statusItem" :to="userPage(user, 'followers')">
-					<div :class="$style.statusItemLabel">{{ i18n.ts.followers }}</div>
-					<div>{{ number(user.followersCount) }}</div>
-				</MkA>
-			</div>
-			<button class="_button" :class="$style.menu" @click="showMenu"><i class="ti ti-dots"></i></button>
-			<MkFollowButton v-if="$i && user.id != $i.id" v-model:user="user" :class="$style.follow" mini/>
-		</div>
-		<div v-else>
-			<MkLoading/>
-		</div>
+	<div v-show="showing" :class="$style.root" :style="{ zIndex, top: top + 'px', left: left + 'px' }" @mouseover="() => { emit('mouseover'); }" @mouseleave="() => { emit('mouseleave'); }">
+		<MunView :render="renderCard"/>
 	</div>
 </Transition>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { MunView } from '@mun/vue';
 import * as Misskey from 'misskey-js';
+import { userPopupCard } from './MkUserPopupCard.mun';
 import MkFollowButton from '@/components/MkFollowButton.vue';
+import MkError from '@/components/global/MkError.vue';
+import MkLoading from '@/components/global/MkLoading.vue';
+import MkA from '@/components/global/MkA.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkUserName from '@/components/global/MkUserName.vue';
+import MkAcct from '@/components/global/MkAcct.vue';
+import Mfm from '@/components/global/MkMfm.js';
 import { userPage } from '@/filters/user.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
@@ -84,11 +53,66 @@ const emit = defineEmits<{
 	(ev: 'mouseleave'): void;
 }>();
 
+const components = { MkError, MkLoading, MkA, MkAvatar, MkUserName, MkAcct, Mfm, MkFollowButton };
+
+function renderCard() {
+	const u = user.value;
+	return userPopupCard({
+		user: u,
+		error: error.value,
+		showing: props.showing,
+		blur: prefer.s.animation && blurReady.value,
+		components,
+		text: {
+			followsYou: i18n.ts.followsYou,
+			noAccountDescription: i18n.ts.noAccountDescription,
+			notes: i18n.ts.notes,
+			following: i18n.ts.following,
+			followers: i18n.ts.followers,
+		},
+		userPage,
+		number,
+		bannerUrl: u?.bannerUrl ? (prefer.s.disableShowingAnimatedImages ? getStaticImageUrl(u.bannerUrl) : u.bannerUrl) : null,
+		showFollowsYou: !!(u && $i && $i.id !== u.id && u.isFollowed),
+		showFollowing: !!u && isFollowingVisibleForMe(u),
+		showFollowers: !!u && isFollowersVisibleForMe(u),
+		showFollowButton: !!(u && $i && u.id !== $i.id),
+		onRetry: () => fetchUser(),
+		onMenu: showMenu,
+		onUpdateUser: (v: Misskey.entities.UserDetailed) => { user.value = v; },
+	});
+}
+
 const zIndex = os.claimZIndex('middle');
 const user = ref<Misskey.entities.UserDetailed | null>(null);
 const top = ref(0);
 const left = ref(0);
 const error = ref(false);
+// The card mounts already showing; keep the blur at 0 for the first paint so it ramps in.
+const blurReady = ref(false);
+let blurFrame = 0;
+
+function onBeforeEnter() {
+	cancelAnimationFrame(blurFrame);
+	blurReady.value = false;
+}
+
+function onEnter() {
+	// Reopening after display:none needs a painted zero-blur state as well.
+	blurFrame = requestAnimationFrame(() => {
+		blurFrame = requestAnimationFrame(() => { blurReady.value = true; });
+	});
+}
+
+async function onLeave(element: Element, done: () => void) {
+	cancelAnimationFrame(blurFrame);
+	// v-show lets the card receive showing=false before Vue hides it. Wait for
+	// the real CSS transitions (including the longer blur spring) to finish.
+	await nextTick();
+	const targets = [element, ...element.querySelectorAll('.pbe-blur, .pbe-content')];
+	await Promise.allSettled(targets.flatMap(target => target.getAnimations().map(animation => animation.finished)));
+	done();
+}
 
 function showMenu(ev: PointerEvent) {
 	if (user.value == null) return;
@@ -126,34 +150,53 @@ onMounted(() => {
 	top.value = y;
 	left.value = x;
 });
+
+onUnmounted(() => cancelAnimationFrame(blurFrame));
 </script>
 
 <style lang="scss" module>
 .transition_popup_enterActive,
 .transition_popup_leaveActive {
-	transition: opacity var(--MI-durFast) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut) !important;
+	transition: transform var(--MI-dur) var(--MI-easeOut) !important;
+
+	:global(.pbe-content) {
+		transition: opacity var(--MI-durFast) var(--MI-easeOut);
+	}
 }
 .transition_popup_enterFrom,
 .transition_popup_leaveTo {
-	opacity: 0;
 	transform: translateY(4px);
+
+	// Opacity on the ancestor creates a backdrop root: the blur can no longer
+	// sample the page. Fade only the content, which is a sibling of the bands.
+	:global(.pbe-content) {
+		opacity: 0;
+	}
 }
 
 .root {
 	position: absolute;
 	width: 300px;
-	overflow: clip;
 	transform-origin: center top;
 }
 
-.banner {
+</style>
+
+<style lang="scss">
+.mkup-card {
+	position: relative;
+	overflow: clip;
+	box-shadow: 0 2px 6px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.mkup-banner {
 	height: 78px;
 	background-color: rgba(0, 0, 0, 0.1);
 	background-size: cover;
 	background-position: center;
 }
 
-.followed {
+.mkup-followed {
 	position: absolute;
 	top: 12px;
 	left: 12px;
@@ -164,7 +207,7 @@ onMounted(() => {
 	border-radius: 6px;
 }
 
-.avatarBack {
+.mkup-avatarBack {
 	width: 100px;
 	position: absolute;
 	top: 28px;
@@ -173,7 +216,7 @@ onMounted(() => {
 	margin: 0 auto;
 }
 
-.avatar {
+.mkup-avatar {
 	display: block;
 	position: absolute;
 	top: 38px;
@@ -185,7 +228,7 @@ onMounted(() => {
 	height: 58px;
 }
 
-.title {
+.mkup-title {
 	position: relative;
 	z-index: 3;
 	display: block;
@@ -194,19 +237,19 @@ onMounted(() => {
 	text-align: center;
 }
 
-.name {
+.mkup-name {
 	display: inline-block;
 	font-weight: bold;
 	word-break: break-all;
 }
 
-.username {
+.mkup-username {
 	display: block;
 	font-size: 0.8em;
 	opacity: 0.7;
 }
 
-.description {
+.mkup-description {
 	padding: 16px 26px;
 	font-size: 0.8em;
 	text-align: center;
@@ -214,29 +257,29 @@ onMounted(() => {
 	border-bottom: solid 1px var(--MI_THEME-divider);
 }
 
-.mfm {
+.mkup-mfm {
 	display: -webkit-box;
 	-webkit-line-clamp: 5;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 }
 
-.status {
+.mkup-status {
 	padding: 16px 26px 16px 26px;
 }
 
-.statusItem {
+.mkup-statusItem {
 	display: inline-block;
 	width: 33%;
 	text-align: center;
 }
 
-.statusItemLabel {
+.mkup-statusItemLabel {
 	font-size: 0.7em;
 	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
 }
 
-.menu {
+.mkup-menu {
 	position: absolute;
 	top: 8px;
 	right: 44px;
@@ -245,7 +288,7 @@ onMounted(() => {
 	border-radius: 999px;
 }
 
-.follow {
+.mkup-follow {
 	position: absolute !important;
 	top: 8px;
 	right: 8px;

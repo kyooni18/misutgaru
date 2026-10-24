@@ -654,6 +654,9 @@ importers:
       '@misutgaru/core':
         specifier: workspace:*
         version: link:../misutgaru-core
+      '@misutgaru/progressive-blur-element':
+        specifier: workspace:*
+        version: link:../progressive-blur-element
       '@mun/core':
         specifier: link:/Users/kyooni18/Code/Mun/packages/core
         version: link:../../../Mun/packages/core
