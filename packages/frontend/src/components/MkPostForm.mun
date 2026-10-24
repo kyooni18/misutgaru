@@ -12,58 +12,64 @@ import { Box, Button, Element, Grid, HStack, Image, Rectangle, Spacer, Text, Tex
 import { Component } from '@mun/vue'
 
 const cls = (...names) => names.filter(Boolean).join(' ')
+// Apply a modifier only when a condition holds.
+const when = (condition, node, modify) => condition ? modify(node) : node
+const accent = 'var(--MI_THEME-accent)'
+const danger = '#ff2a2a'
 
 export function postFormView(ctx) {
   const { c, components: C, d, labels: t } = ctx
   const directed = (directives, node) => Component(C.MunDirectives, { directives }, node)
   const tip = (title, node) => directed([d.tooltip(title)], node)
   const icon = className => Text('').className(className)
-  const footerButton = (title, className, onClick, iconClass) => tip(title,
-    Button(action: onClick, label: () => [icon(iconClass)]).className(className))
+  const footerButton = (title, className, onClick, iconClass, active) => tip(title,
+    when(active, Button(action: onClick, label: () => [icon(iconClass)]).cornerRadius(6).className(className), node => node.foregroundStyle(accent)))
 
   const visibilityIcons = { public: 'ti ti-world', home: 'ti ti-home', followers: 'ti ti-lock', specified: 'ti ti-mail' }
 
   // Gaps come from the stylesheet: they change in its container queries.
-  const headerLeft = HStack({ alignment: 'center' },
-    !ctx.fixed ? Button(action: ctx.cancel, label: () => [icon('ti ti-x')]).className(cls(c.cancel, '_button')) : null,
+  const headerLeft = HStack({ alignment: 'center', spacing: 6 },
+    !ctx.fixed ? Button(action: ctx.cancel, label: () => [icon('ti ti-x')]).padding(8).className('_button') : null,
     directed([d.clickAnime(), d.tooltip(t.account)],
       Button(action: ctx.openAccountMenu, label: () => [
         // An Image keeps its intrinsic size inside a frame; scaledToFill fills it.
-        Image(ctx.account.avatarUrl, { alt: '' }).scaledToFill().style({ borderRadius: '100%' }).frame({ width: 28, height: 28 }).className(c.avatar),
+        Image(ctx.account.avatarUrl, { alt: '' }).scaledToFill().cornerRadius('100%').frame({ width: 28, height: 28 }).margin('auto'),
       ]).className('_button').elementRef(ctx.refs.accountMenuEl)),
     Spacer(),
-  ).className(c.headerLeft)
+  ).padding({ leading: 12 }).className(c.headerLeft)
 
+  const headerItem = node => node.padding(8).cornerRadius(6)
+  const buttonText = value => Text(value).padding({ leading: 6 }).className(c.headerRightButtonText)
   const visibilityButton = () => ctx.targetChannel == null
     ? tip(t.visibility,
-      Button(action: ctx.setVisibility, label: () => [
+      headerItem(Button(action: ctx.setVisibility, label: () => [
         icon(visibilityIcons[ctx.visibility]),
-        Text(t.visibilityName).className(c.headerRightButtonText),
-      ]).className(cls('_button', c.headerRightItem, c.visibility)).elementRef(ctx.refs.visibilityButton))
-    : Button(action: () => {}, label: () => [
+        buttonText(t.visibilityName).opacity(0.8),
+      ])).className(cls('_button', c.headerRightItem, c.visibility)).elementRef(ctx.refs.visibilityButton))
+    : headerItem(Button(action: () => {}, label: () => [
       icon('ti ti-device-tv'),
-      Text(ctx.targetChannel.name).className(c.headerRightButtonText),
-    ]).className(cls('_button', c.headerRightItem, c.visibility)).withProps({ disabled: true })
+      buttonText(ctx.targetChannel.name),
+    ])).className(cls('_button', c.headerRightItem, c.visibility)).withProps({ disabled: true })
 
   const headerRight = HStack({ alignment: 'center' },
     !(ctx.targetChannel != null && ctx.fixed) ? visibilityButton() : null,
     ctx.visibility !== 'specified'
       ? tip(t.disableFederation,
-        Button(action: ctx.toggleLocalOnly, label: () => [icon(ctx.localOnly ? 'ti ti-rocket-off' : 'ti ti-rocket')])
-          .className(cls('_button', c.headerRightItem, ctx.localOnly && c.danger))
+        when(ctx.localOnly, headerItem(Button(action: ctx.toggleLocalOnly, label: () => [icon(ctx.localOnly ? 'ti ti-rocket-off' : 'ti ti-rocket')])), node => node.foregroundStyle(danger))
+          .className(cls('_button', c.headerRightItem))
           .withProps({ disabled: ctx.targetChannel != null }))
       : null,
     tip(t.other,
-      Button(action: ctx.showOtherSettings, label: () => [icon('ti ti-dots')])
+      headerItem(Button(action: ctx.showOtherSettings, label: () => [icon('ti ti-dots')]))
         .className(cls('_button', c.headerRightItem)).elementRef(ctx.refs.otherSettingsButton)),
     directed([d.clickAnime()],
       Button(action: ctx.post, label: () => [
         Box(
           ctx.posted ? null : ctx.posting ? Component(C.MkEllipsis) : Text(ctx.submitText),
           icon(ctx.submitIcon).style({ marginLeft: '6px' }),
-        ).className(c.submitInner),
+        ).padding({ leading: 12, trailing: 12 }).fontWeight('bold').cornerRadius(6).foregroundStyle('var(--MI_THEME-fgOnAccent)').className(c.submitInner),
       ]).className(cls('_button', c.submit)).withProps({ disabled: !ctx.canPost, 'data-testid': 'post-form-submit' }).elementRef(ctx.refs.submitButtonEl)),
-  ).fixedSize(true, false).className(c.headerRight)
+  ).fixedSize(true, false).padding({ leading: 4 }).className(c.headerRight)
 
   const toSpecified = ctx.visibility === 'specified'
     ? Box(
@@ -71,24 +77,30 @@ export function postFormView(ctx) {
       Box(
         ...ctx.visibleUsers.map(u => Box(
           Component(C.MkAcct, { user: u }),
-          Button(action: () => ctx.removeVisibleUser(u.id), label: () => [icon('ti ti-x')]).className('_button').style({ padding: '4px 8px' }),
-        ).className(c.visibleUser).keyed(u.id)),
-        Button(action: ctx.addVisibleUser, label: () => [icon('ti ti-plus ti-fw')]).className('_buttonPrimary').style({ padding: '4px', borderRadius: '8px' }),
-      ).className(c.visibleUsers),
+          Button(action: () => ctx.removeVisibleUser(u.id), label: () => [icon('ti ti-x')]).padding({ top: 4, bottom: 4, leading: 8, trailing: 8 }).className('_button'),
+        ).padding({ top: 8, bottom: 8, leading: 8 }).cornerRadius(8).background('light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1))').className(c.visibleUser).keyed(u.id)),
+        Button(action: ctx.addVisibleUser, label: () => [icon('ti ti-plus ti-fw')]).padding(4).cornerRadius(8).className('_buttonPrimary'),
+      ).fontSize(14).className(c.visibleUsers),
     ).className(c.toSpecified)
     : null
 
-  const counter = (remaining, className) => Text(String(remaining)).className(className)
+  const counter = (remaining, over, className, vertical) => Text(String(remaining))
+    .padding({ top: vertical, bottom: vertical, leading: 6, trailing: 6 })
+    .fontSize('.9em')
+    .foregroundStyle(over ? danger : 'var(--MI_THEME-warn)')
+    .cornerRadius(6)
+    .multilineTextAlignment('center')
+    .className(cls('_acrylic', className))
   const textInput = (field, input) => field.className(input.className)
     .withProps(input.props)
     .elementRef(input.ref)
 
   return [
-    HStack({ alignment: 'stretch' }, headerLeft, headerRight).className(c.header),
-    ctx.replyTargetNote ? Component(C.MkNoteSimple, { class: c.targetNote, note: ctx.replyTargetNote }) : null,
-    ctx.renoteTargetNote ? Component(C.MkNoteSimple, { class: c.targetNote, note: ctx.renoteTargetNote }) : null,
+    HStack({ alignment: 'stretch', spacing: 4 }, headerLeft, headerRight).zIndex(1000).className(c.header),
+    ctx.replyTargetNote ? Component(C.MkNoteSimple, { note: ctx.replyTargetNote }).padding({ top: 0, bottom: 16, leading: 20, trailing: 20 }) : null,
+    ctx.renoteTargetNote ? Component(C.MkNoteSimple, { note: ctx.renoteTargetNote }).padding({ top: 0, bottom: 16, leading: 20, trailing: 20 }) : null,
     ctx.quoteId
-      ? Box(icon('ti ti-quote'), Text(` ${t.quoteAttached}`), Button(action: ctx.removeQuote, label: () => [icon('ti ti-x')])).className(c.withQuote)
+      ? Box(icon('ti ti-quote'), Text(` ${t.quoteAttached}`), Button(action: ctx.removeQuote, label: () => [icon('ti ti-x')])).foregroundStyle(accent).className(c.withQuote)
       : null,
     toSpecified,
     ctx.showTip
@@ -112,16 +124,16 @@ export function postFormView(ctx) {
     Box(
       textInput(TextField(ctx.inputs.cw.binding, t.annotation), ctx.inputs.cw),
       ctx.maxCwTextLength - ctx.cwTextLength < 20
-        ? counter(ctx.maxCwTextLength - ctx.cwTextLength, cls('_acrylic', c.cwTextCount, ctx.cwTextLength > ctx.maxCwTextLength && c.cwTextOver))
+        ? counter(ctx.maxCwTextLength - ctx.cwTextLength, ctx.cwTextLength > ctx.maxCwTextLength, c.cwTextCount, 2)
         : null,
     ).className(c.cwOuter).style({ display: ctx.useCw ? undefined : 'none' }),
     Box(
-      ctx.targetChannel ? Rectangle().background(ctx.targetChannel.color).className(c.colorBar) : null,
+      ctx.targetChannel ? Rectangle().background(ctx.targetChannel.color).cornerRadius(999).allowsHitTesting(false).className(c.colorBar) : null,
       textInput(TextEditor(ctx.inputs.text.binding, ctx.placeholder), ctx.inputs.text),
       ctx.maxTextLength - ctx.textLength < 100
-        ? counter(ctx.maxTextLength - ctx.textLength, cls('_acrylic', c.textCount, ctx.textLength > ctx.maxTextLength && c.textOver))
+        ? counter(ctx.maxTextLength - ctx.textLength, ctx.textLength > ctx.maxTextLength, c.textCount, 4)
         : null,
-    ).className(cls(c.textOuter, ctx.useCw && c.withCw)),
+    ).padding({ top: ctx.useCw ? 8 : 0 }).className(c.textOuter),
     textInput(TextField(ctx.inputs.hashtags.binding, t.hashtags), ctx.inputs.hashtags)
       .style({ display: ctx.withHashtags ? undefined : 'none' }),
     Component(C.XPostFormAttaches, { modelValue: ctx.files, 'onUpdate:modelValue': ctx.setFiles, onDetach: ctx.detachFile, onChangeSensitive: ctx.updateFileSensitive, onChangeName: ctx.updateFileName }),
@@ -140,9 +152,9 @@ export function postFormView(ctx) {
       Grid(
         footerButton(t.attachFromPc, cls('_button', c.footerButton), ctx.chooseFileFromPc, 'ti ti-photo-plus'),
         footerButton(t.attachFromDrive, cls('_button', c.footerButton), ctx.chooseFileFromDrive, 'ti ti-cloud-download'),
-        footerButton(t.poll, cls('_button', c.footerButton, ctx.poll && c.footerButtonActive), ctx.togglePoll, 'ti ti-chart-arrows'),
-        footerButton(t.useCw, cls('_button', c.footerButton, ctx.useCw && c.footerButtonActive), ctx.toggleCw, 'ti ti-eye-off'),
-        footerButton(t.hashtags, cls('_button', c.footerButton, ctx.withHashtags && c.footerButtonActive), ctx.toggleHashtags, 'ti ti-hash'),
+        footerButton(t.poll, cls('_button', c.footerButton), ctx.togglePoll, 'ti ti-chart-arrows', !!ctx.poll),
+        footerButton(t.useCw, cls('_button', c.footerButton), ctx.toggleCw, 'ti ti-eye-off', ctx.useCw),
+        footerButton(t.hashtags, cls('_button', c.footerButton), ctx.toggleHashtags, 'ti ti-hash', ctx.withHashtags),
         footerButton(t.mention, cls('_button', c.footerButton), ctx.insertMention, 'ti ti-at'),
         ctx.showAddMfmFunction ? footerButton(t.addMfmFunction, cls('_button', c.footerButton), ctx.insertMfmFunction, 'ti ti-palette') : null,
         ctx.hasPostFormActions ? footerButton(t.plugins, cls('_button', c.footerButton), ctx.showActions, 'ti ti-plug') : null,

@@ -119,7 +119,7 @@ const hoverPoints = {
 const cases = {
 	navbar: [{}, { showWidgetButton: true }, { asDrawer: true }],
 	postForm: [{}, { fixed: true }, { initialText: 'hello', initialCw: 'cw' }, { initialVisibility: 'specified', initialLocalOnly: true },
-		{ channel: { id: 'c', name: 'Channel', color: '#f00' } }],
+		{ channel: { id: 'c', name: 'Channel', color: '#f00' } }, { initialLocalOnly: true, initialText: 'x'.repeat(130), initialCw: 'y'.repeat(110) }],
 };
 // Visible stand-ins for theme colors so layout differences show up as pixels.
 const theme = `--MI_THEME-navBg:#e8ecf4;--MI_THEME-navFg:#333;--MI_THEME-navActive:#2550c0;--MI_THEME-navIndicator:#e33;--MI_THEME-accent:#3b6fe0;
@@ -131,7 +131,10 @@ const html = `<link rel="stylesheet" href="/node_modules/icons-subsetter/built/t
 *,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important;}</style>
 <div id="app"></div><script>window.cases=${JSON.stringify(cases)};</script><script type="module" src="/__parity_entry.js"></script>`;
 
-const server = await createServer({
+// PARITY_BUILD=1 bundles the fixture for production, with the app's CSS-module
+// class unwinding and short scoped names, and serves the build instead of dev.
+const production = process.env.PARITY_BUILD === '1';
+const fixtureConfig = {
 	configFile: false,
 	root: frontend,
 	logLevel: 'error',
@@ -178,11 +181,34 @@ const server = await createServer({
 		},
 	},
 	server: { host: '127.0.0.1', port: 0, hmr: false },
-});
+};
+let server;
+let pagePath = '/__parity';
+if (production) {
+	const { build, preview } = await import(requireFrontend.resolve('vite'));
+	const { createHash } = await import('node:crypto');
+	const { mkdir, writeFile } = await import('node:fs/promises');
+	const { default: unwindCssModuleClassName } = await import(path.join(frontend, 'lib/rollup-plugin-unwind-css-module-class-name.ts'));
+	const htmlDir = path.join(frontend, 'node_modules/.parity');
+	const outDir = path.join(htmlDir, 'dist');
+	await mkdir(htmlDir, { recursive: true });
+	await writeFile(path.join(htmlDir, '__parity.html'), html);
+	await build({
+		...fixtureConfig,
+		mode: 'production',
+		plugins: [...fixtureConfig.plugins, unwindCssModuleClassName()],
+		css: { modules: { generateScopedName: (name, filename) => 'x' + createHash('sha1').update(`${filename.split('?')[0]}-${name}`).digest('base64url').replace(/[-_]/g, 'a').slice(0, 5) } },
+		build: { outDir, emptyOutDir: true, target: 'esnext', modulePreload: false, rollupOptions: { input: path.join(htmlDir, '__parity.html'), shimMissingExports: true } },
+	});
+	server = await preview({ configFile: false, root: frontend, logLevel: 'error', build: { outDir }, preview: { host: '127.0.0.1', port: 0 } });
+	pagePath = '/node_modules/.parity/__parity.html';
+} else {
+	server = await createServer(fixtureConfig);
+}
 
 let failed = false;
 try {
-	await server.listen();
+	if (!production) await server.listen();
 	const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
 	for (const browserName of browserNames) {
 	const browser = await browsers[browserName].launch();
@@ -194,7 +220,7 @@ try {
 		page.on('console', msg => { if (msg.type() === 'error' && !msg.text().startsWith('Failed to load resource')) errors.push(msg.text()); });
 		page.on('response', res => { if (res.status() >= 400 && !/\.(woff2?|ico|png)(\?|$)/.test(res.url())) errors.push(`${res.status()} ${res.url()}`); });
 		page.on('response', res => { if (res.status() >= 500) errors.push(`${res.status()} ${res.url()}`); });
-		await page.goto(`${origin}/__parity?target=${target}&case=${index}&variant=${variant}`);
+		await page.goto(`${origin}${pagePath}?target=${target}&case=${index}&variant=${variant}`);
 		await page.waitForFunction(() => window.parityReady, null, { timeout: 30000 }).catch(() => errors.push('timeout'));
 		await page.evaluate(() => document.fonts.ready);
 		let value = typed ? await page.evaluate(mode => window.typeInto(mode), typed) : null;
@@ -248,6 +274,6 @@ try {
 	await browser.close();
 	}
 } finally {
-	await server.close();
+	if (production) await new Promise(resolve => server.httpServer.close(resolve)); else await server.close();
 }
 process.exit(failed ? 1 : 0);
