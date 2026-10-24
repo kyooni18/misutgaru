@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.iconOnly]: iconOnly }]">
+	<MkProgressiveBlur/>
 	<div :class="$style.body">
 		<div :class="$style.top">
 			<button v-tooltip.noDelay.right="instance.name ?? i18n.ts.instance" class="_button" :class="$style.instance" @click="openInstanceMenu">
@@ -105,6 +106,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, useCssModule, useTemplateRef, watch } from 'vue';
 import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
@@ -234,6 +236,8 @@ function menuEdit() {
 
 <style lang="scss" module>
 .root {
+	position: relative;
+	isolation: isolate;
 	--nav-width: 250px;
 	--nav-icon-only-width: 80px;
 	--nav-bg-transparent: color(from var(--MI_THEME-navBg) srgb r g b / 0.5);

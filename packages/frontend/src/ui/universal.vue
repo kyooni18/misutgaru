@@ -155,6 +155,8 @@ $widgets-hide-threshold: 1090px;
 }
 
 .sidebar {
+	position: relative;
+	z-index: 1;
 	border-right: solid 0.5px var(--MI_THEME-divider);
 }
 
