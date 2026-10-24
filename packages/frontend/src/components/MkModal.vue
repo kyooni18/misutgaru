@@ -367,128 +367,100 @@ defineExpose({
 </script>
 
 <style lang="scss" module>
-.transition_send_enterActive,
-.transition_send_leaveActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity 160ms var(--MI-easeOut) !important;
+// The backdrop and any panel that hosts its own MkProgressiveBlur fade through
+// --MI-fade, never opacity: an opacity < 1 ancestor would become the blur's
+// backdrop root, so the blur would show only the panel until the fade ended.
+$blurHost: ':has(> * > [data-progressive-blur])';
+
+@mixin fading($fade, $content, $transform: null) {
+	> .bg {
+		transition: opacity $fade !important;
+	}
+
+	> .backdropBlur {
+		transition: --MI-fade $fade !important;
 	}
 
 	> .content {
-    transform: translateY(0px);
-		transition: opacity 160ms var(--MI-easeOut), transform 160ms var(--MI-easeOut) !important;
+		transform-origin: var(--transformOrigin);
+		@if $content {
+			transition: opacity $content, $transform !important;
+
+			&#{$blurHost} {
+				transition: --MI-fade $content, $transform !important;
+
+				> * > :not([data-progressive-blur]) {
+					opacity: var(--MI-fade);
+				}
+			}
+		} @else {
+			transition: $transform !important;
+		}
 	}
+}
+
+@mixin faded($transform, $fadeContent: true) {
+	> .bg {
+		opacity: 0;
+	}
+
+	> .backdropBlur {
+		--MI-fade: 0;
+	}
+
+	> .content {
+		pointer-events: none;
+		transform: $transform;
+		@if $fadeContent {
+			--MI-fade: 0;
+
+			&:not(#{$blurHost}) {
+				opacity: 0;
+			}
+		}
+	}
+}
+
+.transition_send_enterActive,
+.transition_send_leaveActive {
+	@include fading(160ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
 }
 .transition_send_enterFrom,
 .transition_send_leaveTo {
-	> .bg,
-	> .backdropBlur > * {
-		opacity: 0;
-	}
-
-	> .content {
-		pointer-events: none;
-		opacity: 0;
-		transform: translateY(-12px);
-	}
+	@include faded(translateY(-12px));
 }
 
-.transition_modal_enterActive,
+.transition_modal_enterActive {
+	@include fading(220ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 220ms var(--MI-easeOut));
+}
 .transition_modal_leaveActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity 220ms var(--MI-easeOut) !important;
-	}
-
-	> .content {
-		transform-origin: var(--transformOrigin);
-		transition: opacity 160ms var(--MI-easeOut), transform 220ms var(--MI-easeOut) !important;
-	}
+	@include fading(160ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
 }
 .transition_modal_enterFrom,
 .transition_modal_leaveTo {
-	> .bg,
-	> .backdropBlur > * {
-		opacity: 0;
-	}
-
-	> .content {
-		pointer-events: none;
-		opacity: 0;
-		transform-origin: var(--transformOrigin);
-		transform: scale(0.98) translateY(4px);
-	}
+	@include faded(scale(0.98) translateY(4px));
 }
 
-.transition_modalPopup_enterActive,
+.transition_modalPopup_enterActive {
+	@include fading(160ms var(--MI-easeOut), 120ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
+}
 .transition_modalPopup_leaveActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity 0.16s var(--MI-easeOut) !important;
-	}
-
-	> .content {
-		transform-origin: var(--transformOrigin);
-		transition: opacity 0.12s var(--MI-easeOut), transform 0.16s var(--MI-easeOut) !important;
-	}
+	@include fading(120ms var(--MI-easeOut), 120ms var(--MI-easeOut), transform 120ms var(--MI-easeOut));
 }
 .transition_modalPopup_enterFrom,
 .transition_modalPopup_leaveTo {
-	> .bg,
-	> .backdropBlur > * {
-		opacity: 0;
-	}
-
-	> .content {
-		pointer-events: none;
-		opacity: 0;
-		transform-origin: var(--transformOrigin);
-		transform: scale(0.98);
-	}
+	@include faded(scale(0.98));
 }
 
 .transition_modalDrawer_enterActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity 280ms var(--MI-easeOut) !important;
-	}
-
-	> .content {
-		transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1) !important;
-	}
+	@include fading(280ms var(--MI-easeOut), null, transform 280ms cubic-bezier(0.32, 0.72, 0, 1));
 }
 .transition_modalDrawer_leaveActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity 180ms var(--MI-easeOut) !important;
-	}
-
-	> .content {
-		transition: transform 180ms cubic-bezier(.4,0,1,1) !important;
-	}
+	@include fading(180ms var(--MI-easeOut), null, transform 180ms cubic-bezier(.4,0,1,1));
 }
 .transition_modalDrawer_enterFrom,
 .transition_modalDrawer_leaveTo {
-	> .bg,
-	> .backdropBlur > * {
-		opacity: 0;
-	}
-
-	> .content {
-		pointer-events: none;
-		transform: translateY(100%);
-	}
-}
-
-.transition_modal_leaveActive > .bg,
-.transition_modal_leaveActive > .backdropBlur > *,
-.transition_modal_leaveActive > .content {
-	transition-duration: 160ms !important;
-}
-.transition_modalPopup_leaveActive > .bg,
-.transition_modalPopup_leaveActive > .backdropBlur > *,
-.transition_modalPopup_leaveActive > .content {
-	transition-duration: 120ms !important;
+	@include faded(translateY(100%), false);
 }
 
 .root {

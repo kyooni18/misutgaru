@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="[$style.root, { [$style.viewport]: variant === 'viewport' }]" aria-hidden="true">
+<div :class="[$style.root, { [$style.viewport]: variant === 'viewport' }]" data-progressive-blur aria-hidden="true">
 	<div v-for="(band, index) in bands" :key="index" :class="$style.band" :style="band"></div>
 </div>
 </template>
@@ -16,8 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 //
 // 'edge' rings the parent element. 'viewport' covers the screen for modal
 // backdrops: a light blur everywhere that strengthens toward `origin`.
-// Never put either variant under an ancestor with opacity < 1 (a backdrop root);
-// fade the bands themselves instead.
+// Never put either variant under an ancestor with opacity < 1 (a backdrop root).
+// To fade one in or out, animate the inherited --MI-fade (0..1), which scales
+// every band's radius, and fade the host's other children instead.
 import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
@@ -29,7 +30,8 @@ const props = withDefaults(defineProps<{
 });
 
 function filter(px: number) {
-	return { backdropFilter: `blur(${px}px)`, WebkitBackdropFilter: `blur(${px}px)` };
+	const value = `blur(calc(${px}px * var(--MI-fade, 1)))`;
+	return { backdropFilter: value, WebkitBackdropFilter: value };
 }
 
 const bands = computed(() => {

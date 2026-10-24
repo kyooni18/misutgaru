@@ -297,6 +297,15 @@ rt {
 	text-overflow: ellipsis;
 }
 
+// Strength of every MkProgressiveBlur below, 0..1. Fades animate this instead of
+// opacity: an ancestor with opacity < 1 becomes the blur's backdrop root, so the
+// blur would sample only its own panel until the fade ends.
+@property --MI-fade {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 1;
+}
+
 ._modalBg {
 	position: fixed;
 	top: 0;
