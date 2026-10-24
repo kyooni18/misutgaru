@@ -27,10 +27,12 @@ const browserNames = (process.env.PARITY_BROWSER ?? 'all') === 'all' ? ['chromiu
 const targets = {
 	navbar: 'src/ui/_common_/navbar.vue',
 	postForm: 'src/components/MkPostForm.vue',
+	pageHeader: 'src/components/global/MkPageHeader.vue',
 };
 const baseRevisions = {
 	navbar: '3102f2fbc~1',
 	postForm: '11c668a13~1',
+	pageHeader: '8aedb58ae',
 };
 const baseline = Object.fromEntries(Object.entries(targets).map(([name, file]) => [
 	path.join(frontend, file.replace(/\.vue$/, '.__base.vue')),
@@ -57,7 +59,7 @@ const stubs = {
 	'@/preferences.js': `import {ref,reactive} from 'vue'; const r={menu:ref(['notifications','-','drive','search','hidden']),showNavbarSubButtons:ref(true),animation:ref(true)};
 		export const prefer={r,s:reactive({animation:true,defaultNoteLocalOnly:false,defaultNoteVisibility:'public',enableQuickAddMfmFunction:true,keepCw:false,rememberNoteVisibility:false}),model:()=>ref(null),commit(){}};`,
 	'@/accounts.js': 'export const getAccountMenu=async()=>[]; export const getAccounts=async()=>[];',
-	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true,avatarUrl:'+JSON.stringify('data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#c36"/><rect x="100" y="50" width="200" height="200" fill="#3cf"/></svg>'))+'}; export const ensureSignin=()=>$i; export const notesCount=0; export const incNotesCount=()=>{};',
+	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true,hasUnreadNotification:true,unreadNotificationsCount:2,avatarUrl:'+JSON.stringify('data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#c36"/><rect x="100" y="50" width="200" height="200" fill="#3cf"/></svg>'))+'}; export const ensureSignin=()=>$i; export const notesCount=0; export const incNotesCount=()=>{};',
 	// A large intrinsic size catches images that are not constrained to their slot.
 	'@/instance.js': `export const instance={name:"Inst",maxNoteTextLength:120,iconUrl:${JSON.stringify('data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#2a6"/><circle cx="256" cy="256" r="200" fill="#fd3"/></svg>'))}};`,
 	'@@/js/config.js': 'export const host="example.com",url="https://example.com";',
@@ -75,11 +77,13 @@ const stubs = {
 	'@/drag-and-drop.js': anyExports(['checkDragDataType', 'getDragData']),
 	'@/utility/tour.js': anyExports(['startTour']),
 	'@/tips.js': anyExports(['closeTip']),
+	'@/utility/device-kind.js': 'export const deviceKind="desktop";',
+	'@@/js/scroll.js': 'export const scrollToTop=()=>{};',
 	'./common.js': 'export const openInstanceMenu=()=>{};',
 	'@/directives/tooltip.js': 'export const tooltipDirective={mounted(el,b){el.setAttribute("data-tip",b.value+JSON.stringify(b.modifiers))}};',
 };
 const leaves = ['MkA', 'MkAvatar', 'MkAcct', 'MkUploaderItems', 'MkNotePreview', 'MkPostFormAttaches', 'MkPostForm.TextCounter',
-	'MkPollEditor', 'MkNoteSimple', 'MkInfo', 'MkRippleEffect', 'MkEllipsis', 'MkTime', 'I18n', 'MkTip'];
+	'MkPollEditor', 'MkNoteSimple', 'MkInfo', 'MkRippleEffect', 'MkEllipsis', 'MkTime', 'I18n', 'MkTip', 'MkUserName'];
 
 // One page per (target, case, variant) so fixed-position parts never overlap.
 const entry = `
@@ -92,10 +96,19 @@ const leaves={${leaves.map(n => n.replace('.', '_')).join(',')}};
 const components={${Object.keys(targets).map(name => `${name}:{base:()=>import('/${targets[name].replace(/\.vue$/, '.__base.vue')}'),next:()=>import('/${targets[name]}')}`).join(',')}};
 const q=new URLSearchParams(location.search);
 const component=(await components[q.get('target')][q.get('variant')]()).default;
-const props=window.cases[q.get('target')][Number(q.get('case'))];
+const {__mobile,__meta,__section,...props}=window.cases[q.get('target')][Number(q.get('case'))];
+if (props.actions) props.actions=props.actions.map(a=>({...a,handler(){}}));
 const el=document.getElementById('app');
 if (q.get('target')==='postForm') el.style.cssText='display:block;height:auto;width:'+(innerWidth >= 1400 ? 600 : 340)+'px';
+// Wide desktop header vs. a phone-width one (narrow below 500px).
+if (q.get('target')==='pageHeader') el.style.cssText='display:block;height:auto;width:'+(innerWidth >= 1400 ? 800 : 390)+'px';
 const app=createApp({render:()=>h(component,props)});
+if (q.get('target')==='pageHeader') {
+	const {DI}=await import('@/di.js'); const {mobileSection}=await import('@/utility/mobile-section.js'); const {ref}=await import('vue');
+	if (__mobile) app.provide(DI.mobileShell,{isMobile:ref(true),openDrawer(){},openWidgets(){}});
+	app.provide(DI.pageMetadata,ref(__meta===undefined?null:__meta==='me'?{avatar:(await import('@/i.js')).$i,userName:(await import('@/i.js')).$i}:__meta));
+	mobileSection.value=__section??'timeline';
+}
 app.directive('tooltip',tooltipDirective); app.directive('click-anime',clickAnimeDirective);
 for(const [n,c] of Object.entries(leaves)) app.component(n,c);
 app.mount(el);
@@ -115,11 +128,20 @@ window.endComposition=async()=>{const t=el.querySelector('textarea'); t.dispatch
 const hoverPoints = {
 	navbar: [[45, 39], [120, 140], [120, 349], [120, 668], [45, 724], [256, 644]],
 	postForm: [[29, 24], [66, 28], [160, 24], [287, 24], [28, 210], [69, 210]],
+	pageHeader: [[24, 25], [90, 25], [160, 25], [250, 25], [330, 25], [366, 25], [770, 25]],
 };
 const cases = {
 	navbar: [{}, { showWidgetButton: true }, { asDrawer: true }],
 	postForm: [{}, { fixed: true }, { initialText: 'hello', initialCw: 'cw' }, { initialVisibility: 'specified', initialLocalOnly: true },
 		{ channel: { id: 'c', name: 'Channel', color: '#f00' } }, { initialLocalOnly: true, initialText: 'x'.repeat(130), initialCw: 'y'.repeat(110) }],
+	pageHeader: (() => {
+		const tabs = [{ key: 'home', title: 'Home', icon: 'ti ti-home' }, { key: 'local', title: 'Local', icon: 'ti ti-planet' }, { key: 'social', title: 'Social timeline' }, { key: 'global', title: 'Global', icon: 'ti ti-world' }];
+		const actions = [{ icon: 'ti ti-plus', text: 'Add' }, { icon: 'ti ti-x', text: 'Close', highlighted: true }];
+		return [{ __meta: { title: 'Title', icon: 'ti ti-home', subtitle: 'Subtitle' }, actions }, { __meta: { title: 'Tabbed' }, tabs, tab: 'local' },
+			{ __meta: 'me', displayMyAvatar: true, tabs, tab: 'home' }, { thin: true, __meta: { title: 'Thin' }, actions },
+			{ __mobile: true, displayMyAvatar: true, tabs, tab: 'local', actions }, { __mobile: true, displayMyAvatar: true, tabs, tab: 'home', __section: 'notifications' },
+			{ __mobile: true, __meta: { title: 'Mobile page' }, actions }];
+	})(),
 };
 // Visible stand-ins for theme colors so layout differences show up as pixels.
 const theme = `--MI_THEME-navBg:#e8ecf4;--MI_THEME-navFg:#333;--MI_THEME-navActive:#2550c0;--MI_THEME-navIndicator:#e33;--MI_THEME-accent:#3b6fe0;

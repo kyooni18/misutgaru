@@ -2557,7 +2557,7 @@ Source files indexed: 3536.
 | `packages/frontend/src/types/media-component.ts` | frontend | current | Source for media component; exports `MediaComponentExposes`. |
 | `packages/frontend/src/types/menu.ts` | frontend | current | Source for menu; exports `MenuAction`, `MenuButton`, `MenuDivider`, `MenuLabel`. |
 | `packages/frontend/src/types/misc.ts` | frontend | current | Source for misc; exports `Awaitable`, `ExtractInjectedType`. |
-| `packages/frontend/src/types/mun.d.ts` | frontend | current | Source for mun d; exports `userPopupCard`, `navbarView`, `postFormView`. |
+| `packages/frontend/src/types/mun.d.ts` | frontend | current | Source for mun d; exports `userPopupCard`, `navbarView`, `postFormView`, `pageHeaderView`. |
 | `packages/frontend/src/types/option-value.ts` | frontend | current | Source for option value; exports `OptionValue`. |
 | `packages/frontend/src/types/overload-to-union.ts` | frontend | current | Source for overload to union; exports `OverloadToUnion`. |
 | `packages/frontend/src/types/page-header.ts` | frontend | current | Source for page header; exports `PageHeaderItem`. |

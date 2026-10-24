@@ -5,73 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div v-if="show" ref="el" :class="[$style.root]">
-	<div :class="[$style.upper, { [$style.slim]: narrow, [$style.thin]: thin_, [$style.mobileToolbar]: compactTimelineBar }]">
-		<button v-if="compactTimelineBar && mobileSection !== 'timeline'" v-tooltip.noDelay="i18n.ts.timeline" class="_button" :class="$style.button" :aria-label="i18n.ts.timeline" @click="mobileSection = 'timeline'">
-			<i class="ti ti-arrow-left" aria-hidden="true"></i>
-		</button>
-		<button v-else-if="mobileNav" class="_button" :class="$style.button" :aria-label="i18n.ts.menu" @click="shell?.openDrawer()">
-			<i class="ti ti-menu-2"></i>
-			<span v-if="menuIndicated" :class="$style.indicator" class="_blink"><i class="_indicatorCircle"></i></span>
-		</button>
-		<div v-if="!mobileNav && !thin_ && (narrow || deviceKind === 'smartphone') && props.displayMyAvatar && $i" class="_button" :class="$style.fixed" @click="openAccountMenu">
-			<MkAvatar :class="$style.avatar" :user="$i"/>
-		</div>
-		<div v-else-if="!thin_ && narrow && !hideTitle && !mobileNav" :class="$style.buttons"></div>
-
-		<template v-if="compactTimelineBar">
-			<div :class="$style.headingSlot">
-				<Transition :enterActiveClass="$style.headingEnterActive" :leaveActiveClass="$style.headingLeaveActive" :enterFromClass="$style.headingEnterFrom" :leaveToClass="$style.headingLeaveTo">
-					<div v-if="mobileSection === 'timeline'" key="timeline" ref="sourceStrip" :class="$style.sourceStrip" role="group" :aria-label="i18n.ts.timeline">
-						<button v-for="source in tabs" :key="source.key" v-tooltip.noDelay="source.title" class="_button" :class="[$style.sourceButton, { [$style.sourceSelected]: source.key === tab }]" :aria-label="source.title" :aria-pressed="source.key === tab" @click="selectSource(source, $event)">
-							<i v-if="source.icon" :class="source.icon" aria-hidden="true"></i>
-							<span :class="{ [$style.sourceLabel]: source.icon }" @transitionend="revealSource"><span>{{ source.title }}</span></span>
-						</button>
-					</div>
-					<div v-else :key="mobileSection" :class="$style.sectionHeading">{{ mobileSection === 'notifications' ? i18n.ts.notifications : i18n.ts.widgets }}</div>
-				</Transition>
-			</div>
-			<div :class="$style.toolbarActions">
-				<template v-if="mobileSection === 'timeline'">
-					<button v-for="action in actions" :key="action.icon" v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" :aria-label="action.text" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon" aria-hidden="true"></i></button>
-				</template>
-			</div>
-			<div :class="$style.sectionButtons" :aria-label="i18n.ts.menu" role="group">
-				<button v-tooltip.noDelay="i18n.ts.notifications" class="_button" :class="[$style.button, { [$style.sectionActive]: mobileSection === 'notifications' }]" :aria-label="i18n.ts.notifications" :aria-pressed="mobileSection === 'notifications'" @click="mobileSection = 'notifications'">
-					<i class="ti ti-bell" aria-hidden="true"></i>
-					<span v-if="$i?.hasUnreadNotification" :class="$style.unreadDot" :aria-label="String($i.unreadNotificationsCount)"></span>
-				</button>
-				<button v-tooltip.noDelay="i18n.ts.widgets" class="_button" :class="[$style.button, { [$style.sectionActive]: mobileSection === 'widgets' }]" :aria-label="i18n.ts.widgets" :aria-pressed="mobileSection === 'widgets'" @click="mobileSection = 'widgets'">
-					<i class="ti ti-apps" aria-hidden="true"></i>
-				</button>
-			</div>
-		</template>
-
-		<template v-else-if="pageMetadata">
-			<div v-if="!hideTitle" :class="$style.titleContainer" @click="top">
-				<div v-if="pageMetadata.avatar" :class="$style.titleAvatarContainer">
-					<MkAvatar :class="$style.titleAvatar" :user="pageMetadata.avatar" indicator/>
-				</div>
-				<i v-else-if="pageMetadata.icon" :class="[$style.titleIcon, pageMetadata.icon]"></i>
-
-				<div class="_nowrap" :class="$style.title">
-					<MkUserName v-if="pageMetadata.userName" :user="pageMetadata.userName" :nowrap="true"/>
-					<div v-else-if="pageMetadata.title" class="_nowrap">{{ pageMetadata.title }}</div>
-					<div v-if="pageMetadata.subtitle" :class="$style.subtitle">
-						{{ pageMetadata.subtitle }}
-					</div>
-				</div>
-			</div>
-			<XTabs v-if="!narrow || hideTitle" :class="$style.tabs" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
-		</template>
-		<div v-if="!compactTimelineBar && ((!thin_ && narrow && !hideTitle) || (actions && actions.length > 0))" :class="$style.buttons">
-			<template v-for="action in actions">
-				<button v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" :aria-label="action.text" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon"></i></button>
-			</template>
-		</div>
-	</div>
-	<div v-if="!compactTimelineBar && (narrow && !hideTitle) && hasTabs" :class="[$style.lower, { [$style.slim]: narrow, [$style.thin]: thin_ }]">
-		<XTabs :class="$style.tabs" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
-	</div>
+	<MunView :render="renderHeader"/>
 </div>
 </template>
 
@@ -93,7 +27,9 @@ export type PageHeaderProps = {
 </script>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref, inject, useTemplateRef, computed, watch, nextTick } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, inject, useTemplateRef, computed, watch, nextTick, useCssModule, Transition } from 'vue';
+import { MunView } from '@mun/vue';
+import { pageHeaderView } from './MkPageHeader.mun';
 import { mobileSection } from '@/utility/mobile-section.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
@@ -105,6 +41,10 @@ import { deviceKind } from '@/utility/device-kind.js';
 import { $i } from '@/i.js';
 import { DI } from '@/di.js';
 import * as os from '@/os.js';
+import MkAvatar from './MkAvatar.vue';
+import MkUserName from './MkUserName.vue';
+import { MunDirectives } from '@/utility/mun-directives.js';
+import { tooltipDirective as vTooltip } from '@/directives/tooltip.js';
 
 const props = withDefaults(defineProps<PageHeaderProps>(), {
 	tabs: () => ([] as Tab[]),
@@ -128,7 +68,7 @@ const shell = inject(DI.mobileShell, null);
 // Phone shell: the bottom bar is gone, so nav / notifications / widgets live up here.
 const mobileNav = computed(() => shell != null && shell.isMobile.value && !thin_ && $i != null);
 const compactTimelineBar = computed(() => mobileNav.value && props.displayMyAvatar && hasTabs.value);
-const sourceStrip = useTemplateRef('sourceStrip');
+const sourceStrip = shallowRef<HTMLElement | null>(null);
 
 function selectSource(source: Tab, ev: PointerEvent) {
 	if (source.onClick) source.onClick(ev);
@@ -181,6 +121,51 @@ async function openAccountMenu(ev: PointerEvent) {
 
 function onTabClick(): void {
 	top();
+}
+
+const $style = useCssModule();
+const components = { MkAvatar, MkUserName, XTabs, Transition, MunDirectives };
+const tooltipModifiers = { noDelay: true };
+
+function renderHeader() {
+	const narrowTitle = !thin_ && narrow.value && !hideTitle.value;
+	const showMyAvatar = !mobileNav.value && !thin_ && (narrow.value || deviceKind === 'smartphone') && props.displayMyAvatar && $i != null;
+	return pageHeaderView({
+		c: $style,
+		components,
+		tooltip: (value: string) => [[vTooltip, value, undefined, tooltipModifiers]],
+		text: {
+			timeline: i18n.ts.timeline,
+			menu: i18n.ts.menu,
+			notifications: i18n.ts.notifications,
+			widgets: i18n.ts.widgets,
+		},
+		me: $i,
+		pageMetadata: pageMetadata.value,
+		tabs: props.tabs,
+		tab: props.tab,
+		actions: props.actions,
+		rootEl: el.value,
+		thin: thin_,
+		narrow: narrow.value,
+		hideTitle: hideTitle.value,
+		mobileNav: mobileNav.value,
+		compact: compactTimelineBar.value,
+		section: mobileSection.value,
+		menuIndicated: menuIndicated.value,
+		showMyAvatar,
+		titleSpacer: !showMyAvatar && narrowTitle && !mobileNav.value,
+		narrowTitle,
+		sourceStripRef: (strip: Element | null) => { sourceStrip.value = strip as HTMLElement | null; },
+		setSection: (section: typeof mobileSection.value) => { mobileSection.value = section; },
+		openDrawer: () => shell?.openDrawer(),
+		openAccountMenu,
+		selectSource,
+		revealSource,
+		updateTab: (key: string) => emit('update:tab', key),
+		top: onTabClick,
+		preventDrag,
+	});
 }
 
 let ro: ResizeObserver | null;
@@ -314,16 +299,6 @@ onUnmounted(() => {
 	&:active {
 		transform: scale(0.97);
 	}
-
-	&.highlighted {
-		color: var(--MI_THEME-accent);
-	}
-}
-
-.fullButton {
-	& + .fullButton {
-		margin-left: 12px;
-	}
 }
 
 .titleContainer {
@@ -334,7 +309,6 @@ onUnmounted(() => {
 	overflow: clip;
 	white-space: nowrap;
 	text-align: left;
-	font-weight: bold;
 	flex-shrink: 1;
 	margin-left: 24px;
 }
@@ -440,7 +414,6 @@ onUnmounted(() => {
 	flex: 1;
 	min-width: 0;
 	font-size: 1.05em;
-	font-weight: 600;
 	text-align: start;
 }
 
@@ -465,7 +438,6 @@ onUnmounted(() => {
 	padding: 0 10px;
 	box-sizing: border-box;
 	border-radius: 12px;
-	font-weight: 600;
 	white-space: nowrap;
 	color: var(--MI_THEME-pageHeaderFg);
 
@@ -510,16 +482,6 @@ onUnmounted(() => {
 	.sourceLabel { grid-template-columns: 1fr; opacity: 1; }
 }
 
-.sectionHeading {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.sectionHeading {
-	padding-inline: 8px;
-}
-
 .toolbarActions {
 	display: flex;
 	flex: none;
@@ -532,8 +494,6 @@ onUnmounted(() => {
 }
 
 .button.sectionActive {
-	color: var(--MI_THEME-accent);
-
 	&::after {
 		content: "";
 		position: absolute;
@@ -551,8 +511,6 @@ onUnmounted(() => {
 	inset-inline-end: 9px;
 	width: 6px;
 	height: 6px;
-	border-radius: 50%;
-	background: var(--MI_THEME-indicator);
 }
 
 .sourceButton,

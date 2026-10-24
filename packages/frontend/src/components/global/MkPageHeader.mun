@@ -1,0 +1,128 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+// Mün view for the page header, including the phone toolbar. The Vue shell
+// keeps state, handlers and the CSS module (passed as `c`); hover, focus,
+// selection marks, container queries and the heading transition stay in CSS.
+
+import { Box, Button, HStack, Text } from '@mun/core/compat'
+import { Component } from '@mun/vue'
+
+const cls = (...names) => names.filter(Boolean).join(' ')
+const when = (condition, node, modify) => condition ? modify(node) : node
+
+export function pageHeaderView(ctx) {
+  const { c, components, text } = ctx
+  const tip = (title, node) => Component(components.MunDirectives, { directives: ctx.tooltip(title) }, node)
+  const icon = className => Text('').className(className).accessibilityHidden(true)
+  // Header rows pack from the leading edge; tabs center themselves with auto margins.
+  const row = (spacing, ...children) => HStack({ spacing }, ...children.filter(Boolean)).style({ justifyContent: 'flex-start' })
+  const group = (spacing, ...children) => row(spacing, ...children).fixedSize(true, false)
+
+  const actionButton = action => tip(action.text,
+    when(action.highlighted, Button(action: ev => { ev.stopPropagation(); action.handler(ev) }, label: () => [icon(action.icon)]),
+      node => node.foregroundStyle('var(--MI_THEME-accent)'))
+      .accessibilityLabel(action.text)
+      .withProps({ onTouchstart: ctx.preventDrag })
+      .className(cls('_button', c.button)))
+  const actionButtons = () => (ctx.actions ?? []).map(actionButton)
+  const tabs = () => Component(components.XTabs, { class: c.tabs, tab: ctx.tab, tabs: ctx.tabs, rootEl: ctx.rootEl, 'onUpdate:tab': ctx.updateTab, onTabClick: ctx.top })
+
+  const leading = () => {
+    if (ctx.compact && ctx.section !== 'timeline') {
+      return tip(text.timeline, Button(action: () => ctx.setSection('timeline'), label: () => [icon('ti ti-arrow-left')])
+        .accessibilityLabel(text.timeline).className(cls('_button', c.button)))
+    }
+    if (ctx.mobileNav) {
+      return Button(action: ctx.openDrawer, label: () => [
+        Text('').className('ti ti-menu-2'),
+        ctx.menuIndicated ? Box(Text('').className('_indicatorCircle')).className(cls(c.indicator, '_blink')) : null,
+      ].filter(Boolean)).accessibilityLabel(text.menu).className(cls('_button', c.button))
+    }
+    if (ctx.showMyAvatar) {
+      return Box(Component(components.MkAvatar, { class: c.avatar, user: ctx.me })).withProps({ onClick: ctx.openAccountMenu }).className(cls('_button', c.fixed))
+    }
+    if (ctx.titleSpacer) return Box().className(c.buttons)
+    return null
+  }
+
+  const sourceButton = source => {
+    const selected = source.key === ctx.tab
+    return tip(source.title, Button(action: ev => ctx.selectSource(source, ev), label: () => [
+      source.icon ? icon(source.icon) : null,
+      Box(Text(source.title)).withProps({ onTransitionend: ctx.revealSource }).className(source.icon ? c.sourceLabel : undefined),
+    ].filter(Boolean))
+      .accessibilityLabel(source.title)
+      .withProps({ 'aria-pressed': selected })
+      .fontWeight(600)
+      .className(cls('_button', c.sourceButton, selected && c.sourceSelected))
+      .keyed(source.key))
+  }
+
+  const sectionButton = (section, title, iconClass, extra) => {
+    const active = ctx.section === section
+    return tip(title, when(active, Button(action: () => ctx.setSection(section), label: () => [icon(iconClass), extra].filter(Boolean)),
+      node => node.foregroundStyle('var(--MI_THEME-accent)'))
+      .accessibilityLabel(title)
+      .withProps({ 'aria-pressed': active })
+      .className(cls('_button', c.button, active && c.sectionActive)))
+  }
+
+  const compactToolbar = () => [
+    Box(Component(components.Transition, {
+      enterActiveClass: c.headingEnterActive, leaveActiveClass: c.headingLeaveActive,
+      enterFromClass: c.headingEnterFrom, leaveToClass: c.headingLeaveTo,
+    }, ctx.section === 'timeline'
+      ? row(0, ...ctx.tabs.map(sourceButton))
+        .accessibilityLabel(text.timeline)
+        .withProps({ role: 'group' })
+        .elementRef(ctx.sourceStripRef)
+        .className(c.sourceStrip)
+        .keyed('timeline')
+      : Text(ctx.section === 'notifications' ? text.notifications : text.widgets)
+        .fontWeight(600)
+        .truncationMode('tail')
+        .padding({ leading: 8, trailing: 8 })
+        .className(c.sectionHeading)
+        .keyed(ctx.section))).className(c.headingSlot),
+    group(0, ...(ctx.section === 'timeline' ? actionButtons() : [])).className(c.toolbarActions),
+    group(2,
+      sectionButton('notifications', text.notifications, 'ti ti-bell',
+        ctx.me?.hasUnreadNotification ? Text('').cornerRadius('50%').background('var(--MI_THEME-indicator)').accessibilityLabel(String(ctx.me.unreadNotificationsCount)).className(c.unreadDot) : null),
+      sectionButton('widgets', text.widgets, 'ti ti-apps'),
+    ).accessibilityLabel(text.menu).withProps({ role: 'group' }).className(c.sectionButtons),
+  ]
+
+  const titled = () => {
+    const meta = ctx.pageMetadata
+    return [
+      !ctx.hideTitle ? Box(
+        meta.avatar
+          ? Box(Component(components.MkAvatar, { class: c.titleAvatar, user: meta.avatar, indicator: true })).className(c.titleAvatarContainer)
+          : meta.icon ? Text('').className(cls(c.titleIcon, meta.icon)) : null,
+        Box(
+          meta.userName
+            ? Component(components.MkUserName, { user: meta.userName, nowrap: true })
+            : meta.title ? Text(meta.title).lineLimit(1).truncationMode('tail') : null,
+          meta.subtitle ? Text(meta.subtitle).lineLimit(1).className(c.subtitle) : null,
+        ).className(c.title),
+      ).fontWeight('bold').withProps({ onClick: ctx.top }).className(c.titleContainer) : null,
+      !ctx.narrow || ctx.hideTitle ? tabs() : null,
+    ]
+  }
+
+  const upper = row(ctx.compact ? 2 : 'var(--margin)',
+    leading(),
+    ...(ctx.compact ? compactToolbar() : ctx.pageMetadata ? titled() : []),
+    !ctx.compact && (ctx.narrowTitle || ctx.actions?.length > 0) ? group(0, ...actionButtons()).className(c.buttons) : null,
+  ).className(cls(c.upper, ctx.narrow && c.slim, ctx.thin && c.thin, ctx.compact && c.mobileToolbar))
+
+  return [
+    upper,
+    !ctx.compact && ctx.narrow && !ctx.hideTitle && ctx.tabs.length > 0
+      ? Box(tabs()).className(cls(c.lower, c.slim, ctx.thin && c.thin))
+      : null,
+  ].filter(Boolean)
+}
