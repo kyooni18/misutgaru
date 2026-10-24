@@ -31,8 +31,8 @@ fluent-emojis/
 .pnpm-store
 
 # Keep transient dependency trees and nested VCS metadata out of the build context.
-packages/modules/*/node_modules/
-packages/modules/*/.git/
+packages/modules/**/node_modules/
+packages/modules/**/.git/
 
 .idea/
 packages/*/.vscode/

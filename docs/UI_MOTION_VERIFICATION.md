@@ -42,3 +42,33 @@ Not covered: subjective physical-device feel, FAB initial mount pop-in, query/ha
 The next design pass replaces the mobile snap-scrolling timeline picker and shifting icon labels with a stable two-row header: explicit source menu above three persistently labelled section buttons. This intentionally trades 58px of vertical space for discoverability and 44px-or-larger touch targets. Section content now updates directly instead of waiting for a 220ms header-animation timer. The expanded sidebar uses quieter rounded-rectangle selections; the mobile compose button uses a solid theme accent and softer shadow.
 
 Standalone Chromium checks at widths 320, 390, 768 and 1440 found no header horizontal overflow. At 320px all section targets are 44px tall; with a 20px root font they grow to 55px without horizontal overflow. Verified source selection Home → Local → Home, keyboard Enter opening the source menu, all three section buttons, actual widget content, and restoration of the timeline when resizing to desktop. No page errors occurred in the interaction probe. Reduced-motion layout was also exercised. Drawer, navbar, page and FAB trajectory measurements above remain scoped to their earlier commits.
+
+## Motion reassessment after the compact source-strip header
+
+This pass supersedes the earlier spring/page/header recommendations above. The initial source scan found 317 matching lines across frontend Vue, SCSS and TypeScript (`transition:`, `animation:`, `.animate(` and `@keyframes`); this is a search inventory, not a count of independently tested animations.
+
+### Changes and rationale
+
+- Mobile source labels now interpolate their intrinsic width with CSS grid rather than switching `display`. Selection remains immediate; scrolling reveals the active source without moving the feed. Section headings fade without vertical travel.
+- Desktop header tabs use the same grid approach. Removed forced width reflows, overlapping Vue label transitions, the 170ms indicator timeout, and premature mousedown selection. The non-anchor fallback observes tab sizes.
+- Connected shared UI duration/easing aliases to the existing motion runtime, so affected controls follow the animation preference as well as reduced motion. Feedback is 120ms; controls are 180ms; expanding content uses the existing 240ms layout token.
+- Removed whole-route parent animation: it moved the header along with content and could overlap during rapid navigation.
+- Sidebar selection no longer overshoots. Compose-button entry no longer rotates or grows from 40%; scroll dismissal uses a small translation rather than a scale-down flight.
+- Modal/popup/drawer CSS exits and Vue removal durations are aligned, with shorter exits and immediate reduced-motion cleanup. Dialog scale is restrained; send dismissal travels 12px rather than 300px.
+- Tooltips fade instead of zooming from 75%. Toasts travel 8px instead of their full height. Context menus and user previews have restrained entry motion.
+- Folder/container expansion uses consistent layout timing instead of 300–500ms defaults. Streaming notifications settle in 240ms instead of 700ms. Note-action presses no longer bounce. Switch/ripple transitions list their owned properties instead of `all`.
+- Reduced-motion CSS now clears delays, limits keyframes to one iteration, and disables smooth scrolling; previously infinite animations could repeat at a 0.01ms duration. Announcement feedback respects both motion preferences and cancels its previous animation before replaying.
+
+### Direct browser evidence
+
+Standalone Chromium with real advancing animation clocks; no animation finishing or scrubbing:
+
+- Home → Local: Home width 81.23px at 14ms, 53.02px at 48ms, 44px at 79ms. Local width 44px, 63.52px, 72.70px at the same samples; 77.22px at 179ms, final 77.25px by 212ms. No width overshoot.
+- Global → Home → Local → Home, 30ms apart: final selected source is Home after settling, with no browser errors.
+- Reduced-motion label computed duration: 0.00001s.
+- Header has no horizontal overflow at 320, 390, 480, 768 and 1440px. At 320px with 20px root text, the header grows to 63px without overflow.
+- Options popup opens and is removed after Escape; reduced-motion popup is gone within the 60ms observation window.
+
+### Boundary
+
+This is a cross-cutting UI-motion pass, not a claim that every animation in the product was visually tested. Game motion, authored MFM effects, chart/data animations, loading indicators, media gestures and decorative widget timelines were inventoried but not indiscriminately retimed: they have different semantic or functional timing. They receive the shared reduced-motion CSS protection where applicable. JS-driven game/chart/media behavior and subjective physical-device feel still require dedicated evaluation. Earlier drawer/FAB timing measurements do not describe this pass's changed timings.

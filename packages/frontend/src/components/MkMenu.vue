@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	}"
 	@focusin.passive.stop="() => {}"
 >
+	<MkProgressiveBlur/>
 	<div
 		ref="itemsEl"
 		v-hotkey="keymap"
@@ -247,6 +248,7 @@ const childrenCache = new WeakMap<MenuParent, MenuItem[]>();
 </script>
 
 <script lang="ts" setup>
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 const XChild = defineAsyncComponent(() => import('./MkMenu.child.vue'));
 
 const props = defineProps<{
@@ -565,6 +567,8 @@ function guardMouseMove(ev: MouseEvent) {
 
 <style lang="scss" module>
 .root {
+	position: relative;
+	isolation: isolate;
 	&.center {
 		> .menu {
 			> .item {

@@ -127,6 +127,7 @@ import { checkReactionPermissions } from '@/utility/check-reaction-permissions.j
 import { prefer } from '@/preferences.js';
 import { useRouter } from '@/router.js';
 import { haptic } from '@/utility/haptic.js';
+import { loadBundledEmojiIndexes, unicodeEmojiSearchIndexes, normalizeEmojiQuery } from '@/utility/emoji-search-indexes.js';
 
 const router = useRouter();
 
@@ -233,7 +234,7 @@ const categoryRailEl = useTemplateRef('categoryRailEl');
 const carouselEl = useTemplateRef('carouselEl');
 let categorySyncFrame: number | null = null;
 
-watch(q, () => {
+watch([q, unicodeEmojiSearchIndexes], () => {
 	if (emojisEl.value) emojisEl.value.scrollTop = 0;
 
 	if (q.value === '') {
@@ -243,7 +244,8 @@ watch(q, () => {
 		return;
 	}
 
-	const newQ = q.value.replace(/:/g, '').toLowerCase();
+	const newQ = normalizeEmojiQuery(q.value.replace(/:/g, '')).trim();
+	if (newQ === '') return;
 
 	const searchCustom = () => {
 		const max = 100;
@@ -253,8 +255,8 @@ watch(q, () => {
 		const exactMatch = emojis.find(emoji => emoji.name === newQ);
 		if (exactMatch) matches.add(exactMatch);
 
-		if (newQ.includes(' ')) { // AND検索
-			const keywords = newQ.split(' ');
+		if (/\s/.test(newQ)) { // AND検索
+			const keywords = newQ.split(/\s+/);
 
 			// 名前にキーワードが含まれている
 			for (const emoji of emojis) {
@@ -329,8 +331,8 @@ watch(q, () => {
 		const exactMatch = emojis.find(emoji => emoji.name === newQ);
 		if (exactMatch) matches.add(exactMatch);
 
-		if (newQ.includes(' ')) { // AND検索
-			const keywords = newQ.split(' ');
+		if (/\s/.test(newQ)) { // AND検索
+			const keywords = newQ.split(/\s+/);
 
 			for (const emoji of emojis) {
 				if (keywords.every(keyword => emoji.name.includes(keyword))) {
@@ -340,9 +342,9 @@ watch(q, () => {
 			}
 			if (matches.size >= max) return matches;
 
-			for (const index of Object.values(store.s.additionalUnicodeEmojiIndexes)) {
+			for (const index of Object.values(unicodeEmojiSearchIndexes.value)) {
 				for (const emoji of emojis) {
-					if (keywords.every(keyword => index[emoji.char]?.some(k => k.includes(keyword)))) {
+					if (keywords.every(keyword => index[emoji.char]?.some(k => normalizeEmojiQuery(k).includes(keyword)))) {
 						matches.add(emoji);
 						if (matches.size >= max) break;
 					}
@@ -357,9 +359,9 @@ watch(q, () => {
 			}
 			if (matches.size >= max) return matches;
 
-			for (const index of Object.values(store.s.additionalUnicodeEmojiIndexes)) {
+			for (const index of Object.values(unicodeEmojiSearchIndexes.value)) {
 				for (const emoji of emojis) {
-					if (index[emoji.char]?.some(k => k.startsWith(newQ))) {
+					if (index[emoji.char]?.some(k => normalizeEmojiQuery(k).startsWith(newQ))) {
 						matches.add(emoji);
 						if (matches.size >= max) break;
 					}
@@ -374,9 +376,9 @@ watch(q, () => {
 			}
 			if (matches.size >= max) return matches;
 
-			for (const index of Object.values(store.s.additionalUnicodeEmojiIndexes)) {
+			for (const index of Object.values(unicodeEmojiSearchIndexes.value)) {
 				for (const emoji of emojis) {
-					if (index[emoji.char]?.some(k => k.includes(newQ))) {
+					if (index[emoji.char]?.some(k => normalizeEmojiQuery(k).includes(newQ))) {
 						matches.add(emoji);
 						if (matches.size >= max) break;
 					}
@@ -596,6 +598,7 @@ function settings() {
 }
 
 onMounted(() => {
+	loadBundledEmojiIndexes();
 	focus();
 	window.requestAnimationFrame(() => selectCategory(activeCategoryIndex.value, 'auto'));
 });
@@ -832,8 +835,12 @@ defineExpose({
 	overflow-y: auto;
 	scroll-snap-align: center;
 	scroll-snap-stop: always;
-	scrollbar-width: thin;
+	scrollbar-width: none;
 	overscroll-behavior-y: contain;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
 	opacity: 0.08;
 	filter: blur(7px) saturate(0.65);
 	transform: scale(0.955);
@@ -862,8 +869,12 @@ defineExpose({
 	min-height: 0;
 	padding: 7px 12px 16px;
 	overflow-y: auto;
-	scrollbar-width: thin;
+	scrollbar-width: none;
 	overscroll-behavior: contain;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 .emojiGrid {

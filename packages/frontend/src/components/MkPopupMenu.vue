@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:zPriority="'high'"
 	:anchorElement="anchorElement"
 	:transparentBg="true"
+	noBgBlur
 	:returnFocusTo="returnFocusTo"
 	@click="click"
 	@close="onModalClose"

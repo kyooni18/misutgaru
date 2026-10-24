@@ -88,3 +88,6 @@ vite.config.local-dev.ts.timestamp-*
 
 # Local source exports
 /exports/
+
+# Mün checkout (its own git repo: https://github.com/kyooni18/Mun.git)
+/packages/modules/Mun/

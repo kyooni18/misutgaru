@@ -10,7 +10,7 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
-		"@mun/core": "link:/Users/kyooni18/Code/Mun/packages/core"
+		"@mun/core": "workspace:*"
 	},
 	"devDependencies": {
 		"typescript": "5.9.3"

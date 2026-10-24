@@ -57,7 +57,7 @@ const toggle = () => {
 	border: solid 1px var(--MI_THEME-switchOffBg);
 	border-radius: 999px;
 	cursor: pointer;
-	transition: inherit;
+	transition: background-color var(--MI-durFast) var(--MI-easeOut), border-color var(--MI-durFast) var(--MI-easeOut);
 	user-select: none;
 }
 

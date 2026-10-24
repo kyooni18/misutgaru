@@ -37,6 +37,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import MkModal from '@/components/MkModal.vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 
@@ -70,7 +71,7 @@ async function ok() {
 }
 
 function onBgClick() {
-	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+	if (!prefer.s.animation || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 	rootEl.value?.getAnimations().forEach(animation => animation.cancel());
 	rootEl.value?.animate([{
 		offset: 0,
