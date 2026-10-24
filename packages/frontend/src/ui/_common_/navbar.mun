@@ -9,7 +9,7 @@
 // the stylesheet was written for. Images carry their own frame: an Image sizes
 // itself from its frame, not from the space around it.
 
-import { Button, Divider, HStack, Icon, Image, RoundedRectangle, Text, VStack, ZStack } from '@mun/core/compat'
+import { Button, Divider, HStack, Icon, Image, Text, VStack, ZStack } from '@mun/core/compat'
 import { Component } from '@mun/vue'
 
 const subButtonShape = [['path', {
@@ -19,6 +19,8 @@ const subButtonShape = [['path', {
 
 const cls = (...names) => names.filter(Boolean).join(' ')
 const noop = () => {}
+// Apply a modifier only when a condition holds, keeping the chain readable.
+const when = (condition, node, modify) => condition ? modify(node) : node
 
 export function navbarView(ctx) {
   const { c, components, text, me, iconOnly } = ctx
@@ -36,20 +38,24 @@ export function navbarView(ctx) {
     : Text('').className(cls(c.itemIndicator, c.itemIndicatorDot, '_blink'))
 
   const realtimeButton = () => tip(text.realtimeMode,
-    Button(action: ctx.toggleRealtimeMode, label: () => [icon(ctx.realtimeMode ? 'ti ti-bolt ti-fw' : 'ti ti-bolt-off ti-fw')])
-      .className(cls('_button', c.realtimeMode, ctx.realtimeMode && c.on)))
+    when(ctx.realtimeMode, Button(action: ctx.toggleRealtimeMode, label: () => [icon(ctx.realtimeMode ? 'ti ti-bolt ti-fw' : 'ti ti-bolt-off ti-fw')]), node => node.foregroundStyle('var(--MI_THEME-accent)'))
+      .className(cls('_button', c.realtimeMode)))
   const widgetButton = () => tip(text.widgets,
     Button(action: ctx.onWidgetButtonClick, label: () => [icon('ti ti-apps ti-fw')]).className(cls('_button', c.widget)))
 
   const itemContent = (title, iconClass, transitionName, indicated, indicateValue) => [
     icon(cls(c.itemIcon, iconClass), transitionName),
-    Text(title).className(c.itemText),
+    (iconOnly ? Text(title) : Text(title).fontSize('0.9em')).className(c.itemText),
     indicated ? indicator(indicateValue) : null,
   ].filter(Boolean)
 
+  // Item color stays in the stylesheet: it changes on hover and when active.
+  const itemStyle = node => when(!iconOnly, node
+    .padding(iconOnly ? { top: 16, bottom: 16 } : { leading: 30 })
+    .multilineTextAlignment(iconOnly ? 'center' : 'leading'), n => n.fontWeight(500))
   const link = (title, to, iconClass, transitionName, extra) => tip(title,
-    Component(components.MkA, { class: c.item, activeClass: c.active, to, exact: extra?.exact },
-      ...itemContent(title, iconClass, transitionName)))
+    itemStyle(Component(components.MkA, { class: c.item, activeClass: c.active, to, exact: extra?.exact },
+      ...itemContent(title, iconClass, transitionName))))
 
   const menuItem = (item) => {
     if (item === '-') return Divider().className(c.divider)
@@ -59,7 +65,7 @@ export function navbarView(ctx) {
     const node = def.to
       ? Component(components.MkA, { class: cls('_button', c.item), activeClass: c.active, to: def.to, ...(def.action ? { onClick: def.action } : {}) }, ...content)
       : Button(action: def.action ?? noop, label: () => content).className(cls('_button', c.item))
-    return tip(def.title, node)
+    return tip(def.title, itemStyle(node))
   }
 
   const subButton = (onClick, iconClassName) => ZStack(
@@ -74,27 +80,32 @@ export function navbarView(ctx) {
   const top = (iconOnly ? VStack : HStack)({ alignment: 'stretch' },
     tip(text.instanceName,
       Button(action: ctx.openInstanceMenu, label: () => [
-        // A framed Image keeps its intrinsic size; scaledToFill makes it fill the frame.
+        // A framed Image keeps its intrinsic size unless it is resizable.
         Image(ctx.instanceIconUrl, { alt: '' })
-          .scaledToFill()
-          .clipShape(RoundedRectangle(8))
+          .resizable()
+          .cornerRadius(8)
           .frame({ width: iconSize, height: iconSize })
+          // Round the frame too: the focus outline is drawn around it.
+          .cornerRadius(8)
           // Inline like the former <img>, so the button's text-align centers it.
           .style({ display: 'inline-grid', viewTransitionName: 'navbar-serverIcon' })
           .className(c.instanceIcon),
       ]).className(cls('_button', c.instance))),
     ...(!iconOnly ? [realtimeButton(), ctx.showWidgetButton ? widgetButton() : null] : []).filter(Boolean),
-  ).className(c.top)
+  ).padding(iconOnly ? { top: 20, bottom: 20 } : { leading: 6 }).zIndex(1).className(c.top)
 
   const middle = stack(
     Text('').className(cls(c.activePill, pill.shown && c.activePillShown, pill.animated && c.activePillAnimated))
       .style({ transform: `translateY(${pill.top}px)`, height: `${pill.height}px`, '--pillHeight': `${pill.height}px` })
+      .cornerRadius(iconOnly ? 999 : 12)
+      .background('color-mix(in srgb, var(--MI_THEME-navFg) 8%, transparent)')
+      .allowsHitTesting(false)
       .accessibilityHidden(true),
     link(text.timeline, '/', 'ti ti-home ti-fw', 'navbar-homeIcon', { exact: true }),
     ...ctx.menu.map(menuItem),
     Divider().className(c.divider),
     me != null && (me.isAdmin || me.isModerator) ? link(text.controlPanel, '/admin', 'ti ti-dashboard ti-fw', 'navbar-controlPanel') : null,
-    Button(action: ctx.more, label: () => itemContent(text.more, 'ti ti-grid-dots ti-fw', 'navbar-more', ctx.otherMenuItemIndicated)).className(cls('_button', c.item)),
+    itemStyle(Button(action: ctx.more, label: () => itemContent(text.more, 'ti ti-grid-dots ti-fw', 'navbar-more', ctx.otherMenuItemIndicated)).className(cls('_button', c.item))),
     link(text.settings, '/settings', 'ti ti-settings ti-fw', 'navbar-settings'),
   ).className(c.middle).elementRef(ctx.middleRef)
 
@@ -102,29 +113,35 @@ export function navbarView(ctx) {
     iconOnly && ctx.showWidgetButton ? widgetButton() : null,
     iconOnly ? realtimeButton() : null,
     tip(text.note,
-      Button(action: ctx.post, label: () => [
-        Text('').className(cls('ti ti-pencil ti-fw', c.postIcon)),
+      when(!iconOnly, Button(action: ctx.post, label: () => [
+        (iconOnly ? Text('').foregroundStyle('var(--MI_THEME-fgOnAccent)') : Text('')).className(cls('ti ti-pencil ti-fw', c.postIcon)),
         Text(text.note).className(c.postText),
-      ]).className(cls('_button', c.post)).withProps({ 'data-testid': 'open-post-form' })),
+      ])
+        .multilineTextAlignment(iconOnly ? 'center' : 'leading')
+        .className(cls('_button', c.post)).withProps({ 'data-testid': 'open-post-form' }),
+        node => node.foregroundStyle('var(--MI_THEME-fgOnAccent)').fontWeight('bold'))),
     me != null
       ? tip(text.account,
         Button(action: ctx.openAccountMenu, label: () => [
           Component(components.MkAvatar, { user: me, class: c.avatar, style: 'view-transition-name: navbar-avatar;' }),
           Component(components.MkAcct, { class: cls('_nowrap', c.acct), user: me }),
-        ]).className(cls('_button', c.account)))
+        ])
+          .padding(iconOnly ? { top: 20, bottom: 20 } : { top: 20, bottom: 20, leading: 30 })
+          .multilineTextAlignment(iconOnly ? 'center' : 'leading')
+          .className(cls('_button', c.account)))
       : null,
-  ).className(c.bottom)
+  ).padding({ top: 20 }).className(c.bottom)
 
   return [
     Component(components.MkProgressiveBlur),
-    stack(top, middle, bottom).className(c.body),
+    stack(top, middle, bottom).background('var(--MI_THEME-navBg)').className(c.body),
     ctx.showSubButtons
       ? VStack({ alignment: 'leading' },
         subButton(ctx.menuEdit, cls(c.subButtonIcon, 'ti ti-settings-2')),
         ...(!ctx.asDrawer
           ? [
-            Text('').className(c.subButtonGapFill),
-            Text('').className(c.subButtonGapFillDivider),
+            Text('').background('var(--MI_THEME-navBg)').allowsHitTesting(false).className(c.subButtonGapFill),
+            Text('').background('var(--MI_THEME-divider)').allowsHitTesting(false).className(c.subButtonGapFillDivider),
             subButton(ctx.toggleIconOnly, cls(iconOnly ? 'ti ti-chevron-right' : 'ti ti-chevron-left', c.subButtonIcon)),
           ]
           : []))

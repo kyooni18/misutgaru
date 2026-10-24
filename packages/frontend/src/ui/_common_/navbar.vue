@@ -211,7 +211,6 @@ function renderNavbar() {
 	overflow: auto;
 	overflow-x: clip;
 	overscroll-behavior: contain;
-	background: var(--MI_THEME-navBg);
 	contain: strict;
 
 	/* 画面が縦に長い、設置している項目数が少ないなどの環境においても確実にbottomを最下部に表示するため */
@@ -278,10 +277,7 @@ function renderNavbar() {
 	left: 0;
 	right: 0;
 	margin: 0 auto;
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--MI_THEME-navFg) 8%, transparent);
 	opacity: 0;
-	pointer-events: none;
 	transition: opacity var(--MI-dur) var(--MI-easeOut);
 
 	&.activePillShown {
@@ -410,8 +406,6 @@ function renderNavbar() {
 	height: 64px;
 	margin-top: -32px;
 	margin-bottom: -32px;
-	pointer-events: none;
-	background: var(--MI_THEME-navBg);
 }
 
 .subButtonGapFillDivider {
@@ -420,8 +414,6 @@ function renderNavbar() {
 	margin-left: -2px;
 	width: 14px;
 	height: 1px;
-	background: var(--MI_THEME-divider);
-	pointer-events: none;
 }
 
 // The indicator is one Mün Text; its dot/badge sits in ::before as an inline
@@ -459,10 +451,8 @@ function renderNavbar() {
 
 		position: sticky;
 		top: 0;
-		z-index: 1;
 		display: flex;
 		height: var(--top-height);
-		padding-left: 6px;
 	}
 
 	.instance {
@@ -470,21 +460,10 @@ function renderNavbar() {
 		width: var(--top-height);
 	}
 
-	.instanceIcon {
-		display: inline-block;
-		width: 38px;
-		aspect-ratio: 1;
-		border-radius: 8px;
-	}
-
 	.realtimeMode {
 		display: inline-block;
 		width: var(--top-height);
 		margin-left: auto;
-
-		&.on {
-			color: var(--MI_THEME-accent);
-		}
 	}
 
 	.widget {
@@ -496,7 +475,6 @@ function renderNavbar() {
 	.bottom {
 		position: sticky;
 		bottom: 0;
-		padding-top: 20px;
 	}
 
 	.post {
@@ -504,9 +482,6 @@ function renderNavbar() {
 		display: block;
 		width: 100%;
 		height: 40px;
-		color: var(--MI_THEME-fgOnAccent);
-		font-weight: bold;
-		text-align: left;
 
 		&::before {
 			content: "";
@@ -555,9 +530,7 @@ function renderNavbar() {
 		position: relative;
 		display: flex;
 		align-items: center;
-		padding: 20px 0 20px 30px;
 		width: 100%;
-		text-align: left;
 		box-sizing: border-box;
 		overflow: clip;
 
@@ -597,14 +570,11 @@ function renderNavbar() {
 	.item {
 		position: relative;
 		display: block;
-		padding-left: 30px;
 		line-height: 2.85rem;
-		font-weight: 500;
 		text-overflow: ellipsis;
 		overflow: hidden;
 		white-space: nowrap;
 		width: 100%;
-		text-align: left;
 		box-sizing: border-box;
 		color: var(--MI_THEME-navFg);
 
@@ -662,7 +632,6 @@ function renderNavbar() {
 
 	.activePill {
 		width: calc(100% - 24px);
-		border-radius: 12px;
 	}
 
 	.itemIcon {
@@ -690,7 +659,6 @@ function renderNavbar() {
 
 	.itemText {
 		position: relative;
-		font-size: 0.9em;
 	}
 
 	.subButtons {
@@ -709,8 +677,6 @@ function renderNavbar() {
 	.top {
 		position: sticky;
 		top: 0;
-		z-index: 1;
-		padding: 20px 0;
 	}
 
 	.instance {
@@ -728,17 +694,9 @@ function renderNavbar() {
 		}
 	}
 
-	.instanceIcon {
-		display: inline-block;
-		width: 30px;
-		aspect-ratio: 1;
-		border-radius: 8px;
-	}
-
 	.bottom {
 		position: sticky;
 		bottom: 0;
-		padding-top: 20px;
 	}
 
 	.widget {
@@ -755,10 +713,6 @@ function renderNavbar() {
 		width: 100%;
 		height: 52px;
 		text-align: center;
-
-		&.on {
-			color: var(--MI_THEME-accent);
-		}
 	}
 
 	.post {
@@ -766,7 +720,6 @@ function renderNavbar() {
 		position: relative;
 		width: 100%;
 		height: 52px;
-		text-align: center;
 
 		&::before {
 			content: "";
@@ -801,7 +754,6 @@ function renderNavbar() {
 
 	.postIcon {
 		position: relative;
-		color: var(--MI_THEME-fgOnAccent);
 	}
 
 	.postText {
@@ -810,8 +762,6 @@ function renderNavbar() {
 
 	.account {
 		display: block;
-		text-align: center;
-		padding: 20px 0;
 		width: 100%;
 		overflow: clip;
 
@@ -847,9 +797,7 @@ function renderNavbar() {
 	.item {
 		display: block;
 		position: relative;
-		padding: 16px 0;
 		width: 100%;
-		text-align: center;
 
 		&:focus-visible {
 			outline: none;
