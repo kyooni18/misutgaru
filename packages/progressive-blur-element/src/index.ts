@@ -14,7 +14,7 @@
  * a backdrop root.
  */
 
-import { Animation, Element, defineView, initializer } from '@mun/core/compat';
+import { Animation, Element, animationCSSStyle, defineView, initializer } from '@mun/core/compat';
 import type { MunStyleProperties, ViewValue } from '@mun/core/compat';
 
 export type ProgressiveBlurLayer = {
@@ -168,7 +168,20 @@ const defaultAnimation = Animation.smooth(0.28);
 
 // Hosts that map .animation() to a CSS transition leave backdrop-filter out of
 // transition-property, so the blur would snap without this override.
-const blurTransitionProperty = Object.freeze({ transitionProperty: 'backdrop-filter, -webkit-backdrop-filter' } as MunStyleProperties);
+function blurTransitionStyle(animation: Animation): MunStyleProperties {
+	const timing = animationCSSStyle(animation)!;
+	return {
+		// WebKit aliases these properties: animate the filter once. Older Safari
+		// needs the prefixed spelling; modern engines use the standard property.
+		transitionProperty: typeof CSS !== 'undefined' && CSS.supports('backdrop-filter', 'blur(1px)')
+			? 'backdrop-filter'
+			: '-webkit-backdrop-filter',
+		// The frontend motion runtime suppresses CSS-owned motion through this
+		// inherited token. Keep Mun's actual spring duration/curve, not a new preset.
+		transitionDuration: `calc(${timing.transitionDuration} * var(--MI-motion-duration-scale, 1))`,
+		transitionDelay: `calc(${timing.transitionDelay} * var(--MI-motion-duration-scale, 1))`,
+	} as MunStyleProperties;
+}
 
 type Props = { options: ProgressiveBlurOptions; content: ViewValue };
 
@@ -182,6 +195,7 @@ export const ProgressiveBlurElement = defineView<Props, [ProgressiveBlurOptions,
 		const radius = options.radius ?? 18;
 		const layers = resolveLayers(options);
 		const animation = options.animation === undefined ? defaultAnimation : options.animation;
+		const transitionStyle = animation ? blurTransitionStyle(animation) : null;
 		// Bands stay mounted while inactive at blur 0, so toggling `active` is a value
 		// change the motion engine animates rather than an insert/remove that the
 		// Vue host does not transition.
@@ -192,7 +206,7 @@ export const ProgressiveBlurElement = defineView<Props, [ProgressiveBlurOptions,
 				// instead of the reconciler morphing neighbours into each other.
 				.id(`pbe-band-${index}`)
 				.animation(animation, `${options.active}|${layer.from}|${layer.to}|${layer.blur}`);
-			return animation ? band.style(blurTransitionProperty) : band;
+			return transitionStyle ? band.style(transitionStyle) : band;
 		});
 		return Element('div', {
 			className: ['pbe', options.className].filter(Boolean).join(' '),

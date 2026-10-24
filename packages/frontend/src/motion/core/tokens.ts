@@ -42,6 +42,8 @@ export function installMotionCssVariables(
 	policy: MotionCssPolicy = { enabled: true, reducedMotion: false },
 ): void {
 	const suppressDurations = !policy.enabled || policy.reducedMotion;
+	// Custom CSS-owned curves retain their timing while sharing the runtime policy.
+	root.style.setProperty('--MI-motion-duration-scale', suppressDurations ? '0' : '1');
 	for (const [name, value] of Object.entries(cssVariables)) {
 		root.style.setProperty(name, suppressDurations && name.includes('-duration-') ? '0ms' : value);
 	}
