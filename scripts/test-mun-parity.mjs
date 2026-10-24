@@ -24,45 +24,68 @@ const base = process.argv.find(arg => arg.startsWith('--base='))?.split('=')[1] 
 
 const targets = {
 	navbar: 'src/ui/_common_/navbar.vue',
+	postForm: 'src/components/MkPostForm.vue',
 };
 const baseline = Object.fromEntries(Object.entries(targets).map(([name, file]) => [
 	path.join(frontend, file.replace(/\.vue$/, '.__base.vue')),
 	execFileSync('git', ['show', `${base}:packages/frontend/${file}`], { cwd: root, encoding: 'utf8' }),
 ]));
 
+// Absorbs any property access or call for services whose behavior does not affect markup.
+const any = 'const any=new Proxy(function(){},{get:(_,k)=>k===Symbol.toPrimitive?()=>"":k==="then"?undefined:any,apply:()=>any,construct:()=>any});';
+const anyExports = names => `${any} export const ${names.map(n => `${n}=any`).join(',')};`;
 const stubs = {
-	'@/os.js': 'export const post=()=>{}; export const popupMenu=()=>Promise.resolve(); export const popupAsyncWithDialog=()=>Promise.resolve({dispose(){}}); export const claimZIndex=()=>100;',
+	'@/os.js': 'export const api=()=>Promise.resolve(); export const post=()=>{}; export const popupMenu=()=>Promise.resolve(); export const popupAsyncWithDialog=()=>Promise.resolve({dispose(){}}); export const claimZIndex=()=>100;',
 	'@/navbar.js': `import {ref} from 'vue'; export const navbarItemDef={
 		notifications:{title:'Notifications',icon:'ti ti-bell',to:'/my/notifications',indicated:true,indicateValue:'3'},
 		drive:{title:'Drive',icon:'ti ti-cloud',to:'/my/drive'},
 		search:{title:'Search',icon:'ti ti-search',action:()=>{},indicated:true},
 		hidden:{title:'Hidden',icon:'ti ti-x',to:'/x',show:ref(false)},
 		unused:{title:'Unused',icon:'ti ti-x',to:'/u',indicated:true}};`,
-	'@/store.js': `import {ref} from 'vue'; const r={realtimeMode:ref(false),menuDisplay:ref('sideFull')};
-		export const store={r,s:{get realtimeMode(){return r.realtimeMode.value}},set(k,v){r[k].value=v}};`,
-	'@/i18n.js': 'export const i18n={ts:new Proxy({},{get:(_,k)=>String(k)}),tsx:new Proxy({},{get:(_,k)=>()=>String(k)})};',
+	'@/store.js': `import {ref} from 'vue'; const r={realtimeMode:ref(false),menuDisplay:ref('sideFull'),tips:ref({postForm:false}),postFormWithHashtags:ref(true),postFormHashtags:ref('tag')};
+		export const store={r,s:{get realtimeMode(){return r.realtimeMode.value},showPreview:true,visibility:'public',localOnly:false,reactionAcceptance:null},set(k,v){r[k].value=v},model:k=>r[k]};`,
+	'@/i18n.js': `const ts=new Proxy({},{get:(_,k)=>String(k).startsWith('_')?new Proxy({},{get:(_,k2)=>String(k2)}):String(k)});
+		export const i18n={ts,tsx:new Proxy({},{get:(_,k)=>()=>String(k)})};`,
 	'@/instance.js': 'export const instance={name:"Inst",iconUrl:null};',
 	'@/router.js': 'export const useRouter=()=>({useListener(){},push(){}});',
 	'@/preferences.js': `import {ref,reactive} from 'vue'; const r={menu:ref(['notifications','-','drive','search','hidden']),showNavbarSubButtons:ref(true),animation:ref(true)};
-		export const prefer={r,s:reactive({animation:true}),model:()=>ref(null),commit(){}};`,
-	'@/accounts.js': 'export const getAccountMenu=async()=>[];',
-	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true};',
+		export const prefer={r,s:reactive({animation:true,defaultNoteLocalOnly:false,defaultNoteVisibility:'public',enableQuickAddMfmFunction:true,keepCw:false,rememberNoteVisibility:false}),model:()=>ref(null),commit(){}};`,
+	'@/accounts.js': 'export const getAccountMenu=async()=>[]; export const getAccounts=async()=>[];',
+	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true,avatarUrl:"/a.png"}; export const ensureSignin=()=>$i; export const notesCount=0; export const incNotesCount=()=>{};',
+	'@/instance.js': 'export const instance={name:"Inst",iconUrl:null,maxNoteTextLength:120};',
+	'@@/js/config.js': 'export const host="example.com",url="https://example.com";',
+	'@/local-storage.js': 'export const miLocalStorage={getItem:k=>k==="hashtags"?JSON.stringify(["a","b"]):null,setItem(){},removeItem(){},getItemAsJson:()=>null,setItemAsJson(){}};',
+	'@/plugin.js': 'export const getPluginHandlers=()=>[{}];',
+	'@/events.js': 'export const globalEvents={on(){},off(){},emit(){}};',
+	'@/composables/use-uploader.js': `import {ref} from 'vue'; ${any} export const useUploader=()=>new Proxy({items:ref([])},{get:(t,k)=>k in t?t[k]:any});`,
+	'@/directives/click-anime.js': 'export const clickAnimeDirective={mounted(el){el.setAttribute("data-click-anime","")}};',
+	'@/utility/autocomplete.js': anyExports(['Autocomplete']),
+	'@/utility/misskey-api.js': anyExports(['misskeyApi']),
+	'@/utility/drive.js': anyExports(['chooseDriveFile']),
+	'@/utility/achievements.js': anyExports(['claimAchievement']),
+	'@/utility/emoji-picker.js': anyExports(['emojiPicker']),
+	'@/utility/mfm-function-picker.js': anyExports(['mfmFunctionPicker']),
+	'@/drag-and-drop.js': anyExports(['checkDragDataType', 'getDragData']),
+	'@/utility/tour.js': anyExports(['startTour']),
+	'@/tips.js': anyExports(['closeTip']),
 	'./common.js': 'export const openInstanceMenu=()=>{};',
 	'@/directives/tooltip.js': 'export const tooltipDirective={mounted(el,b){el.setAttribute("data-tip",b.value+JSON.stringify(b.modifiers))}};',
 };
-const leaves = ['MkA', 'MkAvatar', 'MkAcct'];
+const leaves = ['MkA', 'MkAvatar', 'MkAcct', 'MkUploaderItems', 'MkNotePreview', 'MkPostFormAttaches', 'MkPostForm.TextCounter',
+	'MkPollEditor', 'MkNoteSimple', 'MkInfo', 'MkRippleEffect', 'MkEllipsis', 'MkTime', 'I18n', 'MkTip'];
 
 const entry = `
 import {createApp,h,nextTick} from 'vue';
 import {tooltipDirective} from '@/directives/tooltip.js';
 ${Object.keys(targets).map(name => `import ${name}Base from '/${targets[name].replace(/\.vue$/, '.__base.vue')}';
 import ${name}Next from '/${targets[name]}';`).join('\n')}
-import MkA from '\0parity-leaf:MkA'; import MkAvatar from '\0parity-leaf:MkAvatar'; import MkAcct from '\0parity-leaf:MkAcct';
-const leaves={MkA,MkAvatar,MkAcct};
+import {clickAnimeDirective} from '@/directives/click-anime.js';
+${leaves.map(n => `import ${n.replace('.', '_')} from '\\0parity-leaf:${n}';`).join('\n')}
+const leaves={${leaves.map(n => n.replace('.', '_')).join(',')}};
 function mount(component,props){
 	const el=document.createElement('div'); document.body.append(el);
 	const app=createApp({render:()=>h(component,props)});
-	app.directive('tooltip',tooltipDirective);
+	app.directive('tooltip',tooltipDirective); app.directive('click-anime',clickAnimeDirective);
 	for(const [n,c] of Object.entries(leaves)) app.component(n,c);
 	app.mount(el); return el;
 }
@@ -76,11 +99,20 @@ ${Object.keys(targets).map(name => `for (const props of window.cases_${name}) {
 	const a=mount(${name}Base,props), b=mount(${name}Next,props);
 	await nextTick(); await new Promise(requestAnimationFrame); await nextTick();
 	(window.parity.${name} ??= []).push([normalize(a),normalize(b)]);
+	// Typing must update state through v-model and re-render identically.
+	const typed=[a,b].map(el=>el.querySelector('textarea'));
+	if (typed[0]) {
+		for (const t of typed) { t.value='x'.repeat(40); t.dispatchEvent(new Event('input')); }
+		await nextTick(); await nextTick();
+		window.parity.${name}.push([normalize(a)+'|'+typed[0].value,normalize(b)+'|'+typed[1].value]);
+	}
 }`).join('\n')}
 window.parityDone=true;
 `;
 const cases = {
 	navbar: [{}, { showWidgetButton: true }, { asDrawer: true }],
+	postForm: [{}, { fixed: true }, { initialText: 'hello', initialCw: 'cw' }, { initialVisibility: 'specified', initialLocalOnly: true },
+		{ channel: { id: 'c', name: 'Channel', color: '#f00' } }],
 };
 const html = `<div></div><script>${Object.entries(cases).map(([n, c]) => `window.cases_${n}=${JSON.stringify(c)};`).join('')}</script><script type="module" src="/__parity_entry.js"></script>`;
 
@@ -112,9 +144,14 @@ const server = await createServer({
 			if (id === '\0parity-entry.js') return entry;
 			if (id.startsWith('\0parity-stub:')) return stubs[id.slice('\0parity-stub:'.length)];
 			if (id.startsWith('\0parity-leaf:')) {
-				const tag = { MkA: 'a', MkAvatar: 'img', MkAcct: 'span' }[id.slice('\0parity-leaf:'.length)];
+				const name = id.slice('\0parity-leaf:'.length);
+				const tag = { MkA: 'a', MkAvatar: 'img', MkAcct: 'span' }[name] ?? `x-${name.replace('.', '-').toLowerCase()}`;
+				// Props become data-* so differing values show up in the DOM comparison.
 				return `import {h} from 'vue'; export default {inheritAttrs:false,props:['to','activeClass','exact','user'],
-					setup:(p,{slots,attrs})=>()=>h('${tag}',{...attrs,href:p.to,'data-user':p.user?.id,class:[attrs.class,p.to==='/'&&p.activeClass]},slots.default?.())};`;
+					setup:(p,{slots,attrs})=>()=>h('${tag}',{
+						...Object.fromEntries(Object.entries(attrs).map(([k,v])=>[k.startsWith('on')?k:k==='class'||k==='style'?k:'data-'+k.toLowerCase(),typeof v==='object'&&v!==null&&k!=='style'&&k!=='class'?JSON.stringify(v):v])),
+						href:p.to,'data-user':p.user?.id,class:[attrs.class,p.to==='/'&&p.activeClass]},
+						Object.entries(slots).map(([n,s])=>n==='default'?s():h('x-slot',{name:n},s())))};`;
 			}
 			if (Object.hasOwn(baseline, id)) return baseline[id];
 			if (id.endsWith('.mun.js')) return readFile(id.slice(0, -3), 'utf8');

@@ -1,0 +1,149 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+// Mün view for the post form (ported from the template of MkPostForm.vue).
+// State, handlers and the CSS module stay in the Vue shell, which passes its
+// $style map as `c` so the rendered DOM and classes are unchanged. Text inputs
+// keep Vue's v-model directive (through MunDirectives) for IME composition handling.
+
+import { Element } from '@mun/core/compat'
+import { Component } from '@mun/vue'
+
+const cls = (...names) => names.filter(Boolean).join(' ')
+
+export function postFormView(ctx) {
+  const { c, components: C, d, labels: t } = ctx
+  const directed = (directives, node) => Component(C.MunDirectives, { directives }, node)
+  const tip = (title, node) => directed([d.tooltip(title)], node)
+  const icon = className => Element('i', { className })
+  const footerButton = (title, className, onClick, iconClass) => tip(title,
+    Element('button', { className, onClick }, icon(iconClass)))
+
+  const visibilityIcons = { public: 'ti ti-world', home: 'ti ti-home', followers: 'ti ti-lock', specified: 'ti ti-mail' }
+
+  const header = Element('header', { className: c.header },
+    Element('div', { className: c.headerLeft },
+      !ctx.fixed ? Element('button', { className: cls(c.cancel, '_button'), onClick: ctx.cancel }, icon('ti ti-x')) : null,
+      directed([d.clickAnime(), d.tooltip(t.account)],
+        Element('button', { ref: ctx.refs.accountMenuEl, className: '_button', onClick: ctx.openAccountMenu },
+          Element('img', { className: c.avatar, src: ctx.account.avatarUrl, style: 'border-radius: 100%;' })))),
+    Element('div', { className: c.headerRight },
+      !(ctx.targetChannel != null && ctx.fixed)
+        ? (ctx.targetChannel == null
+          ? tip(t.visibility,
+            Element('button', { ref: ctx.refs.visibilityButton, className: cls('_button', c.headerRightItem, c.visibility), onClick: ctx.setVisibility },
+              ...Object.entries(visibilityIcons).map(([key, iconClass]) => ctx.visibility === key ? Element('span', null, icon(iconClass)) : null),
+              Element('span', { className: c.headerRightButtonText }, t.visibilityName)))
+          : Element('button', { className: cls('_button', c.headerRightItem, c.visibility), disabled: true },
+            Element('span', null, icon('ti ti-device-tv')),
+            Element('span', { className: c.headerRightButtonText }, ctx.targetChannel.name)))
+        : null,
+      ctx.visibility !== 'specified'
+        ? tip(t.disableFederation,
+          Element('button', { className: cls('_button', c.headerRightItem, ctx.localOnly && c.danger), disabled: ctx.targetChannel != null, onClick: ctx.toggleLocalOnly },
+            Element('span', null, icon(ctx.localOnly ? 'ti ti-rocket-off' : 'ti ti-rocket'))))
+        : null,
+      tip(t.other,
+        Element('button', { ref: ctx.refs.otherSettingsButton, className: cls('_button', c.headerRightItem), onClick: ctx.showOtherSettings }, icon('ti ti-dots'))),
+      directed([d.clickAnime()],
+        Element('button', { ref: ctx.refs.submitButtonEl, className: cls('_button', c.submit), disabled: !ctx.canPost, 'data-testid': 'post-form-submit', onClick: ctx.post },
+          Element('div', { className: c.submitInner },
+            ctx.posted ? null : ctx.posting ? Component(C.MkEllipsis) : ctx.submitText,
+            Element('i', { style: 'margin-left: 6px;', className: ctx.submitIcon }))))))
+
+  const toSpecified = ctx.visibility === 'specified'
+    ? Element('div', { className: c.toSpecified },
+      Element('span', { style: 'margin-right: 8px;' }, t.recipient),
+      Element('div', { className: c.visibleUsers },
+        ...ctx.visibleUsers.map(u => Element('span', { key: u.id, className: c.visibleUser },
+          Component(C.MkAcct, { user: u }),
+          Element('button', { className: '_button', style: 'padding: 4px 8px;', onClick: () => ctx.removeVisibleUser(u.id) }, icon('ti ti-x')))),
+        Element('button', { className: '_buttonPrimary', style: 'padding: 4px; border-radius: 8px;', onClick: ctx.addVisibleUser }, icon('ti ti-plus ti-fw'))))
+    : null
+
+  const counter = (remaining, className) => Element('div', { className }, String(remaining))
+
+  return [
+    header,
+    ctx.replyTargetNote ? Component(C.MkNoteSimple, { class: c.targetNote, note: ctx.replyTargetNote }) : null,
+    ctx.renoteTargetNote ? Component(C.MkNoteSimple, { class: c.targetNote, note: ctx.renoteTargetNote }) : null,
+    ctx.quoteId
+      ? Element('div', { className: c.withQuote }, icon('ti ti-quote'), ` ${t.quoteAttached}`,
+        Element('button', { onClick: ctx.removeQuote }, icon('ti ti-x')))
+      : null,
+    toSpecified,
+    ctx.showTip
+      ? Component(C.MkInfo, { class: c.showHowToUse, closable: '', onClose: ctx.closePostFormTip },
+        Element('button', { className: '_textButton', onClick: ctx.showTour }, t.showHowToUse))
+      : null,
+    ctx.scheduledAt != null
+      ? Component(C.MkInfo, { class: c.scheduledAt },
+        Component(C.I18n, { src: t.scheduleToPostOnX, tag: 'span', slots: {
+          x: () => Component(C.MkTime, { time: ctx.scheduledAt, mode: 'detail', style: 'font-weight: bold;' }),
+        } }),
+        ' - ',
+        Element('button', { className: '_textButton', onClick: ctx.cancelSchedule }, t.cancel))
+      : null,
+    ctx.hasNotSpecifiedMentions
+      ? Component(C.MkInfo, { warn: '', class: c.hasNotSpecifiedMentions },
+        `${t.notSpecifiedMentionWarning} - `,
+        Element('button', { className: '_textButton', onClick: ctx.addMissingMention }, t.add))
+      : null,
+    directed([d.show(ctx.useCw)],
+      Element('div', { className: c.cwOuter },
+        directed([d.model(ctx.cw)],
+          Element('input', { ref: ctx.refs.cwInputEl, 'onUpdate:modelValue': ctx.setCw, className: c.cw, placeholder: t.annotation, onKeydown: ctx.onKeydown, onKeyup: ctx.onKeyup, onCompositionend: ctx.onCompositionEnd })),
+        ctx.maxCwTextLength - ctx.cwTextLength < 20
+          ? counter(ctx.maxCwTextLength - ctx.cwTextLength, cls('_acrylic', c.cwTextCount, ctx.cwTextLength > ctx.maxCwTextLength && c.cwTextOver))
+          : null)),
+    Element('div', { className: cls(c.textOuter, ctx.useCw && c.withCw) },
+      ctx.targetChannel ? Element('div', { className: c.colorBar, style: { background: ctx.targetChannel.color } }) : null,
+      directed([d.model(ctx.text)],
+        Element('textarea', {
+          ref: ctx.refs.textareaEl,
+          'onUpdate:modelValue': ctx.setText,
+          className: c.text,
+          disabled: ctx.posting || ctx.posted,
+          readonly: ctx.textAreaReadOnly,
+          placeholder: ctx.placeholder,
+          'data-testid': 'post-form-text',
+          onKeydown: ctx.onKeydown,
+          onKeyup: ctx.onKeyup,
+          onPaste: ctx.onPaste,
+          onCompositionupdate: ctx.onCompositionUpdate,
+          onCompositionend: ctx.onCompositionEnd,
+        })),
+      ctx.maxTextLength - ctx.textLength < 100
+        ? counter(ctx.maxTextLength - ctx.textLength, cls('_acrylic', c.textCount, ctx.textLength > ctx.maxTextLength && c.textOver))
+        : null),
+    directed([d.show(ctx.withHashtags), d.model(ctx.hashtags)],
+      Element('input', { ref: ctx.refs.hashtagsInputEl, 'onUpdate:modelValue': ctx.setHashtags, className: c.hashtags, placeholder: t.hashtags, list: 'hashtags' })),
+    Component(C.XPostFormAttaches, { modelValue: ctx.files, 'onUpdate:modelValue': ctx.setFiles, onDetach: ctx.detachFile, onChangeSensitive: ctx.updateFileSensitive, onChangeName: ctx.updateFileName }),
+    ctx.uploaderItems.length > 0
+      ? Element('div', { style: 'padding: 12px;' },
+        Component(C.MkTip, { k: 'postFormUploader' }, t.uploaderTip),
+        Component(C.MkUploaderItems, { items: ctx.uploaderItems, onShowMenu: ctx.showPerUploadItemMenu, onShowMenuViaContextmenu: ctx.showPerUploadItemMenuViaContextmenu }))
+      : null,
+    ctx.poll ? Component(C.MkPollEditor, { modelValue: ctx.poll, 'onUpdate:modelValue': ctx.setPoll, onDestroyed: ctx.clearPoll }) : null,
+    ctx.showPreview
+      ? Component(C.MkNotePreview, { class: c.preview, text: ctx.text, files: ctx.files, poll: ctx.poll ?? undefined, useCw: ctx.useCw, cw: ctx.cw, user: ctx.account })
+      : null,
+    ctx.showingOptions ? Element('div', { style: 'padding: 8px 16px;' }) : null,
+    Element('footer', { ref: ctx.refs.footerEl, className: c.footer },
+      Element('div', { className: c.footerLeft },
+        footerButton(t.attachFromPc, cls('_button', c.footerButton), ctx.chooseFileFromPc, 'ti ti-photo-plus'),
+        footerButton(t.attachFromDrive, cls('_button', c.footerButton), ctx.chooseFileFromDrive, 'ti ti-cloud-download'),
+        footerButton(t.poll, cls('_button', c.footerButton, ctx.poll && c.footerButtonActive), ctx.togglePoll, 'ti ti-chart-arrows'),
+        footerButton(t.useCw, cls('_button', c.footerButton, ctx.useCw && c.footerButtonActive), ctx.toggleCw, 'ti ti-eye-off'),
+        footerButton(t.hashtags, cls('_button', c.footerButton, ctx.withHashtags && c.footerButtonActive), ctx.toggleHashtags, 'ti ti-hash'),
+        footerButton(t.mention, cls('_button', c.footerButton), ctx.insertMention, 'ti ti-at'),
+        ctx.showAddMfmFunction ? footerButton(t.addMfmFunction, cls('_button', c.footerButton), ctx.insertMfmFunction, 'ti ti-palette') : null,
+        ctx.hasPostFormActions ? footerButton(t.plugins, cls('_button', c.footerButton), ctx.showActions, 'ti ti-plug') : null),
+      Element('div', { className: c.footerRight },
+        footerButton(t.emoji, cls('_button', c.footerButton), ctx.insertEmoji, 'ti ti-mood-happy'))),
+    Element('datalist', { id: 'hashtags' },
+      ...ctx.recentHashtags.map(hashtag => Element('option', { key: hashtag, value: hashtag }))),
+  ]
+}

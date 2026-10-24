@@ -11,116 +11,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@dragleave="onDragleave"
 	@drop.stop="onDrop"
 >
-	<header :class="$style.header">
-		<div :class="$style.headerLeft">
-			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
-			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" class="_button" @click="openAccountMenu">
-				<img :class="$style.avatar" :src="(postAccount ?? $i).avatarUrl" style="border-radius: 100%;"/>
-			</button>
-		</div>
-		<div :class="$style.headerRight">
-			<template v-if="!(targetChannel != null && fixed)">
-				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setVisibility">
-					<span v-if="visibility === 'public'"><i class="ti ti-world"></i></span>
-					<span v-if="visibility === 'home'"><i class="ti ti-home"></i></span>
-					<span v-if="visibility === 'followers'"><i class="ti ti-lock"></i></span>
-					<span v-if="visibility === 'specified'"><i class="ti ti-mail"></i></span>
-					<span :class="$style.headerRightButtonText">{{ i18n.ts._visibility[visibility] }}</span>
-				</button>
-				<button v-else class="_button" :class="[$style.headerRightItem, $style.visibility]" disabled>
-					<span><i class="ti ti-device-tv"></i></span>
-					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
-				</button>
-			</template>
-			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
-				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
-				<span v-else><i class="ti ti-rocket-off"></i></span>
-			</button>
-			<button ref="otherSettingsButton" v-tooltip="i18n.ts.other" class="_button" :class="$style.headerRightItem" @click="showOtherSettings"><i class="ti ti-dots"></i></button>
-			<button ref="submitButtonEl" v-click-anime class="_button" :class="$style.submit" :disabled="!canPost" data-testid="post-form-submit" @click="post">
-				<div :class="$style.submitInner">
-					<template v-if="posted"></template>
-					<template v-else-if="posting"><MkEllipsis/></template>
-					<template v-else>{{ submitText }}</template>
-					<i style="margin-left: 6px;" :class="submitIcon"></i>
-				</div>
-			</button>
-		</div>
-	</header>
-	<MkNoteSimple v-if="replyTargetNote" :class="$style.targetNote" :note="replyTargetNote"/>
-	<MkNoteSimple v-if="renoteTargetNote" :class="$style.targetNote" :note="renoteTargetNote"/>
-	<div v-if="quoteId" :class="$style.withQuote"><i class="ti ti-quote"></i> {{ i18n.ts.quoteAttached }}<button @click="quoteId = null; renoteTargetNote = null;"><i class="ti ti-x"></i></button></div>
-	<div v-if="visibility === 'specified'" :class="$style.toSpecified">
-		<span style="margin-right: 8px;">{{ i18n.ts.recipient }}</span>
-		<div :class="$style.visibleUsers">
-			<span v-for="u in visibleUsers" :key="u.id" :class="$style.visibleUser">
-				<MkAcct :user="u"/>
-				<button class="_button" style="padding: 4px 8px;" @click="removeVisibleUser(u.id)"><i class="ti ti-x"></i></button>
-			</span>
-			<button class="_buttonPrimary" style="padding: 4px; border-radius: 8px;" @click="addVisibleUser"><i class="ti ti-plus ti-fw"></i></button>
-		</div>
-	</div>
-	<MkInfo v-if="!store.r.tips.value.postForm" :class="$style.showHowToUse" closable @close="closeTip('postForm')">
-		<button class="_textButton" @click="showTour">{{ i18n.ts._postForm.showHowToUse }}</button>
-	</MkInfo>
-	<MkInfo v-if="scheduledAt != null" :class="$style.scheduledAt">
-		<I18n :src="i18n.ts.scheduleToPostOnX" tag="span">
-			<template #x>
-				<MkTime :time="scheduledAt" :mode="'detail'" style="font-weight: bold;"/>
-			</template>
-		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
-	</MkInfo>
-	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
-	<div v-show="useCw" :class="$style.cwOuter">
-		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
-		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
-	</div>
-	<div :class="[$style.textOuter, { [$style.withCw]: useCw }]">
-		<div v-if="targetChannel" :class="$style.colorBar" :style="{ background: targetChannel.color }"></div>
-		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
-		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
-	</div>
-	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
-	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
-	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
-		<MkTip k="postFormUploader">
-			{{ i18n.ts._postForm.uploaderTip }}
-		</MkTip>
-		<MkUploaderItems :items="uploader.items.value" @showMenu="(item, ev) => showPerUploadItemMenu(item, ev)" @showMenuViaContextmenu="(item, ev) => showPerUploadItemMenuViaContextmenu(item, ev)"/>
-	</div>
-	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
-	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
-	<div v-if="showingOptions" style="padding: 8px 16px;">
-	</div>
-	<footer ref="footerEl" :class="$style.footer">
-		<div :class="$style.footerLeft">
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
-			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
-			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
-			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
-			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
-			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
-			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
-		</div>
-		<div :class="$style.footerRight">
-			<button v-tooltip="i18n.ts.emoji" :class="['_button', $style.footerButton]" @click="insertEmoji"><i class="ti ti-mood-happy"></i></button>
-		</div>
-	</footer>
-	<datalist id="hashtags">
-		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"></option>
-	</datalist>
+	<MunView :render="renderPostForm"/>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, useTemplateRef, onUnmounted, onBeforeUnmount } from 'vue';
+import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, onUnmounted, onBeforeUnmount, useCssModule, vModelText, vShow } from 'vue';
+import { MunView } from '@mun/vue';
+import { postFormView } from './MkPostForm.mun';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import insertTextAtCursor from 'insert-text-at-cursor';
 import { toASCII } from 'punycode.js';
 import { host, url } from '@@/js/config.js';
 import MkUploaderItems from './MkUploaderItems.vue';
+import MkEllipsis from '@/components/global/MkEllipsis.vue';
+import MkAcct from '@/components/global/MkAcct.vue';
+import MkTime from '@/components/global/MkTime.vue';
+import I18n from '@/components/global/I18n.vue';
+import MkTip from '@/components/global/MkTip.vue';
+import { MunDirectives } from '@/utility/mun-directives.js';
+import { tooltipDirective } from '@/directives/tooltip.js';
+import { clickAnimeDirective } from '@/directives/click-anime.js';
 import type { ShallowRef } from 'vue';
 import type { PostFormProps } from '@/types/post-form.js';
 import type { MenuItem } from '@/types/menu.js';
@@ -184,14 +96,14 @@ const emit = defineEmits<{
 	(ev: 'fileChangeSensitive', fileId: string, to: boolean): void;
 }>();
 
-const textareaEl = useTemplateRef('textareaEl');
-const cwInputEl = useTemplateRef('cwInputEl');
-const hashtagsInputEl = useTemplateRef('hashtagsInputEl');
-const visibilityButton = useTemplateRef('visibilityButton');
-const otherSettingsButton = useTemplateRef('otherSettingsButton');
-const accountMenuEl = useTemplateRef('accountMenuEl');
-const footerEl = useTemplateRef('footerEl');
-const submitButtonEl = useTemplateRef('submitButtonEl');
+const textareaEl = shallowRef<HTMLTextAreaElement | null>(null);
+const cwInputEl = shallowRef<HTMLInputElement | null>(null);
+const hashtagsInputEl = shallowRef<HTMLInputElement | null>(null);
+const visibilityButton = shallowRef<HTMLButtonElement | null>(null);
+const otherSettingsButton = shallowRef<HTMLButtonElement | null>(null);
+const accountMenuEl = shallowRef<HTMLButtonElement | null>(null);
+const footerEl = shallowRef<HTMLElement | null>(null);
+const submitButtonEl = shallowRef<HTMLButtonElement | null>(null);
 
 const posting = ref(false);
 const posted = ref(false);
@@ -1622,6 +1534,105 @@ defineExpose({
 	abortUploader: () => uploader.abortAll(),
 	canClose,
 });
+
+const $style = useCssModule();
+const munComponents = { MunDirectives, MkEllipsis, MkAcct, MkTime, I18n, MkTip, MkInfo, MkNoteSimple, MkNotePreview, MkPollEditor, MkUploaderItems, XPostFormAttaches };
+const munDirectives = {
+	tooltip: (value: string) => [tooltipDirective, value],
+	clickAnime: () => [clickAnimeDirective],
+	show: (value: unknown) => [vShow, value],
+	model: (value: unknown) => [vModelText, value],
+};
+// Template ref setters for the Mün view.
+const munRefs = Object.fromEntries(([
+	['textareaEl', textareaEl], ['cwInputEl', cwInputEl], ['hashtagsInputEl', hashtagsInputEl], ['visibilityButton', visibilityButton],
+	['otherSettingsButton', otherSettingsButton], ['accountMenuEl', accountMenuEl], ['footerEl', footerEl], ['submitButtonEl', submitButtonEl],
+] as const).map(([name, target]) => [name, (el: unknown) => { (target as { value: unknown }).value = el ?? null; }]));
+
+function renderPostForm() {
+	return postFormView({
+		c: $style,
+		components: munComponents,
+		d: munDirectives,
+		refs: munRefs,
+		labels: {
+			account: i18n.ts.account,
+			visibility: i18n.ts.visibility,
+			visibilityName: i18n.ts._visibility[visibility.value],
+			disableFederation: i18n.ts._visibility.disableFederation,
+			other: i18n.ts.other,
+			quoteAttached: i18n.ts.quoteAttached,
+			recipient: i18n.ts.recipient,
+			showHowToUse: i18n.ts._postForm.showHowToUse,
+			scheduleToPostOnX: i18n.ts.scheduleToPostOnX,
+			cancel: i18n.ts.cancel,
+			notSpecifiedMentionWarning: i18n.ts.notSpecifiedMentionWarning,
+			add: i18n.ts.add,
+			annotation: i18n.ts.annotation,
+			hashtags: i18n.ts.hashtags,
+			uploaderTip: i18n.ts._postForm.uploaderTip,
+			attachFromPc: i18n.ts.attachFile + ' (' + i18n.ts.upload + ')',
+			attachFromDrive: i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')',
+			poll: i18n.ts.poll,
+			useCw: i18n.ts.useCw,
+			mention: i18n.ts.mention,
+			addMfmFunction: i18n.ts.addMfmFunction,
+			plugins: i18n.ts.plugins,
+			emoji: i18n.ts.emoji,
+		},
+		fixed: props.fixed,
+		account: postAccount.value ?? $i,
+		targetChannel: targetChannel.value,
+		visibility: visibility.value,
+		localOnly: localOnly.value,
+		canPost: canPost.value,
+		posted: posted.value,
+		posting: posting.value,
+		submitText: submitText.value,
+		submitIcon: submitIcon.value,
+		replyTargetNote: replyTargetNote.value,
+		renoteTargetNote: renoteTargetNote.value,
+		quoteId: quoteId.value,
+		visibleUsers: visibleUsers.value,
+		showTip: !store.r.tips.value.postForm,
+		scheduledAt: scheduledAt.value,
+		hasNotSpecifiedMentions: hasNotSpecifiedMentions.value,
+		useCw: useCw.value,
+		cw: cw.value,
+		cwTextLength: cwTextLength.value,
+		maxCwTextLength,
+		text: text.value,
+		textLength: textLength.value,
+		maxTextLength: maxTextLength.value,
+		textAreaReadOnly: textAreaReadOnly.value,
+		placeholder: placeholder.value,
+		withHashtags: withHashtags.value,
+		hashtags: hashtags.value,
+		files: files.value,
+		uploaderItems: uploader.items.value,
+		poll: poll.value,
+		showPreview: showPreview.value,
+		showingOptions: showingOptions.value,
+		showAddMfmFunction: showAddMfmFunction.value,
+		hasPostFormActions: postFormActions.length > 0,
+		recentHashtags: recentHashtags.value,
+		setCw: (v: string) => { cw.value = v; },
+		setText: (v: string) => { text.value = v; },
+		setHashtags: (v: string) => { hashtags.value = v; },
+		setFiles: (v: typeof files.value) => { files.value = v; },
+		setPoll: (v: PollEditorModelValue) => { poll.value = v; },
+		clearPoll: () => { poll.value = null; },
+		removeQuote: () => { quoteId.value = null; renoteTargetNote.value = null; },
+		closePostFormTip: () => closeTip('postForm'),
+		toggleCw: () => { useCw.value = !useCw.value; },
+		toggleHashtags: () => { withHashtags.value = !withHashtags.value; },
+		cancel, openAccountMenu, setVisibility, toggleLocalOnly, showOtherSettings, post,
+		removeVisibleUser, addVisibleUser, showTour, cancelSchedule, addMissingMention,
+		onKeydown, onKeyup, onPaste, onCompositionUpdate, onCompositionEnd,
+		detachFile, updateFileSensitive, updateFileName, showPerUploadItemMenu, showPerUploadItemMenuViaContextmenu,
+		chooseFileFromPc, chooseFileFromDrive, togglePoll, insertMention, insertMfmFunction, showActions, insertEmoji,
+	});
+}
 </script>
 
 <style lang="scss" module>
