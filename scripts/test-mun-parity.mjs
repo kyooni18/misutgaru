@@ -20,7 +20,8 @@ const requireFrontend = createRequire(path.join(frontend, 'package.json'));
 const { createServer } = await import(requireFrontend.resolve('vite'));
 const { default: vue } = await import(requireFrontend.resolve('@vitejs/plugin-vue'));
 const { munPlugin } = await import(path.join(frontend, 'node_modules/@mun/vite/dist/index.js'));
-const { chromium } = requireFrontend('playwright');
+const browsers = requireFrontend('playwright');
+const browserNames = (process.env.PARITY_BROWSER ?? 'all') === 'all' ? ['chromium', 'webkit'] : [process.env.PARITY_BROWSER];
 
 // Baselines are the last revisions rendered by a plain Vue template.
 const targets = {
@@ -110,6 +111,11 @@ window.typeInto=async(mode)=>{const t=el.querySelector('textarea'); if(!t) retur
 	await settle(); return t.value;};
 window.endComposition=async()=>{const t=el.querySelector('textarea'); t.dispatchEvent(new CompositionEvent('compositionend',{data:t.value})); t.dispatchEvent(new Event('input')); await settle(); return t.value;};
 `;
+// Points over controls (hover/active styling) in the fixture layouts.
+const hoverPoints = {
+	navbar: [[45, 39], [120, 140], [120, 349], [120, 668], [45, 724], [256, 644]],
+	postForm: [[29, 24], [66, 28], [160, 24], [287, 24], [28, 210], [69, 210]],
+};
 const cases = {
 	navbar: [{}, { showWidgetButton: true }, { asDrawer: true }],
 	postForm: [{}, { fixed: true }, { initialText: 'hello', initialCw: 'cw' }, { initialVisibility: 'specified', initialLocalOnly: true },
@@ -120,7 +126,7 @@ const theme = `--MI_THEME-navBg:#e8ecf4;--MI_THEME-navFg:#333;--MI_THEME-navActi
 	--MI_THEME-fg:#222;--MI_THEME-fgHighlighted:#000;--MI_THEME-fgOnAccent:#fff;--MI_THEME-indicator:#e33;--MI_THEME-divider:#bbb;--MI-hairline:#ccc;
 	--MI_THEME-panel:#fff;--MI_THEME-bg:#fafafa;--MI_THEME-focus:#36f;--MI_THEME-buttonBg:#ddd;--MI_THEME-warn:#c80;--MI_THEME-error:#d22;
 	--MI_THEME-accentedBg:#dfe8ff;--MI_THEME-buttonGradateA:#3b6fe0;--MI_THEME-buttonGradateB:#6a4fe0;--MI_THEME-inputBorder:#bbb;--MI-margin:16px;--MI-dur:0s;--MI-durFast:0s;--MI-easeOut:linear;`;
-const html = `<link rel="stylesheet" href="/node_modules/@tabler/icons-webfont/dist/tabler-icons.min.css">
+const html = `<link rel="stylesheet" href="/node_modules/icons-subsetter/built/tabler-icons-frontend.css">
 <style>:root{${theme}} body{margin:0;background:#fff;font:14px/1.5 sans-serif;} #app{position:relative;height:760px;display:flex;}
 *,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important;}</style>
 <div id="app"></div><script>window.cases=${JSON.stringify(cases)};</script><script type="module" src="/__parity_entry.js"></script>`;
@@ -178,7 +184,8 @@ let failed = false;
 try {
 	await server.listen();
 	const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
-	const browser = await chromium.launch();
+	for (const browserName of browserNames) {
+	const browser = await browsers[browserName].launch();
 	const shots = process.env.PARITY_SHOTS;
 	async function render(target, index, variant, width, typed) {
 		const page = await browser.newPage({ viewport: { width, height: 800 } });
@@ -194,11 +201,17 @@ try {
 		const midComposition = typed === 'ime' ? await page.screenshot() : null;
 		if (typed === 'ime') value += '|' + await page.evaluate(() => window.endComposition());
 		if (process.env.PARITY_DUMP) console.log(`--- ${variant}\n` + await page.evaluate(sel => [...document.querySelectorAll(sel)].map(e => { const s = getComputedStyle(e); return e.outerHTML.slice(0, 300) + " :: " + [s.borderTop, s.borderBottom, s.height, s.marginTop, s.marginBottom, s.borderLeft].join(" | "); }).join('\n'), process.env.PARITY_DUMP));
-		const png = await page.screenshot();
-		if (shots) await page.screenshot({ path: path.join(shots, `${target}-${index}-${width}${typed ? `-${typed}` : ''}-${variant}.png`) });
+		const frames = [await page.screenshot()];
+		if (!typed) {
+			for (const [x, y] of hoverPoints[target]) { await page.mouse.move(x, y); await page.waitForTimeout(30); frames.push(await page.screenshot()); }
+			await page.mouse.move(1, 790);
+			for (let i = 0; i < 4; i++) { await page.keyboard.press('Tab'); await page.waitForTimeout(30); frames.push(await page.screenshot()); }
+		}
+		const png = frames[0];
+		if (shots) await page.screenshot({ path: path.join(shots, `${browserName}-${target}-${index}-${width}${typed ? `-${typed}` : ''}-${variant}.png`) });
 		await page.close();
 		assert.deepEqual(errors, [], `${variant} ${target} case ${index}`);
-		return { png: midComposition ? Buffer.concat([midComposition, png]) : png, mid: midComposition, value };
+		return { png, frames, mid: midComposition, value };
 	}
 	const diffPage = await browser.newPage();
 	// Count differing pixels between two same-size screenshots.
@@ -223,16 +236,17 @@ try {
 					const base = await render(target, index, 'base', width, typed);
 					const next = await render(target, index, 'next', width, typed);
 					const pixels = typed === 'ime'
-						? [await diff(base.mid, next.mid), await diff(base.png.subarray(base.mid.length), next.png.subarray(next.mid.length))].find(v => v !== 0) ?? 0
-						: await diff(base.png, next.png);
+						? [await diff(base.mid, next.mid), await diff(base.png, next.png)].find(v => v !== 0) ?? 0
+						: (await Promise.all(base.frames.map((frame, i) => diff(frame, next.frames[i])))).find(v => v !== 0) ?? 0;
 					const ok = pixels === 0 && base.value === next.value;
 					if (!ok) failed = true;
-					console.log(`${ok ? 'PASS' : 'FAIL'} ${target} case ${index}${typed ? ` ${typed}` : ''} @${width}px${ok ? '' : ` (${pixels} px differ${base.value === next.value ? '' : ', textarea value differs'})`}`);
+					console.log(`${ok ? 'PASS' : 'FAIL'} [${browserName}] ${target} case ${index}${typed ? ` ${typed}` : ''} @${width}px${ok ? '' : ` (${pixels} px differ${base.value === next.value ? '' : ', textarea value differs'})`}`);
 				}
 			}
 		}
 	}
 	await browser.close();
+	}
 } finally {
 	await server.close();
 }
