@@ -5,15 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <Transition
-	:enterActiveClass="prefer.s.animation ? $style.transition_drawerBlur_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_drawerBlur_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_drawerBlur_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_drawerBlur_leaveTo : ''"
->
-	<MkProgressiveBlur v-if="drawerMenuShowing && prefer.s.useBlurEffectForModal" variant="viewport" origin="0% 50%" :class="$style.drawerBlur"/>
-</Transition>
-
-<Transition
 	:enterActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_enterActive : ''"
 	:leaveActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_leaveActive : ''"
 	:enterFromClass="prefer.s.animation ? $style.transition_menuDrawerBg_enterFrom : ''"
@@ -40,15 +31,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 </Transition>
 
 <Transition
-	:enterActiveClass="prefer.s.animation ? $style.transition_drawerBlur_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_drawerBlur_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_drawerBlur_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_drawerBlur_leaveTo : ''"
->
-	<MkProgressiveBlur v-if="widgetsShowing && prefer.s.useBlurEffectForModal" variant="viewport" origin="0% 50%" :class="$style.drawerBlur"/>
-</Transition>
-
-<Transition
 	:enterActiveClass="prefer.s.animation ? $style.transition_widgetsDrawerBg_enterActive : ''"
 	:leaveActiveClass="prefer.s.animation ? $style.transition_widgetsDrawerBg_leaveActive : ''"
 	:enterFromClass="prefer.s.animation ? $style.transition_widgetsDrawerBg_enterFrom : ''"
@@ -70,8 +52,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:leaveToClass="prefer.s.animation ? $style.transition_widgetsDrawer_leaveTo : ''"
 >
 	<div v-if="widgetsShowing" :class="$style.widgetsDrawer">
-		<button class="_button" :class="$style.widgetsCloseButton" @click="widgetsShowing = false"><i class="ti ti-x"></i></button>
-		<XWidgets/>
+		<MkProgressiveBlur/>
+		<div :class="$style.widgetsDrawerBody">
+			<button class="_button" :class="$style.widgetsCloseButton" @click="widgetsShowing = false"><i class="ti ti-x"></i></button>
+			<XWidgets/>
+		</div>
 	</div>
 </Transition>
 
@@ -192,19 +177,14 @@ if ($i) {
 </script>
 
 <style lang="scss" module>
-// Fade the blur bands, not their parent: parent opacity < 1 is a backdrop root.
-.transition_drawerBlur_enterActive > *,
 .transition_menuDrawerBg_enterActive,
 .transition_widgetsDrawerBg_enterActive {
 	transition: opacity 260ms ease-out;
 }
-.transition_drawerBlur_leaveActive > *,
 .transition_menuDrawerBg_leaveActive,
 .transition_widgetsDrawerBg_leaveActive {
 	transition: opacity 180ms ease-in;
 }
-.transition_drawerBlur_enterFrom > *,
-.transition_drawerBlur_leaveTo > *,
 .transition_menuDrawerBg_enterFrom,
 .transition_menuDrawerBg_leaveTo,
 .transition_widgetsDrawerBg_enterFrom,
@@ -230,8 +210,6 @@ if ($i) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.transition_drawerBlur_enterActive > *,
-	.transition_drawerBlur_leaveActive > *,
 	.transition_menuDrawerBg_enterActive,
 	.transition_menuDrawerBg_leaveActive,
 	.transition_widgetsDrawerBg_enterActive,
@@ -258,7 +236,6 @@ if ($i) {
 	transform: translateX(calc(-1 * var(--notificationSlideOffset, 250px)));
 }
 
-.drawerBlur,
 .menuDrawerBg {
 	z-index: 1001;
 }
@@ -285,11 +262,17 @@ if ($i) {
 	z-index: 1001;
 	width: 310px;
 	height: 100dvh;
+	// Edge ProgressiveBlur lives outside the scroller so it is not clipped.
+	isolation: isolate;
+	background: var(--MI_THEME-bg);
+}
+
+.widgetsDrawerBody {
+	height: 100%;
 	padding: calc(var(--MI-margin) + env(safe-area-inset-top, 0px)) var(--MI-margin) calc(var(--MI-margin) + env(safe-area-inset-bottom, 0px)) !important;
 	box-sizing: border-box;
 	overflow: auto;
 	overscroll-behavior: contain;
-	background: var(--MI_THEME-bg);
 }
 
 .widgetsCloseButton {
