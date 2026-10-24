@@ -33,7 +33,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:duration="transitionDuration" appear @afterLeave="onClosed" @enter="emit('opening')" @afterEnter="onOpened"
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
-		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent }]" :style="{ zIndex }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
+		<MkProgressiveBlur v-if="useBackdropBlur" variant="viewport" :origin="type === 'drawer' ? '50% 100%' : '50% 50%'" :class="$style.backdropBlur" :style="{ zIndex }"/>
+		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent, }]" :style="{ zIndex }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
 		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
 		</div>
@@ -50,6 +51,7 @@ import { deviceKind } from '@/utility/device-kind.js';
 import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 import { DI } from '@/di.js';
 
 function getFixedContainer(el: Element | null): Element | null {
@@ -72,6 +74,8 @@ const props = withDefaults(defineProps<{
 	zPriority?: 'low' | 'middle' | 'high';
 	noOverlap?: boolean;
 	transparentBg?: boolean;
+	/** Skip the backdrop ProgressiveBlur, e.g. when the content owns its own edge blur. */
+	noBgBlur?: boolean;
 	hasInteractionWithOtherFocusTrappedEls?: boolean;
 	returnFocusTo?: HTMLElement | null;
 }>(), {
@@ -82,6 +86,7 @@ const props = withDefaults(defineProps<{
 	zPriority: 'low',
 	noOverlap: true,
 	transparentBg: false,
+	noBgBlur: false,
 	hasInteractionWithOtherFocusTrappedEls: false,
 	returnFocusTo: null,
 });
@@ -117,6 +122,8 @@ const type = computed<ModalTypes>(() => {
 	}
 });
 const isEnableBgTransparent = computed(() => props.transparentBg && (type.value === 'popup'));
+// Replaces the uniform --MI-modalBgFilter so modal backdrops match ProgressiveBlur elsewhere.
+const useBackdropBlur = computed(() => prefer.s.useBlurEffectForModal && !isEnableBgTransparent.value && !props.noBgBlur);
 const transitionName = computed((() =>
 	prefer.s.animation
 		? useSendAnime.value
@@ -137,6 +144,7 @@ onUnmounted(() => reducedMotionQuery.removeEventListener('change', syncReducedMo
 // Vue must release focus and remove the backdrop when the CSS exit actually ends.
 const transitionDuration = computed(() => {
 	if (!prefer.s.animation || reducedMotion.value) return 0;
+	if (transitionName.value === 'send') return { enter: 160, leave: 160 };
 	if (transitionName.value === 'modal-drawer') return { enter: 280, leave: 180 };
 	if (transitionName.value === 'modal-popup') return { enter: 160, leave: 120 };
 	return { enter: 220, leave: 160 };
@@ -361,7 +369,8 @@ defineExpose({
 <style lang="scss" module>
 .transition_send_enterActive,
 .transition_send_leaveActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity 160ms var(--MI-easeOut) !important;
 	}
 
@@ -372,7 +381,8 @@ defineExpose({
 }
 .transition_send_enterFrom,
 .transition_send_leaveTo {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		opacity: 0;
 	}
 
@@ -385,7 +395,8 @@ defineExpose({
 
 .transition_modal_enterActive,
 .transition_modal_leaveActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity 220ms var(--MI-easeOut) !important;
 	}
 
@@ -396,7 +407,8 @@ defineExpose({
 }
 .transition_modal_enterFrom,
 .transition_modal_leaveTo {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		opacity: 0;
 	}
 
@@ -410,7 +422,8 @@ defineExpose({
 
 .transition_modalPopup_enterActive,
 .transition_modalPopup_leaveActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity 0.16s var(--MI-easeOut) !important;
 	}
 
@@ -421,7 +434,8 @@ defineExpose({
 }
 .transition_modalPopup_enterFrom,
 .transition_modalPopup_leaveTo {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		opacity: 0;
 	}
 
@@ -434,7 +448,8 @@ defineExpose({
 }
 
 .transition_modalDrawer_enterActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity 280ms var(--MI-easeOut) !important;
 	}
 
@@ -443,7 +458,8 @@ defineExpose({
 	}
 }
 .transition_modalDrawer_leaveActive {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		transition: opacity 180ms var(--MI-easeOut) !important;
 	}
 
@@ -453,7 +469,8 @@ defineExpose({
 }
 .transition_modalDrawer_enterFrom,
 .transition_modalDrawer_leaveTo {
-	> .bg {
+	> .bg,
+	> .backdropBlur > * {
 		opacity: 0;
 	}
 
@@ -464,10 +481,12 @@ defineExpose({
 }
 
 .transition_modal_leaveActive > .bg,
+.transition_modal_leaveActive > .backdropBlur > *,
 .transition_modal_leaveActive > .content {
 	transition-duration: 160ms !important;
 }
 .transition_modalPopup_leaveActive > .bg,
+.transition_modalPopup_leaveActive > .backdropBlur > *,
 .transition_modalPopup_leaveActive > .content {
 	transition-duration: 120ms !important;
 }
@@ -520,6 +539,10 @@ defineExpose({
 }
 
 .bg {
+	// Blur comes from .backdropBlur; the uniform filter would stack on it.
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+
 	&.bgTransparent {
 		background: transparent;
 		-webkit-backdrop-filter: none;

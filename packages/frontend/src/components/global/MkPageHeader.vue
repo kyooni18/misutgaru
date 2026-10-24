@@ -382,11 +382,13 @@ onUnmounted(() => {
 	--height: clamp(52px, calc(3rem + 1cqi), 64px);
 	--margin: clamp(2px, 0.6cqi, 4px);
 	box-sizing: border-box;
-	padding-inline: clamp(4px, 1.5cqi, 12px);
+	padding-inline: clamp(6px, 1.8cqi, 12px);
+	gap: 2px;
 
 	.button {
 		width: max(44px, 2.75rem);
 		height: max(44px, 2.75rem);
+		border-radius: 999px;
 		transition: background 160ms var(--MI-easeOut), color 160ms var(--MI-easeOut), transform 120ms var(--MI-easeOut);
 	}
 }
@@ -462,14 +464,28 @@ onUnmounted(() => {
 	min-height: max(44px, 2.75rem);
 	padding: 0 10px;
 	box-sizing: border-box;
-	border-radius: 8px;
+	border-radius: 12px;
 	font-weight: 600;
 	white-space: nowrap;
 	color: var(--MI_THEME-pageHeaderFg);
 
+	// Flat selection: unselected sources recede, the selected one gets an underline
+	// rather than a filled pill.
+	opacity: 0.6;
+	transition: opacity var(--MI-durFast) var(--MI-easeOut);
+
 	&.sourceSelected {
-		color: var(--MI_THEME-pageHeaderFg);
-		background: var(--MI-hairline);
+		opacity: 1;
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline: 12px;
+			bottom: 4px;
+			height: 2px;
+			border-radius: 2px;
+			background: var(--MI_THEME-accent);
+		}
 	}
 }
 
@@ -516,8 +532,7 @@ onUnmounted(() => {
 }
 
 .button.sectionActive {
-	color: var(--MI_THEME-pageHeaderFg);
-	background: color-mix(in srgb, var(--MI_THEME-pageHeaderFg) 9%, transparent);
+	color: var(--MI_THEME-accent);
 
 	&::after {
 		content: "";
@@ -550,7 +565,7 @@ onUnmounted(() => {
 
 @media (hover: hover) {
 	.sourceButton:hover {
-		background: var(--MI-hairline);
+		opacity: 1;
 	}
 }
 
