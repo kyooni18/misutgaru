@@ -424,6 +424,31 @@ function renderNavbar() {
 	pointer-events: none;
 }
 
+// The indicator is one Mün Text; its dot/badge sits in ::before as an inline
+// box on the text baseline, exactly where the former nested element was.
+.itemIndicatorDot::before {
+	content: "";
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	border-radius: 100%;
+	background: currentColor;
+}
+
+.itemIndicatorCounter::before {
+	content: attr(data-value);
+	display: inline-flex;
+	color: var(--MI_THEME-fgOnAccent);
+	font-weight: 700;
+	background: var(--MI_THEME-indicator);
+	height: 1.5em;
+	min-width: 1.5em;
+	align-items: center;
+	justify-content: center;
+	border-radius: 99rem;
+	padding: 0.3em 0.5em;
+}
+
 .root:not(.iconOnly) {
 	.body {
 		width: var(--nav-width);
@@ -562,6 +587,10 @@ function renderNavbar() {
 
 	.divider {
 		margin: 12px 24px;
+		// Divider() is an <hr>: drop the global hr bar so only the top border shows.
+		height: 0;
+		border: none;
+		background: none;
 		border-top: solid 1px var(--MI-hairline);
 	}
 
@@ -651,7 +680,7 @@ function renderNavbar() {
 		color: var(--MI_THEME-navIndicator);
 		font-size: 8px;
 
-		&:has(.itemIndicateValueIcon) {
+		&.itemIndicatorCounter {
 			animation: none;
 			left: auto;
 			right: 40px;
@@ -808,6 +837,10 @@ function renderNavbar() {
 	.divider {
 		margin: 8px auto;
 		width: calc(100% - 32px);
+		// Divider() is an <hr>: drop the global hr bar so only the top border shows.
+		height: 0;
+		border: none;
+		background: none;
 		border-top: solid 0.5px var(--MI_THEME-divider);
 	}
 
@@ -888,7 +921,7 @@ function renderNavbar() {
 		color: var(--MI_THEME-navIndicator);
 		font-size: 8px;
 
-		&:has(.itemIndicateValueIcon) {
+		&.itemIndicatorCounter {
 			animation: none;
 			top: 4px;
 			left: auto;
