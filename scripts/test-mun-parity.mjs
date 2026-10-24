@@ -56,7 +56,7 @@ const stubs = {
 	'@/preferences.js': `import {ref,reactive} from 'vue'; const r={menu:ref(['notifications','-','drive','search','hidden']),showNavbarSubButtons:ref(true),animation:ref(true)};
 		export const prefer={r,s:reactive({animation:true,defaultNoteLocalOnly:false,defaultNoteVisibility:'public',enableQuickAddMfmFunction:true,keepCw:false,rememberNoteVisibility:false}),model:()=>ref(null),commit(){}};`,
 	'@/accounts.js': 'export const getAccountMenu=async()=>[]; export const getAccounts=async()=>[];',
-	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true,avatarUrl:"/a.png"}; export const ensureSignin=()=>$i; export const notesCount=0; export const incNotesCount=()=>{};',
+	'@/i.js': 'export const $i={id:"me",username:"me",isAdmin:true,avatarUrl:'+JSON.stringify('data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#c36"/><rect x="100" y="50" width="200" height="200" fill="#3cf"/></svg>'))+'}; export const ensureSignin=()=>$i; export const notesCount=0; export const incNotesCount=()=>{};',
 	// A large intrinsic size catches images that are not constrained to their slot.
 	'@/instance.js': `export const instance={name:"Inst",maxNoteTextLength:120,iconUrl:${JSON.stringify('data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#2a6"/><circle cx="256" cy="256" r="200" fill="#fd3"/></svg>'))}};`,
 	'@@/js/config.js': 'export const host="example.com",url="https://example.com";',
@@ -93,13 +93,22 @@ const q=new URLSearchParams(location.search);
 const component=(await components[q.get('target')][q.get('variant')]()).default;
 const props=window.cases[q.get('target')][Number(q.get('case'))];
 const el=document.getElementById('app');
+if (q.get('target')==='postForm') el.style.cssText='display:block;height:auto;width:'+(innerWidth >= 1400 ? 600 : 340)+'px';
 const app=createApp({render:()=>h(component,props)});
 app.directive('tooltip',tooltipDirective); app.directive('click-anime',clickAnimeDirective);
 for(const [n,c] of Object.entries(leaves)) app.component(n,c);
 app.mount(el);
 await nextTick(); await new Promise(requestAnimationFrame); await nextTick();
 window.parityReady=true;
-window.typeInto=async()=>{const t=el.querySelector('textarea'); if(!t) return null; t.value='x'.repeat(40); t.dispatchEvent(new Event('input')); await nextTick(); await nextTick(); await new Promise(requestAnimationFrame); return t.value;};
+const settle=async()=>{await nextTick(); await nextTick(); await new Promise(requestAnimationFrame);};
+// 'plain' types; 'ime' stops mid-composition (counter includes the pending text, field keeps it).
+window.typeInto=async(mode)=>{const t=el.querySelector('textarea'); if(!t) return null;
+	if(mode==='plain'){t.value='x'.repeat(40); t.dispatchEvent(new Event('input')); await settle(); return t.value;}
+	const data='\u3042'.repeat(40);
+	t.dispatchEvent(new CompositionEvent('compositionstart',{data:''}));
+	t.value=data; t.dispatchEvent(new CompositionEvent('compositionupdate',{data})); t.dispatchEvent(new InputEvent('input',{isComposing:true,data}));
+	await settle(); return t.value;};
+window.endComposition=async()=>{const t=el.querySelector('textarea'); t.dispatchEvent(new CompositionEvent('compositionend',{data:t.value})); t.dispatchEvent(new Event('input')); await settle(); return t.value;};
 `;
 const cases = {
 	navbar: [{}, { showWidgetButton: true }, { asDrawer: true }],
@@ -110,7 +119,7 @@ const cases = {
 const theme = `--MI_THEME-navBg:#e8ecf4;--MI_THEME-navFg:#333;--MI_THEME-navActive:#2550c0;--MI_THEME-navIndicator:#e33;--MI_THEME-accent:#3b6fe0;
 	--MI_THEME-fg:#222;--MI_THEME-fgHighlighted:#000;--MI_THEME-fgOnAccent:#fff;--MI_THEME-indicator:#e33;--MI_THEME-divider:#bbb;--MI-hairline:#ccc;
 	--MI_THEME-panel:#fff;--MI_THEME-bg:#fafafa;--MI_THEME-focus:#36f;--MI_THEME-buttonBg:#ddd;--MI_THEME-warn:#c80;--MI_THEME-error:#d22;
-	--MI_THEME-accentedBg:#dfe8ff;--MI_THEME-inputBorder:#bbb;--MI-margin:16px;--MI-dur:0s;--MI-durFast:0s;--MI-easeOut:linear;`;
+	--MI_THEME-accentedBg:#dfe8ff;--MI_THEME-buttonGradateA:#3b6fe0;--MI_THEME-buttonGradateB:#6a4fe0;--MI_THEME-inputBorder:#bbb;--MI-margin:16px;--MI-dur:0s;--MI-durFast:0s;--MI-easeOut:linear;`;
 const html = `<link rel="stylesheet" href="/node_modules/@tabler/icons-webfont/dist/tabler-icons.min.css">
 <style>:root{${theme}} body{margin:0;background:#fff;font:14px/1.5 sans-serif;} #app{position:relative;height:760px;display:flex;}
 *,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important;}</style>
@@ -181,33 +190,44 @@ try {
 		await page.goto(`${origin}/__parity?target=${target}&case=${index}&variant=${variant}`);
 		await page.waitForFunction(() => window.parityReady, null, { timeout: 30000 }).catch(() => errors.push('timeout'));
 		await page.evaluate(() => document.fonts.ready);
-		const value = typed ? await page.evaluate(() => window.typeInto()) : null;
+		let value = typed ? await page.evaluate(mode => window.typeInto(mode), typed) : null;
+		const midComposition = typed === 'ime' ? await page.screenshot() : null;
+		if (typed === 'ime') value += '|' + await page.evaluate(() => window.endComposition());
 		if (process.env.PARITY_DUMP) console.log(`--- ${variant}\n` + await page.evaluate(sel => [...document.querySelectorAll(sel)].map(e => { const s = getComputedStyle(e); return e.outerHTML.slice(0, 300) + " :: " + [s.borderTop, s.borderBottom, s.height, s.marginTop, s.marginBottom, s.borderLeft].join(" | "); }).join('\n'), process.env.PARITY_DUMP));
 		const png = await page.screenshot();
-		if (shots) await page.screenshot({ path: path.join(shots, `${target}-${index}-${width}${typed ? '-typed' : ''}-${variant}.png`) });
+		if (shots) await page.screenshot({ path: path.join(shots, `${target}-${index}-${width}${typed ? `-${typed}` : ''}-${variant}.png`) });
 		await page.close();
 		assert.deepEqual(errors, [], `${variant} ${target} case ${index}`);
-		return { png, value };
+		return { png: midComposition ? Buffer.concat([midComposition, png]) : png, mid: midComposition, value };
 	}
 	const diffPage = await browser.newPage();
 	// Count differing pixels between two same-size screenshots.
 	const diff = (a, b) => diffPage.evaluate(async ([a, b]) => {
 		const load = async data => { const i = new Image(); i.src = `data:image/png;base64,${data}`; await i.decode(); const c = new OffscreenCanvas(i.width, i.height); const x = c.getContext('2d'); x.drawImage(i, 0, 0); return x.getImageData(0, 0, i.width, i.height).data; };
 		const [p, q] = await Promise.all([load(a), load(b)]);
-		let n = 0; for (let k = 0; k < p.length; k += 4) if (Math.abs(p[k] - q[k]) + Math.abs(p[k + 1] - q[k + 1]) + Math.abs(p[k + 2] - q[k + 2]) > 24) n++;
-		return n;
+		const w = (await (async () => { const i = new Image(); i.src = `data:image/png;base64,${a}`; await i.decode(); return i.width; })());
+		let n = 0, box = null;
+		for (let k = 0; k < p.length; k += 4) {
+			if (Math.abs(p[k] - q[k]) + Math.abs(p[k + 1] - q[k + 1]) + Math.abs(p[k + 2] - q[k + 2]) <= 24) continue;
+			n++;
+			const x = (k / 4) % w, y = Math.floor(k / 4 / w);
+			box = box ? [Math.min(box[0], x), Math.min(box[1], y), Math.max(box[2], x), Math.max(box[3], y)] : [x, y, x, y];
+		}
+		return n === 0 ? 0 : `${n} @ ${box.join(',')}`;
 	}, [a.toString('base64'), b.toString('base64')]);
 	for (const width of [1400, 1000]) {
 		for (const [target, list] of Object.entries(cases)) {
 			for (let index = 0; index < list.length; index++) {
 				if (process.env.PARITY_ONLY && process.env.PARITY_ONLY !== `${target}:${index}:${width}`) continue;
-				for (const typed of target === 'postForm' ? [false, true] : [false]) {
+				for (const typed of target === 'postForm' ? [false, 'plain', 'ime'] : [false]) {
 					const base = await render(target, index, 'base', width, typed);
 					const next = await render(target, index, 'next', width, typed);
-					const pixels = await diff(base.png, next.png);
+					const pixels = typed === 'ime'
+						? [await diff(base.mid, next.mid), await diff(base.png.subarray(base.mid.length), next.png.subarray(next.mid.length))].find(v => v !== 0) ?? 0
+						: await diff(base.png, next.png);
 					const ok = pixels === 0 && base.value === next.value;
 					if (!ok) failed = true;
-					console.log(`${ok ? 'PASS' : 'FAIL'} ${target} case ${index}${typed ? ' typed' : ''} @${width}px${ok ? '' : ` (${pixels} px differ${base.value === next.value ? '' : ', textarea value differs'})`}`);
+					console.log(`${ok ? 'PASS' : 'FAIL'} ${target} case ${index}${typed ? ` ${typed}` : ''} @${width}px${ok ? '' : ` (${pixels} px differ${base.value === next.value ? '' : ', textarea value differs'})`}`);
 				}
 			}
 		}

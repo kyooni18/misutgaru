@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, onUnmounted, onBeforeUnmount, useCssModule, vModelText, vShow } from 'vue';
+import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, onUnmounted, onBeforeUnmount, useCssModule } from 'vue';
 import { MunView } from '@mun/vue';
 import { postFormView } from './MkPostForm.mun';
 import * as mfm from 'mfm-js';
@@ -31,6 +31,7 @@ import MkTime from '@/components/global/MkTime.vue';
 import I18n from '@/components/global/I18n.vue';
 import MkTip from '@/components/global/MkTip.vue';
 import { MunDirectives } from '@/utility/mun-directives.js';
+import { imeTextBinding } from '@/utility/mun-text-binding.js';
 import { tooltipDirective } from '@/directives/tooltip.js';
 import { clickAnimeDirective } from '@/directives/click-anime.js';
 import type { ShallowRef } from 'vue';
@@ -1540,14 +1541,16 @@ const munComponents = { MunDirectives, MkEllipsis, MkAcct, MkTime, I18n, MkTip, 
 const munDirectives = {
 	tooltip: (value: string) => [tooltipDirective, value],
 	clickAnime: () => [clickAnimeDirective],
-	show: (value: unknown) => [vShow, value],
-	model: (value: unknown) => [vModelText, value],
 };
 // Template ref setters for the Mün view.
 const munRefs = Object.fromEntries(([
 	['textareaEl', textareaEl], ['cwInputEl', cwInputEl], ['hashtagsInputEl', hashtagsInputEl], ['visibilityButton', visibilityButton],
 	['otherSettingsButton', otherSettingsButton], ['accountMenuEl', accountMenuEl], ['footerEl', footerEl], ['submitButtonEl', submitButtonEl],
 ] as const).map(([name, target]) => [name, (el: unknown) => { (target as { value: unknown }).value = el ?? null; }]));
+
+const textModel = imeTextBinding(text, textareaEl);
+const cwModel = imeTextBinding(cw, cwInputEl);
+const hashtagsModel = imeTextBinding(hashtags, hashtagsInputEl);
 
 function renderPostForm() {
 	return postFormView({
@@ -1616,9 +1619,42 @@ function renderPostForm() {
 		showAddMfmFunction: showAddMfmFunction.value,
 		hasPostFormActions: postFormActions.length > 0,
 		recentHashtags: recentHashtags.value,
-		setCw: (v: string) => { cw.value = v; },
-		setText: (v: string) => { text.value = v; },
-		setHashtags: (v: string) => { hashtags.value = v; },
+		inputs: {
+			text: {
+				binding: textModel.binding,
+				className: $style.text,
+				ref: munRefs.textareaEl,
+				props: {
+					disabled: posting.value || posted.value,
+					readonly: textAreaReadOnly.value,
+					'data-testid': 'post-form-text',
+					onKeydown, onKeyup, onPaste,
+					onCompositionstart: textModel.onCompositionstart,
+					onCompositionupdate: onCompositionUpdate,
+					onCompositionend: (ev: CompositionEvent) => { textModel.onCompositionend(); onCompositionEnd(ev); },
+				},
+			},
+			cw: {
+				binding: cwModel.binding,
+				className: $style.cw,
+				ref: munRefs.cwInputEl,
+				props: {
+					onKeydown, onKeyup,
+					onCompositionstart: cwModel.onCompositionstart,
+					onCompositionend: (ev: CompositionEvent) => { cwModel.onCompositionend(); onCompositionEnd(ev); },
+				},
+			},
+			hashtags: {
+				binding: hashtagsModel.binding,
+				className: $style.hashtags,
+				ref: munRefs.hashtagsInputEl,
+				props: {
+					list: 'hashtags',
+					onCompositionstart: hashtagsModel.onCompositionstart,
+					onCompositionend: hashtagsModel.onCompositionend,
+				},
+			},
+		},
 		setFiles: (v: typeof files.value) => { files.value = v; },
 		setPoll: (v: PollEditorModelValue) => { poll.value = v; },
 		clearPoll: () => { poll.value = null; },
@@ -1813,6 +1849,7 @@ html[data-color-scheme=light] .preview {
 }
 
 .visibleUser {
+	display: inline;
 	margin-right: 14px;
 	padding: 8px 0 8px 8px;
 	border-radius: 8px;
