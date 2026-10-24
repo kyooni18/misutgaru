@@ -1,0 +1,111 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+// Mün view for the sidebar (ported from the template of navbar.vue).
+// State, handlers and the CSS module stay in the Vue shell, which passes its
+// $style map as `c` so the rendered DOM and classes are unchanged.
+
+import { Element } from '@mun/core/compat'
+import { Component } from '@mun/vue'
+
+const subButtonPath = 'M47.488,7.995C47.79,10.11 47.943,12.266 47.943,14.429C47.997,26.989 47.997,84 47.997,84C47.997,84 44.018,118.246 23.997,133.5C-0.374,152.07 -0.003,192 -0.003,192L-0.003,-96C-0.003,-96 0.151,-56.216 23.997,-37.5C40.861,-24.265 46.043,-1.243 47.488,7.995Z'
+
+const cls = (...names) => names.filter(Boolean).join(' ')
+
+export function navbarView(ctx) {
+  const { c, components, text, me, iconOnly } = ctx
+  const tip = (title, node) => Component(components.MunDirectives, { directives: ctx.tooltip(title) }, node)
+  const icon = className => Element('i', { className })
+
+  const realtimeButton = () => tip(text.realtimeMode,
+    Element('button', { className: cls('_button', c.realtimeMode, ctx.realtimeMode && c.on), onClick: ctx.toggleRealtimeMode },
+      icon(ctx.realtimeMode ? 'ti ti-bolt ti-fw' : 'ti ti-bolt-off ti-fw')))
+  const widgetButton = () => tip(text.widgets,
+    Element('button', { className: cls('_button', c.widget), onClick: ctx.onWidgetButtonClick },
+      icon('ti ti-apps ti-fw')))
+
+  const link = (title, to, iconClass, transitionName, extra) => tip(title,
+    Component(components.MkA, { class: c.item, activeClass: c.active, to, exact: extra?.exact },
+      Element('i', { className: cls(c.itemIcon, iconClass), style: `view-transition-name: ${transitionName};` }),
+      Element('span', { className: c.itemText }, title)))
+
+  const indicator = (value) => Element('span', { className: cls(c.itemIndicator, '_blink') },
+    value
+      ? Element('span', { className: cls('_indicateCounter', c.itemIndicateValueIcon) }, value)
+      : Element('i', { className: '_indicatorCircle' }))
+
+  const menuItem = (item) => {
+    if (item === '-') return Element('div', { className: c.divider })
+    const def = ctx.navbarItemDef[item]
+    if (!def || (def.show != null && def.show.value === false)) return null
+    const children = [
+      Element('i', { className: cls('ti-fw', c.itemIcon, def.icon), style: { viewTransitionName: 'navbar-item-' + item } }),
+      Element('span', { className: c.itemText }, def.title),
+      def.indicated ? indicator(def.indicateValue) : null,
+    ]
+    const node = def.to
+      ? Component(components.MkA, { class: cls('_button', c.item), activeClass: c.active, to: def.to, ...(def.action ? { onClick: def.action } : {}) }, ...children)
+      : Element('button', { className: cls('_button', c.item), activeClass: c.active, ...(def.action ? { onClick: def.action } : {}) }, ...children)
+    return tip(def.title, node)
+  }
+
+  const subButton = (onClick, iconClassName) => Element('div', { className: c.subButton },
+    Element('svg', { viewBox: '0 0 16 64', class: c.subButtonShape },
+      Element('g', { transform: 'matrix(0.333333,0,0,0.222222,0.000895785,21.3333)' },
+        Element('path', { d: subButtonPath, style: 'fill:var(--MI_THEME-navBg);' }))),
+    Element('button', { className: cls('_button', c.subButtonClickable), onClick },
+      Element('i', { className: iconClassName })))
+
+  const pill = ctx.pill
+  return [
+    Component(components.MkProgressiveBlur),
+    Element('div', { className: c.body },
+      Element('div', { className: c.top },
+        tip(text.instanceName,
+          Element('button', { className: cls('_button', c.instance), onClick: ctx.openInstanceMenu },
+            Element('img', { src: ctx.instanceIconUrl, alt: '', className: c.instanceIcon, style: 'view-transition-name: navbar-serverIcon;' }))),
+        !iconOnly ? realtimeButton() : null,
+        !iconOnly && ctx.showWidgetButton ? widgetButton() : null),
+      Element('div', { ref: ctx.middleRef, className: c.middle },
+        Element('span', {
+          className: cls(c.activePill, pill.shown && c.activePillShown, pill.animated && c.activePillAnimated),
+          style: { transform: `translateY(${pill.top}px)`, height: `${pill.height}px`, '--pillHeight': `${pill.height}px` },
+          'aria-hidden': 'true',
+        }),
+        link(text.timeline, '/', 'ti ti-home ti-fw', 'navbar-homeIcon', { exact: true }),
+        ...ctx.menu.map(menuItem),
+        Element('div', { className: c.divider }),
+        me != null && (me.isAdmin || me.isModerator) ? link(text.controlPanel, '/admin', 'ti ti-dashboard ti-fw', 'navbar-controlPanel') : null,
+        Element('button', { className: cls('_button', c.item), onClick: ctx.more },
+          Element('i', { className: cls(c.itemIcon, 'ti ti-grid-dots ti-fw'), style: 'view-transition-name: navbar-more;' }),
+          Element('span', { className: c.itemText }, text.more),
+          ctx.otherMenuItemIndicated ? indicator(null) : null),
+        link(text.settings, '/settings', 'ti ti-settings ti-fw', 'navbar-settings')),
+      Element('div', { className: c.bottom },
+        iconOnly && ctx.showWidgetButton ? widgetButton() : null,
+        iconOnly ? realtimeButton() : null,
+        tip(text.note,
+          Element('button', { className: cls('_button', c.post), 'data-testid': 'open-post-form', onClick: ctx.post },
+            Element('i', { className: cls('ti ti-pencil ti-fw', c.postIcon) }),
+            Element('span', { className: c.postText }, text.note))),
+        me != null
+          ? tip(text.account,
+            Element('button', { className: cls('_button', c.account), onClick: ctx.openAccountMenu },
+              Component(components.MkAvatar, { user: me, class: c.avatar, style: 'view-transition-name: navbar-avatar;' }),
+              Component(components.MkAcct, { class: cls('_nowrap', c.acct), user: me })))
+          : null)),
+    ctx.showSubButtons
+      ? Element('div', { className: c.subButtons },
+        subButton(ctx.menuEdit, cls(c.subButtonIcon, 'ti ti-settings-2')),
+        ...(!ctx.asDrawer
+          ? [
+            Element('div', { className: c.subButtonGapFill }),
+            Element('div', { className: c.subButtonGapFillDivider }),
+            subButton(ctx.toggleIconOnly, cls(iconOnly ? 'ti ti-chevron-right' : 'ti ti-chevron-left', c.subButtonIcon)),
+          ]
+          : []))
+      : null,
+  ]
+}

@@ -5,110 +5,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.iconOnly]: iconOnly }]">
-	<MkProgressiveBlur/>
-	<div :class="$style.body">
-		<div :class="$style.top">
-			<button v-tooltip.noDelay.right="instance.name ?? i18n.ts.instance" class="_button" :class="$style.instance" @click="openInstanceMenu">
-				<img :src="instance.iconUrl || '/favicon.ico'" alt="" :class="$style.instanceIcon" style="view-transition-name: navbar-serverIcon;"/>
-			</button>
-			<button v-if="!iconOnly" v-tooltip.noDelay.right="i18n.ts.realtimeMode" class="_button" :class="[$style.realtimeMode, store.r.realtimeMode.value ? $style.on : null]" @click="toggleRealtimeMode">
-				<i v-if="store.r.realtimeMode.value" class="ti ti-bolt ti-fw"></i>
-				<i v-else class="ti ti-bolt-off ti-fw"></i>
-			</button>
-			<button v-if="!iconOnly && showWidgetButton" v-tooltip.noDelay.right="i18n.ts.widgets" class="_button" :class="[$style.widget]" @click="() => emit('widgetButtonClick')">
-				<i class="ti ti-apps ti-fw"></i>
-			</button>
-		</div>
-		<div ref="middleEl" :class="$style.middle">
-			<span :class="[$style.activePill, { [$style.activePillShown]: pill.shown, [$style.activePillAnimated]: pill.animated }]" :style="{ transform: `translateY(${pill.top}px)`, height: `${pill.height}px`, '--pillHeight': `${pill.height}px` }" aria-hidden="true"></span>
-			<MkA v-tooltip.noDelay.right="i18n.ts.timeline" :class="$style.item" :activeClass="$style.active" to="/" exact>
-				<i :class="$style.itemIcon" class="ti ti-home ti-fw" style="view-transition-name: navbar-homeIcon;"></i><span :class="$style.itemText">{{ i18n.ts.timeline }}</span>
-			</MkA>
-			<template v-for="item in prefer.r.menu.value">
-				<div v-if="item === '-'" :class="$style.divider"></div>
-				<component
-					:is="navbarItemDef[item].to ? 'MkA' : 'button'"
-					v-else-if="navbarItemDef[item] && (navbarItemDef[item].show == null || navbarItemDef[item].show.value !== false)"
-					v-tooltip.noDelay.right="navbarItemDef[item].title"
-					class="_button"
-					:class="[$style.item]"
-					:activeClass="$style.active"
-					:to="navbarItemDef[item].to"
-					v-on="navbarItemDef[item].action ? { click: navbarItemDef[item].action } : {}"
-				>
-					<i class="ti-fw" :class="[$style.itemIcon, navbarItemDef[item].icon]" :style="{ viewTransitionName: 'navbar-item-' + item }"></i><span :class="$style.itemText">{{ navbarItemDef[item].title }}</span>
-					<span v-if="navbarItemDef[item].indicated" :class="$style.itemIndicator" class="_blink">
-						<span v-if="navbarItemDef[item].indicateValue" class="_indicateCounter" :class="$style.itemIndicateValueIcon">{{ navbarItemDef[item].indicateValue }}</span>
-						<i v-else class="_indicatorCircle"></i>
-					</span>
-				</component>
-			</template>
-			<div :class="$style.divider"></div>
-			<MkA v-if="$i != null && ($i.isAdmin || $i.isModerator)" v-tooltip.noDelay.right="i18n.ts.controlPanel" :class="$style.item" :activeClass="$style.active" to="/admin">
-				<i :class="$style.itemIcon" class="ti ti-dashboard ti-fw" style="view-transition-name: navbar-controlPanel;"></i><span :class="$style.itemText">{{ i18n.ts.controlPanel }}</span>
-			</MkA>
-			<button class="_button" :class="$style.item" @click="more">
-				<i :class="$style.itemIcon" class="ti ti-grid-dots ti-fw" style="view-transition-name: navbar-more;"></i><span :class="$style.itemText">{{ i18n.ts.more }}</span>
-				<span v-if="otherMenuItemIndicated" :class="$style.itemIndicator" class="_blink"><i class="_indicatorCircle"></i></span>
-			</button>
-			<MkA v-tooltip.noDelay.right="i18n.ts.settings" :class="$style.item" :activeClass="$style.active" to="/settings">
-				<i :class="$style.itemIcon" class="ti ti-settings ti-fw" style="view-transition-name: navbar-settings;"></i><span :class="$style.itemText">{{ i18n.ts.settings }}</span>
-			</MkA>
-		</div>
-		<div :class="$style.bottom">
-			<button v-if="iconOnly && showWidgetButton" v-tooltip.noDelay.right="i18n.ts.widgets" class="_button" :class="[$style.widget]" @click="() => emit('widgetButtonClick')">
-				<i class="ti ti-apps ti-fw"></i>
-			</button>
-			<button v-if="iconOnly" v-tooltip.noDelay.right="i18n.ts.realtimeMode" class="_button" :class="[$style.realtimeMode, store.r.realtimeMode.value ? $style.on : null]" @click="toggleRealtimeMode">
-				<i v-if="store.r.realtimeMode.value" class="ti ti-bolt ti-fw"></i>
-				<i v-else class="ti ti-bolt-off ti-fw"></i>
-			</button>
-			<button v-tooltip.noDelay.right="i18n.ts.note" class="_button" :class="[$style.post]" data-testid="open-post-form" @click="() => { os.post(); }">
-				<i class="ti ti-pencil ti-fw" :class="$style.postIcon"></i><span :class="$style.postText">{{ i18n.ts.note }}</span>
-			</button>
-			<button v-if="$i != null" v-tooltip.noDelay.right="`${i18n.ts.account}: @${$i.username}`" class="_button" :class="[$style.account]" @click="openAccountMenu">
-				<MkAvatar :user="$i" :class="$style.avatar" style="view-transition-name: navbar-avatar;"/><MkAcct class="_nowrap" :class="$style.acct" :user="$i"/>
-			</button>
-		</div>
-	</div>
-
-	<!--
-	<svg viewBox="0 0 16 48" :class="$style.subButtonShape">
-		<g transform="matrix(0.333333,0,0,0.222222,0.000895785,13.3333)">
-			<path d="M23.935,-24C37.223,-24 47.995,-7.842 47.995,12.09C47.995,34.077 47.995,62.07 47.995,84.034C47.995,93.573 45.469,102.721 40.972,109.466C36.475,116.211 30.377,120 24.018,120L23.997,120C10.743,120 -0.003,136.118 -0.003,156C-0.003,156 -0.003,156 -0.003,156L-0.003,-60L-0.003,-59.901C-0.003,-50.379 2.519,-41.248 7.007,-34.515C11.496,-27.782 17.584,-24 23.931,-24C23.932,-24 23.934,-24 23.935,-24Z" style="fill:var(--MI_THEME-navBg);"/>
-		</g>
-	</svg>
-	-->
-
-	<div v-if="!forceIconOnly && prefer.r.showNavbarSubButtons.value" :class="$style.subButtons">
-		<div :class="$style.subButton">
-			<svg viewBox="0 0 16 64" :class="$style.subButtonShape">
-				<g transform="matrix(0.333333,0,0,0.222222,0.000895785,21.3333)">
-					<path d="M47.488,7.995C47.79,10.11 47.943,12.266 47.943,14.429C47.997,26.989 47.997,84 47.997,84C47.997,84 44.018,118.246 23.997,133.5C-0.374,152.07 -0.003,192 -0.003,192L-0.003,-96C-0.003,-96 0.151,-56.216 23.997,-37.5C40.861,-24.265 46.043,-1.243 47.488,7.995Z" style="fill:var(--MI_THEME-navBg);"/>
-				</g>
-			</svg>
-			<button class="_button" :class="$style.subButtonClickable" @click="menuEdit"><i :class="$style.subButtonIcon" class="ti ti-settings-2"></i></button>
-		</div>
-		<template v-if="!props.asDrawer">
-			<div :class="$style.subButtonGapFill"></div>
-			<div :class="$style.subButtonGapFillDivider"></div>
-			<div :class="$style.subButton">
-				<svg viewBox="0 0 16 64" :class="$style.subButtonShape">
-					<g transform="matrix(0.333333,0,0,0.222222,0.000895785,21.3333)">
-						<path d="M47.488,7.995C47.79,10.11 47.943,12.266 47.943,14.429C47.997,26.989 47.997,84 47.997,84C47.997,84 44.018,118.246 23.997,133.5C-0.374,152.07 -0.003,192 -0.003,192L-0.003,-96C-0.003,-96 0.151,-56.216 23.997,-37.5C40.861,-24.265 46.043,-1.243 47.488,7.995Z" style="fill:var(--MI_THEME-navBg);"/>
-					</g>
-				</svg>
-				<button class="_button" :class="$style.subButtonClickable" @click="toggleIconOnly"><i v-if="iconOnly" class="ti ti-chevron-right" :class="$style.subButtonIcon"></i><i v-else class="ti ti-chevron-left" :class="$style.subButtonIcon"></i></button>
-			</div>
-		</template>
-	</div>
+	<MunView :render="renderNavbar"/>
 </div>
 </template>
 
 <script lang="ts" setup>
-import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, useCssModule, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, shallowRef, useCssModule, watch } from 'vue';
+import { MunView } from '@mun/vue';
+import { navbarView } from './navbar.mun';
 import { openInstanceMenu } from './common.js';
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
+import MkA from '@/components/global/MkA.vue';
+import MkAvatar from '@/components/global/MkAvatar.vue';
+import MkAcct from '@/components/global/MkAcct.vue';
+import { MunDirectives } from '@/utility/mun-directives.js';
+import { tooltipDirective as vTooltip } from '@/directives/tooltip.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
 import { store } from '@/store.js';
@@ -145,7 +56,7 @@ const otherMenuItemIndicated = computed(() => {
 });
 
 // A single pill slides between items instead of each item lighting up on its own.
-const middleEl = useTemplateRef('middleEl');
+const middleEl = shallowRef<HTMLElement | null>(null);
 const pill = reactive({ top: 0, height: 0, shown: false, animated: false });
 
 function updatePill() {
@@ -162,7 +73,8 @@ function updatePill() {
 	pill.shown = true;
 }
 
-const activeClass = useCssModule().active;
+const $style = useCssModule();
+const activeClass = $style.active;
 const pillObserver = new ResizeObserver(() => updatePill());
 
 onMounted(() => {
@@ -231,6 +143,48 @@ async function more(ev: PointerEvent) {
 
 function menuEdit() {
 	router.push('/settings/navbar');
+}
+
+const components = { MkProgressiveBlur, MkA, MkAvatar, MkAcct, MunDirectives };
+const tooltipModifiers = { noDelay: true, right: true };
+
+function renderNavbar() {
+	return navbarView({
+		c: $style,
+		components,
+		tooltip: (value: string) => [[vTooltip, value, undefined, tooltipModifiers]],
+		text: {
+			instanceName: instance.name ?? i18n.ts.instance,
+			realtimeMode: i18n.ts.realtimeMode,
+			widgets: i18n.ts.widgets,
+			timeline: i18n.ts.timeline,
+			controlPanel: i18n.ts.controlPanel,
+			more: i18n.ts.more,
+			settings: i18n.ts.settings,
+			note: i18n.ts.note,
+			account: $i != null ? `${i18n.ts.account}: @${$i.username}` : '',
+		},
+		me: $i,
+		iconOnly: iconOnly.value,
+		asDrawer: props.asDrawer,
+		showWidgetButton: props.showWidgetButton,
+		showSubButtons: !forceIconOnly.value && prefer.r.showNavbarSubButtons.value,
+		realtimeMode: store.r.realtimeMode.value,
+		instanceIconUrl: instance.iconUrl || '/favicon.ico',
+		menu: prefer.r.menu.value,
+		navbarItemDef,
+		otherMenuItemIndicated: otherMenuItemIndicated.value,
+		pill: { ...pill },
+		middleRef: (el: Element | null) => { middleEl.value = el as HTMLElement | null; },
+		openInstanceMenu,
+		toggleRealtimeMode,
+		onWidgetButtonClick: () => emit('widgetButtonClick'),
+		more,
+		post: () => { os.post(); },
+		openAccountMenu,
+		menuEdit,
+		toggleIconOnly,
+	});
 }
 </script>
 
