@@ -74,6 +74,7 @@ const props = withDefaults(defineProps<{
 	zPriority?: 'low' | 'middle' | 'high';
 	noOverlap?: boolean;
 	transparentBg?: boolean;
+	backdropOrigin?: string;
 	/** Skip the backdrop ProgressiveBlur, e.g. when the content owns its own edge blur. */
 	noBgBlur?: boolean;
 	hasInteractionWithOtherFocusTrappedEls?: boolean;
@@ -86,6 +87,7 @@ const props = withDefaults(defineProps<{
 	zPriority: 'low',
 	noOverlap: true,
 	transparentBg: false,
+	backdropOrigin: undefined,
 	noBgBlur: false,
 	hasInteractionWithOtherFocusTrappedEls: false,
 	returnFocusTo: null,
@@ -121,10 +123,12 @@ const type = computed<ModalTypes>(() => {
 		return props.preferType!;
 	}
 });
-const isEnableBgTransparent = computed(() => props.transparentBg && (type.value === 'popup'));
+// A caller requesting a transparent backdrop must not gain a viewport blur
+// merely because its responsive presentation switches to a dialog or drawer.
+const isEnableBgTransparent = computed(() => props.transparentBg);
 // Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
 const useBackdropBlur = computed(() => prefer.s.useProgressiveBlurForModal && !isEnableBgTransparent.value && !props.noBgBlur);
-const backdropOrigin = computed(() => type.value === 'drawer' ? '50% 100%' : '50% 50%');
+const backdropOrigin = computed(() => props.backdropOrigin ?? (type.value === 'drawer' ? '50% 100%' : '50% 50%'));
 const transitionName = computed((() =>
 	prefer.s.animation
 		? useSendAnime.value
