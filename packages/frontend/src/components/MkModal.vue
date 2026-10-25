@@ -515,6 +515,8 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 	// The progressive blur is the whole backdrop: no dim floor over the page.
 	&.bgProgressive {
 		background: transparent;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
 	}
 
 	&.bgTransparent {

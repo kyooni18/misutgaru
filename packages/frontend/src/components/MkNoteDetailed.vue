@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		{{ i18n.ts.deletedNote }}
 	</div>
 	<template v-else>
-		<article :class="$style.note" @contextmenu.stop="onContextmenu">
+		<article ref="focusedNoteEl" :class="[$style.note, { [$style.focusedNote]: props.focusNote }]" @contextmenu.stop="onContextmenu">
 			<MkNoteDetailedContent
 				ref="contentEl"
 				v-model:showContent="showContent"
@@ -147,7 +147,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject, provide, ref, useTemplateRef, markRaw, computed, onMounted } from 'vue';
+import { inject, provide, ref, useTemplateRef, markRaw, computed, onMounted, watch, nextTick } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
@@ -175,6 +175,7 @@ const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
 	initialTab?: 'replies' | 'renotes' | 'reactions';
 	autoLoadThread?: boolean;
+	focusNote?: boolean;
 	threadContext?: boolean;
 	showControls?: boolean;
 	showReplyButton?: boolean;
@@ -183,6 +184,7 @@ const props = withDefaults(defineProps<{
 }>(), {
 	initialTab: 'replies',
 	autoLoadThread: false,
+	focusNote: false,
 	threadContext: false,
 	showControls: true,
 	showReplyButton: true,
@@ -195,6 +197,7 @@ const inChannel = inject(DI.inChannel, null);
 
 // Template Refsの定義
 const rootEl = useTemplateRef('rootEl');
+const focusedNoteEl = useTemplateRef('focusedNoteEl');
 const menuButton = useTemplateRef<HTMLElement>('menuButton');
 const renoteButton = useTemplateRef<HTMLElement>('renoteButton');
 const renoteTime = useTemplateRef<HTMLElement>('renoteTime');
@@ -308,6 +311,12 @@ onMounted(() => {
 	if (!props.autoLoadThread) return;
 	loadConversation();
 });
+
+watch(conversationLoaded, async (loaded) => {
+	if (!loaded || !props.focusNote) return;
+	await nextTick();
+	requestAnimationFrame(() => focusedNoteEl.value?.scrollIntoView({ block: 'center' }));
+}, { flush: 'post' });
 
 // キーボードショートカットマップ
 const keymap = {
@@ -443,6 +452,11 @@ const keymap = {
 	--pad: 32px;
 	padding: var(--pad);
 	font-size: 1.2em;
+}
+
+.focusedNote {
+	background: color-mix(in srgb, var(--MI_THEME-accent) 4%, transparent);
+	border-inline-start: 2px solid color-mix(in srgb, var(--MI_THEME-accent) 28%, transparent);
 }
 
 // ancestors / continuation: compact, joined by a line running from avatar to avatar
