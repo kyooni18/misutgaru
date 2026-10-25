@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:preferType="prefer.s.emojiPickerStyle"
 	:hasInteractionWithOtherFocusTrappedEls="true"
 	:transparentBg="true"
+	noBgBlur
 	:manualShowing="manualShowing"
 	:anchorElement="anchorElement"
 	@click="modal?.close()"
@@ -19,19 +20,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@close="emit('close')"
 	@closed="emit('closed')"
 >
-	<MkEmojiPicker
-		ref="picker"
-		class="_popup _shadow"
-		:class="{ [$style.drawer]: type === 'drawer' }"
-		:showPinned="showPinned"
-		:pinnedEmojis="pinnedEmojis"
-		:asReactionPicker="asReactionPicker"
-		:targetNote="targetNote"
-		:asDrawer="type === 'drawer'"
-		:max-height="maxHeight"
-		@chosen="chosen"
-		@esc="modal?.close()"
-	/>
+	<div :class="$style.pickerShell">
+		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" :strength="0.5" :spread="0.5"/>
+		<MkEmojiPicker
+			ref="picker"
+			class="_popup _shadow"
+			:class="{ [$style.drawer]: type === 'drawer' }"
+			:showPinned="showPinned"
+			:pinnedEmojis="pinnedEmojis"
+			:asReactionPicker="asReactionPicker"
+			:targetNote="targetNote"
+			:asDrawer="type === 'drawer'"
+			:max-height="maxHeight"
+			@chosen="chosen"
+			@esc="modal?.close()"
+		/>
+	</div>
 </MkModal>
 </template>
 
@@ -40,6 +44,7 @@ import * as Misskey from 'misskey-js';
 import { useTemplateRef } from 'vue';
 import MkModal from '@/components/MkModal.vue';
 import MkEmojiPicker from '@/components/MkEmojiPicker.vue';
+import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{
@@ -86,6 +91,13 @@ function opening() {
 </script>
 
 <style lang="scss" module>
+.pickerShell {
+	position: relative;
+	z-index: 0;
+	width: fit-content;
+	margin: auto;
+}
+
 .drawer {
 	border-radius: 24px;
 	border-bottom-right-radius: 0;

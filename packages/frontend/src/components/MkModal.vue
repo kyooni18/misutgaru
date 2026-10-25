@@ -478,11 +478,15 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 			right: 0;
 			margin: auto;
 			padding: 32px;
+			padding-top: max(32px, calc(env(safe-area-inset-top, 0px) + 16px));
+			padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 16px));
 			display: flex;
 			overflow: auto;
 
 			@media (max-width: 500px) {
 				padding: 16px;
+				padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 16px));
+				padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 16px));
 			}
 		}
 	}

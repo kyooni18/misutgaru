@@ -24,13 +24,17 @@ import { computed } from 'vue';
 const props = withDefaults(defineProps<{
 	variant?: 'edge' | 'viewport';
 	origin?: string;
+	strength?: number;
+	spread?: number;
 }>(), {
 	variant: 'edge',
 	origin: '50% 50%',
+	strength: 1,
+	spread: 1,
 });
 
 function filter(px: number) {
-	const value = `blur(calc(${px}px * var(--MI-fade, 1)))`;
+	const value = `blur(calc(${px * props.strength}px * var(--MI-fade, 1)))`;
 	return { backdropFilter: value, WebkitBackdropFilter: value };
 }
 
@@ -42,13 +46,13 @@ const bands = computed(() => {
 		});
 	}
 	return Array.from({ length: 5 }, (_, index) => {
-		const extent = 24 + index * 18;
-		const ramp = extent + 12;
+		const extent = (24 + index * 18) * props.spread;
+		const ramp = extent + 12 * props.spread;
 		const horizontal = `linear-gradient(to right, transparent, black ${ramp}px, black calc(100% - ${ramp}px), transparent)`;
 		const vertical = horizontal.replace('to right', 'to bottom');
 		return {
 			inset: `-${extent}px`,
-			borderRadius: `${extent + 16}px`,
+			borderRadius: `${extent + 16 * props.spread}px`,
 			...filter(12 - index * 2.5),
 			maskImage: `${horizontal}, ${vertical}`,
 			WebkitMaskImage: `${horizontal}, ${vertical}`,
