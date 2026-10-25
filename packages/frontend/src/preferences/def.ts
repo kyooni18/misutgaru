@@ -244,7 +244,7 @@ export const PREF_DEF = definePreferences({
 		default: 'twemoji' as 'native' | 'fluentEmoji' | 'twemoji',
 	},
 	menuStyle: {
-		default: 'auto' as 'auto' | 'popup' | 'drawer',
+		default: 'auto' as 'auto' | 'popup' | 'drawer' | 'floating',
 	},
 	// Renamed from useBlurEffectForModal so saved profiles pick up the new default.
 	useProgressiveBlurForModal: {
@@ -284,7 +284,7 @@ export const PREF_DEF = definePreferences({
 		default: 3,
 	},
 	emojiPickerStyle: {
-		default: 'auto' as 'auto' | 'popup' | 'drawer',
+		default: 'auto' as 'auto' | 'popup' | 'drawer' | 'floating',
 	},
 	squareAvatars: {
 		default: false,

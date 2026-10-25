@@ -9,31 +9,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:enterActiveClass="normalizeClass({
 		[$style.transition_modalDrawer_enterActive]: transitionName === 'modal-drawer',
 		[$style.transition_modalPopup_enterActive]: transitionName === 'modal-popup',
+		[$style.transition_modalFloating_enterActive]: transitionName === 'modal-floating',
 		[$style.transition_modal_enterActive]: transitionName === 'modal',
 		[$style.transition_send_enterActive]: transitionName === 'send',
 	})"
 	:leaveActiveClass="normalizeClass({
 		[$style.transition_modalDrawer_leaveActive]: transitionName === 'modal-drawer',
 		[$style.transition_modalPopup_leaveActive]: transitionName === 'modal-popup',
+		[$style.transition_modalFloating_leaveActive]: transitionName === 'modal-floating',
 		[$style.transition_modal_leaveActive]: transitionName === 'modal',
 		[$style.transition_send_leaveActive]: transitionName === 'send',
 	})"
 	:enterFromClass="normalizeClass({
 		[$style.transition_modalDrawer_enterFrom]: transitionName === 'modal-drawer',
 		[$style.transition_modalPopup_enterFrom]: transitionName === 'modal-popup',
+		[$style.transition_modalFloating_enterFrom]: transitionName === 'modal-floating',
 		[$style.transition_modal_enterFrom]: transitionName === 'modal',
 		[$style.transition_send_enterFrom]: transitionName === 'send',
 	})"
 	:leaveToClass="normalizeClass({
 		[$style.transition_modalDrawer_leaveTo]: transitionName === 'modal-drawer',
 		[$style.transition_modalPopup_leaveTo]: transitionName === 'modal-popup',
+		[$style.transition_modalFloating_leaveTo]: transitionName === 'modal-floating',
 		[$style.transition_modal_leaveTo]: transitionName === 'modal',
 		[$style.transition_send_leaveTo]: transitionName === 'send',
 	})"
 	:duration="transitionDuration" appear @afterLeave="onClosed" @enter="emit('opening')" @afterEnter="onOpened"
 >
-	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
+	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup', [$style.floating]: type === 'floating' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
 		<MkProgressiveBlur v-if="useBackdropBlur" variant="viewport" :origin="backdropOrigin" :class="$style.backdropBlur" :style="{ zIndex }"/>
+		<MkFloatingBackdrop v-if="type === 'floating' && floatingHole" :hole="floatingHole" :blur="prefer.s.useProgressiveBlurForModal" :class="$style.backdropBlur" :style="{ zIndex }"/>
 		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent, [$style.bgProgressive]: useBackdropBlur }]" :style="{ zIndex, '--backdropOrigin': backdropOrigin }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
 		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
@@ -52,6 +57,8 @@ import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
+import MkFloatingBackdrop from '@/components/MkFloatingBackdrop.vue';
+import type { FloatingHole } from '@/components/MkFloatingBackdrop.vue';
 import { DI } from '@/di.js';
 
 function getFixedContainer(el: Element | null): Element | null {
@@ -64,7 +71,7 @@ function getFixedContainer(el: Element | null): Element | null {
 	}
 }
 
-type ModalTypes = 'popup' | 'dialog' | 'drawer';
+type ModalTypes = 'popup' | 'dialog' | 'drawer' | 'floating';
 
 const props = withDefaults(defineProps<{
 	manualShowing?: boolean | null;
@@ -114,6 +121,10 @@ const zIndex = os.claimZIndex(props.zPriority);
 const useSendAnime = ref(false);
 const type = computed<ModalTypes>(() => {
 	if (props.preferType === 'auto') {
+		// Floating needs the pressed element to lift; without one it falls back to a drawer.
+		if (prefer.s.menuStyle === 'floating') {
+			return props.anchorElement != null ? 'floating' : 'drawer';
+		}
 		if ((prefer.s.menuStyle === 'drawer') || (prefer.s.menuStyle === 'auto' && isTouchUsing && deviceKind === 'smartphone')) {
 			return 'drawer';
 		} else {
@@ -125,9 +136,11 @@ const type = computed<ModalTypes>(() => {
 });
 // A caller requesting a transparent backdrop must not gain a viewport blur
 // merely because its responsive presentation switches to a dialog or drawer.
-const isEnableBgTransparent = computed(() => props.transparentBg);
+// Floating draws its own dim and blur around the pressed element instead.
+const isEnableBgTransparent = computed(() => props.transparentBg || type.value === 'floating');
 // Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
 const useBackdropBlur = computed(() => prefer.s.useProgressiveBlurForModal && !isEnableBgTransparent.value && !props.noBgBlur);
+const floatingHole = ref<FloatingHole | null>(null);
 const backdropOrigin = computed(() => props.backdropOrigin ?? (type.value === 'drawer' ? '50% 100%' : '50% 50%'));
 const transitionName = computed((() =>
 	prefer.s.animation
@@ -137,7 +150,9 @@ const transitionName = computed((() =>
 				? 'modal-drawer'
 				: type.value === 'popup'
 					? 'modal-popup'
-					: 'modal'
+					: type.value === 'floating'
+						? 'modal-floating'
+						: 'modal'
 		: ''
 ));
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -152,6 +167,7 @@ const transitionDuration = computed(() => {
 	if (transitionName.value === 'send') return { enter: 160, leave: 160 };
 	if (transitionName.value === 'modal-drawer') return { enter: 280, leave: 180 };
 	if (transitionName.value === 'modal-popup') return { enter: 160, leave: 120 };
+	if (transitionName.value === 'modal-floating') return { enter: 440, leave: 200 };
 	return { enter: 220, leave: 160 };
 });
 
@@ -187,9 +203,64 @@ const keymap = {
 const MARGIN = 16;
 const SCROLLBAR_THICKNESS = 16;
 
+const FLOATING_GAP = 14;
+const FLOATING_MIN_SPACE = 120;
+
+// Places the menu beside the pressed element, never over it: below when it
+// fits, above when only that fits, else on the roomier side with a capped height.
+// Only an element taller than the screen leaves no side, and then the menu docks at the bottom.
+const alignFloating = () => {
+	const anchorEl = props.anchorElement!;
+	const el = content.value!;
+	const rect = anchorEl.getBoundingClientRect();
+	floatingHole.value = {
+		left: rect.left,
+		top: rect.top,
+		width: rect.width,
+		height: rect.height,
+		radius: parseFloat(window.getComputedStyle(anchorEl).borderTopLeftRadius) || 0,
+	};
+
+	const vw = window.innerWidth;
+	const vh = window.innerHeight;
+	const width = el.offsetWidth;
+	const height = el.offsetHeight;
+	const below = vh - MARGIN - (rect.bottom + FLOATING_GAP);
+	const above = rect.top - FLOATING_GAP - MARGIN;
+
+	let top: number;
+	let originY: string;
+	if (Math.max(below, above) < FLOATING_MIN_SPACE) {
+		maxHeight.value = vh / 2;
+		top = vh - MARGIN - height;
+		originY = '100%';
+	} else if (height <= below || (height > above && below >= above)) {
+		maxHeight.value = below;
+		top = rect.bottom + FLOATING_GAP;
+		originY = '0%';
+	} else {
+		maxHeight.value = above;
+		top = rect.top - FLOATING_GAP - height;
+		originY = '100%';
+	}
+
+	// Hug the element's nearer edge so the menu reads as coming out of it.
+	const centerX = rect.left + rect.width / 2;
+	let left = centerX < vw / 2 ? rect.left : rect.right - width;
+	left = Math.min(Math.max(left, MARGIN), vw - MARGIN - width);
+
+	transformOrigin.value = `${Math.min(Math.max(centerX - left, 0), width)}px ${originY}`;
+	el.style.left = left + 'px';
+	el.style.top = top + 'px';
+};
+
 const align = () => {
 	if (props.anchorElement == null) return;
 	if (type.value === 'drawer') return;
+	if (type.value === 'floating') {
+		if (content.value != null) alignFloating();
+		return;
+	}
 	if (type.value === 'dialog') return;
 
 	if (content.value == null) return;
@@ -336,7 +407,7 @@ onMounted(() => {
 		if (props.anchorElement) {
 			props.anchorElement.style.pointerEvents = 'none';
 		}
-		fixed.value = (type.value === 'drawer') || (getFixedContainer(props.anchorElement) != null);
+		fixed.value = (type.value === 'drawer') || (type.value === 'floating') || (getFixedContainer(props.anchorElement) != null);
 
 		await nextTick();
 
@@ -360,10 +431,13 @@ onMounted(() => {
 	nextTick(() => {
 		alignObserver.observe(content.value!);
 	});
+
+	window.addEventListener('resize', align, { passive: true });
 });
 
 onUnmounted(() => {
 	alignObserver.disconnect();
+	window.removeEventListener('resize', align);
 });
 
 defineExpose({
@@ -457,6 +531,21 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 	@include faded(scale(0.98));
 }
 
+// Grows out of the pressed element on a slightly underdamped spring
+// (stiffness 400, damping 30), sampled into linear() so it stays on the compositor.
+.transition_modalFloating_enterActive {
+	@include fading(240ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 440ms linear(0, 0.0421, 0.1432, 0.2733, 0.4112, 0.5433, 0.6614, 0.7615, 0.8427, 0.9056, 0.9523, 0.9851, 1.0068, 1.0197, 1.0263, 1.0284, 1.0274, 1.0247, 1.0211, 1.0171, 1.0134, 1.01, 1.0071, 1.0047, 1.0029, 1.0015, 1.0005, 0.9999, 1));
+}
+.transition_modalFloating_leaveActive {
+	@include fading(200ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 200ms var(--MI-motion-ease-exit, cubic-bezier(.4,0,1,1)));
+}
+.transition_modalFloating_enterFrom {
+	@include faded(scale(0.6));
+}
+.transition_modalFloating_leaveTo {
+	@include faded(scale(0.9));
+}
+
 .transition_modalDrawer_enterActive {
 	@include fading(280ms var(--MI-easeOut), null, transform 280ms cubic-bezier(0.32, 0.72, 0, 1));
 }
@@ -498,6 +587,20 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 			&.fixed {
 				position: fixed;
 			}
+		}
+	}
+
+	&.floating {
+		position: fixed;
+		inset: 0;
+		// The hole is fixed to where the element was pressed; the page must not move under it.
+		// Only on the backdrop: touch-action intersects down the tree, so the menu could not scroll.
+		> .bg {
+			touch-action: none;
+		}
+
+		> .content {
+			position: fixed;
 		}
 	}
 

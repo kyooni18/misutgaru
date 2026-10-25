@@ -586,7 +586,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</SearchMarker>
 						</div>
 
-						<SearchMarker :keywords="['menu', 'style', 'popup', 'drawer']">
+						<SearchMarker :keywords="['menu', 'style', 'popup', 'drawer', 'floating']">
 							<MkPreferenceContainer k="menuStyle">
 								<MkSelect
 									v-model="menuStyle"
@@ -594,6 +594,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 										{ label: i18n.ts.auto, value: 'auto' },
 										{ label: i18n.ts.popup, value: 'popup' },
 										{ label: i18n.ts.drawer, value: 'drawer' },
+										{ label: i18n.ts.floating, value: 'floating' },
 									]"
 								>
 									<template #label><SearchLabel>{{ i18n.ts.menuStyle }}</SearchLabel></template>

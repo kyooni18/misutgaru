@@ -2133,6 +2133,10 @@ export interface Locale extends ILocale {
      */
     "popup": string;
     /**
+     * フローティング
+     */
+    "floating": string;
+    /**
      * ノートのアクションをホバー時のみ表示する
      */
     "showNoteActionsOnlyHover": string;
