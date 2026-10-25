@@ -402,6 +402,17 @@ const alignObserver = new ResizeObserver((entries, observer) => {
 	align();
 });
 
+// Window, rotation and on-screen keyboard changes all move the pressed element;
+// coalesce them into one realign per frame so the hole and menu follow together.
+let realignFrame: number | null = null;
+function scheduleAlign() {
+	if (realignFrame != null) return;
+	realignFrame = window.requestAnimationFrame(() => {
+		realignFrame = null;
+		align();
+	});
+}
+
 onMounted(() => {
 	watch(() => props.anchorElement, async () => {
 		if (props.anchorElement) {
@@ -430,14 +441,18 @@ onMounted(() => {
 
 	nextTick(() => {
 		alignObserver.observe(content.value!);
+		if (type.value === 'floating' && props.anchorElement != null) alignObserver.observe(props.anchorElement);
 	});
 
-	window.addEventListener('resize', align, { passive: true });
+	window.addEventListener('resize', scheduleAlign, { passive: true });
+	window.visualViewport?.addEventListener('resize', scheduleAlign, { passive: true });
 });
 
 onUnmounted(() => {
 	alignObserver.disconnect();
-	window.removeEventListener('resize', align);
+	window.removeEventListener('resize', scheduleAlign);
+	window.visualViewport?.removeEventListener('resize', scheduleAlign);
+	if (realignFrame != null) window.cancelAnimationFrame(realignFrame);
 });
 
 defineExpose({
