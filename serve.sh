@@ -10,10 +10,9 @@ if [[ ! -d packages/modules/Mun/packages/core ]]; then
 	exit 1
 fi
 
-# The compose file uses a pre-built image for web, so build it explicitly.
-# The frontend bundle is generated inside the image; do not let BuildKit reuse
-# a stale COPY/build layer when serving the current working tree.
-docker build --no-cache --tag kyooni18/misutgaru-web:latest .
+# Build the exact image tag used by Compose. The frontend bundle is generated
+# inside the image; do not reuse a stale COPY/build layer.
+docker compose build --no-cache web
 
 # Rebuild the recommendation service as well so changes under
 # packages/recommendation are always reflected by ./serve.sh.
