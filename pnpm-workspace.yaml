@@ -1,6 +1,5 @@
 packages:
   - packages/misutgaru-core
-  - packages/progressive-blur-element
   - packages/backend
   - packages/frontend-shared
   - packages/frontend

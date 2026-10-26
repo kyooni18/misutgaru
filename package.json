@@ -9,7 +9,6 @@
 	"packageManager": "pnpm@12.14.0",
 	"workspaces": [
 		"packages/misutgaru-core",
-		"packages/progressive-blur-element",
 		"packages/backend",
 		"packages/frontend-shared",
 		"packages/frontend",
@@ -26,6 +25,7 @@
 		"packages/modules/Mun/packages/compiler",
 		"packages/modules/Mun/packages/core",
 		"packages/modules/Mun/packages/execution",
+		"packages/modules/Mun/packages/progressive-blur",
 		"packages/modules/Mun/packages/vite",
 		"packages/modules/Mun/packages/vue",
 		"packages-private/*"

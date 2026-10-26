@@ -800,9 +800,6 @@ importers:
       '@misutgaru/core':
         specifier: workspace:*
         version: link:../misutgaru-core
-      '@misutgaru/progressive-blur-element':
-        specifier: workspace:*
-        version: link:../progressive-blur-element
       '@mun/core':
         specifier: workspace:*
         version: link:../modules/Mun/packages/core
@@ -1627,16 +1624,6 @@ importers:
       vue:
         specifier: ^3.5.44
         version: 3.5.44(typescript@6.0.2)
-
-  packages/progressive-blur-element:
-    dependencies:
-      '@mun/core':
-        specifier: workspace:*
-        version: link:../modules/Mun/packages/core
-    devDependencies:
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
 
   packages/sw:
     dependencies:

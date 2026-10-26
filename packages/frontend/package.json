@@ -25,7 +25,6 @@
 		"@misskey-dev/emoji-data": "17.0.3",
 		"@misskey-dev/tagcanvas-es": "0.1.3",
 		"@misutgaru/core": "workspace:*",
-		"@misutgaru/progressive-blur-element": "workspace:*",
 		"@mun/progressive-blur": "workspace:*",
 		"@mun/core": "workspace:*",
 		"@mun/vite": "workspace:*",
