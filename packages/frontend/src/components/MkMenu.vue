@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:class="$style.menu"
 		:style="{
 			width: (width && !asDrawer) ? `${width}px` : '',
-			maxHeight: maxHeight ? `min(${maxHeight}px, calc(100dvh - 32px))` : 'calc(100dvh - 32px)',
+			maxHeight: maxHeight ? `min(${maxHeight}px, var(--MI-popup-max-height, calc(100dvh - 32px)))` : 'var(--MI-popup-max-height, calc(100dvh - 32px))',
 		}"
 		@keydown.stop="() => {}"
 		@contextmenu.self.prevent="() => {}"
@@ -579,13 +579,13 @@ function guardMouseMove(ev: MouseEvent) {
 
 	&:not(.asDrawer):not(.widthSpecified) {
 		> .menu {
-			max-width: 400px;
+			max-width: min(400px, var(--MI-popup-max-width, 100vw));
 		}
 	}
 
 	&.big:not(.asDrawer) {
 		> .menu {
-			min-width: 230px;
+			min-width: min(230px, var(--MI-popup-max-width, 100vw));
 
 			> .item {
 				padding: 6px 20px;
@@ -631,8 +631,8 @@ function guardMouseMove(ev: MouseEvent) {
 .menu {
 	padding: 6px 0;
 	box-sizing: border-box;
-	max-width: 100vw;
-	min-width: 200px;
+	max-width: var(--MI-popup-max-width, 100vw);
+	min-width: min(200px, var(--MI-popup-max-width, 100vw));
 	overflow: auto;
 	overscroll-behavior: contain;
 
@@ -739,7 +739,7 @@ function guardMouseMove(ev: MouseEvent) {
 
 .item_content {
 	width: 100%;
-	max-width: 100vw;
+	max-width: var(--MI-popup-max-width, 100vw);
 	display: flex;
 	align-items: center;
 	justify-content: space-between;

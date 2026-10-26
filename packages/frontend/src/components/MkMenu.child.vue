@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div ref="el" :class="$style.root">
+	<div ref="boundaryEl" :class="$style.boundary" aria-hidden="true"></div>
 	<MkMenu
 		:items="items"
 		:align="align"
@@ -21,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { nextTick, onMounted, onUnmounted, provide, useTemplateRef, watch } from 'vue';
 import MkMenu from './MkMenu.vue';
 import type { MenuItem } from '@/types/menu.js';
+import { floatingBoundary, measureFloating, placeFloating } from '@/utility/floating-position.js';
 
 const props = defineProps<{
 	items: MenuItem[];
@@ -39,26 +41,18 @@ const emit = defineEmits<{
 provide('isNestingMenu', true);
 
 const el = useTemplateRef('el');
+const boundaryEl = useTemplateRef('boundaryEl');
 const align = 'left';
 
-const SCROLLBAR_THICKNESS = 16;
-
 function setPosition() {
-	if (el.value == null) return;
+	if (el.value == null || boundaryEl.value == null) return;
 	const rootRect = props.rootElement.getBoundingClientRect();
 	const parentRect = props.anchorElement.getBoundingClientRect();
-	const myRect = el.value.getBoundingClientRect();
-
-	let left = props.anchorElement.offsetWidth;
-	let top = (parentRect.top - rootRect.top) - 8;
-	if (rootRect.left + left + myRect.width >= (window.innerWidth - SCROLLBAR_THICKNESS)) {
-		left = -myRect.width;
-	}
-	if (rootRect.top + top + myRect.height >= (window.innerHeight - SCROLLBAR_THICKNESS)) {
-		top = top - ((rootRect.top + top + myRect.height) - (window.innerHeight - SCROLLBAR_THICKNESS));
-	}
-	el.value.style.left = left + 'px';
-	el.value.style.top = top + 'px';
+	const boundary = floatingBoundary(boundaryEl.value);
+	const size = measureFloating(el.value, boundary);
+	const placement = placeFloating(parentRect, size, boundary, 'right', 0);
+	el.value.style.left = `${placement.left - rootRect.left}px`;
+	el.value.style.top = `${placement.top - rootRect.top}px`;
 }
 
 function onChildClosed(actioned?: boolean) {
@@ -67,6 +61,18 @@ function onChildClosed(actioned?: boolean) {
 	} else {
 		emit('closed');
 	}
+}
+
+let positionFrame: number | null = null;
+
+function schedulePosition(event?: Event) {
+	if (event?.type === 'scroll' && event.target instanceof Node && el.value?.contains(event.target)) return;
+	if (positionFrame != null) return;
+
+	positionFrame = requestAnimationFrame(() => {
+		positionFrame = null;
+		setPosition();
+	});
 }
 
 watch(() => props.anchorElement, () => {
@@ -79,6 +85,11 @@ const ro = new ResizeObserver((entries, observer) => {
 
 onMounted(() => {
 	if (el.value) ro.observe(el.value);
+	ro.observe(props.anchorElement);
+	window.addEventListener('resize', schedulePosition, { passive: true });
+	window.addEventListener('scroll', schedulePosition, { passive: true, capture: true });
+	window.visualViewport?.addEventListener('resize', schedulePosition, { passive: true });
+	window.visualViewport?.addEventListener('scroll', schedulePosition, { passive: true });
 	setPosition();
 	nextTick(() => {
 		setPosition();
@@ -87,6 +98,11 @@ onMounted(() => {
 
 onUnmounted(() => {
 	ro.disconnect();
+	if (positionFrame != null) cancelAnimationFrame(positionFrame);
+	window.removeEventListener('resize', schedulePosition);
+	window.removeEventListener('scroll', schedulePosition, true);
+	window.visualViewport?.removeEventListener('resize', schedulePosition);
+	window.visualViewport?.removeEventListener('scroll', schedulePosition);
 });
 
 defineExpose({
@@ -98,6 +114,13 @@ defineExpose({
 </script>
 
 <style lang="scss" module>
+.boundary {
+	position: fixed;
+	visibility: hidden;
+	pointer-events: none;
+	padding: max(var(--MI-margin), env(safe-area-inset-top)) max(var(--MI-margin), env(safe-area-inset-right)) max(var(--MI-margin), env(safe-area-inset-bottom)) max(var(--MI-margin), env(safe-area-inset-left));
+}
+
 .root {
 	position: absolute;
 }

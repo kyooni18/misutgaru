@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div
 	class="omfetrab _popup"
 	:class="['s' + size, 'w' + width, 'h' + height, { asDrawer, asWindow }]"
-	:style="{ maxHeight: maxHeight ? maxHeight + 'px' : undefined }"
+	:style="{ maxHeight: maxHeight ? `min(${maxHeight}px, var(--MI-popup-max-height, 100dvh))` : 'var(--MI-popup-max-height, 100dvh)' }"
 >
 	<div class="top">
 		<div class="searchShell">
@@ -626,6 +626,7 @@ defineExpose({
 	box-sizing: border-box;
 	width: calc((var(--eachSize) * var(--columns)) + 20px);
 	height: calc((var(--eachSize) * var(--rows)) + 98px);
+	max-width: var(--MI-popup-max-width, 100vw);
 	min-width: 0;
 	min-height: 0;
 	overflow: hidden;

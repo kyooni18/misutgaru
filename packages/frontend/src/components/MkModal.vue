@@ -60,6 +60,7 @@ import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
 import MkFloatingBackdrop from '@/components/MkFloatingBackdrop.vue';
 import type { FloatingHole } from '@/components/MkFloatingBackdrop.vue';
 import { DI } from '@/di.js';
+import { floatingBoundary, measureFloating, placeFloating } from '@/utility/floating-position.js';
 
 function getFixedContainer(el: Element | null): Element | null {
 	if (el == null || el.tagName === 'BODY') return null;
@@ -203,12 +204,7 @@ const keymap = {
 const MARGIN = 16;
 const SCROLLBAR_THICKNESS = 16;
 
-const FLOATING_GAP = 14;
-const FLOATING_MIN_SPACE = 120;
-
-// Places the menu beside the pressed element, never over it: below when it
-// fits, above when only that fits, else on the roomier side with a capped height.
-// Only an element taller than the screen leaves no side, and then the menu docks at the bottom.
+// Use the visible viewport and fresh intrinsic measurements on every placement.
 const alignFloating = () => {
 	const anchorEl = props.anchorElement!;
 	const el = content.value!;
@@ -221,37 +217,14 @@ const alignFloating = () => {
 		radius: parseFloat(window.getComputedStyle(anchorEl).borderTopLeftRadius) || 0,
 	};
 
-	const vw = window.innerWidth;
-	const vh = window.innerHeight;
-	const width = el.offsetWidth;
-	const height = el.offsetHeight;
-	const below = vh - MARGIN - (rect.bottom + FLOATING_GAP);
-	const above = rect.top - FLOATING_GAP - MARGIN;
-
-	let top: number;
-	let originY: string;
-	if (Math.max(below, above) < FLOATING_MIN_SPACE) {
-		maxHeight.value = vh / 2;
-		top = vh - MARGIN - height;
-		originY = '100%';
-	} else if (height <= below || (height > above && below >= above)) {
-		maxHeight.value = below;
-		top = rect.bottom + FLOATING_GAP;
-		originY = '0%';
-	} else {
-		maxHeight.value = above;
-		top = rect.top - FLOATING_GAP - height;
-		originY = '100%';
-	}
-
-	// Hug the element's nearer edge so the menu reads as coming out of it.
-	const centerX = rect.left + rect.width / 2;
-	let left = centerX < vw / 2 ? rect.left : rect.right - width;
-	left = Math.min(Math.max(left, MARGIN), vw - MARGIN - width);
-
-	transformOrigin.value = `${Math.min(Math.max(centerX - left, 0), width)}px ${originY}`;
-	el.style.left = left + 'px';
-	el.style.top = top + 'px';
+	const boundary = floatingBoundary(modalRootEl.value!);
+	const size = measureFloating(el, boundary);
+	const gap = parseFloat(getComputedStyle(modalRootEl.value!).rowGap) || 0;
+	const placement = placeFloating(rect, size, boundary, 'bottom', gap);
+	el.style.setProperty('--MI-popup-max-height', `${placement.height}px`);
+	el.style.left = `${placement.left}px`;
+	el.style.top = `${placement.top}px`;
+	transformOrigin.value = `${Math.max(0, Math.min(rect.left + rect.width / 2 - placement.left, placement.width))}px ${placement.side === 'top' ? '100%' : '0%'}`;
 };
 
 const align = () => {
@@ -405,8 +378,11 @@ const alignObserver = new ResizeObserver((entries, observer) => {
 // Window, rotation and on-screen keyboard changes all move the pressed element;
 // coalesce them into one realign per frame so the hole and menu follow together.
 let realignFrame: number | null = null;
-function scheduleAlign() {
+
+function scheduleAlign(event?: Event) {
+	if (event?.type === 'scroll' && event.target instanceof Node && content.value?.contains(event.target)) return;
 	if (realignFrame != null) return;
+
 	realignFrame = window.requestAnimationFrame(() => {
 		realignFrame = null;
 		align();
@@ -445,13 +421,17 @@ onMounted(() => {
 	});
 
 	window.addEventListener('resize', scheduleAlign, { passive: true });
+	window.addEventListener('scroll', scheduleAlign, { passive: true, capture: true });
 	window.visualViewport?.addEventListener('resize', scheduleAlign, { passive: true });
+	window.visualViewport?.addEventListener('scroll', scheduleAlign, { passive: true });
 });
 
 onUnmounted(() => {
 	alignObserver.disconnect();
 	window.removeEventListener('resize', scheduleAlign);
+	window.removeEventListener('scroll', scheduleAlign, true);
 	window.visualViewport?.removeEventListener('resize', scheduleAlign);
+	window.visualViewport?.removeEventListener('scroll', scheduleAlign);
 	if (realignFrame != null) window.cancelAnimationFrame(realignFrame);
 });
 
@@ -606,6 +586,8 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 	}
 
 	&.floating {
+		padding: max(var(--MI-margin), env(safe-area-inset-top)) max(var(--MI-margin), env(safe-area-inset-right)) max(var(--MI-margin), env(safe-area-inset-bottom)) max(var(--MI-margin), env(safe-area-inset-left));
+		gap: var(--MI-margin);
 		position: fixed;
 		inset: 0;
 		// The hole is fixed to where the element was pressed; the page must not move under it.
