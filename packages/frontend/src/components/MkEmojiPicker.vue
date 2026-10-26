@@ -946,7 +946,6 @@ defineExpose({
 @media (max-width: 520px) {
 	.omfetrab {
 		--pickerPeek: 30px;
-		border-radius: 17px 17px 0 0;
 	}
 
 	.top {

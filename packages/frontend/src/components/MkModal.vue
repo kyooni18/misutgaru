@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<div v-show="manualShowing != null ? manualShowing : showing" ref="modalRootEl" v-hotkey.global="keymap" :class="[$style.root, { [$style.drawer]: type === 'drawer', [$style.dialog]: type === 'dialog', [$style.popup]: type === 'popup', [$style.floating]: type === 'floating' }]" :style="{ zIndex, pointerEvents: (manualShowing != null ? manualShowing : showing) ? 'auto' : 'none', '--transformOrigin': transformOrigin }">
 		<MkProgressiveBlur v-if="useBackdropBlur" variant="viewport" :origin="backdropOrigin" :class="$style.backdropBlur" :style="{ zIndex }"/>
-		<MkFloatingBackdrop v-if="type === 'floating' && floatingHole" :hole="floatingHole" :blur="prefer.s.useProgressiveBlurForModal" :class="$style.backdropBlur" :style="{ zIndex }"/>
+		<MkProgressiveBlur v-if="type === 'floating' && prefer.s.useProgressiveBlurForModal" variant="viewport" :strength="0.35" :class="$style.backdropBlur" :style="{ zIndex }"/>
 		<div data-testid="bg" :data-test-is-transparent="isEnableBgTransparent" class="_modalBg" :class="[$style.bg, { [$style.bgTransparent]: isEnableBgTransparent, [$style.bgProgressive]: useBackdropBlur }]" :style="{ zIndex, '--backdropOrigin': backdropOrigin }" @click="onBgClick" @mousedown="onBgClick" @contextmenu.prevent.stop="() => {}"></div>
 		<div ref="content" :class="[$style.content, { [$style.fixed]: fixed }]" :style="{ zIndex }" @click.self="onBgClick">
 			<slot :max-height="maxHeight" :type="type"></slot>
@@ -57,8 +57,6 @@ import { focusTrap } from '@/utility/focus-trap.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 import MkProgressiveBlur from '@/components/MkProgressiveBlur.vue';
-import MkFloatingBackdrop from '@/components/MkFloatingBackdrop.vue';
-import type { FloatingHole } from '@/components/MkFloatingBackdrop.vue';
 import { DI } from '@/di.js';
 import { floatingBoundary, measureFloating, placeFloating } from '@/utility/floating-position.js';
 
@@ -137,11 +135,10 @@ const type = computed<ModalTypes>(() => {
 });
 // A caller requesting a transparent backdrop must not gain a viewport blur
 // merely because its responsive presentation switches to a dialog or drawer.
-// Floating draws its own dim and blur around the pressed element instead.
+// Floating uses a light viewport blur without highlighting the pressed element.
 const isEnableBgTransparent = computed(() => props.transparentBg || type.value === 'floating');
 // Modal backdrops blur via ProgressiveBlur, matching menus and the navbar.
 const useBackdropBlur = computed(() => prefer.s.useProgressiveBlurForModal && !isEnableBgTransparent.value && !props.noBgBlur);
-const floatingHole = ref<FloatingHole | null>(null);
 const backdropOrigin = computed(() => props.backdropOrigin ?? (type.value === 'drawer' ? '50% 100%' : '50% 50%'));
 const transitionName = computed((() =>
 	prefer.s.animation
@@ -180,7 +177,6 @@ function close(opts: { useSendAnimation?: boolean } = {}) {
 		useSendAnime.value = true;
 	}
 
-	if (props.anchorElement) props.anchorElement.style.pointerEvents = 'auto';
 	showing.value = false;
 	emit('close');
 }
@@ -209,13 +205,6 @@ const alignFloating = () => {
 	const anchorEl = props.anchorElement!;
 	const el = content.value!;
 	const rect = anchorEl.getBoundingClientRect();
-	floatingHole.value = {
-		left: rect.left,
-		top: rect.top,
-		width: rect.width,
-		height: rect.height,
-		radius: parseFloat(window.getComputedStyle(anchorEl).borderTopLeftRadius) || 0,
-	};
 
 	const boundary = floatingBoundary(modalRootEl.value!);
 	const size = measureFloating(el, boundary);
@@ -376,7 +365,7 @@ const alignObserver = new ResizeObserver((entries, observer) => {
 });
 
 // Window, rotation and on-screen keyboard changes all move the pressed element;
-// coalesce them into one realign per frame so the hole and menu follow together.
+// coalesce them into one realign per frame so the menu follows its anchor.
 let realignFrame: number | null = null;
 
 function scheduleAlign(event?: Event) {
@@ -391,9 +380,6 @@ function scheduleAlign(event?: Event) {
 
 onMounted(() => {
 	watch(() => props.anchorElement, async () => {
-		if (props.anchorElement) {
-			props.anchorElement.style.pointerEvents = 'none';
-		}
 		fixed.value = (type.value === 'drawer') || (type.value === 'floating') || (getFixedContainer(props.anchorElement) != null);
 
 		await nextTick();
@@ -590,7 +576,7 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 		gap: var(--MI-margin);
 		position: fixed;
 		inset: 0;
-		// The hole is fixed to where the element was pressed; the page must not move under it.
+		// Keep touch gestures on the backdrop from scrolling the underlying page.
 		// Only on the backdrop: touch-action intersects down the tree, so the menu could not scroll.
 		> .bg {
 			touch-action: none;
