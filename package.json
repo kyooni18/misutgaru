@@ -68,7 +68,8 @@
 		"verify:repo": "pnpm verify:db-schema && pnpm verify:integrity && pnpm verify:modules && pnpm --filter frontend typecheck && pnpm --filter backend typecheck",
 		"verify:full": "pnpm verify:repo && pnpm test:full && pnpm build:app",
 		"upstream:delta": "node scripts/upstream-delta.mjs",
-		"build:app": "pnpm build-pre && pnpm -r --filter \"!@mun/*\" build && pnpm build-assets",
+		"build:mun": "pnpm -r --filter \"@mun/*\" build",
+		"build:app": "pnpm build-pre && pnpm build:mun && pnpm -r --filter \"!@mun/*\" build && pnpm build-assets",
 		"test:misutgaru-regressions": "pnpm --filter backend exec vitest --run --config vitest.config.unit.ts test/unit/misc/cache.ts test/unit/misc/loader.ts test/unit/misc/request-batch-context.ts test/unit/misc/runtime-diagnostics.ts test/unit/core/CacheInvalidationService.ts && pnpm --filter frontend exec vitest --run --config vitest.config.unit.ts test/unit/cache.test.ts test/unit/prepared-note.test.ts test/unit/normalized-entity-cache.test.ts test/unit/paginator.test.ts",
 		"verify:db-schema": "node scripts/check-db-schema-invariant.mjs"
 	},
