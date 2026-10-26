@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { buildTranslationUserText, openAiChatCompletionsEndpoint, parseTranslationResponse, translationSystemPrompt } from '@misutgaru/core';
+import { buildTranslationUserText, openAiChatCompletionsEndpoint, parseTranslationResponse, translationSystemPrompt, type TranslationPost } from '@misutgaru/core';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { HttpRequestService } from './HttpRequestService.js';
@@ -17,6 +17,8 @@ export type OpenAiTranslationImageInput = {
 	fileId: string;
 	dataUrl: string;
 };
+
+export type { TranslationMedia as OpenAiTranslationMedia, TranslationPost as OpenAiTranslationPost } from '@misutgaru/core';
 
 export type OpenAiTranslationImageResult = {
 	fileId: string;
@@ -56,10 +58,12 @@ export class OpenAiTranslationService {
 	}
 
 	public async translate(
-		text: string,
+		post: TranslationPost,
 		targetLang: string,
-		context: readonly string[] = [],
+		previous: readonly TranslationPost[] = [],
+		// Target images first (numbered 1..n in post.media), then previous-post images.
 		images: readonly OpenAiTranslationImageInput[] = [],
+		targetImageCount = images.length,
 	): Promise<OpenAiTranslationResult> {
 		const openaiTranslation = this.config.openaiTranslation;
 		if (!openaiTranslation.enabled || openaiTranslation.apiKey.trim() === '') {
@@ -73,7 +77,7 @@ export class OpenAiTranslationService {
 			throw new OpenAiTranslationError('OpenAI translation URL is invalid.');
 		}
 
-		const userText = buildTranslationUserText(text, targetLang, context);
+		const userText = buildTranslationUserText(post, targetLang, previous);
 		const userContent: string | ChatContent[] = images.length > 0
 			? [{ type: 'text', text: userText }, ...images.map(image => ({ type: 'image_url' as const, image_url: { url: image.dataUrl } }))]
 			: userText;
@@ -126,7 +130,7 @@ export class OpenAiTranslationService {
 				throw new Error('OpenAI response did not include translated text');
 			}
 
-			const parsed = parseTranslationResponse(content, images.map(image => image.fileId));
+			const parsed = parseTranslationResponse(content, images.slice(0, targetImageCount).map(image => image.fileId));
 			if (parsed) return parsed;
 
 			return { sourceLang: 'unknown', text: content, images: [] };

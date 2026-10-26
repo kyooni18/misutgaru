@@ -9,14 +9,18 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
-import { OpenAiTranslationError, OpenAiTranslationService, type OpenAiTranslationImageInput } from '@/core/OpenAiTranslationService.js';
+import { OpenAiTranslationError, OpenAiTranslationService, type OpenAiTranslationImageInput, type OpenAiTranslationMedia, type OpenAiTranslationPost } from '@/core/OpenAiTranslationService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { MiMeta } from '@/models/_.js';
 import type { MiNote } from '@/models/Note.js';
+import type { Packed } from '@/misc/json-schema.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
+
+const MAX_TARGET_IMAGES = 4;
+const MAX_CONTEXT_IMAGES = 4;
 
 export const meta = {
 	tags: ['notes'],
@@ -77,52 +81,91 @@ export const paramDef = {
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
-	private async getThreadContext(note: MiNote, userId: string): Promise<string[]> {
-		const context: string[] = [];
+	private noteText(note: MiNote): string {
+		const text = note.text ?? '';
+		return note.cw != null ? `${note.cw}\n-----\n${text}` : text;
+	}
+
+	/** Reply ancestors, oldest first. */
+	private async getPreviousNotes(note: MiNote, userId: string): Promise<MiNote[]> {
+		const previous: MiNote[] = [];
 		let current = note;
 
 		for (let depth = 0; depth < 8 && current.replyId; depth++) {
 			const parent = await this.getterService.getNote(current.replyId).catch(() => null);
 			if (parent == null || !(await this.noteEntityService.isVisibleForMe(parent, userId))) break;
-
-			let parentText = parent.text ?? '';
-			if (parent.cw != null) parentText = `${parent.cw}\n-----\n${parentText}`;
-			if (parentText.trim() !== '') context.unshift(parentText.slice(0, 2000));
+			previous.unshift(parent);
 			current = parent;
 		}
 
-		return context;
+		return previous;
 	}
 
-	private async getImageContext(note: MiNote): Promise<OpenAiTranslationImageInput[]> {
-		const files = await this.driveFileEntityService.packManyByIds(note.fileIds);
-		const imageFiles = files.filter(file => file.type.startsWith('image/')).slice(0, 4);
+	private async fetchImage(file: Packed<'DriveFile'>): Promise<OpenAiTranslationImageInput | undefined> {
+		try {
+			const imageUrl = file.thumbnailUrl ?? file.url;
+			const parsedUrl = new URL(imageUrl);
+			if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') return undefined;
 
-		return (await Promise.all(imageFiles.map(async file => {
-			try {
-				const imageUrl = file.thumbnailUrl ?? file.url;
-				const parsedUrl = new URL(imageUrl);
-				if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') return undefined;
+			const response = await this.httpRequestService.send(imageUrl, {
+				timeout: 15_000,
+				size: 8 * 1024 * 1024,
+			}, {
+				throwErrorWhenResponseNotOk: false,
+				validators: [],
+			});
+			if (!response.ok) return undefined;
 
-				const response = await this.httpRequestService.send(imageUrl, {
-					timeout: 15_000,
-					size: 8 * 1024 * 1024,
-				}, {
-					throwErrorWhenResponseNotOk: false,
-					validators: [],
-				});
-				if (!response.ok) return undefined;
+			const image = await sharp(await response.buffer(), { failOn: 'none' })
+				.rotate()
+				.resize(768, 768, { fit: 'inside', withoutEnlargement: true })
+				.jpeg({ quality: 55, progressive: true })
+				.toBuffer();
+			return { fileId: file.id, dataUrl: `data:image/jpeg;base64,${image.toString('base64')}` };
+		} catch {
+			return undefined;
+		}
+	}
 
-				const image = await sharp(await response.buffer(), { failOn: 'none' })
-					.rotate()
-					.resize(768, 768, { fit: 'inside', withoutEnlargement: true })
-					.jpeg({ quality: 55, progressive: true })
-					.toBuffer();
-				return { fileId: file.id, dataUrl: `data:image/jpeg;base64,${image.toString('base64')}` };
-			} catch {
-				return undefined;
-			}
-		}))).filter((image): image is OpenAiTranslationImageInput => image != null);
+	/**
+	 * Builds the target post and its previous posts with their media. Target images
+	 * are numbered first so the model's per-image results map back to them; images of
+	 * the nearest previous posts follow as reference-only context.
+	 */
+	private async buildPosts(note: MiNote, previousNotes: MiNote[]) {
+		const notes = [note, ...[...previousNotes].reverse()];
+		const filesByNote = await Promise.all(notes.map(n => n.fileIds.length > 0 ? this.driveFileEntityService.packManyByIds(n.fileIds) : Promise.resolve([])));
+
+		const imageLimits = [MAX_TARGET_IMAGES, ...notes.slice(1).map(() => 0)];
+		let contextBudget = MAX_CONTEXT_IMAGES;
+		for (let i = 1; i < notes.length && contextBudget > 0; i++) {
+			imageLimits[i] = Math.min(contextBudget, filesByNote[i].filter(f => f.type.startsWith('image/')).length);
+			contextBudget -= imageLimits[i];
+		}
+
+		const fetched = await Promise.all(filesByNote.map((files, i) =>
+			Promise.all(files.filter(f => f.type.startsWith('image/')).slice(0, imageLimits[i]).map(f => this.fetchImage(f)))));
+
+		const images: OpenAiTranslationImageInput[] = [];
+		let targetImageCount = 0;
+		const posts: OpenAiTranslationPost[] = notes.map((n, i) => {
+			const loaded = new Map(fetched[i].filter((image): image is OpenAiTranslationImageInput => image != null).map(image => [image.fileId, image]));
+			const media: OpenAiTranslationMedia[] = filesByNote[i].map(file => {
+				const image = loaded.get(file.id);
+				if (image) images.push(image);
+				return {
+					type: file.type,
+					name: file.name,
+					comment: file.comment,
+					...(image ? { imageNumber: images.length } : {}),
+				};
+			});
+			if (i === 0) targetImageCount = images.length;
+			return { text: (i === 0 ? this.noteText(n) : this.noteText(n).slice(0, 2000)), media };
+		});
+
+		const [post, ...nearestFirst] = posts;
+		return { post, previous: nearestFirst.reverse(), images, targetImageCount };
 	}
 
 	constructor(
@@ -164,12 +207,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (this.openAiTranslationService.isAvailable()) {
 				try {
-					const [context, images] = await Promise.all([
-						this.getThreadContext(note, me.id),
-						this.getImageContext(note),
-					]);
-					if (text.trim() === '' && images.length === 0) return;
-					return await this.openAiTranslationService.translate(text, ps.targetLang, context, images);
+					const previousNotes = await this.getPreviousNotes(note, me.id);
+					const { post, previous, images, targetImageCount } = await this.buildPosts(note, previousNotes);
+					if (text.trim() === '' && post.media.length === 0) return;
+					return await this.openAiTranslationService.translate(post, ps.targetLang, previous, images, targetImageCount);
 				} catch (error) {
 					if (error instanceof OpenAiTranslationError) {
 						throw new ApiError(meta.errors.unavailable, {
