@@ -9,7 +9,8 @@
 // the stylesheet was written for. Images carry their own frame: an Image sizes
 // itself from its frame, not from the space around it.
 
-import { Button, Divider, HStack, Icon, Image, Text, VStack, ZStack } from '@mun/core/compat'
+import { Button, Divider, Element, HStack, Icon, Image, Text, VStack, ZStack } from '@mun/core/compat'
+import { BlurProfile, progressiveBlur } from '@mun/progressive-blur'
 import { Component } from '@mun/vue'
 
 const subButtonShape = [['path', {
@@ -133,7 +134,11 @@ export function navbarView(ctx) {
   ).padding({ top: 20 }).className(c.bottom)
 
   return [
-    Component(components.MkProgressiveBlur),
+    // Soft blur of the page along the navbar's trailing edge, fading out over 96pt.
+    Element('div', {
+      'aria-hidden': 'true',
+      style: { position: 'absolute', top: '0px', bottom: '0px', left: '100%', width: '96px', zIndex: -1, pointerEvents: 'none' },
+    }).modifier(progressiveBlur(BlurProfile.edge('leading', 96).easing('easeOut'), { radius: 12 })),
     stack(top, middle, bottom).background('var(--MI_THEME-navBg)').className(c.body),
     ctx.showSubButtons
       ? VStack({ alignment: 'leading' },

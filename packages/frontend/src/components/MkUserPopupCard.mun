@@ -6,11 +6,12 @@
 // Mun view for the avatar hover card (ported from the template of MkUserPopup.vue).
 // Data fetching, positioning and the enter/leave transition stay in the Vue shell;
 // Vue-only widgets (avatar, links, Mfm, follow button) are embedded with Component().
-// The card is wrapped in ProgressiveBlurElement so the page behind its edge softly blurs.
+// A progressive backdrop blur sits behind the card so the page around its edge softly blurs.
 
 import { Element } from '@mun/core/compat'
+import { RoundedRectangle } from '@mun/core'
 import { Component } from '@mun/vue'
-import { ProgressiveBlurElement } from '@misutgaru/progressive-blur-element'
+import { BlurProfile, ProgressiveBlur } from '@mun/progressive-blur'
 
 const c = {
   card: 'mkup-card',
@@ -86,11 +87,18 @@ export function userPopupCard(ctx) {
     return Element('div', null, banner, avatarBack, avatar, title, description, status, menu, follow)
   }
 
-  return ProgressiveBlurElement({
-    active: showing && ctx.blur,
-    strength: 6,
-    spread: 28,
-    radius: 12,
-    quality: 'auto',
-  }, Element('div', { className: `${c.card} _popup _shadow` }, body()))
+  // The blur box reaches 28px past the 300px card and fades out radially from its center.
+  const blur = Element('div', {
+    'aria-hidden': 'true',
+    style: { position: 'absolute', inset: '-28px', zIndex: -1, pointerEvents: 'none' },
+  }, ProgressiveBlur(BlurProfile.radial({ around: 'center', inner: 120, outer: 190 }).easing('easeOut'), {
+    radius: 6,
+    amount: showing && ctx.blur ? 1 : 0,
+    fadeMs: 280,
+    in: RoundedRectangle(40),
+  }))
+
+  return Element('div', { style: { position: 'relative', isolation: 'isolate' } },
+    blur,
+    Element('div', { className: `${c.card} _popup _shadow` }, body()))
 }

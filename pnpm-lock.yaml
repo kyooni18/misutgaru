@@ -806,6 +806,9 @@ importers:
       '@mun/core':
         specifier: workspace:*
         version: link:../modules/Mun/packages/core
+      '@mun/progressive-blur':
+        specifier: workspace:*
+        version: link:../modules/Mun/packages/progressive-blur
       '@mun/vite':
         specifier: workspace:*
         version: link:../modules/Mun/packages/vite
@@ -1602,6 +1605,12 @@ importers:
         version: link:../execution
 
   packages/modules/Mun/packages/execution: {}
+
+  packages/modules/Mun/packages/progressive-blur:
+    dependencies:
+      '@mun/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/modules/Mun/packages/vite:
     dependencies:

@@ -17,6 +17,7 @@ packages:
   - packages/modules/Mun/packages/compiler
   - packages/modules/Mun/packages/core
   - packages/modules/Mun/packages/execution
+  - packages/modules/Mun/packages/progressive-blur
   - packages/modules/Mun/packages/vite
   - packages/modules/Mun/packages/vue
   - packages-private/*
