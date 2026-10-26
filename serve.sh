@@ -10,13 +10,19 @@ if [[ ! -d packages/modules/Mun/packages/core ]]; then
 	exit 1
 fi
 
-# Build the exact image tag used by Compose. The frontend bundle is generated
-# inside the image; do not reuse a stale COPY/build layer.
-docker compose build --no-cache web
+# Ask Compose which services are enabled so profiles from COMPOSE_PROFILES or
+# .env also control whether the experimental recommendation image is built.
+enabled_services="$(docker compose config --services)"
+build_services=(web)
+while IFS= read -r service; do
+	if [[ "$service" == recommendation ]]; then
+		build_services+=(recommendation)
+	fi
+done <<< "$enabled_services"
 
-# Rebuild the recommendation service as well so changes under
-# packages/recommendation are always reflected by ./serve.sh.
-docker compose build --no-cache recommendation
+# Build the exact image tags used by Compose. The frontend bundle is generated
+# inside the image; do not reuse a stale COPY/build layer.
+docker compose build --no-cache "${build_services[@]}"
 
 # Intentionally omit --volumes: db/ and redis/ are bind mounts and must survive
 # the compose restart.
