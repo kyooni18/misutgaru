@@ -11,7 +11,7 @@ import MkAcct from '@/components/global/MkAcct.vue';
 
 const user = (host: string | null) => ({ username: 'alice', host }) as never;
 const text = (props: Record<string, unknown>) => {
-	const { container } = render(MkAcct, { props });
+	const { container } = render(MkAcct, { props: props as never });
 	return container.textContent;
 };
 

@@ -9,9 +9,10 @@ import { describe, test, assert, beforeEach, vi } from 'vitest';
 import { misskeyApi, misskeyApiGet, pendingApiRequestsCount } from '@/utility/misskey-api.js';
 
 // misskey-api.ts calls window.fetch directly, so stub that rather than the global fetch mock.
-const fm = vi.fn();
-const respond = (body: string, status = 200) => fm.mockResolvedValueOnce(new Response(body || null, { status }));
-fm.mockResponseOnce = (body: string, init?: { status: number }) => respond(body, init?.status);
+const base = vi.fn();
+const fm = Object.assign(base, {
+	mockResponseOnce: (body: string, init?: { status: number }) => base.mockResolvedValueOnce(new Response(body || null, { status: init?.status ?? 200 })),
+});
 
 describe('[reference] misskeyApi', () => {
 	beforeEach(() => {
