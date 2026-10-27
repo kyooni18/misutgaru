@@ -34,8 +34,8 @@ const plugin = {
       const text = q.get('text'); const plain = q.has('plain');
       if (q.has('vue')) {
         const components = Object.fromEntries(['Url','Link','Mention','A','Time','Emoji','CustomEmoji'].map(x => [x, { template:'<span><slot/></span>' }]));
-        createApp(createMfmRenderer({ components: () => components }), { text, plain }).mount('#app');
-      } else mount(q.has('mun') ? fixture : renderMfm(text, { plain }), document.querySelector('#app'));
+        createApp(createMfmRenderer({ components: () => components, getOptions: () => ({ advancedMfm: true, animatedMfm: !q.has('noanim') }) }), { text, plain }).mount('#app');
+      } else mount(q.has('mun') ? fixture : renderMfm(text, { plain, animatedMfm: !q.has('noanim') }), document.querySelector('#app'));
     `;
   },
 };
@@ -48,7 +48,7 @@ test('native MFM structural subset matches Vue and treats text as untrusted', as
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', e => { errors.push(e.message); console.error(e); }); page.setDefaultTimeout(5000);
     const url = `http://127.0.0.1:${server.httpServer.address().port}/fixture`;
-    for (const [text, plain] of [['Hello **bold** and ~~gone~~\n`code` <img src=x onerror=alert(1)>', false], ['Hello\n**bold**', true], ['> quote\n> two', false], ['$[x2 big] $[fg.color=bad000 red] $[flip.v flip] $[rotate.deg=30 turn] $[scale.x=8,y=2 wide] $[border.width=2,style=dashed,color=abc box]', false]]) {
+    for (const [text, plain] of [['Hello **bold** and ~~gone~~\n`code` <img src=x onerror=alert(1)>', false], ['Hello\n**bold**', true], ['> quote\n> two', false], ['$[x2 big] $[fg.color=bad000 red] $[flip.v flip] $[rotate.deg=30 turn] $[scale.x=8,y=2 wide] $[border.width=2,style=dashed,color=abc box]', false], ['$[font.serif serif] $[blur hidden] $[spin.x,left,speed=2s turn] $[jump leap] $[bounce.delay=1s hop]', false]]) {
       const q = new URLSearchParams({ text }); if (plain) q.set('plain', '1');
       await page.goto(`${url}?${q}&vue=1`);
       await page.waitForSelector('#app span');
@@ -59,6 +59,13 @@ test('native MFM structural subset matches Vue and treats text as untrusted', as
       assert.equal(await html(), reference);
       assert.equal(await page.locator('img').count(), 0);
     }
+    const noanim = new URLSearchParams({ text: '$[spin turn] $[jump leap]', noanim: '1' });
+    await page.goto(`${url}?${noanim}&vue=1`);
+    await page.waitForSelector('#app span span');
+    const refStyles = await page.locator('#app span span').evaluateAll(nodes => nodes.map(node => node.style.cssText));
+    await page.goto(`${url}?${noanim}`);
+    await page.waitForSelector('#app span span');
+    assert.deepEqual(await page.locator('#app span span').evaluateAll(nodes => nodes.map(node => node.style.cssText)), refStyles);
     await page.goto(`${url}?mun=1`);
     await page.waitForSelector('#app b');
     assert.equal(await page.locator('#app b').innerText(), 'bold');

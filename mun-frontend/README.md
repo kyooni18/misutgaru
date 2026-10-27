@@ -61,9 +61,9 @@ you are authorized to query.
 
 `src/components/mfm.mjs` is an experimental native view-graph MFM renderer.
 It uses the same `mfm-js` parser as Vue and currently handles basic formatting,
-quotes, code, basic links, hashtags and some nonanimated functions; unsupported constructs are retained as literal
+quotes, code, basic links, hashtags and a subset of MFM functions; unsupported constructs are retained as literal
 MFM source. The standalone native note card uses this subset, but it does not
-provide full MFM parity (in particular link previews, mention previews and emoji are unfinished).
+provide full MFM parity (in particular link previews, mention previews, emoji and preference integration are unfinished).
 `node --test test/mfm-parity.mjs` compares a structural subset with the real
 shared Vue renderer in Chromium, including an untrusted-text fixture. The test
 requires Vue and Playwright as test-only dependencies.

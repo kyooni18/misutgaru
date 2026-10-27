@@ -7,12 +7,29 @@ import './mfm.css';
 
 const color = value => typeof value === 'string' && /^[0-9a-f]{3,6}$/i.test(value) ? value : null;
 const number = (value, fallback) => typeof value === 'string' && value !== '' && !Number.isNaN(parseFloat(value)) ? parseFloat(value) : fallback;
+const time = (value, fallback) => typeof value === 'string' && /^-?[0-9.]+s$/.test(value) ? value : fallback;
 
-function renderFunction(node, children, advancedMfm) {
+function renderFunction(node, children, advancedMfm, animatedMfm) {
   const { name, args } = node.props;
   if (['x2', 'x3', 'x4'].includes(name)) return Element('span', { class: advancedMfm ? `mfm-${name}` : '' }, ...children);
+  if (name === 'blur') return Element('span', { class: '_mfm_blur_' }, ...children);
   let style;
+  const useAnim = advancedMfm && animatedMfm;
+  const delay = time(args.delay, '0s');
   switch (name) {
+    case 'font': {
+      const family = ['serif', 'monospace', 'cursive', 'fantasy', 'emoji', 'math'].find(key => args[key]);
+      if (family) style = `font-family: ${family};`;
+      break;
+    }
+    case 'spin': {
+      const direction = args.left ? 'reverse' : args.alternate ? 'alternate' : 'normal';
+      const animation = args.x ? 'mfm-spinX' : args.y ? 'mfm-spinY' : 'mfm-spin';
+      style = useAnim ? `animation: ${animation} ${time(args.speed, '1.5s')} linear infinite; animation-direction: ${direction}; animation-delay: ${delay};` : '';
+      break;
+    }
+    case 'jump': style = useAnim ? `animation: mfm-jump ${time(args.speed, '0.75s')} linear infinite; animation-delay: ${delay};` : ''; break;
+    case 'bounce': style = useAnim ? `animation: mfm-bounce ${time(args.speed, '0.75s')} linear infinite; transform-origin: center bottom; animation-delay: ${delay};` : ''; break;
     case 'flip': style = `transform: ${args.h && args.v ? 'scale(-1, -1)' : args.v ? 'scaleY(-1)' : 'scaleX(-1)'};`; break;
     case 'rotate': style = `transform: rotate(${number(args.deg, 90)}deg); transform-origin: center center;`; break;
     case 'position': if (advancedMfm) style = `transform: translateX(${number(args.x, 0)}em) translateY(${number(args.y, 0)}em);`; break;
@@ -59,7 +76,7 @@ function renderMention(node, author) {
 
 // A native view-graph renderer, deliberately not an HTML string: note text is
 // untrusted. Unsupported MFM is retained as source instead of disappearing.
-export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true, author = null } = {}) {
+export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true, animatedMfm = true, author = null } = {}) {
   const nodes = (plain ? mfm.parseSimple : mfm.parse)(text ?? '');
   const render = node => {
     const children = () => (node.children ?? []).flatMap(render);
@@ -85,7 +102,7 @@ export function renderMfm(text, { plain = false, nowrap = false, isNote = true, 
       case 'mention': return renderMention(node, author);
       case 'link': return renderLink(node, children());
       case 'url': return renderLink(node, [node.props.url]);
-      case 'fn': return renderFunction(node, children(), advancedMfm);
+      case 'fn': return renderFunction(node, children(), advancedMfm, animatedMfm);
       default: return mfm.toString([node]);
     }
   };

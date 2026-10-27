@@ -8,6 +8,13 @@
 .mfm-mention { display: inline-block; padding: 1px 8px 1px 3px; border-radius: 999px; color: var(--MI_THEME-fgHighlighted); background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent); }
 .mfm-mention-icon { width: 1.5em; height: 1.5em; object-fit: cover; margin: 0 .2em 0 0; vertical-align: bottom; border-radius: 100%; }
 .mfm-mention-host { opacity: .5; }
+._mfm_blur_ { filter: blur(6px); transition: filter .3s; }
+._mfm_blur_:hover { filter: blur(0); }
+@keyframes mfm-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes mfm-spinX { 0% { transform: perspective(128px) rotateX(0deg); } 100% { transform: perspective(128px) rotateX(360deg); } }
+@keyframes mfm-spinY { 0% { transform: perspective(128px) rotateY(0deg); } 100% { transform: perspective(128px) rotateY(360deg); } }
+@keyframes mfm-jump { 0% { transform: translateY(0); } 25% { transform: translateY(-16px); } 50% { transform: translateY(0); } 75% { transform: translateY(-8px); } 100% { transform: translateY(0); } }
+@keyframes mfm-bounce { 0% { transform: translateY(0) scale(1,1); } 25% { transform: translateY(-16px) scale(1,1); } 50% { transform: translateY(0) scale(1,1); } 75% { transform: translateY(0) scale(1.5,.75); } 100% { transform: translateY(0) scale(1,1); } }
 .mfm-x2, .mfm-x3, .mfm-x4 { font-size: var(--mfm-zoom-size); }
 .mfm-x2 :is(.mfm-x2, .mfm-x3, .mfm-x4),
 .mfm-x3 :is(.mfm-x2, .mfm-x3, .mfm-x4),
