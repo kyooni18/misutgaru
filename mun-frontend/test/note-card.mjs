@@ -103,3 +103,22 @@ test('a poll inside a note renders its choices and total votes', async () => {
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
+
+test('clicking a reaction chip toggles it through notes/reactions/*, updating counts', async () => {
+  const note = { ...base_, id: '7', user: alice, text: 'react', reactions: { '👍': 1 }, myReaction: null };
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const calls = [];
+  await page.route('**/api/notes/reactions/*', route => { calls.push([new URL(route.request().url()).pathname, route.request().postDataJSON()]); return route.fulfill({ status: 204 }); });
+  await page.addInitScript(n => { window.fixtureNote = n; }, note);
+  await page.goto(`${base}/test/fixtures/note-card.html`);
+  try {
+    await page.locator('.note-reaction').click();
+    await expect(page.locator('.note-reaction.reacted .note-reaction-count')).toHaveText('2');
+    assert.deepEqual(calls, [['/api/notes/reactions/create', { noteId: '7', reaction: '👍' }]]);
+    await page.locator('.note-reaction').click();
+    await expect(page.locator('.note-reaction.reacted')).toHaveCount(0);
+    await expect(page.locator('.note-reaction-count')).toHaveText('1');
+    assert.equal(calls[1][0], '/api/notes/reactions/delete');
+  } finally { await browser.close(); }
+});

@@ -19,6 +19,10 @@ export const services = {
   confirmVote: async () => true,
   media: () => ({ nsfw: 'respect', dataSaverMedia: false }),
   confirmReveal: async () => true,
+  signedIn: () => window.fixtureSignedIn !== false,
+  confirmOnReact: false,
+  confirm: async () => true,
+  reportError: error => { window.fixtureErrors = [...(window.fixtureErrors ?? []), String(error)]; },
   open: () => {},
   api,
 };
