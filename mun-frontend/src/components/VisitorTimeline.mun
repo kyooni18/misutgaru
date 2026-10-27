@@ -1,0 +1,29 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { NotesTimeline } from "./NotesTimeline.mun"
+import "./visitor-timeline.css"
+
+// The local timeline is shown only when both instance policy and visitor
+// presentation settings permit it, as in MkVisitorDashboard.vue.
+export struct VisitorTimeline: View {
+  let meta
+  let api
+  let labels
+  let formatTime
+  let services
+  var body: some View {
+    Element("div", {}) {
+      if (meta?.policies?.ltlAvailable && meta?.clientOptions?.showTimelineForVisitor !== false) {
+        Element("section", { className: "visitor-timeline" }) {
+          Element("div", { className: "visitor-timeline-header" }) { Text(labels.letsLookAtTimeline) }
+          Element("div", { className: "visitor-timeline-body" }) {
+            NotesTimeline(endpoint: "notes/local-timeline", params: { withRenotes: true, withReplies: false }, api: api, labels: labels, formatTime: formatTime, services: services)
+          }
+        }
+      }
+    }
+  }
+}

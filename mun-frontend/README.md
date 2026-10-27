@@ -68,6 +68,10 @@ provide full MFM parity (in particular link previews, mention previews, custom e
 shared Vue renderer in Chromium, including an untrusted-text fixture. The test
 requires Vue and Playwright as test-only dependencies.
 
+The standalone `VisitorTimeline.mun` composes the native note timeline with the
+Vue visitor policy gates and local-timeline request parameters. It is not yet
+mounted in the shell and does not yet implement live-stream updates.
+
 - Vue's `packages/frontend/src/pages/welcome.vue` calls `fetchInstance(true)`;
   `instance.ts` sends `meta` with `{ detail: true }`, and `misskey-api.ts`
   defines its POST, JSON, omitted credentials, and no-cache wire format.
