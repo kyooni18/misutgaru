@@ -35,3 +35,30 @@ install chromium`), run `pnpm dev` in one terminal and run
 `FRONTEND_URL=http://127.0.0.1:5173/ pnpm test:browser` in another. The test
 intercepts metadata requests; it never writes to or needs a backend. It covers
 request shape, failure/retry, rendering, navigation and browser history.
+
+For an opt-in integration check against a **running** backend, configure the
+proxy as above and run:
+
+```sh
+FRONTEND_URL=http://127.0.0.1:5173/ node --test test/live-meta.mjs
+```
+
+ This sends only the unauthenticated,
+read-only metadata request and checks that the real response is rendered; it
+uses no mock. Point it only at an instance you are authorized to query.
+
+## Inspected boundaries
+
+- Vue's `packages/frontend/src/pages/welcome.vue` calls `fetchInstance(true)`;
+  `instance.ts` sends `meta` with `{ detail: true }`, and `misskey-api.ts`
+  defines its POST, JSON, omitted credentials, and no-cache wire format.
+  The backend's `packages/backend/src/server/api/endpoints/meta.ts` declares
+  unauthenticated access and dispatches detailed metadata to `packDetailed()`.
+- Mün's `packages/vite/src/index.ts` exports the compiler plugin;
+  `packages/compiler/src/index.ts` compiles `.mun` to JavaScript. Compiled
+  state uses `State` from `packages/core/src/state.ts`; lifecycle `.task(id:)`
+  is defined in `packages/core/src/graph/modifiers.ts` and implemented in
+  `packages/core/src/lifecycle.ts`. `packages/web/src/dom.ts` mounts the view
+  graph and subscribes to state changes. The `Text`, `Button`, and raw HTML
+  `Element` components used here are implemented in `packages/core/src/views.ts`.
+  `Element` takes a props argument before children, even when props are empty.
