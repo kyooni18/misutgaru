@@ -2,9 +2,9 @@
 
 This is a separate, early visitor metadata slice, not a replacement for the Vue
 frontend. It fetches the existing `/api/meta` endpoint, renders a server name
-and plain-text description, supports retry, and navigates between `/` and
-`/about` using ordinary browser links. Authentication, most of the Vue visitor dashboard, rich descriptions, and
-visual/behavioral parity are not yet implemented. The visitor dashboard now
+and server-provided HTML description, supports retry, and navigates between `/` and
+`/about` using ordinary browser links. Authentication, most of the Vue visitor dashboard, and
+visual/behavioral parity are not yet implemented. Like Vue's `v-html`, the description is trusted server-controlled HTML, not sanitized user input. The visitor dashboard now
 includes localized, animated users/notes statistics when activities are enabled,
 and classic/simple entrance background decoration and responsive placement. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
@@ -12,16 +12,19 @@ and classic/simple entrance background decoration and responsive placement. A na
 ## Local build
 
 The `@mun/*` 0.1.20 packages were not available from the public npm registry
-when this was written. Use a built Mün source checkout and its supported local
-link command (Node 20.19+ and pnpm required):
+when this was written. This frontend requires a built Mün source checkout containing
+commit `13c8e4c` (trusted HTML support and descendant cleanup) or a compatible successor; the version
+number alone does not identify this capability. Use Mün's supported local link
+command (Node 20.19+ and pnpm required):
 
 ```sh
 cd /path/to/Mun
 pnpm install && pnpm build
 node bin/mun.mjs link /path/to/Misutgaru-Mun/mun-frontend --renderer web --local-root "$PWD" --no-install
 cd /path/to/Misutgaru-Mun/mun-frontend
-pnpm install
+pnpm install --no-frozen-lockfile
 pnpm build
+pnpm test:unit
 MISUTGARU_API_ORIGIN=http://localhost:3000 pnpm dev
 ```
 
@@ -37,8 +40,9 @@ origin. The locale service reuses the Vue frontend’s shared translation engine
 For the browser smoke test, install Playwright's Chromium (`pnpm exec playwright
 install chromium`), run `pnpm dev` in one terminal and run
 `FRONTEND_URL=http://127.0.0.1:5173/ pnpm test:browser` in another. The test
-intercepts metadata requests; it never writes to or needs a backend. It covers
-request shape, failure/retry, rendering, navigation and browser history.
+intercepts API and locale requests; it never writes to or needs a backend. It covers
+request shape, failure/retry, HTML description and locale fallback, rendering,
+navigation and browser history.
 
 For an opt-in integration check against a **running** backend, configure the
 proxy as above and run:
