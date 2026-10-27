@@ -1,0 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { renderMfm } from "./mfm.mjs"
+
+export struct Mfm: View {
+  let text
+  var body: some View {
+    renderMfm(text)
+  }
+}

@@ -40,6 +40,16 @@ test('plain note shows header, text, media grid and reaction counts', async () =
   } finally { await browser.close(); }
 });
 
+test('note content renders the supported native MFM subset as markup', async () => {
+  const { browser, page, errors } = await render({ ...base_, id: 'mfm', user: alice, text: 'hello **bold**\n`code`' });
+  try {
+    await expect(page.locator('.note-text b')).toHaveText('bold');
+    await expect(page.locator('.note-text code')).toHaveText('code');
+    await expect(page.locator('.note-text br')).toHaveCount(1);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
 test('renote shows the renoter bar and the renoted note', async () => {
   const { browser, page } = await render({ ...base_, id: '2', user: alice, text: null, renoteId: 'r1', renote: { ...base_, id: 'r1', user: bob, text: 'original' } });
   try {

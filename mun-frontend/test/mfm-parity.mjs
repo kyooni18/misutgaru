@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
+import { munPlugin } from '@mun/vite';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const renderer = fileURLToPath(new URL('../../packages/frontend-shared/js/mfm-renderer.ts', import.meta.url));
@@ -27,19 +28,20 @@ const plugin = {
       import { createApp } from 'vue';
       import { mount } from '@mun/web';
       import { renderMfm } from '/src/components/mfm.mjs';
+      import fixture from '/test/fixtures/MfmFixture.mun';
       import { createMfmRenderer } from '/@fs/${renderer}';
       const q = new URLSearchParams(location.search);
       const text = q.get('text'); const plain = q.has('plain');
       if (q.has('vue')) {
         const components = Object.fromEntries(['Url','Link','Mention','A','Time','Emoji','CustomEmoji'].map(x => [x, { template:'<span><slot/></span>' }]));
         createApp(createMfmRenderer({ components: () => components }), { text, plain }).mount('#app');
-      } else mount(renderMfm(text, { plain }), document.querySelector('#app'));
+      } else mount(q.has('mun') ? fixture : renderMfm(text, { plain }), document.querySelector('#app'));
     `;
   },
 };
 
 test('native MFM structural subset matches Vue and treats text as untrusted', async () => {
-  const server = await createServer({ root, configFile: false, plugins: [plugin], server: { host: '127.0.0.1', port: 0, fs: { allow: [root, fileURLToPath(new URL('../..', import.meta.url)), realpathSync(fileURLToPath(import.meta.resolve('@mun/web')))] } } });
+  const server = await createServer({ root, configFile: false, plugins: [plugin, munPlugin()], server: { host: '127.0.0.1', port: 0, fs: { allow: [root, fileURLToPath(new URL('../..', import.meta.url)), realpathSync(fileURLToPath(import.meta.resolve('@mun/web')))] } } });
   await server.listen();
   const browser = await chromium.launch({ headless: true });
   try {
@@ -57,6 +59,11 @@ test('native MFM structural subset matches Vue and treats text as untrusted', as
       assert.equal(await html(), reference);
       assert.equal(await page.locator('img').count(), 0);
     }
+    await page.goto(`${url}?mun=1`);
+    await page.waitForSelector('#app b');
+    assert.equal(await page.locator('#app b').innerText(), 'bold');
+    await page.getByRole('button', { name: 'Update' }).click();
+    await page.waitForSelector('#app b:text-is("strong")');
     assert.deepEqual(errors, []);
   } finally { await browser.close(); await server.close(); }
 });
