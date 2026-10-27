@@ -190,13 +190,14 @@ test('visitor shell opens sign-in and submits password recovery', async () => {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
-    const labels = { login: 'Log in', close: 'Close', username: 'Username', password: 'Password', forgotPassword: 'Forgot password', emailAddress: 'Email', send: 'Send', continue: 'Continue', or: 'or', signinWithPasskey: 'Sign in with passkey', loading: 'Loading', welcomeBackWithName: 'Welcome {name}', _forgotPassword: { enterEmail: 'Enter email', ifNoEmail: 'Contact admin', contactAdmin: 'Contact admin' } };
+    const labels = { login: 'Log in', close: 'Close', username: 'Username', password: 'Password', forgotPassword: 'Forgot password', emailAddress: 'Email', send: 'Send', done: 'Done', error: 'Error', invalidParamErrorDescription: 'Invalid request', continue: 'Continue', or: 'or', signinWithPasskey: 'Sign in with passkey', loading: 'Loading', welcomeBackWithName: 'Welcome {name}', _forgotPassword: { enterEmail: 'Enter email', ifNoEmail: 'Contact admin', contactAdmin: 'Contact admin' } };
     await page.route('**/assets/locales/**', route => route.fulfill({ json: labels }));
     await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test', enableEmail: true, clientOptions: { showActivitiesForVisitor: false } } }));
     await page.route('**/api/users/show', route => route.fulfill({ json: { username: 'alice', name: 'Alice' } }));
     await page.route('**/api/signin-flow', route => route.fulfill({ json: { finished: false, next: 'password' } }));
-    let reset;
-    await page.route('**/api/request-reset-password', route => { reset = route.request().postDataJSON(); return route.fulfill({ status: 204 }); });
+    let reset, attempts = 0;
+    const alerts = []; page.on('dialog', dialog => { alerts.push(dialog.message()); return dialog.accept(); });
+    await page.route('**/api/request-reset-password', route => { reset = route.request().postDataJSON(); return ++attempts === 1 ? route.fulfill({ status: 400, json: { error: { code: 'INVALID_PARAM' } } }) : route.fulfill({ status: 204 }); });
     await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
     await page.getByRole('button', { name: 'Log in' }).click();
     await page.locator('input[autocomplete="username webauthn"]').fill('alice');
@@ -205,7 +206,11 @@ test('visitor shell opens sign-in and submits password recovery', async () => {
     await page.locator('dialog input[name=username]').fill('alice');
     await page.locator('dialog input[name=email]').fill('alice@example.com');
     await page.locator('dialog button[type=submit]').click();
+    await expect.poll(() => alerts).toEqual(['Error: Invalid request']);
+    await expect(page.locator('dialog button[type=submit]')).toBeEnabled();
+    await page.locator('dialog button[type=submit]').click();
     await expect(page.locator('dialog')).toHaveCount(0);
+    await expect.poll(() => alerts).toEqual(['Error: Invalid request', 'Done']);
     assert.deepEqual(reset, { username: 'alice', email: 'alice@example.com' });
     await expect(page.getByRole('dialog', { name: 'Log in' })).toBeVisible();
   } finally { await browser.close(); }
@@ -240,5 +245,29 @@ test('visitor sign-in reports errors and persists a successful handoff', async (
     await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('account') ?? 'null'))).toMatchObject({id:'alice-id',username:'alice',token:'fixture-token'});
     await expect(page.getByRole('dialog',{name:'Log in'})).toHaveCount(0);
     assert.equal(passwordAttempts,2);
+  } finally { await browser.close(); }
+});
+
+test('account handoff reports a suspended account and allows another attempt', async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const labels = { login:'Log in', close:'Close', username:'Username', password:'Password', forgotPassword:'Forgot password', continue:'Continue', or:'or', signinWithPasskey:'Sign in with passkey', loading:'Loading', welcomeBackWithName:'Welcome {name}', loginFailed:'Login failed', error:'Error', yourAccountSuspendedTitle:'Suspended', yourAccountSuspendedDescription:'Contact the administrator' };
+    await page.route('**/assets/locales/**', route => route.fulfill({json:labels}));
+    await page.route('**/api/meta', route => route.fulfill({json:{name:'Test',clientOptions:{showActivitiesForVisitor:false}}}));
+    await page.route('**/api/users/show', route => route.fulfill({json:{username:'alice',name:'Alice'}}));
+    await page.route('**/api/signin-flow', route => route.fulfill({json:route.request().postDataJSON().password ? {finished:true,i:'fixture-token'} : {finished:false,next:'password'}}));
+    await page.route('**/api/i', route => route.fulfill({status:403,json:{error:{id:'a8c724b3-6e9c-4b46-b1a8-bc3ed6258370'}}}));
+    const alerts=[]; page.on('dialog', dialog => { alerts.push(dialog.message()); return dialog.accept(); });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await page.getByRole('button',{name:'Log in'}).click();
+    await page.locator('input[autocomplete="username webauthn"]').fill('alice');
+    await page.getByTestId('signin-page-input-continue').click();
+    await page.locator('input[type=password]').fill('secret');
+    await page.getByTestId('signin-page-password-continue').click();
+    await expect.poll(()=>alerts).toEqual(['Suspended: Contact the administrator']);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('account')),null);
+    await page.getByRole('button',{name:'Log in'}).click();
+    await expect(page.getByRole('dialog',{name:'Log in'})).toBeVisible();
   } finally { await browser.close(); }
 });

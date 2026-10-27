@@ -20,6 +20,6 @@ test('account handoff avoids duplicate registry entries and does not write on fe
   const events=[];let response={status:200,json:async()=>({id:'x',username:'alice'})};
   const login=createAccountHandoff({host:'example.com',fetch:async()=>response,storage:{setItem:()=>events.push('storage')},registry:{add:()=>events.push('registry')},preferences:{getAccounts:()=>[['example.com',{id:'x',username:'alice'}]],setAccounts:()=>events.push('preferences')},syncServiceWorkerAccounts:()=>events.push('sync'),reload:path=>events.push(['reload',path]),onAccountError:error=>events.push(['error',error])});
   await login('token','/home');assert.deepEqual(events,['storage',['reload','/home']]);events.length=0;
-  response={status:403,json:async()=>({error:{id:'revoked'}})};await assert.rejects(login('token'));assert.deepEqual(events,[['error',{id:'revoked'}]]);events.length=0;
+  response={status:403,json:async()=>({error:{id:'revoked'}})};await assert.rejects(login('token'), error => error.cause?.id === 'revoked');assert.deepEqual(events,[['error',{id:'revoked'}]]);events.length=0;
   response={status:503,json:async()=>{throw new Error('should not parse')}};await assert.rejects(login('token'));assert.deepEqual(events,[]);
 });
