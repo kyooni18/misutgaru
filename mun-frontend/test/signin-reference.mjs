@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
 
 // Exercise the actual Vue coordinator; page components are controlled emitters
 // so this records protocol/state transitions without real credentials.
@@ -29,7 +29,7 @@ test('Vue sign-in reference covers CAPTCHA, TOTP, errors and passwordless passke
         return {finished:true,i:'test-token'};
       }
       throw new Error(endpoint);
-    }`,
+    } window.fixtureApi=misskeyApi;`,
     '@/utility/show-suspended-dialog.js': 'export const showSuspendedDialog=()=>window.fixture.alerts.push("suspended")',
     '@/i18n.js': 'export const i18n={ts:{loginFailed:"Login failed",incorrectPassword:"Incorrect password"}}',
     '@/os.js': 'export const alert=async value=>{window.fixture.alerts.push(value)}',
@@ -43,7 +43,9 @@ test('Vue sign-in reference covers CAPTCHA, TOTP, errors and passwordless passke
   const plugin = { name: 'signin-reference', enforce: 'pre', configureServer(server) { server.middlewares.use((req, res, next) => { if (req.url !== '/reference') return next(); res.setHeader('content-type', 'text/html'); res.end('<div id="app"></div><script type="module" src="/signin-entry.js"></script>'); }); }, resolveId(id) { if (id === '/signin-entry.js') return '\0signin:entry'; if (Object.hasOwn(stubs, id)) return '\0signin:' + id; }, load(id) { if (id === '\0signin:entry') return entry; if (id.startsWith('\0signin:')) return stubs[id.slice(8)]; }, transform(code, id) { if (id.endsWith('/MkSignin.vue')) return code.replace('<Transition', '<NoTransition').replace('</Transition>', '</NoTransition>'); } };
   const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), configFile: false, plugins: [plugin, vue()], server: { host: '127.0.0.1', port: 0, fs: { allow: [frontend, fileURLToPath(new URL('..', import.meta.url))] } } });
   await server.listen();
-  const browser = await chromium.launch();
+  const browserName = process.env.SIGNIN_BROWSER ?? 'chromium';
+  if (!['chromium', 'webkit'].includes(browserName)) throw new Error(`Unsupported browser: ${browserName}`);
+  const browser = await ({ chromium, webkit })[browserName].launch();
   try {
     const url = `http://127.0.0.1:${server.httpServer.address().port}/reference`;
     const page = await browser.newPage();
@@ -55,24 +57,58 @@ test('Vue sign-in reference covers CAPTCHA, TOTP, errors and passwordless passke
     await page.locator('#totp').waitFor();
     await page.locator('#totp').click();
     await page.waitForFunction(() => window.fixture.logins.length === 1);
-    assert.deepEqual(await page.evaluate(() => window.fixture.calls), [
+    const referenceCalls = await page.evaluate(() => window.fixture.calls);
+    assert.deepEqual(referenceCalls, [
       ['users/show', { username: 'alice' }], ['signin-flow', { username: 'alice' }],
       ['signin-flow', { username: 'alice', password: 'test-password', 'hcaptcha-response': 'test-hcaptcha', 'm-captcha-response': null, 'g-recaptcha-response': null, 'turnstile-response': null, 'testcaptcha-response': null }],
       ['signin-flow', { username: 'alice', password: 'test-password', token: '123456' }],
     ]);
     assert.deepEqual(await page.evaluate(() => window.fixture.logins), ['test-token']);
     assert.deepEqual(await page.evaluate(() => window.fixture.emitted), [{ finished: true, i: 'test-token' }]);
+    const native = await page.evaluate(async () => {
+      window.fixture.calls = []; window.fixture.logins = []; window.fixture.emitted = [];
+      const { createSigninFlow } = await import('/src/services/signin-flow.mjs');
+      const flow = createSigninFlow({ api: window.fixtureApi, supportsWebAuthn: () => true, autoSet: true, login: async token => window.fixture.logins.push(token), onLogin: value => window.fixture.emitted.push(value) });
+      await flow.submitUsername('alice'); const passwordState = flow.snapshot();
+      await flow.submitPassword({ password: 'test-password', captcha: { hCaptchaResponse: 'test-hcaptcha', mCaptchaResponse: null, reCaptchaResponse: null, turnstileResponse: null, testcaptchaResponse: null } });
+      const totpState = flow.snapshot(); await flow.submitTotp('123456');
+      const output = { passwordState, totpState, calls: window.fixture.calls, logins: window.fixture.logins, emitted: window.fixture.emitted };
+      flow.dispose(); return output;
+    });
+    assert.equal(native.passwordState.page, 'password'); assert.equal(native.passwordState.needCaptcha, true);
+    assert.equal(native.totpState.page, 'totp');
+    assert.deepEqual(native.calls, referenceCalls);
+    assert.deepEqual(native.logins, ['test-token']);
+    assert.deepEqual(native.emitted, [{ finished: true, i: 'test-token' }]);
     await page.goto(url);
     await page.locator('#passkey').click();
     await page.locator('#credential').click();
     await page.waitForFunction(() => window.fixture.logins.length === 1);
-    assert.deepEqual(await page.evaluate(() => window.fixture.calls), [['signin-with-passkey', {}], ['signin-with-passkey', { credential: { id: 'test-credential' }, context: 'test-context' }]]);
+    const passkeyCalls = await page.evaluate(() => window.fixture.calls);
+    assert.deepEqual(passkeyCalls, [['signin-with-passkey', {}], ['signin-with-passkey', { credential: { id: 'test-credential' }, context: 'test-context' }]]);
+    const nativePasskey = await page.evaluate(async () => {
+      window.fixture.calls = []; window.fixture.logins = [];
+      const { createSigninFlow } = await import('/src/services/signin-flow.mjs');
+      const flow = createSigninFlow({ api: window.fixtureApi, supportsWebAuthn: () => true, autoSet: true, login: async token => window.fixture.logins.push(token) });
+      await flow.startPasskey(); const state = flow.snapshot(); await flow.submitPasskey({ id: 'test-credential' });
+      const result = { state, calls: window.fixture.calls, logins: window.fixture.logins }; flow.dispose(); return result;
+    });
+    assert.equal(nativePasskey.state.page, 'passkey'); assert.equal(nativePasskey.state.passwordless, true);
+    assert.deepEqual(nativePasskey.calls, passkeyCalls); assert.deepEqual(nativePasskey.logins, ['test-token']);
     await page.goto(url);
     await page.evaluate(() => { window.fixture.webauthn = false; window.fixture.forcePasskey = true; });
     await page.locator('#username').click();
     await page.locator('#password').click();
     await page.locator('#totp').waitFor();
     assert.equal(await page.evaluate(() => window.fixture.calls.some(([endpoint]) => endpoint === 'signin-with-passkey')), false);
+    const fallback = await page.evaluate(async () => {
+      const { createSigninFlow } = await import('/src/services/signin-flow.mjs');
+      const flow = createSigninFlow({ api: window.fixtureApi, supportsWebAuthn: () => false });
+      await flow.submitUsername('alice');
+      await flow.submitPassword({ password: 'test-password', captcha: { hCaptchaResponse: null, mCaptchaResponse: null, reCaptchaResponse: null, turnstileResponse: null, testcaptchaResponse: null } });
+      const state = flow.snapshot(); flow.dispose(); return state;
+    });
+    assert.equal(fallback.page, 'totp');
     await page.goto(url);
     await page.locator('#username').click();
     await page.locator('#password').waitFor();
@@ -82,6 +118,24 @@ test('Vue sign-in reference covers CAPTCHA, TOTP, errors and passwordless passke
     assert.deepEqual(await page.evaluate(() => window.fixture.alerts[0]), { type: 'error', title: 'Login failed', text: 'Incorrect password' });
     assert.deepEqual(await page.evaluate(() => window.fixture.errors), [{ id: '932c904e-9460-45b7-9ce6-7ed33be7eb2c' }]);
     assert.equal(await page.locator('#password').count(), 1);
+    const nativeError = await page.evaluate(async () => {
+      const { createSigninFlow } = await import('/src/services/signin-flow.mjs');
+      const errors = [];
+      const flow = createSigninFlow({ api: window.fixtureApi, supportsWebAuthn: () => true, onError: error => errors.push(error.key) });
+      await flow.submitUsername('alice');
+      await flow.submitPassword({ password: 'test-password', captcha: { hCaptchaResponse: null, mCaptchaResponse: null, reCaptchaResponse: null, turnstileResponse: null, testcaptchaResponse: null } });
+      const state = flow.snapshot(); flow.dispose(); return { state, errors };
+    });
+    assert.equal(nativeError.state.page, 'password'); assert.equal(nativeError.state.waiting, false);
+    assert.deepEqual(nativeError.errors, ['incorrectPassword']);
+    const disposed = await page.evaluate(async () => {
+      const { createSigninFlow } = await import('/src/services/signin-flow.mjs');
+      let resolve, calls = 0;
+      const flow = createSigninFlow({ api: () => { calls++; return new Promise(r => { resolve = r; }); }, supportsWebAuthn: () => true });
+      const pending = flow.submitUsername('alice'); flow.dispose(); resolve({ username: 'alice' }); await pending;
+      return { calls, state: flow.snapshot() };
+    });
+    assert.equal(disposed.calls, 1); assert.equal(disposed.state.user, null);
     await page.close();
   } finally { await browser.close(); await server.close(); }
 });
