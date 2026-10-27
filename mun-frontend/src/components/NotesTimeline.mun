@@ -4,6 +4,7 @@
  */
 import { Element } from "@mun/core"
 import { Note } from "./Note.mun"
+import { observeVisible } from "../services/observe-visible.mjs"
 import { withSeparators } from "../services/timeline-date-separate.mjs"
 import "./note.css"
 
@@ -74,6 +75,7 @@ export struct NotesTimeline: View {
           }
         }
         if (canFetchOlder) {
+          Element("div", { className: "notes-timeline-sentinel", "aria-hidden": "true", ref: observeVisible(() => fetchOlder()) }) {}
           Element("button", { className: "notes-timeline-more", disabled: fetchingOlder, onClick: () => fetchOlder() }) { Text(labels.more) }
         }
       }
