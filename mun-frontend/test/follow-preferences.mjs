@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { createFollowPreferences } from '../src/services/follow-preferences.mjs';
 
-test('local follow preferences select the same records as Vue', async () => {
+test('follow preferences select and synchronize the same values as Vue', async () => {
   const stubs = {
     vue: 'export const ref = value => ({value}); export const customRef = () => {}; export const watch = () => {}; export const onScopeDispose = () => {};',
     eventemitter3: 'export class EventEmitter {}',
@@ -38,6 +38,28 @@ test('local follow preferences select the same records as Vue', async () => {
       assert.deepEqual(native.read(), reference.s);
       await reference.cloudReady;
     }
+    const cloudProfile = structuredClone(profile);
+    cloudProfile.preferences.alwaysConfirmFollow[2][2].sync = true;
+    cloudProfile.preferences.defaultFollowWithReplies[1][2].sync = true;
+    const account = { id: 'a' };
+    const reference = new PreferencesManager({ load: () => structuredClone(cloudProfile), save() {}, cloudGetBulk: async () => ({ alwaysConfirmFollow: false }) }, account);
+    const cloudNative = createFollowPreferences({ host: 'example.test', account, getStorage: () => ({ getItem: () => JSON.stringify(cloudProfile) }) });
+    const requests = [];
+    await cloudNative.sync(async (endpoint, data) => {
+      requests.push([endpoint, data]);
+      if (data.key.endsWith('defaultFollowWithReplies')) throw { code: 'NO_SUCH_KEY' };
+      return [[{}, true], [{ server: 'example.test', account: 'a' }, false]];
+    });
+    await reference.cloudReady;
+    assert.deepEqual(cloudNative.read(), reference.s);
+    assert.deepEqual(requests.map(([, data]) => data.key), ['default:alwaysConfirmFollow', 'default:defaultFollowWithReplies']);
+    assert.ok(requests.every(([endpoint, data]) => endpoint === 'i/registry/get' && data.scope.join('/') === 'client/preferences/sync'));
+    const resolvers = [];
+    const pending = cloudNative.sync(() => new Promise(resolve => { resolvers.push(resolve); }));
+    cloudNative.reload();
+    resolvers.forEach(resolve => resolve([[{ server: 'example.test', account: 'a' }, false]]));
+    await pending;
+    assert.equal(cloudNative.read().alwaysConfirmFollow, true);
     let saved = '{bad';
     const native = createFollowPreferences({ host: 'example.test', account: null, prefersReducedMotion: true, getStorage: () => ({ getItem: () => saved }) });
     assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: false, animation: false, 'experimental.enableHapticFeedback': false });

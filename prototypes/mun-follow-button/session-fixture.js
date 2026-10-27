@@ -14,4 +14,4 @@ const i18n = await loadI18n();
 const services = createSessionFollowServices({ i18n, pleaseLogin: async () => true, updateUser: value => updates.push(value) });
 const user = { id: 'alice', username: 'alice', host: null, isLocked: false, isFollowing: false, hasPendingFollowRequestFromYou: false };
 const dispose = mount(FollowButton(namedArguments({ user, full: true, large: false, services })), document.querySelector('#app'));
-window.sessionFixture = { updates, dispose: () => { dispose(); disposeStream(); } };
+window.sessionFixture = { updates, services, dispose: () => { dispose(); disposeStream(); } };

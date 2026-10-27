@@ -19,7 +19,8 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
     localStorage.setItem('account', JSON.stringify({ id: 'me', token: 'fixture-token', followingCount: 0, achievements: [] }));
-    localStorage.setItem('preferences', JSON.stringify({ id: 'p', type: 'main', version: 'v', modifiedAt: 1, name: '', preferences: { defaultFollowWithReplies: [[{}, true, {}]], ...(location.search.includes('haptic=1') ? { 'experimental.enableHapticFeedback': [[{}, true, {}]] } : {}) } }));
+    const cloud = location.search.includes('cloud=1');
+    localStorage.setItem('preferences', JSON.stringify({ id: 'p', type: 'main', version: 'v', modifiedAt: 1, name: '', preferences: { defaultFollowWithReplies: [[{}, !cloud, cloud ? { sync: true } : {}]], ...(location.search.includes('haptic=1') ? { 'experimental.enableHapticFeedback': [[{}, true, {}]] } : {}) } }));
     window.vibrations = [];
     Object.defineProperty(navigator, 'vibrate', { configurable: true, value: duration => { window.vibrations.push(duration); return true; } });
     window.sockets = [];
@@ -34,7 +35,7 @@ try {
   });
   await page.route('**/assets/locales/**', route => route.fulfill({ json: { follow: 'Follow', followRequest: 'Request', processing: 'Processing', youFollowing: 'Following', followRequestPending: 'Pending', followConfirm: 'Follow {name}?', unfollowConfirm: 'Unfollow {name}?', cancelFollowRequestConfirm: 'Cancel {name}?', ok: 'OK', cancel: 'Cancel' } }));
   const calls = [];
-  await page.route('**/api/**', route => { calls.push([new URL(route.request().url()).pathname, route.request().postDataJSON()]); return route.fulfill({ status: 204 }); });
+  await page.route('**/api/**', route => { const path = new URL(route.request().url()).pathname; calls.push([path, route.request().postDataJSON()]); return path === '/api/i/registry/get' ? route.fulfill({ json: [[{}, true]] }) : route.fulfill({ status: 204 }); });
   const fixture = `http://127.0.0.1:${server.httpServer.address().port}/session-fixture.html`;
   await page.goto(fixture + '?haptic=1');
   await page.waitForFunction(() => window.sessionFixture && window.sockets.some(socket => socket.url.includes('/streaming?') && socket.messages.some(x => x.type === 'connect')));
@@ -59,6 +60,15 @@ try {
   await page.locator('.follow-button').click();
   await page.getByTestId('modal-dialog-cancel').click();
   assert.deepEqual(await page.evaluate(() => window.vibrations), []);
+  await page.evaluate(() => window.sessionFixture.dispose());
+  await page.goto(fixture + '?cloud=1');
+  await page.waitForFunction(() => window.sessionFixture?.services.defaultFollowWithReplies === true);
+  assert.ok(calls.some(([path, data]) => path === '/api/i/registry/get' && data.key === 'default:defaultFollowWithReplies' && data.i === 'fixture-token'));
+  await page.locator('.follow-button').click();
+  const cloudFollow = page.waitForResponse(response => response.url().endsWith('/api/following/create'));
+  await page.getByTestId('modal-dialog-ok').click();
+  await cloudFollow;
+  assert.equal(calls.filter(([path]) => path === '/api/following/create').at(-1)[1].withReplies, true);
   await page.evaluate(() => window.sessionFixture.dispose());
   await page.close();
   console.log('PASS: native session confirmation, preferences, authenticated API, achievement and stream');

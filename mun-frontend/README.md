@@ -11,7 +11,8 @@ and classic/simple entrance background decoration and responsive placement. A na
 
 The follow flow also has a read-only local preference adapter for confirmation,
 reply inclusion, animation, and haptics. It applies Vue's scope selection and defaults;
-it does not yet synchronize cloud preferences or respond to changes in other tabs.
+it reads matching cloud-synchronized values on first use, but does not persist
+those values or respond to changes in other tabs.
 The session follow adapter connects these preferences to the native confirmation,
 API transport, shared stream, haptics and achievement service. The profile host must
 still supply login and user-store updates. Achievement claims use the
