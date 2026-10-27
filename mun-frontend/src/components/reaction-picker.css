@@ -1,0 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.reaction-picker-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); }
+.reaction-picker { display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: 4px; width: 320px; max-width: 90vw; padding: 8px; border-radius: 12px; background: var(--MI_THEME-panel); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3); }
+.reaction-picker-emoji { width: 44px; height: 44px; border: none; border-radius: 8px; background: transparent; font-size: 24px; cursor: pointer; }
+.reaction-picker-emoji:hover { background: var(--MI_THEME-buttonHoverBg); }
+.renote-menu { display: flex; flex-direction: column; min-width: 200px; padding: 8px 0; border-radius: 8px; background: var(--MI_THEME-panel); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3); }
+.renote-menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: none; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.renote-menu-item:hover { background: var(--MI_THEME-buttonHoverBg); }
+.renote-menu-child { padding-left: 40px; }
+.renote-menu-divider { width: 100%; margin: 4px 0; border: none; border-top: solid 0.5px var(--MI_THEME-divider); }

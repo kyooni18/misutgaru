@@ -1,0 +1,35 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { NotesTimeline } from "./NotesTimeline.mun"
+import { userTimelineTabs, userTimelineRequest } from "../services/user-timeline.mjs"
+import "./note.css"
+
+// Counterpart of Vue's user page timeline tab (featured / notes / all / with files); default tab is "all".
+export struct UserTimeline: View {
+  let userId
+  let api
+  let labels
+  let formatTime
+  let services
+  @State var tab = "all"
+
+  func request() {
+    return userTimelineRequest(userId, tab)
+  }
+
+  var body: some View {
+    Element("div", { className: "user-timeline" }) {
+      Element("div", { className: "user-timeline-tabs", role: "tablist" }) {
+        ForEach(userTimelineTabs.map((t) => ({ key: t })), key: (x) => x.key) { x in
+          Element("button", { type: "button", role: "tab", "aria-selected": tab === x.key, className: "user-timeline-tab" + (tab === x.key ? " active" : ""), onClick: () => { tab = x.key } }) { Text(labels.tabs[x.key]) }
+        }
+      }
+      ForEach([{ key: tab }], key: (x) => x.key) { x in
+        NotesTimeline(endpoint: request().endpoint, params: request().params, api: api, labels: labels, formatTime: formatTime, services: services, firstLimit: 10)
+      }
+    }
+  }
+}

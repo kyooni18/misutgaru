@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { NotificationsPage } from "../../src/components/NotificationsPage.mun"
+import { pageLabels, formatTime, api, services, me, grouped } from "./notifications-page-props.js"
+export default NotificationsPage(api: api, labels: pageLabels, formatTime: formatTime, services: services, me: me, grouped: grouped)

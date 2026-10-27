@@ -1,0 +1,40 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import "./reaction-picker.css"
+
+// Popup menu for the footer renote button; `items` come from getRenoteMenu. Parent items expand
+// their children inline. Running an action (or Escape / backdrop) calls onClose().
+export struct RenoteMenu: View {
+  let items
+  let onClose
+  @State var children = []
+
+  func run(item) async {
+    if (item.children) {
+      children = await item.children()
+      return
+    }
+    onClose()
+    await item.action()
+  }
+
+  var body: some View {
+    Element("div", { className: "reaction-picker-backdrop", onClick: () => onClose() }) {
+      Element("div", { className: "renote-menu", role: "menu", tabIndex: -1, onClick: (e) => e.stopPropagation(), onKeyDown: (e) => { if (e.key === "Escape") { onClose() } } }) {
+        ForEach(items.map((x, i) => ({ key: i, item: x })), key: (x) => x.key) { x in
+          if (x.item.type === "divider") { Element("hr", { className: "renote-menu-divider" }) {} }
+          else { Element("button", { type: "button", role: "menuitem", className: "renote-menu-item", onClick: () => run(x.item) }) {
+            Element("i", { className: x.item.icon }) {}
+            Text(x.item.text)
+          } }
+        }
+        ForEach(children.map((x, i) => ({ key: i, item: x })), key: (x) => x.key) { x in
+          Element("button", { type: "button", role: "menuitem", className: "renote-menu-item renote-menu-child", onClick: () => run(x.item) }) { Text(x.item.text) }
+        }
+      }
+    }
+  }
+}

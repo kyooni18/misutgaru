@@ -1,0 +1,45 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { nextIndex, prevIndex, keyAction } from "../services/lightbox-state.mjs"
+import "./lightbox.css"
+
+// Counterpart of Vue's MkLightbox: full-screen viewer over previewable image/video/audio contents.
+// Escape / backdrop / close button call onClose(); arrow keys and the side buttons move between items.
+export struct Lightbox: View {
+  let contents
+  let defaultIndex
+  let labels
+  let onClose
+  @State var index = -1
+
+  func current() {
+    return contents[index < 0 ? defaultIndex : index]
+  }
+
+  func position() {
+    return index < 0 ? defaultIndex : index
+  }
+
+  func go(action) {
+    if (action === "close") { onClose() }
+    else if (action === "next") { index = nextIndex(position(), contents.length) }
+    else if (action === "prev") { index = prevIndex(position()) }
+  }
+
+  var body: some View {
+    Element("div", { className: "lightbox", role: "dialog", "aria-modal": true, tabIndex: -1, onKeyDown: (e) => { go(keyAction(e.key)) }, ref: (el) => { if (el != null) { el.focus() } } }) {
+      Element("div", { className: "lightbox-bg", onClick: () => onClose() }) {}
+      Element("div", { className: "lightbox-item" }) {
+        if (current().type === "image") { Element("img", { className: "lightbox-media", src: current().url, alt: current().filename ?? "" }) {} }
+        else if (current().type === "video") { Element("video", { className: "lightbox-media", src: current().url, controls: true, autoPlay: true }) {} }
+        else { Element("audio", { className: "lightbox-media", src: current().url, controls: true, autoPlay: true }) {} }
+      }
+      Element("button", { type: "button", className: "lightbox-close", "aria-label": labels.close, onClick: () => onClose() }) { Element("i", { className: "ti ti-x" }) {} }
+      Element("button", { type: "button", className: "lightbox-prev", "aria-label": labels.prev, disabled: position() === 0, onClick: () => go("prev") }) { Element("i", { className: "ti ti-arrow-left" }) {} }
+      Element("button", { type: "button", className: "lightbox-next", "aria-label": labels.next, disabled: position() === contents.length - 1, onClick: () => go("next") }) { Element("i", { className: "ti ti-arrow-right" }) {} }
+    }
+  }
+}

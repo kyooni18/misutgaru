@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { NotePage } from "../../src/components/NotePage.mun"
+import { pageLabels, formatTime, api, pageServices } from "./note-page-props.js"
+export default NotePage(noteId: "n1", api: api, labels: pageLabels, formatTime: formatTime, services: pageServices)

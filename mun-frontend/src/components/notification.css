@@ -1,0 +1,20 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.notification { position: relative; box-sizing: border-box; display: flex; padding: 24px 32px; font-size: 0.9em; overflow-wrap: break-word; }
+.notification-head { position: relative; flex-shrink: 0; margin-right: 12px; }
+.notification-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+.notification-sub-icon { position: absolute; right: -4px; bottom: -4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #88a6b7; color: #fff; font-size: 12px; }
+.notification-sub-icon.t-follow, .notification-sub-icon.t-followRequestAccepted { background: #36aed2; }
+.notification-sub-icon.t-renote { background: #36d298; }
+.notification-sub-icon.t-reply, .notification-sub-icon.t-login { background: #007aff; }
+.notification-sub-icon.t-reaction { background: #e99a0b; }
+.notification-tail { flex: 1; min-width: 0; }
+.notification-header { display: flex; align-items: baseline; margin-bottom: 2px; font-weight: bold; }
+.notification-header-name { color: inherit; text-decoration: none; }
+.notification-time { margin-left: auto; font-size: 0.9em; font-weight: normal; opacity: 0.7; }
+.notification-text { display: block; overflow: hidden; color: inherit; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.notification-follow-request { display: flex; gap: 8px; margin-top: 8px; }
+.notification-reactions-item { display: inline-flex; align-items: center; gap: 4px; margin: 4px 4px 0 0; }
+.notification-reactions-avatar { width: 24px; height: 24px; border-radius: 4px; }

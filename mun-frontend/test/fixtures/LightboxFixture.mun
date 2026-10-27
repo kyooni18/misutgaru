@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Lightbox } from "../../src/components/Lightbox.mun"
+import { contents, defaultIndex, lightboxLabels, onClose } from "./lightbox-props.js"
+export default Lightbox(contents: contents, defaultIndex: defaultIndex, labels: lightboxLabels, onClose: onClose)

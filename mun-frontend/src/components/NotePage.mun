@@ -1,0 +1,61 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { Note } from "./Note.mun"
+import { ThreadTree } from "./ThreadTree.mun"
+import { fetchNote, fetchConversation } from "../services/note-thread.mjs"
+import "./note.css"
+
+// Counterpart of Vue's note page: notes/show, then the conversation above and the reply tree below.
+// `services.requireLogin(err)` is called for the sign-in-required errors before the retry state is shown.
+export struct NotePage: View {
+  let noteId
+  let api
+  let labels
+  let formatTime
+  let services
+  @State var note = null
+  @State var conversation = []
+  @State var failed = false
+  @State var reloadToken = 0
+
+  func load(signal) async {
+    note = null
+    conversation = []
+    failed = false
+    try {
+      let res = await fetchNote(api, noteId)
+      if (signal.aborted) { return }
+      note = res
+      conversation = await fetchConversation(api, res)
+    } catch (error) {
+      if (signal.aborted) { return }
+      services.requireLogin(error)
+      failed = true
+    }
+  }
+
+  var body: some View {
+    Element("div", { className: "note-page" }) {
+      if (failed) {
+        Element("div", { className: "notes-timeline-error", role: "alert" }) {
+          Text(labels.error)
+          Element("button", { className: "notes-timeline-retry", onClick: () => { reloadToken += 1 } }) { Text(labels.retry) }
+        }
+      } else if (note == null) {
+        Element("div", { className: "note-page-loading", "aria-busy": "true" }) {}
+      } else {
+        Element("div", { className: "note-page-thread" }) {
+          ForEach(conversation, key: (c) => c.id) { c in
+            Element("div", { className: "note-page-ancestor" }) { Note(note: c, labels: labels, formatTime: formatTime, services: services) }
+          }
+          Element("div", { className: "note-page-focus" }) { Note(note: note, labels: labels, formatTime: formatTime, services: services) }
+          ThreadTree(noteId: note.id, depth: 1, api: api, labels: labels, formatTime: formatTime, services: services)
+        }
+      }
+    }
+    .task(id: noteId + ":" + reloadToken) { signal in await load(signal) }
+  }
+}

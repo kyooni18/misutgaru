@@ -1,0 +1,58 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { NotesTimeline } from "./NotesTimeline.mun"
+import { NotificationsList } from "./NotificationsList.mun"
+import { notificationTypes, notificationTabs, excludeTypesFor, mentionsRequest, markAllAsRead } from "../services/notifications-page.mjs"
+import "./note.css"
+
+// Counterpart of Vue's notifications page: all / mentions / directNotes tabs, a type filter and "mark all as read" on the all tab.
+export struct NotificationsPage: View {
+  let api
+  let labels
+  let formatTime
+  let services
+  let me
+  let grouped
+  @State var tab = "all"
+  @State var includeType = ""
+  @State var filterOpen = false
+
+  func filterType(t) {
+    includeType = t
+    filterOpen = false
+  }
+
+  func markRead() async {
+    await markAllAsRead(api)
+  }
+
+  var body: some View {
+    Element("div", { className: "notifications-page" }) {
+      Element("div", { className: "user-timeline-tabs", role: "tablist" }) {
+        ForEach(notificationTabs.map((t) => ({ key: t })), key: (x) => x.key) { x in
+          Element("button", { type: "button", role: "tab", "aria-selected": tab === x.key, className: "user-timeline-tab" + (tab === x.key ? " active" : ""), onClick: () => { tab = x.key } }) { Text(labels.tabs[x.key]) }
+        }
+      }
+      if (tab === "all") {
+        Element("div", { className: "notifications-page-actions" }) {
+          Element("button", { type: "button", className: "notifications-page-filter" + (includeType !== "" ? " active" : ""), onClick: () => { filterOpen = !filterOpen } }) { Text(labels.filter) }
+          Element("button", { type: "button", className: "notifications-page-mark-read", onClick: () => markRead() }) { Text(labels.markAllAsRead) }
+        }
+        Element("div", { className: "notifications-page-filter-list", role: "menu", hidden: !filterOpen }) {
+          if (filterOpen) {
+            if (includeType !== "") { Element("button", { type: "button", role: "menuitem", className: "renote-menu-item", onClick: () => filterType("") }) { Text(labels.clear) } }
+            ForEach(notificationTypes.map((t) => ({ key: t })), key: (x) => x.key) { x in
+              Element("button", { type: "button", role: "menuitem", className: "renote-menu-item" + (includeType === x.key ? " active" : ""), onClick: () => filterType(x.key) }) { Text(labels.types[x.key]) }
+            }
+          }
+        }
+      }
+      if (tab === "all") { NotificationsList(grouped: grouped, excludeTypes: excludeTypesFor(includeType), filterKey: includeType, api: api, labels: labels, formatTime: formatTime, services: services, me: me) }
+      else if (tab === "mentions") { NotesTimeline(endpoint: mentionsRequest(tab).endpoint, params: mentionsRequest(tab).params, api: api, labels: labels, formatTime: formatTime, services: services, firstLimit: 10) }
+      else { NotesTimeline(endpoint: mentionsRequest(tab).endpoint, params: mentionsRequest(tab).params, api: api, labels: labels, formatTime: formatTime, services: services, firstLimit: 10) }
+    }
+  }
+}

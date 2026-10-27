@@ -1,0 +1,69 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { describeNotification, answerFollowRequest } from "../services/notification-view.mjs"
+import "./notification.css"
+
+// Counterpart of Vue's MkNotification (plain-text summaries; MFM arrives with the shared MFM renderer).
+export struct Notification: View {
+  let notification
+  let me
+  let api
+  let labels
+  let formatTime
+  let withTime
+  @State var answered = false
+
+  func view() {
+    return describeNotification(notification, me, labels)
+  }
+
+  func answer(accept) async {
+    answered = true
+    await answerFollowRequest(api, notification, accept)
+  }
+
+  var body: some View {
+    Element("div", { className: "notification notification-" + notification.type.replace(":", "-") }) {
+      Element("div", { className: "notification-head" }) {
+        if (view().avatar != null) { Element("img", { className: "notification-icon", src: view().avatar.avatarUrl, alt: "" }) {} }
+        else if (view().groupIcon != null) { Element("div", { className: "notification-icon notification-icon-group" }) { Element("i", { className: "ti ti-" + view().groupIcon }) {} } }
+        else if (view().appIcon != null) { Element("img", { className: "notification-icon", src: view().appIcon, alt: "" }) {} }
+        else { Element("div", { className: "notification-icon" }) {} }
+        if (view().subIcon != null) { Element("div", { className: "notification-sub-icon t-" + notification.type }) { Element("i", { className: "ti ti-" + view().subIcon }) {} } }
+        else if (view().reaction != null) { Element("div", { className: "notification-sub-icon t-reaction" }) { Text(notification.reaction) } }
+      }
+      Element("div", { className: "notification-tail" }) {
+        Element("header", { className: "notification-header" }) {
+          if (view().headerUser != null) { Element("a", { className: "notification-header-name", href: "/@" + view().headerUser.username + (view().headerUser.host ? "@" + view().headerUser.host : "") }) { Text(view().headerUser.name || view().headerUser.username) } }
+          else if (view().headerText != null) { Element("span", {}) { Text(view().headerText) } }
+          if (withTime) { Element("span", { className: "notification-time" }) { Text(formatTime(notification.createdAt)) } }
+        }
+        if (view().body != null) {
+          if (view().href != null) { Element("a", { className: "notification-text", href: view().href }) { Text(view().body) } }
+          else { Element("div", { className: "notification-text" }) { Text(view().body) } }
+        }
+        if (view().message != null) { Element("div", { className: "notification-text notification-message" }) { Text(view().message) } }
+        if (view().followRequest && !answered) {
+          Element("div", { className: "notification-follow-request" }) {
+            Element("button", { className: "notification-accept", onClick: () => answer(true) }) { Text(labels.accept) }
+            Element("button", { className: "notification-reject", onClick: () => answer(false) }) { Text(labels.reject) }
+          }
+        }
+        ForEach(view().reactions.map((r, i) => ({ key: i, r: r })), key: (x) => x.key) { x in
+          Element("div", { className: "notification-reactions-item" }) {
+            Element("img", { className: "notification-reactions-avatar", src: x.r.user.avatarUrl, alt: "" }) {}
+            Element("span", {}) { Text(x.r.reaction) }
+          }
+        }
+        ForEach(view().users.map((u, i) => ({ key: i, u: u })), key: (x) => x.key) { x in
+          Element("div", { className: "notification-reactions-item" }) {
+            Element("img", { className: "notification-reactions-avatar", src: x.u.avatarUrl, alt: "" }) {}
+          }
+        }
+      }
+    }
+  }
+}

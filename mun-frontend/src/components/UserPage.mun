@@ -1,0 +1,94 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { FollowButton } from "./FollowButton.mun"
+import { UserTimeline } from "./UserTimeline.mun"
+import { fetchUser, userTabs, acctText, isSelf, showFollowsYou } from "../services/user-page.mjs"
+import "./user-page.css"
+
+// Counterpart of Vue's user page: users/show, tab strip, profile header (banner, avatar, name, acct, bio, counts,
+// follow button) on the overview tab and the notes timeline on the notes tab. Other tabs are listed but not rendered yet.
+export struct UserPage: View {
+  let acct
+  let api
+  let labels
+  let formatTime
+  let services
+  let followServices
+  let me
+  let localHost
+  @State var user = null
+  @State var failed = false
+  @State var tab = "home"
+  @State var reloadToken = 0
+
+  func load(signal) async {
+    user = null
+    failed = false
+    try {
+      let res = await fetchUser(api, acct)
+      if (signal.aborted) { return }
+      user = res
+    } catch (error) {
+      if (signal.aborted) { return }
+      failed = true
+    }
+  }
+
+  var body: some View {
+    Element("div", { className: "user-page" }) {
+      if (failed) {
+        Element("div", { className: "notes-timeline-error", role: "alert" }) {
+          Text(labels.error)
+          Element("button", { className: "notes-timeline-retry", onClick: () => { reloadToken += 1 } }) { Text(labels.retry) }
+        }
+      } else if (user == null) {
+        Element("div", { className: "note-page-loading", "aria-busy": "true" }) {}
+      } else {
+        Element("div", { className: "user-page-loaded" }) {
+          Element("div", { className: "user-timeline-tabs", role: "tablist" }) {
+            ForEach(userTabs(user, me).map((t) => ({ key: t })), key: (x) => x.key) { x in
+              Element("button", { type: "button", role: "tab", "aria-selected": tab === x.key, className: "user-timeline-tab" + (tab === x.key ? " active" : ""), onClick: () => { tab = x.key } }) { Text(labels.userTabs[x.key]) }
+            }
+          }
+          if (tab === "home") {
+            Element("div", { className: "user-profile" }) {
+              Element("div", { className: "user-profile-banner", style: { backgroundImage: user.bannerUrl ? "url(" + user.bannerUrl + ")" : "none" } }) {
+                if (showFollowsYou(user, me)) { Element("span", { className: "user-profile-followed" }) { Text(labels.followsYou) } }
+                if (!isSelf(user, me)) { Element("div", { className: "user-profile-actions" }) { FollowButton(user: user, full: true, large: false, services: followServices) } }
+              }
+              Element("img", { className: "user-profile-avatar", src: user.avatarUrl, alt: "" }) {}
+              Element("div", { className: "user-profile-title" }) {
+                Element("div", { className: "user-profile-name" }) { Text(user.name || user.username) }
+                Element("div", { className: "user-profile-acct" }) {
+                  Text(acctText(user, true, localHost))
+                  if (user.isLocked) { Element("i", { className: "ti ti-lock" }) {} }
+                  if (user.isBot) { Element("i", { className: "ti ti-robot" }) {} }
+                }
+              }
+              if (user.description) { Element("div", { className: "user-profile-description" }) { Text(user.description) } }
+              Element("div", { className: "user-profile-counts" }) {
+                Element("div", {}) {
+                  Element("b", { className: "user-profile-notes-count" }) { Text(String(user.notesCount)) }
+                  Text(" " + labels.notes)
+                }
+                Element("div", {}) {
+                  Element("b", { className: "user-profile-following-count" }) { Text(String(user.followingCount)) }
+                  Text(" " + labels.following)
+                }
+                Element("div", {}) {
+                  Element("b", { className: "user-profile-followers-count" }) { Text(String(user.followersCount)) }
+                  Text(" " + labels.followers)
+                }
+              }
+            }
+          }
+          if (tab === "notes") { UserTimeline(userId: user.id, api: api, labels: labels, formatTime: formatTime, services: services) }
+        }
+      }
+    }
+    .task(id: acct + ":" + reloadToken) { signal in await load(signal) }
+  }
+}

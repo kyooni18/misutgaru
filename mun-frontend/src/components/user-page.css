@@ -1,0 +1,14 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.user-profile { position: relative; border-radius: 8px; background: var(--MI_THEME-panel); overflow: clip; }
+.user-profile-banner { position: relative; height: 150px; background-color: var(--MI_THEME-accent); background-size: cover; background-position: center; }
+.user-profile-followed { position: absolute; top: 12px; left: 12px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.7); color: #fff; font-size: 0.7em; }
+.user-profile-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+.user-profile-avatar { position: relative; display: block; width: 92px; height: 92px; margin: -46px auto 0 16px; border-radius: 100%; }
+.user-profile-title { padding: 8px 16px; }
+.user-profile-name { font-size: 1.4em; font-weight: bold; }
+.user-profile-acct { display: flex; gap: 6px; align-items: center; opacity: 0.7; }
+.user-profile-description { padding: 8px 16px; white-space: pre-wrap; overflow-wrap: break-word; }
+.user-profile-counts { display: flex; gap: 24px; padding: 12px 16px; border-top: solid 0.5px var(--MI_THEME-divider); }
