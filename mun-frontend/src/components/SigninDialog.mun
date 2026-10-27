@@ -1,0 +1,27 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { SigninView } from "./SigninView.mun"
+import "./signin-dialog.css"
+
+export struct SigninDialog: View {
+  let services
+  var body: some View {
+    Element("div", { class: "signin-dialog", role: "presentation" }) {
+      Element("div", { class: "signin-dialog-backdrop", onClick: () => services.cancel() }) {}
+      Element("div", { class: "signin-dialog-position" }) {
+        Element("div", { class: "signin-dialog-panel", role: "dialog", tabindex: "-1", "data-signin-dialog-active": "", "aria-modal": "true", "aria-label": services.labels.login }) {
+          Element("header", { class: "signin-dialog-header" }) {
+            Element("div", { class: "signin-dialog-title" }) { Element("i", { class: "ti ti-login-2" }) {}; Text(" " + services.labels.login) }
+            Element("button", { type: "button", class: "signin-dialog-close", "aria-label": services.labels.close, onClick: () => services.cancel() }) { Element("i", { class: "ti ti-x" }) {} }
+          }
+          Element("div", { class: "signin-dialog-content" }) { SigninView(services: services.view) }
+        }
+      }
+    }
+    .onAppear { services.mount() }
+    .onDisappear { services.unmount() }
+  }
+}
