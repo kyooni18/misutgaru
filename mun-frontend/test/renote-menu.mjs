@@ -25,7 +25,7 @@ test('Renote posts a pure renote with the narrower visibility, toasts, and close
     await page.getByRole('menuitem', { name: 'Renote', exact: true }).click();
     await expect.poll(() => bodies.length).toBe(1);
     assert.deepEqual(bodies[0], { localOnly: false, visibility: 'home', renoteId: 'n1' });
-    assert.deepEqual(await page.evaluate(() => window.fixtureToasts), ['Renoted']);
+    await expect.poll(() => page.evaluate(() => window.fixtureToasts)).toEqual(['Renoted']);
     assert.equal(await page.evaluate(() => window.fixtureClosed), true);
   } finally { await browser.close(); }
 });

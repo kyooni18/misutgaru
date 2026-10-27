@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { NotificationsList } from "../../src/components/NotificationsList.mun"
+import { nLabels, formatTime, api, services, me, excludeTypes, grouped } from "./notifications-props.js"
+export default NotificationsList(grouped: grouped, excludeTypes: excludeTypes, api: api, labels: nLabels, formatTime: formatTime, services: services, me: me)

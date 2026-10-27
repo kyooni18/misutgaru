@@ -1,0 +1,104 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { Note } from "./Note.mun"
+import { Notification } from "./Notification.mun"
+import { observeVisible } from "../services/observe-visible.mjs"
+import { withSeparators } from "../services/timeline-date-separate.mjs"
+import "./note.css"
+
+// Counterpart of Vue's MkStreamingNotificationsTimeline (REST paging only): i/notifications or
+// i/notifications-grouped, first page of 20, then pages of 30 older than the oldest id.
+// reply/quote/mention notifications render as notes.
+export struct NotificationsList: View {
+  let grouped
+  let excludeTypes
+  let api
+  let labels
+  let formatTime
+  let services
+  let me
+  @State var items = []
+  @State var loading = true
+  @State var failed = false
+  @State var canFetchOlder = false
+  @State var fetchingOlder = false
+  @State var reloadToken = 0
+
+  func endpoint() {
+    return grouped ? "i/notifications-grouped" : "i/notifications"
+  }
+
+  func params() {
+    return excludeTypes ? { excludeTypes: excludeTypes } : {}
+  }
+
+  func init(signal) async {
+    loading = true
+    failed = false
+    items = []
+    try {
+      let res = await api.post(endpoint(), { ...params(), limit: 20, allowPartial: true }, undefined, signal)
+      if (signal.aborted) { return }
+      items = res
+      canFetchOlder = res.length !== 0
+    } catch (error) {
+      if (signal.aborted) { return }
+      failed = true
+    }
+    loading = false
+  }
+
+  func fetchOlder() async {
+    if (!canFetchOlder || fetchingOlder || loading || items.length === 0) { return }
+    fetchingOlder = true
+    try {
+      let res = await api.post(endpoint(), { ...params(), limit: 30, untilId: items[items.length - 1].id })
+      items = items.concat(res)
+      canFetchOlder = res.length !== 0
+    } catch (error) { }
+    fetchingOlder = false
+  }
+
+  func isNote(n) {
+    return (n.type === "reply" || n.type === "quote" || n.type === "mention") && n.note != null
+  }
+
+  var body: some View {
+    Element("div", { className: "notes-timeline" }) {
+      if (failed) {
+        Element("div", { className: "notes-timeline-error", role: "alert" }) {
+          Text(labels.error)
+          Element("button", { className: "notes-timeline-retry", onClick: () => { reloadToken += 1 } }) { Text(labels.retry) }
+        }
+      } else if (!loading && items.length === 0) {
+        Element("div", { className: "notes-timeline-empty" }) { Text(labels.noNotifications) }
+      } else {
+        Element("div", { className: "notes-timeline-list" }) {
+          ForEach(withSeparators(items), key: (row) => row.id) { row in
+            Element("div", { className: "notes-timeline-row" }) {
+              if (row.separator != null) {
+                Element("div", { className: "notes-timeline-date" }) {
+                  Element("span", {}) { Text("↑ " + row.separator.prevText) }
+                  Element("span", { className: "notes-timeline-date-divider" }) {}
+                  Element("span", {}) { Text(row.separator.nextText + " ↓") }
+                }
+              }
+              Element("div", { className: "notes-timeline-item" }) {
+                if (isNote(row.note)) { Note(note: row.note.note, labels: labels, formatTime: formatTime, services: services) }
+                else { Notification(notification: row.note, me: me, api: api, labels: labels, formatTime: formatTime, withTime: true) }
+              }
+            }
+          }
+        }
+        if (canFetchOlder) {
+          Element("div", { className: "notes-timeline-sentinel", "aria-hidden": "true", ref: observeVisible(() => fetchOlder()) }) {}
+          Element("button", { className: "notes-timeline-more", disabled: fetchingOlder, onClick: () => fetchOlder() }) { Text(labels.more) }
+        }
+      }
+    }
+    .task(id: reloadToken) { signal in await init(signal) }
+  }
+}
