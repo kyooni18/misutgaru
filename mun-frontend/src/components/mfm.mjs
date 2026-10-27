@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Element } from '@mun/core';
 import * as mfm from 'mfm-js';
+import { toUnicode } from 'punycode.js';
 import './mfm.css';
 
 const color = value => typeof value === 'string' && /^[0-9a-f]{3,6}$/i.test(value) ? value : null;
@@ -45,9 +46,20 @@ function renderLink(node, children) {
   return Element('a', attrs, ...children, ...(info.self ? [] : [Element('i', { class: 'ti ti-external-link mfm-link-icon' })]));
 }
 
+function renderMention(node, author) {
+  const localHost = window.location.host;
+  const host = node.props.host ?? author?.host ?? localHost;
+  const remote = host !== localHost;
+  const name = node.props.username;
+  const canonical = `@${name}${remote ? `@${toUnicode(host)}` : ''}`;
+  return Element('a', { class: 'mfm-mention', href: `/${canonical}` },
+    Element('img', { class: 'mfm-mention-icon', src: `/avatar/@${name}@${host}`, alt: '' }),
+    Element('span', null, Element('span', null, `@${name}`), ...(remote ? [Element('span', { class: 'mfm-mention-host' }, `@${toUnicode(host)}`)] : [])));
+}
+
 // A native view-graph renderer, deliberately not an HTML string: note text is
 // untrusted. Unsupported MFM is retained as source instead of disappearing.
-export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true } = {}) {
+export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true, author = null } = {}) {
   const nodes = (plain ? mfm.parseSimple : mfm.parse)(text ?? '');
   const render = node => {
     const children = () => (node.children ?? []).flatMap(render);
@@ -70,6 +82,7 @@ export function renderMfm(text, { plain = false, nowrap = false, isNote = true, 
       case 'unicodeEmoji': return node.props.emoji;
       case 'emojiCode': return `:${node.props.name}:`;
       case 'hashtag': return Element('a', { href: `/${isNote ? 'tags' : 'user-tags'}/${encodeURIComponent(node.props.hashtag)}`, style: 'color:var(--MI_THEME-hashtag);' }, `#${node.props.hashtag}`);
+      case 'mention': return renderMention(node, author);
       case 'link': return renderLink(node, children());
       case 'url': return renderLink(node, [node.props.url]);
       case 'fn': return renderFunction(node, children(), advancedMfm);

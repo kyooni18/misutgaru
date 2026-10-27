@@ -6,7 +6,8 @@ import { renderMfm } from "./mfm.mjs"
 
 export struct Mfm: View {
   let text
+  let author
   var body: some View {
-    renderMfm(text)
+    renderMfm(text, { author: author })
   }
 }

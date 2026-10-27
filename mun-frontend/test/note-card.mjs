@@ -50,6 +50,18 @@ test('note content renders the supported native MFM subset as markup', async () 
   } finally { await browser.close(); }
 });
 
+test('mentions without a host inherit the remote author host', async () => {
+  const { browser, page, errors } = await render({ ...base_, id: 'mention', user: bob, text: '@eve and @lee@other.test' });
+  try {
+    const mentions = page.locator('.note-text .mfm-mention');
+    await expect(mentions).toHaveCount(2);
+    await expect(mentions.nth(0)).toHaveAttribute('href', '/@eve@example.com');
+    await expect(mentions.nth(0).locator('img')).toHaveAttribute('src', '/avatar/@eve@example.com');
+    await expect(mentions.nth(1)).toHaveAttribute('href', '/@lee@other.test');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
 test('renote shows the renoter bar and the renoted note', async () => {
   const { browser, page } = await render({ ...base_, id: '2', user: alice, text: null, renoteId: 'r1', renote: { ...base_, id: 'r1', user: bob, text: 'original' } });
   try {

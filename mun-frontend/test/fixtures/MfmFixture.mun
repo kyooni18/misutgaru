@@ -8,7 +8,7 @@ struct Fixture: View {
   @State var text = "Hello **bold**"
   var body: some View {
     Element("div", {}) {
-      Mfm(text: text)
+      Mfm(text: text, author: null)
       Element("button", { onClick: () => { text = "Updated **strong**" } }) { Text("Update") }
     }
   }

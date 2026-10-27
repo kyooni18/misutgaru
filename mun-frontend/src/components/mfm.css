@@ -5,6 +5,9 @@
 .mfm-x4 { --mfm-zoom-size: 600%; }
 .mfm-link { word-break: break-all; }
 .mfm-link-icon { padding-left: 2px; font-size: .9em; }
+.mfm-mention { display: inline-block; padding: 1px 8px 1px 3px; border-radius: 999px; color: var(--MI_THEME-fgHighlighted); background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent); }
+.mfm-mention-icon { width: 1.5em; height: 1.5em; object-fit: cover; margin: 0 .2em 0 0; vertical-align: bottom; border-radius: 100%; }
+.mfm-mention-host { opacity: .5; }
 .mfm-x2, .mfm-x3, .mfm-x4 { font-size: var(--mfm-zoom-size); }
 .mfm-x2 :is(.mfm-x2, .mfm-x3, .mfm-x4),
 .mfm-x3 :is(.mfm-x2, .mfm-x3, .mfm-x4),

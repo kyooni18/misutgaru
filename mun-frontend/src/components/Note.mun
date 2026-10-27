@@ -79,7 +79,7 @@ export struct Note: View {
             }
             if (appear().cw == null || showContent) {
               Element("div", { className: "note-content" }) {
-                if (appear().text) { Element("div", { className: "note-text" }) { Mfm(text: appear().text) } }
+                if (appear().text) { Element("div", { className: "note-text" }) { Mfm(text: appear().text, author: appear().user) } }
                 if (appear().files && appear().files.length > 0) {
                   Element("div", { className: "note-media note-media-" + Math.min(appear().files.length, 4) }) {
                     ForEach(appear().files, key: (f) => f.id) { file in
