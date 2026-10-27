@@ -28,3 +28,12 @@
 .notes-timeline-row { display: flex; flex-direction: column; gap: 8px; }
 .notes-timeline-date { display: flex; font-size: 85%; align-items: center; justify-content: center; gap: 1em; opacity: 0.75; padding: 8px; margin: 0 auto; }
 .notes-timeline-date-divider { height: 1em; width: 1px; background: var(--MI_THEME-divider); }
+.poll-choices { display: block; margin: 0; padding: 0; list-style: none; }
+.poll-choice { display: block; position: relative; margin: 4px 0; padding: 4px; background: var(--MI_THEME-accentedBg, rgba(134,184,80,.15)); border-radius: 4px; overflow: clip; cursor: pointer; }
+.poll.done .poll-choice { cursor: initial; }
+.poll-bg { position: absolute; top: 0; left: 0; height: 100%; background: var(--MI_THEME-accent, #86b850); transition: width 1s ease; }
+.poll-fg { position: relative; display: inline-block; padding: 3px 5px; background: var(--MI_THEME-panel, #fff); border-radius: 3px; }
+.poll-check { margin-right: 4px; color: var(--MI_THEME-accent, #86b850); }
+.poll-votes { margin-left: 4px; opacity: 0.7; }
+.poll-info { color: var(--MI_THEME-fg); }
+.poll-toggle { color: inherit; cursor: pointer; }
