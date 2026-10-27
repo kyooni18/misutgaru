@@ -59,13 +59,37 @@ try {
   await locked.waitForFunction(() => document.querySelector('button').textContent === 'Request');
   await locked.close();
 
+  const canceled = await page('?following=1');
+  await canceled.evaluate(() => { fixture.services.confirm = async () => true; });
+  await canceled.locator('button').click();
+  await canceled.waitForFunction(() => fixture.calls.some(c => c[0] === 'haptic') && !document.querySelector('button').disabled);
+  assert.equal(await canceled.evaluate(() => fixture.calls.some(c => c[0] === 'following/delete')), false);
+  assert.equal(await canceled.locator('button').innerText(), 'Following');
+  await canceled.close();
+
+  const denied = await page();
+  await denied.evaluate(() => { fixture.services.login = async () => false; });
+  await denied.locator('button').click();
+  assert.deepEqual(await denied.evaluate(() => fixture.calls), []);
+  assert.equal(await denied.locator('button').isDisabled(), false);
+  await denied.close();
+
+  const failed = await page();
+  await failed.locator('button').click();
+  await failed.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/create'));
+  await failed.evaluate(() => fixture.reject('network failure'));
+  await failed.waitForFunction(() => fixture.calls.some(c => c[0] === 'error'));
+  assert.equal(await failed.locator('button').isDisabled(), false);
+  assert.equal(await failed.locator('button').innerText(), 'Follow');
+  await failed.close();
+
   const missing = await page('?following=unknown');
   await missing.waitForFunction(() => fixture.calls.some(c => c[0] === 'users/show'));
   await missing.evaluate(() => fixture.resolve({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
   await missing.waitForFunction(() => document.querySelector('button').textContent === 'Following');
   await missing.close();
   assert.deepEqual(errors, []);
-  console.log('PASS: native follow, pending cancellation, stream updates, lookup, and cleanup');
+  console.log('PASS: native follow, cancellations, failed requests, stream updates, lookup, SSR, and cleanup');
 } finally {
   await browser.close();
   await server.close();
