@@ -1,0 +1,36 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.mun-confirm { position: fixed; inset: 0; z-index: 10000; color: var(--MI_THEME-fg); }
+.mun-confirm-backdrop { position: fixed; inset: 0; background: var(--MI_THEME-modalBg); }
+.mun-confirm-content { position: fixed; inset: 0; margin: auto; padding: 32px; padding-top: max(32px, calc(env(safe-area-inset-top, 0px) + 16px)); padding-bottom: max(32px, calc(env(safe-area-inset-bottom, 0px) + 16px)); display: flex; overflow: auto; }
+.mun-confirm-panel { position: relative; margin: auto; padding: 32px; min-width: 320px; max-width: 480px; box-sizing: border-box; text-align: center; background: var(--MI_THEME-panel); border-radius: 16px; }
+.mun-confirm-icon { font-size: 24px; }
+.mun-confirm-symbol { width: 45px; display: block; margin: 0 auto; stroke-linecap: round; stroke-linejoin: round; }
+.mun-confirm-symbol.warning { color: var(--MI_THEME-warn); }
+.mun-confirm-symbol.question { color: var(--MI_THEME-fg); }
+.mun-confirm-symbol path, .mun-confirm-symbol circle { fill: none; stroke: currentColor; stroke-width: 8px; shape-rendering: geometricPrecision; }
+.mun-confirm-text { margin: 16px 0 0; }
+.mun-confirm-buttons { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.mun-confirm-button { appearance: none; position: relative; display: inline-block; width: auto; min-width: 100px; padding: 7px 14px; margin: 0; border: none; border-radius: 999px; background: var(--MI_THEME-buttonBg); color: inherit; box-shadow: 0 0 0 1px var(--MI-hairline); text-align: center; font: inherit; font-size: 95%; cursor: pointer; }
+.mun-confirm-button.primary { font-weight: bold; color: var(--MI_THEME-fgOnAccent); background: var(--MI_THEME-accent); box-shadow: none; }
+.mun-confirm-button:not(:disabled):hover { background: var(--MI_THEME-buttonHoverBg); }
+.mun-confirm-button.primary:not(:disabled):hover { background: hsl(from var(--MI_THEME-accent) h s calc(l + 3)); }
+.mun-confirm-button:focus-visible { outline-offset: 2px; }
+@media (max-width: 500px) { .mun-confirm-content { padding: 16px; padding-top: max(16px, calc(env(safe-area-inset-top, 0px) + 16px)); padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 16px)); } }
+.mun-confirm-symbol path:first-child, .mun-confirm-symbol path:nth-child(3), .mun-confirm-symbol circle { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.mun-confirm-symbol circle { transform-origin: center; transform: rotate(-90deg); }
+@keyframes mun-confirm-enter-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mun-confirm-enter-move { from { transform: translateY(10px) scale(.9); } to { transform: none; } }
+@keyframes mun-confirm-exit-fade { from { opacity: 1; } to { opacity: 0; } }
+@keyframes mun-confirm-exit-move { from { transform: none; } to { transform: translateY(4px) scale(.96); } }
+@keyframes mun-confirm-icon-line { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes mun-confirm-icon-dot { from { opacity: 0; } to { opacity: 1; } }
+.mun-confirm.animated .mun-confirm-backdrop { animation: mun-confirm-enter-fade 220ms var(--MI-easeOut, ease-out) both; }
+.mun-confirm.animated .mun-confirm-content { animation: mun-confirm-enter-fade 100ms var(--MI-easeOut, ease-out) both, mun-confirm-enter-move 220ms var(--MI-easeOut, ease-out) both; }
+.mun-confirm.animated .mun-confirm-symbol path:first-child, .mun-confirm.animated .mun-confirm-symbol path:nth-child(3), .mun-confirm.animated .mun-confirm-symbol circle { stroke-dashoffset: 1; animation: mun-confirm-icon-line .5s cubic-bezier(0,0,.25,1) forwards; }
+.mun-confirm.animated .mun-confirm-symbol path:nth-child(2) { opacity: 0; animation: mun-confirm-icon-dot .5s cubic-bezier(0,0,.25,1) forwards; }
+.mun-confirm.closing { pointer-events: none; }
+.mun-confirm.animated.closing .mun-confirm-backdrop { animation: mun-confirm-exit-fade 160ms var(--MI-easeOut, ease-out) both; }
+.mun-confirm.animated.closing .mun-confirm-content { animation: mun-confirm-exit-fade 80ms var(--MI-easeOut, ease-out) both, mun-confirm-exit-move 160ms var(--MI-motion-ease-exit, cubic-bezier(.4,0,1,1)) both; }
