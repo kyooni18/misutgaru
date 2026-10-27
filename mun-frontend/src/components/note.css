@@ -34,3 +34,4 @@
 .poll-info { color: var(--MI_THEME-fg); }
 .poll-toggle { color: inherit; cursor: pointer; }
 .notes-timeline-sentinel { height: 1px; }
+.note-reaction { border: 0; cursor: pointer; font: inherit; color: inherit; }
