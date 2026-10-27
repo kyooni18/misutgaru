@@ -42,3 +42,6 @@
 .user-timeline-tabs { display: flex; justify-content: center; gap: 4px; padding: 4px 0; }
 .user-timeline-tab { padding: 6px 14px; border: none; border-radius: 99px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .user-timeline-tab.active { background: var(--MI_THEME-accentedBg); color: var(--MI_THEME-accent); }
+.notifications-page-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 4px 8px; }
+.notifications-page-filter.active { color: var(--MI_THEME-accent); }
+.notifications-page-filter-list { display: flex; flex-direction: column; max-height: 50vh; overflow: auto; }
