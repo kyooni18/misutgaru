@@ -1,0 +1,46 @@
+import { Element } from "@mun/core"
+struct App: View {
+  @State var name = "Misutgaru"
+  @State var description = ""
+  @State var status = "Loading server information…"
+  @State var request = 0
+  func load(signal) async {
+    let ticket = request
+    status = "Loading server information…"
+    try {
+      let response = await fetch("/api/meta", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "omit", cache: "no-cache", body: JSON.stringify({ detail: true }), signal
+      })
+      if (!response.ok) { throw new Error("Metadata request failed") }
+      let meta = await response.json()
+      if (signal.aborted || ticket !== request) { return }
+      name = meta.name || "Misutgaru"
+      description = meta.description || ""
+      status = ""
+    } catch (error) {
+      if (signal.aborted || ticket !== request) { return }
+      status = "Could not load server information."
+    }
+  }
+  var body: some View {
+    Element("main", { class: "shell" }) {
+      Element("nav", { "aria-label": "Main navigation" }) {
+        Element("a", { href: "/" }) { Text("Home") }
+        Element("a", { href: "/about" }) { Text("About") }
+      }
+      Element("section", { class: "panel" }) {
+        if (window.location.pathname === "/about") {
+          Element("h1", {}) { Text("About \(name)") }
+        } else {
+          Element("h1", {}) { Text(name) }
+        }
+        Element("p", {}) { Text(description) }
+        Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
+        Button("Refresh server information") { request += 1 }
+      }
+    }
+    .task(id: request) { signal in await load(signal) }
+  }
+}
+export default App()
