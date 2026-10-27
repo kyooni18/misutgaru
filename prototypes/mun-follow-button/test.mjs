@@ -93,13 +93,31 @@ try {
   assert.match(await signedOut.locator('button').innerText(), /Processing/);
   await signedOut.close();
 
+  const wired = await browser.newPage();
+  wired.on('pageerror', error => errors.push(error.message));
+  let acceptRequest;
+  const incomingRequest = new Promise(resolve => { acceptRequest = resolve; });
+  await wired.route('**/api/following/create', route => { acceptRequest(route); });
+  await wired.goto(base + '?wire=1');
+  await wired.waitForFunction(() => window.fixture);
+  await wired.locator('button').click();
+  await wired.waitForFunction(() => fixture.transport.pendingRequests === 1);
+  const intercepted = await incomingRequest;
+  assert.equal(intercepted.request().method(), 'POST');
+  assert.deepEqual(intercepted.request().postDataJSON(), { userId: '1', withReplies: true, i: 'fixture-token' });
+  assert.equal(await wired.locator('button').isDisabled(), true);
+  await intercepted.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  await wired.waitForFunction(() => fixture.transport.pendingRequests === 0 && !document.querySelector('button').disabled);
+  assert.match(await wired.locator('button').innerText(), /Processing/);
+  await wired.close();
+
   const missing = await page('?following=unknown');
   await missing.waitForFunction(() => fixture.calls.some(c => c[0] === 'users/show'));
   await missing.evaluate(() => fixture.resolve({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
   await missing.waitForFunction(() => document.querySelector('button').textContent === 'Following');
   await missing.close();
   assert.deepEqual(errors, []);
-  console.log('PASS: native follow, cancellations, failed requests, stream updates, lookup, SSR, and cleanup');
+  console.log('PASS: native follow, cancellations, failed requests, stream updates, lookup, SSR, cleanup, and wired HTTP request');
 } finally {
   await browser.close();
   await server.close();
