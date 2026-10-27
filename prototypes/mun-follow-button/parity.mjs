@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { access, realpath } from 'node:fs/promises';
@@ -43,7 +43,9 @@ const virtual = { name: 'follow-vue-reference', enforce: 'pre', configureServer(
 const require = createRequire(import.meta.url);
 const server = await createServer({ ...config, root, configFile:false, resolve:{alias:{vue:require.resolve('vue/dist/vue.esm-bundler.js')}}, plugins:[virtual,...config.plugins,vue()], server:{host:'127.0.0.1',port:0,fs:{allow:[frontend,root,iconDir,process.env.MUN_ROOT ?? '../../packages/modules/Mun']} } });
 await server.listen();
-const browser = await chromium.launch();
+const browserName = process.env.PARITY_BROWSER ?? 'chromium';
+if (!['chromium', 'webkit'].includes(browserName)) throw new Error(`Unsupported browser: ${browserName}`);
+const browser = await ({ chromium, webkit })[browserName].launch();
 try {
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
   for (const query of ['', '?locked=1', '?following=1', '?pending=1&locked=1', '?pending=1', '?compact=1', '?compact=1&following=1', '?compact=1&pending=1', '?large=1', '?large=1&locked=1']) {
