@@ -2,10 +2,36 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Element } from '@mun/core';
 import * as mfm from 'mfm-js';
+import './mfm.css';
+
+const color = value => typeof value === 'string' && /^[0-9a-f]{3,6}$/i.test(value) ? value : null;
+const number = (value, fallback) => typeof value === 'string' && value !== '' && !Number.isNaN(parseFloat(value)) ? parseFloat(value) : fallback;
+
+function renderFunction(node, children, advancedMfm) {
+  const { name, args } = node.props;
+  if (['x2', 'x3', 'x4'].includes(name)) return Element('span', { class: advancedMfm ? `mfm-${name}` : '' }, ...children);
+  let style;
+  switch (name) {
+    case 'flip': style = `transform: ${args.h && args.v ? 'scale(-1, -1)' : args.v ? 'scaleY(-1)' : 'scaleX(-1)'};`; break;
+    case 'rotate': style = `transform: rotate(${number(args.deg, 90)}deg); transform-origin: center center;`; break;
+    case 'position': if (advancedMfm) style = `transform: translateX(${number(args.x, 0)}em) translateY(${number(args.y, 0)}em);`; break;
+    case 'scale': style = advancedMfm ? `transform: scale(${Math.min(number(args.x, 1), 5)}, ${Math.min(number(args.y, 1), 5)});` : ''; break;
+    case 'fg': style = `color: #${color(args.color) ?? 'f00'}; overflow-wrap: anywhere;`; break;
+    case 'bg': style = `background-color: #${color(args.color) ?? 'f00'}; overflow-wrap: anywhere;`; break;
+    case 'border': {
+      const borderStyle = ['hidden', 'dotted', 'dashed', 'solid', 'double', 'groove', 'ridge', 'inset', 'outset'].includes(args.style) ? args.style : 'solid';
+      style = `border: ${number(args.width, 1)}px ${borderStyle} ${color(args.color) ? `#${color(args.color)}` : 'var(--MI_THEME-accent)'}; border-radius: ${number(args.radius, 0)}px;${args.noclip ? '' : ' overflow: clip;'}`;
+      break;
+    }
+  }
+  // Other functions retain their original syntax until implemented.
+  if (style === undefined) return mfm.toString([node]);
+  return Element('span', { style: `display: inline-block; ${style}` }, ...children);
+}
 
 // A native view-graph renderer, deliberately not an HTML string: note text is
 // untrusted. Unsupported MFM is retained as source instead of disappearing.
-export function renderMfm(text, { plain = false, nowrap = false, isNote = true } = {}) {
+export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true } = {}) {
   const nodes = (plain ? mfm.parseSimple : mfm.parse)(text ?? '');
   const render = node => {
     const children = () => (node.children ?? []).flatMap(render);
@@ -28,6 +54,7 @@ export function renderMfm(text, { plain = false, nowrap = false, isNote = true }
       case 'unicodeEmoji': return node.props.emoji;
       case 'emojiCode': return `:${node.props.name}:`;
       case 'hashtag': return Element('a', { href: `/${isNote ? 'tags' : 'user-tags'}/${encodeURIComponent(node.props.hashtag)}`, style: 'color:var(--MI_THEME-hashtag);' }, `#${node.props.hashtag}`);
+      case 'fn': return renderFunction(node, children(), advancedMfm);
       default: return mfm.toString([node]);
     }
   };
