@@ -12,7 +12,7 @@ export function createAccountHandoff({ fetch: fetchImpl = (...args) => globalThi
     });
     if (response.status >= 500 && response.status < 600) throw new Error(`Account request failed: ${response.status}`);
     const me = await response.json();
-    if (me && typeof me === 'object' && 'error' in me) { await onAccountError(me.error); throw new Error('Unable to fetch account'); }
+    if (me && typeof me === 'object' && 'error' in me) { await onAccountError(me.error); throw new Error('Unable to fetch account', { cause: me.error }); }
     if (!me || typeof me !== 'object' || Array.isArray(me) || typeof me.id !== 'string' || typeof me.username !== 'string') throw new Error('Invalid account response');
     storage.setItem('account', JSON.stringify({ ...me, token }));
     const accounts = preferences.getAccounts();

@@ -10,3 +10,7 @@
 .signin-dialog-title { padding: 0 20px; }
 .signin-dialog-close { appearance: none; margin-left: auto; padding: 16px; border: 0; background: none; color: inherit; font: inherit; font-size: 16px; line-height: 16px; cursor: pointer; }
 .signin-dialog-content { padding: 32px; box-sizing: border-box; }
+.signin-recovery { width: min(370px, calc(100% - 32px)); box-sizing: border-box; border: 0; border-radius: var(--MI-radius, 12px); padding: 24px; color: var(--MI_THEME-fg); background: var(--MI_THEME-panel); }
+.signin-recovery::backdrop { background: var(--MI_THEME-modalBg); }
+.signin-recovery form, .signin-recovery label { display: grid; gap: 12px; }
+.signin-recovery input { box-sizing: border-box; width: 100%; padding: 10px; font: inherit; }
