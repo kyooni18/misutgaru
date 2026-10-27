@@ -1,0 +1,75 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { pollSummary, remainingText } from "../services/poll-state.mjs"
+import "./note.css"
+
+// Counterpart of Vue's MkPoll. `services` provides now(), login(noteId), confirmVote(text) and api.post;
+// `labels.poll` carries the _poll translations.
+export struct Poll: View {
+  let noteId
+  let multiple
+  let expiresAt
+  let choices
+  let readOnly
+  let services
+  let labels
+  @State var showResultToggle = false
+  @State var voteCount = 0
+
+  func summary() {
+    return pollSummary({ choices: choices, multiple: multiple, expiresAt: expiresAt }, services.now())
+  }
+
+  func showResult() {
+    let s = summary()
+    return readOnly || s.voted || s.closed || showResultToggle
+  }
+
+  func width(choice) {
+    let s = summary()
+    if (!showResult() || s.total === 0) { return "0%" }
+    return (choice.votes / s.total * 100) + "%"
+  }
+
+  func vote(index) async {
+    let s = summary()
+    if (readOnly || s.closed || s.voted) { return }
+    if (!(await services.login(noteId))) { return }
+    if (!(await services.confirmVote(choices[index].text))) { return }
+    await services.api.post("notes/polls/vote", { noteId: noteId, choice: index })
+    if (!showResultToggle) { showResultToggle = !multiple }
+    voteCount += 1
+  }
+
+  var body: some View {
+    Element("div", { className: "poll" + ((summary().closed || summary().voted) ? " done" : "") }) {
+      Element("ul", { className: "poll-choices" }) {
+        ForEach(choices.map((c, i) => ({ key: i, choice: c })), key: (x) => x.key) { x in
+          Element("li", { className: "poll-choice", onClick: () => vote(x.key) }) {
+            Element("div", { className: "poll-bg", style: { width: width(x.choice) } }) {}
+            Element("span", { className: "poll-fg" }) {
+              if (x.choice.isVoted) { Element("i", { className: "ti ti-check poll-check" }) {} }
+              Text(x.choice.text)
+              if (showResult()) { Element("span", { className: "poll-votes" }) { Text("(" + labels.poll.votesCount({ n: x.choice.votes }) + ")") } }
+            }
+          }
+        }
+      }
+      if (!readOnly) {
+        Element("p", { className: "poll-info" }) {
+          Element("span", {}) { Text(labels.poll.totalVotes({ n: summary().total })) }
+          Element("span", {}) { Text(" · ") }
+          if (!summary().closed && !summary().voted) {
+            Element("a", { className: "poll-toggle", onClick: () => { showResultToggle = !showResultToggle } }) { Text(showResultToggle ? labels.pollVote : labels.pollShowResult) }
+          }
+          if (summary().voted) { Element("span", {}) { Text(labels.pollVoted) } }
+          else if (summary().closed) { Element("span", {}) { Text(labels.pollClosed) } }
+          if (summary().remaining > 0) { Element("span", {}) { Text(" · " + remainingText(labels.poll, summary().remaining)) } }
+        }
+      }
+    }
+  }
+}
