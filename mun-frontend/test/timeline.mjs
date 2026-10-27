@@ -27,22 +27,21 @@ async function open(handler) {
 test('loads the first page, then older notes by untilId until exhausted', async () => {
   const { browser, page, requests } = await open((route, body) => route.fulfill({ json: body.untilId === 'n2' ? [mk('n1')] : body.untilId === 'n1' ? [] : [mk('n3'), mk('n2')] }));
   try {
-    await expect(page.locator('.notes-timeline-item')).toHaveCount(2);
+    // the end-of-list sentinel is visible on a short page, so older pages load without a click
+    await expect(page.locator('.notes-timeline-item')).toHaveCount(3);
+    await expect.poll(() => requests.length).toBe(3);
     assert.deepEqual(requests[0], { withRenotes: true, limit: 15, allowPartial: true });
-    await page.getByRole('button', { name: 'Load more' }).click();
-    await expect(page.locator('.notes-timeline-item')).toHaveCount(3);
     assert.deepEqual(requests[1], { withRenotes: true, limit: 30, untilId: 'n2' });
+    assert.deepEqual(requests[2], { withRenotes: true, limit: 30, untilId: 'n1' });
     await expect(page.locator('.notes-timeline-item .note-text').nth(2)).toHaveText('note n1');
-    await page.getByRole('button', { name: 'Load more' }).click();
     await expect(page.getByRole('button', { name: 'Load more' })).toHaveCount(0);
-    await expect(page.locator('.notes-timeline-item')).toHaveCount(3);
   } finally { await browser.close(); }
 });
 
 test('shows the empty state and the error state with retry', async () => {
   const empty = await open(route => route.fulfill({ json: [] }));
   try { await expect(empty.page.locator('.notes-timeline-empty')).toHaveText('No notes'); } finally { await empty.browser.close(); }
-  const failing = await open((route, _b, n) => n === 1 ? route.fulfill({ status: 500, json: { error: {} } }) : route.fulfill({ json: [mk('a')] }));
+  const failing = await open((route, body, n) => n === 1 ? route.fulfill({ status: 500, json: { error: {} } }) : route.fulfill({ json: body.untilId ? [] : [mk('a')] }));
   try {
     await expect(failing.page.getByRole('alert')).toContainText('Error');
     await failing.page.getByRole('button', { name: 'Retry' }).click();
@@ -52,12 +51,25 @@ test('shows the empty state and the error state with retry', async () => {
 
 test('inserts a date separator between notes from different days only', async () => {
   const at = (id, createdAt) => ({ ...mk(id), createdAt });
-  const { browser, page } = await open(route => route.fulfill({ json: [at('c', '2026-03-05T12:00:00'), at('b', '2026-03-05T08:00:00'), at('a', '2026-03-04T23:00:00')] }));
+  const { browser, page } = await open((route, body) => route.fulfill({ json: body.untilId ? [] : [at('c', '2026-03-05T12:00:00'), at('b', '2026-03-05T08:00:00'), at('a', '2026-03-04T23:00:00')] }));
   try {
     await expect(page.locator('.notes-timeline-item')).toHaveCount(3);
     await expect(page.locator('.notes-timeline-date')).toHaveCount(1);
-    await expect(page.locator('.notes-timeline-date')).toHaveText(/↑ 3\/5\s*3\/4 ↓/);
+    await expect(page.locator('.notes-timeline-date')).toContainText('3/5');
+    await expect(page.locator('.notes-timeline-date')).toContainText('3/4');
     // the separator sits above the first note of the older day
     await expect(page.locator('.notes-timeline-row').nth(2).locator('.notes-timeline-date')).toHaveCount(1);
+  } finally { await browser.close(); }
+});
+
+test('scrolling the end of the list into view fetches older notes automatically', async () => {
+  const filler = Array.from({ length: 15 }, (_, i) => mk(`n${30 - i}`));
+  const { browser, page, requests } = await open((route, body) => route.fulfill({ json: body.untilId ? [mk('old')] : filler }));
+  try {
+    await expect(page.locator('.notes-timeline-item')).toHaveCount(15);
+    await page.locator('.notes-timeline-sentinel').scrollIntoViewIfNeeded();
+    await expect(page.locator('.notes-timeline-item')).toHaveCount(16);
+    assert.equal(requests[1].untilId, 'n16');
+    assert.equal(requests[1].limit, 30);
   } finally { await browser.close(); }
 });

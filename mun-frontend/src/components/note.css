@@ -37,3 +37,4 @@
 .poll-votes { margin-left: 4px; opacity: 0.7; }
 .poll-info { color: var(--MI_THEME-fg); }
 .poll-toggle { color: inherit; cursor: pointer; }
+.notes-timeline-sentinel { height: 1px; }
