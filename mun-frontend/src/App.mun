@@ -1,10 +1,12 @@
 import { Element } from "@mun/core"
 import { api } from "./services/api.mjs"
+import VisitorStats from "./components/VisitorStats.mun"
 struct App: View {
   @State var name = "Misutgaru"
   @State var description = ""
   @State var status = "Loading server information…"
   @State var request = 0
+  @State var showStats = false
   func load(signal) async {
     let ticket = request
     status = "Loading server information…"
@@ -13,6 +15,7 @@ struct App: View {
       if (signal.aborted || ticket !== request) { return }
       name = meta.name || "Misutgaru"
       description = meta.description || ""
+      showStats = meta.clientOptions?.showActivitiesForVisitor !== false
       status = ""
     } catch (error) {
       if (signal.aborted || ticket !== request) { return }
@@ -35,6 +38,7 @@ struct App: View {
         Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
         Button("Refresh server information") { request += 1 }
       }
+      if (window.location.pathname === "/" && showStats) { VisitorStats }
     }
     .task(id: request) { signal in await load(signal) }
   }
