@@ -32,8 +32,9 @@ test('plain note shows header, text, media grid and reaction counts', async () =
   try {
     await expect(page.locator('.note-simple-username')).toHaveText('@alice');
     await expect(page.locator('.note-text')).toHaveText('hello');
-    await expect(page.locator('.note-media-item')).toHaveCount(2);
-    await expect(page.locator('.note-media-item img')).toHaveAttribute('src', '/a-t.png');
+    await expect(page.locator('.media-item')).toHaveCount(1);
+    await expect(page.locator('.media-banner')).toHaveCount(1);
+    await expect(page.locator('.media-item img')).toHaveAttribute('src', '/a-t.png');
     await expect(page.locator('.note-reaction')).toHaveCount(2);
     await expect(page.locator('.note-reaction.reacted')).toContainText('1');
     assert.deepEqual(errors, []);
@@ -86,11 +87,11 @@ test('content warning hides text, media and reactions-free until toggled', async
   const { browser, page } = await render({ ...base_, id: '5', user: alice, text: 'secret', cw: 'cw', files: [{ id: 'f1', type: 'image/png', url: '/a.png', name: 'a' }] });
   try {
     await expect(page.locator('.note-text')).toHaveCount(0);
-    await expect(page.locator('.note-media')).toHaveCount(0);
+    await expect(page.locator('.media-item')).toHaveCount(0);
     await expect(page.locator('.note-simple-cw-label')).toHaveText('6 characters / 1 file(s)');
     await page.getByRole('button', { name: /Show content/ }).click();
     await expect(page.locator('.note-text')).toHaveText('secret');
-    await expect(page.locator('.note-media-item')).toHaveCount(1);
+    await expect(page.locator('.media-item')).toHaveCount(1);
   } finally { await browser.close(); }
 });
 

@@ -17,7 +17,11 @@ export const services = {
   now: () => Date.parse('2026-01-01T00:00:00Z'),
   login: async () => true,
   confirmVote: async () => true,
+  media: () => ({ nsfw: 'respect', dataSaverMedia: false }),
+  confirmReveal: async () => true,
+  open: () => {},
   api,
 };
 labels.pollTexts = { votesCount: p => `${p.n} votes`, totalVotes: p => `${p.n} total`, remainingMinutes: p => `${p.m}m left`, remainingSeconds: p => `${p.s}s left`, remainingHours: p => `${p.h}h left`, remainingDays: p => `${p.d}d left` };
 labels.pollVote = 'Vote'; labels.pollShowResult = 'Show result'; labels.pollVoted = 'Voted'; labels.pollClosed = 'Closed';
+labels.sensitive = 'Sensitive'; labels.clickToShow = 'Click to show'; labels.hide = 'Hide'; labels.mediaKind = type => type.split('/')[0];
