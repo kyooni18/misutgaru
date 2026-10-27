@@ -6,8 +6,10 @@ import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
 import config from './vite.config.mjs';
+import { fileURLToPath } from 'node:url';
+import { renderToHTML } from '@mun/web';
 
-const server = await createServer({ ...config, configFile: false, server: { ...config.server, host: '127.0.0.1', port: 0 } });
+const server = await createServer({ ...config, root: fileURLToPath(new URL('.', import.meta.url)), configFile: false, server: { ...config.server, host: '127.0.0.1', port: 0 } });
 await server.listen();
 const browser = await chromium.launch();
 const base = `http://127.0.0.1:${server.httpServer.address().port}/fixture.html`;
@@ -20,6 +22,10 @@ async function page(query = '') {
   return p;
 }
 try {
+  globalThis.location = { search: '?following=1' };
+  const ssr = await server.ssrLoadModule('/App.mun');
+  assert.match(renderToHTML(ssr.default), /class="_button follow-button full active".*Following/);
+  delete globalThis.location;
   const p = await page();
   const button = p.locator('button');
   assert.equal(await button.innerText(), 'Follow');

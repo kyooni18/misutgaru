@@ -14,6 +14,16 @@ export struct FollowButton: View {
   @State var wait = false
   @State var initialized = false
 
+  func currentFollowing() {
+    if (!initialized) { return user.isFollowing }
+    return following
+  }
+
+  func currentPending() {
+    if (!initialized) { return user.hasPendingFollowRequestFromYou }
+    return pending
+  }
+
   func update(next) {
     if (next.id === user.id) {
       following = next.isFollowing
@@ -58,8 +68,8 @@ export struct FollowButton: View {
   }
 
   var body: some View {
-    Element("button", { type: "button", className: "_button follow-button" + (full ? " full" : "") + (large ? " large" : "") + ((following || pending) ? " active" : "") + (wait ? " wait" : ""), disabled: wait, onClick: () => click() }) {
-      if (wait || (pending && !user.isLocked)) {
+    Element("button", { type: "button", className: "_button follow-button" + (full ? " full" : "") + (large ? " large" : "") + ((currentFollowing() || currentPending()) ? " active" : "") + (wait ? " wait" : ""), disabled: wait, onClick: () => click() }) {
+      if (wait || (currentPending() && !user.isLocked)) {
         if (full) { Element("span", { className: "text" }) { Text(services.labels.processing) } }
         Element("div", { className: "loading", "aria-hidden": "true" }) {
           Element("div", { className: "loading-container" }) {
@@ -75,10 +85,10 @@ export struct FollowButton: View {
             }
           }
         }
-      } else if (pending && user.isLocked) {
+      } else if (currentPending() && user.isLocked) {
         if (full) { Element("span", { className: "text" }) { Text(services.labels.pending) } }
         Element("i", { className: "ti ti-hourglass-empty" }) {}
-      } else if (following) {
+      } else if (currentFollowing()) {
         if (full) { Element("span", { className: "text" }) { Text(services.labels.following) } }
         Element("i", { className: "ti ti-minus" }) {}
       } else {
