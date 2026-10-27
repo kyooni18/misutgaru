@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:browser": "node --test test/smoke.mjs test/note-simple.mjs test/note-card.mjs test/timeline.mjs test/visitor-timeline.mjs test/poll.mjs test/media.mjs test/reaction-toggle.mjs test/note-footer.mjs",
-    "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs test/locale.mjs"
+    "test:browser": "node --test test/account-storage.mjs test/captcha-widget-parity.mjs test/entrance-parity.mjs test/lightbox.mjs test/live-meta.mjs test/live-signin.mjs test/mcaptcha-parity.mjs test/media.mjs test/mfm-parity.mjs test/note-card.mjs test/note-footer.mjs test/note-page.mjs test/note-simple.mjs test/notifications-page.mjs test/notifications.mjs test/number-parity.mjs test/passkey-parity.mjs test/password-parity.mjs test/poll.mjs test/post-form.mjs test/reaction-picker.mjs test/renote-menu.mjs test/signin-dialog.mjs test/signin-reference.mjs test/signin-view.mjs test/smoke.mjs test/test-captcha-parity.mjs test/timeline-live-browser.mjs test/timeline.mjs test/totp-parity.mjs test/user-page.mjs test/user-timeline.mjs test/visitor-stats-parity.mjs test/visitor-timeline.mjs test/vue-account-readers.mjs",
+    "test:unit": "node --test test/account-handoff.mjs test/achievements.mjs test/cached-account.mjs test/follow-preferences.mjs test/lightbox-state.mjs test/locale.mjs test/note-thread.mjs test/notification-view.mjs test/notifications-page-unit.mjs test/poll-state.mjs test/post-payload.mjs test/react-note.mjs test/reaction-toggle.mjs test/renote-menu-unit.mjs test/stream-manager.mjs test/timeline-live.mjs test/user-page-unit.mjs test/user-timeline-unit.mjs"
   },
   "dependencies": {
     "@mcaptcha/core-glue": "0.1.0-alpha-5",

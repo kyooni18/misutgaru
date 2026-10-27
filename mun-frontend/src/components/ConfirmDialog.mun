@@ -1,0 +1,46 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import "./confirm-dialog.css"
+
+// Confirmation-only slice of MkDialog. The host owns focus and dismissal.
+export struct ConfirmDialog: View {
+  let type
+  let text
+  let okText
+  let cancelText
+  let finish
+  let animate
+
+  var body: some View {
+    Element("div", { className: "mun-confirm" + (animate ? " animated" : "") }) {
+      Element("div", { className: "mun-confirm-backdrop", "data-testid": "bg", onContextMenu: event => { event.preventDefault(); event.stopPropagation() }, onClick: () => finish(true) }) {}
+      Element("div", { className: "mun-confirm-content", onClick: event => { if (event.target === event.currentTarget) finish(true) } }) {
+        Element("section", { className: "mun-confirm-panel", role: "alertdialog", "aria-modal": "true", "aria-label": text }) {
+          Element("div", { className: "mun-confirm-icon" }) {
+            if (type === "warning") {
+              Element("svg", { viewBox: "0 0 160 160", className: "mun-confirm-symbol warning", "aria-hidden": "true" }) {
+                Element("path", { d: "M80,64L80,88", pathLength: "1" }) {}
+                Element("path", { d: "M80,108L80,108" }) {}
+                Element("path", { d: "M92,28L144,116C148.709,124.65 144.083,135.82 136,136L24,136C15.917,135.82 11.291,124.65 16,116L68,28C73.498,19.945 86.771,19.945 92,28Z", pathLength: "1" }) {}
+              }
+            } else {
+              Element("svg", { viewBox: "0 0 160 160", className: "mun-confirm-symbol question", "aria-hidden": "true" }) {
+                Element("path", { d: "M80,92L79.991,84C88.799,83.98 96,76.962 96,68C96,59.038 88.953,52 79.991,52C71.03,52 64,59.038 64,68", pathLength: "1" }) {}
+                Element("path", { d: "M80,108L80,108" }) {}
+                Element("circle", { cx: "80", cy: "80", r: "56", pathLength: "1" }) {}
+              }
+            }
+          }
+          if (text) { Element("div", { className: "mun-confirm-text" }) { Text(text) } }
+          Element("div", { className: "mun-confirm-buttons" }) {
+            Element("button", { type: "button", className: "mun-confirm-button primary", "data-testid": "modal-dialog-ok", onClick: () => finish(false) }) { Text(okText) }
+            Element("button", { type: "button", className: "mun-confirm-button", "data-testid": "modal-dialog-cancel", onClick: () => finish(true) }) { Text(cancelText) }
+          }
+        }
+      }
+    }
+  }
+}

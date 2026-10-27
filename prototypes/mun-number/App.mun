@@ -1,0 +1,17 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { AnimatedNumber } from "../../mun-frontend/src/components/AnimatedNumber.mun"
+struct NumberFixture: View {
+  @State var value = 100
+  var body: some View {
+    Element("main", {}) {
+      AnimatedNumber(value: value)
+      Element("button", { id: "two-hundred", onClick: () => { value = 200 } }) { Text("200") }
+      Element("button", { id: "fifty", onClick: () => { value = 50 } }) { Text("50") }
+    }
+  }
+}
+export default NumberFixture()
