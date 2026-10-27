@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createFollowButtonServices } from './services-adapter.mjs';
+import { createStreamManager } from '../../mun-frontend/src/services/stream-manager.mjs';
 
 // The SDK is real; only its WebSocket transport is replaced, so no network or
 // backend account is needed. Build misskey-js first or provide its built file.
@@ -24,7 +25,13 @@ class FakeWebSocket extends EventTarget {
   receive(data) { this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(data) })); }
   close() { this.readyState = FakeWebSocket.CLOSED; this.dispatchEvent(new Event('close')); }
 }
-const stream = new Stream('https://instance.test', { token: 'fixture-token' }, { WebSocket: FakeWebSocket });
+class FixtureStream extends Stream {
+  constructor(origin, account) { super(origin, account, { WebSocket: FakeWebSocket }); }
+}
+const manager = createStreamManager({ Stream: FixtureStream, origin: 'https://instance.test', getAccount: () => ({ token: 'fixture-token' }),
+  document: { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} }, setTimer: () => 1, clearTimer() {} });
+const stream = manager.useStream();
+assert.equal(manager.useStream(), stream);
 const waitFor = async predicate => {
   const deadline = Date.now() + 6000;
   while (!predicate()) {
@@ -60,5 +67,5 @@ try {
   assert.deepEqual(messages.find(message => message.type === 'disconnect').body, { id });
   console.log('PASS: real misskey-js shared main channel, event routing and independent disposal');
 } finally {
-  first.dispose(); second.dispose(); stream.close();
+  first.dispose(); second.dispose(); manager.dispose();
 }

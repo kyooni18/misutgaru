@@ -8,11 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:browser": "node --test test/smoke.mjs",
-    "test:unit": "node --test test/cached-account.mjs"
+    "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs"
   },
   "dependencies": {
     "@mun/core": "0.1.20",
-    "@mun/web": "0.1.20"
+    "@mun/web": "0.1.20",
+    "misskey-js": "file:../packages/misskey-js"
   },
   "devDependencies": {
     "@mun/vite": "0.1.20",

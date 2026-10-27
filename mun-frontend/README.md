@@ -24,6 +24,8 @@ pnpm build
 MISUTGARU_API_ORIGIN=http://localhost:3000 pnpm dev
 ```
 
+Build the checked-out `packages/misskey-js` package before installing this app; the native stream service uses its local `file:` dependency. The stream is lazy and opens only when a component requests it.
+
 `mun link` changes this directory's `package.json` and creates
 `pnpm-workspace.yaml` with machine-specific paths: do not commit those local
 changes. The Vite development server proxies `/api` to the configured origin
