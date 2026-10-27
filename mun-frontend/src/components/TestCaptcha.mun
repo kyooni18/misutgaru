@@ -1,0 +1,27 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+
+export struct TestCaptcha: View {
+  let services
+  @State var input = ""
+  @State var passed = false
+  var body: some View {
+    Element("div", { style: "background: #eee; border: solid 1px #888; padding: 8px; color: #000; max-width: 320px; display: flex; gap: 10px; align-items: center; box-shadow: 2px 2px 6px #0004; border-radius: 4px;" }) {
+      Element("img", { src: "/client-assets/testcaptcha.png", style: "width: 60px; height: 60px;" }) {}
+      if (passed) {
+        Element("div", {}) { Element("div", { style: "color: green;" }) { Text("Test captcha passed!") } }
+      } else {
+        Element("div", {}) {
+          Element("div", { style: "font-size: 13px; margin-bottom: 4px;" }) { Text('Type "ai-chan-kawaii" to pass captcha') }
+          Element("input", { value: input, "data-testid": "testcaptcha-input", onInput: event => { input = event.target.value } }) {}
+          Element("button", { type: "button", "data-testid": "testcaptcha-submit", onClick: () => { passed = input === "ai-chan-kawaii"; services.update(passed ? "testcaptcha-passed" : null); if (!passed) { input = "" } } }) { Text("Submit") }
+        }
+      }
+    }
+    .onAppear { services.attachReset(() => { passed = false; input = "" }) }
+    .onDisappear { services.detachReset(); input = ""; passed = false }
+  }
+}

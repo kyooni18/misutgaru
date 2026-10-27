@@ -108,3 +108,5 @@ components alongside the native step, including validation and focus.
 `node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
 and compares background, logo, shapes, and content geometry at mobile and
 desktop widths; it does not compare the unfinished dashboard or timeline.
+
+`TestCaptcha` implements the standalone test CAPTCHA provider; `node --test test/test-captcha-parity.mjs` compares failure, success, reset and unmount against Vue with controlled boundaries. It is not yet mounted in a password step. hCaptcha, mCaptcha, reCAPTCHA, Turnstile, the password step and account handoff remain unfinished.
