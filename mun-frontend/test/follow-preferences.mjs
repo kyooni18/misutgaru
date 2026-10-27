@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { createFollowPreferences } from '../src/services/follow-preferences.mjs';
+import { createFollowPreferences, observeFollowPreferences } from '../src/services/follow-preferences.mjs';
 
 test('follow preferences select and synchronize the same values as Vue', async () => {
   const stubs = {
@@ -66,5 +66,21 @@ test('follow preferences select and synchronize the same values as Vue', async (
     saved = JSON.stringify(profile);
     native.reload();
     assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: true, animation: false, 'experimental.enableHapticFeedback': false });
+    let listener, closed = false;
+    const channel = { addEventListener(type, fn) { listener = fn; }, removeEventListener(type, fn) { assert.equal(fn, listener); }, close() { closed = true; } };
+    const stop = observeFollowPreferences({ preferences: native, api: async () => [], channel });
+    const updated = structuredClone(profile);
+    updated.preferences.alwaysConfirmFollow[0][1] = false;
+    saved = JSON.stringify(updated);
+    listener({ type: 'preferencesUpdate', tabId: 'other', timestamp: 20 });
+    assert.equal(native.read().alwaysConfirmFollow, false);
+    saved = JSON.stringify(profile);
+    listener({ type: 'preferencesUpdate', tabId: 'older', timestamp: 19 });
+    assert.equal(native.read().alwaysConfirmFollow, false);
+    saved = '{bad';
+    listener({ type: 'preferencesUpdate', tabId: 'other', timestamp: 21 });
+    assert.equal(native.read().alwaysConfirmFollow, false);
+    stop();
+    assert.equal(closed, true);
   } finally { await server.close(); }
 });

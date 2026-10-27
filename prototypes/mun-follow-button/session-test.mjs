@@ -14,7 +14,8 @@ const browserName = process.env.SESSION_BROWSER ?? 'chromium';
 if (!['chromium', 'webkit'].includes(browserName)) throw new Error(`Unsupported browser: ${browserName}`);
 const browser = await ({ chromium, webkit })[browserName].launch();
 try {
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
@@ -60,6 +61,22 @@ try {
   await page.locator('.follow-button').click();
   await page.getByTestId('modal-dialog-cancel').click();
   assert.deepEqual(await page.evaluate(() => window.vibrations), []);
+  const other = await context.newPage();
+  await other.route('**/session-publisher', route => route.fulfill({ contentType: 'text/html', body: '<script type="module" src="/session-publisher.js"></script>' }));
+  await other.goto(`http://127.0.0.1:${server.httpServer.address().port}/session-publisher`);
+  await other.waitForFunction(() => window.publishPreferenceUpdate);
+  await other.evaluate(async () => {
+    const profile = JSON.parse(localStorage.getItem('preferences'));
+    profile.preferences.alwaysConfirmFollow = [[{}, false, {}]];
+    localStorage.setItem('preferences', JSON.stringify(profile));
+    await window.publishPreferenceUpdate(Date.now());
+  });
+  await page.waitForFunction(() => window.sessionFixture.services.alwaysConfirmFollow === false);
+  const withoutConfirmation = page.waitForResponse(response => response.url().endsWith('/api/following/create'));
+  await page.locator('.follow-button').click();
+  await withoutConfirmation;
+  assert.equal(await page.locator('[data-mun-confirm-active="true"]').count(), 0);
+  await other.close();
   await page.evaluate(() => window.sessionFixture.dispose());
   await page.goto(fixture + '?cloud=1');
   await page.waitForFunction(() => window.sessionFixture?.services.defaultFollowWithReplies === true);

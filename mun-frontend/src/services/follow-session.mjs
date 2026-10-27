@@ -6,9 +6,10 @@ import { createFollowButtonServices } from '../components/follow-button-services
 import { account, api } from './api.mjs';
 import { claimAchievement } from './achievement-session.mjs';
 import { createConfirm } from './confirm.mjs';
-import { createFollowPreferences } from './follow-preferences.mjs';
+import { createFollowPreferences, observeFollowPreferences } from './follow-preferences.mjs';
 import { useStream } from './stream.mjs';
 import { haptic as performHaptic } from 'ios-haptics';
+import { BroadcastChannel } from 'broadcast-channel';
 
 // The profile host supplies its login UI and user-store update.
 // Transport, confirmation, local preferences, achievements and streaming are
@@ -18,7 +19,9 @@ export function createSessionFollowServices({ i18n, pleaseLogin, updateUser, rep
   const host = window.location.host;
   if (!preferences) {
     preferences = createFollowPreferences({ host, account, prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
-    void preferences.sync((endpoint, data) => api.post(endpoint, data)).catch(reportError);
+    const post = (endpoint, data) => api.post(endpoint, data);
+    void preferences.sync(post).catch(reportError);
+    observeFollowPreferences({ preferences, api: post, channel: new BroadcastChannel('preferences'), reportError });
   }
   return createFollowButtonServices({
     host, i18n, pleaseLogin, updateUser, reportError,

@@ -10,7 +10,6 @@ export function createFollowPreferences({ host, account, prefersReducedMotion = 
   let preferences = {};
   let generation = 0;
   function reload() {
-    generation++;
     try {
       const profile = JSON.parse(getStorage()?.getItem('preferences') ?? 'null');
       if (profile && typeof profile === 'object' && !Array.isArray(profile) && profile.type === 'main' &&
@@ -19,8 +18,11 @@ export function createFollowPreferences({ host, account, prefersReducedMotion = 
         typeof profile.name === 'string' && profile.preferences &&
         typeof profile.preferences === 'object' && !Array.isArray(profile.preferences)) {
         preferences = profile.preferences;
-      } else preferences = {};
-    } catch { preferences = {}; }
+        generation++;
+        return true;
+      }
+    } catch { /* Retain current values when storage cannot be read. */ }
+    return false;
   }
   function matchedRecord(key) {
     const records = preferences[key];
@@ -56,4 +58,17 @@ export function createFollowPreferences({ host, account, prefersReducedMotion = 
   }
   reload();
   return { read, reload, sync };
+}
+
+// Vue broadcasts committed changes on this channel. The reader has no editing
+// operations, so it listens without sending updates of its own.
+export function observeFollowPreferences({ preferences, api, channel, reportError = console.error }) {
+  let latestTimestamp = null;
+  const onMessage = message => {
+    if (message?.type !== 'preferencesUpdate' || (latestTimestamp != null && message.timestamp <= latestTimestamp)) return;
+    if (preferences.reload()) void preferences.sync(api).catch(reportError);
+    latestTimestamp = message.timestamp;
+  };
+  channel.addEventListener('message', onMessage);
+  return () => { channel.removeEventListener('message', onMessage); void channel.close(); };
 }
