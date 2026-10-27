@@ -2,6 +2,7 @@
  * SPDX-FileCopyrightText: Misutgaru contributors
  * SPDX-License-Identifier: AGPL-3.0-only
  */
+import { createMcaptcha } from './mcaptcha.mjs';
 import { createCaptchaWidget } from './captcha-widget.mjs';
 import { createTestCaptchaServices } from './test-captcha.mjs';
 
@@ -10,7 +11,9 @@ export function createSigninPasswordServices({ flow, i18n, instance, resetPasswo
   let updateCaptcha = null;
   const testCaptcha = createTestCaptchaServices(value => updateCaptcha?.('testcaptchaResponse', value));
   const widgets = Object.fromEntries([['hcaptcha', 'hCaptchaResponse'], ['recaptcha', 'reCaptchaResponse'], ['turnstile', 'turnstileResponse']].map(([provider, field]) => [provider, createCaptchaWidget({ provider, sitekey: instance[provider + 'SiteKey'], darkMode, update: value => updateCaptcha?.(field, value) })]));
+  const mcaptcha = createMcaptcha({ sitekey: instance.mcaptchaSiteKey, instanceUrl: instance.mcaptchaInstanceUrl, update: value => updateCaptcha?.('mCaptchaResponse', value) });
   return {
+    mcaptcha,
     labels: i18n.ts,
     instance,
     testCaptcha,
@@ -20,6 +23,6 @@ export function createSigninPasswordServices({ flow, i18n, instance, resetPasswo
     submit: value => flow.submitPassword(value),
     attach: update => { updateCaptcha = update; },
     detach: () => { updateCaptcha = null; },
-    resetCaptcha: () => { testCaptcha.reset(); for (const widget of Object.values(widgets)) widget.reset(); },
+    resetCaptcha: () => { testCaptcha.reset(); mcaptcha.reset(); for (const widget of Object.values(widgets)) widget.reset(); },
   };
 }
