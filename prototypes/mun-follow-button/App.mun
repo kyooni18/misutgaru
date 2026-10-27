@@ -3,5 +3,5 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 import { FollowButton } from "./FollowButton.mun"
-import { user, services } from "./services.js"
-export default FollowButton(user: user, full: true, large: false, services: services)
+import { user, services, full, large } from "./services.js"
+export default FollowButton(user: user, full: full, large: large, services: services)
