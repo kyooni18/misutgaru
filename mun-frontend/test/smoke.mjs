@@ -68,14 +68,22 @@ test('metadata request uses the cached account token', async () => {
   try {
     const page = await browser.newPage();
     await page.addInitScript(() => localStorage.setItem('account', JSON.stringify({ id: 'fixture-user', token: 'fixture-token' })));
-    const requestSeen = new Promise(resolve => {
-      page.route('**/api/meta', async route => {
-        resolve(route.request().postDataJSON());
-        await route.fulfill({ json: { name: 'Test server' } });
-      });
+    let recordMeta, recordAccount;
+    const requestSeen = new Promise(resolve => { recordMeta = resolve; });
+    const accountSeen = new Promise(resolve => { recordAccount = resolve; });
+    await page.route('**/api/meta', async route => {
+      recordMeta(route.request().postDataJSON());
+      await route.fulfill({ json: { name: 'Test server' } });
+    });
+    await page.route('**/api/i', async route => {
+      recordAccount(route.request().postDataJSON());
+      await route.fulfill({ json: { id: 'fixture-user', name: 'Refreshed user' } });
     });
     await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
     assert.deepEqual(await requestSeen, { detail: true, i: 'fixture-token' });
+    assert.deepEqual(await accountSeen, { i: 'fixture-token' });
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('account')).name)).toBe('Refreshed user');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('account')).token), 'fixture-token');
     await expect(page.getByRole('heading', { name: 'Test server' })).toBeVisible();
   } finally { await browser.close(); }
 });
