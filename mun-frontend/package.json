@@ -18,7 +18,8 @@
     "broadcast-channel": "7.4.0",
     "icons-subsetter": "file:../packages/icons-subsetter",
     "ios-haptics": "0.1.5",
-    "misskey-js": "file:../packages/misskey-js"
+    "misskey-js": "file:../packages/misskey-js",
+    "tinycolor2": "1.6.0"
   },
   "devDependencies": {
     "@mun/vite": "0.1.20",
