@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { ReactionPicker } from "../../src/components/ReactionPicker.mun"
+import { emojis, pickerLabels, onChoose, onClose } from "./reaction-picker-props.js"
+export default ReactionPicker(emojis: emojis, labels: pickerLabels, onChoose: onChoose, onClose: onClose)

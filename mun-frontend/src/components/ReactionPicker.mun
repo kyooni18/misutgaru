@@ -1,0 +1,25 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import "./reaction-picker.css"
+
+// Palette part of Vue's reaction picker (MkEmojiPickerDialog with pinnedEmojis): a grid of the
+// pinned emojis; picking one calls onChoose(reaction), the backdrop or Escape calls onClose().
+export struct ReactionPicker: View {
+  let emojis
+  let labels
+  let onChoose
+  let onClose
+
+  var body: some View {
+    Element("div", { className: "reaction-picker-backdrop", onClick: () => onClose() }) {
+      Element("div", { className: "reaction-picker", role: "dialog", "aria-label": labels.reaction, tabIndex: -1, onClick: (e) => e.stopPropagation(), onKeyDown: (e) => { if (e.key === "Escape") { onClose() } } }) {
+        ForEach(emojis.map((x) => ({ key: x })), key: (x) => x.key) { x in
+          Element("button", { type: "button", className: "reaction-picker-emoji", onClick: () => onChoose(x.key) }) { Text(x.key) }
+        }
+      }
+    }
+  }
+}
