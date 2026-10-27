@@ -155,3 +155,22 @@ test('visitor stats honor activity settings and localize API counts', async () =
     assert.equal(statsCalls, 2);
   } finally { await browser.close(); }
 });
+
+// Vue renders the server-controlled description (or localized headline) as HTML.
+test('visitor description renders HTML and falls back to the localized headline', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    let description = '<strong>Welcome</strong> <a href="https://example.org/">inside</a>';
+    await page.route('**/api/stats', route => route.abort());
+    await page.route('**/assets/locales/**', route => route.fulfill({ json: { headlineMisskey: 'Localized <em>headline</em>' } }));
+    await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test server', description, clientOptions: { showActivitiesForVisitor: false } } }));
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await expect(page.locator('.visitor-description strong')).toHaveText('Welcome');
+    await expect(page.locator('.visitor-description a')).toHaveAttribute('href', 'https://example.org/');
+    description = '';
+    await page.getByRole('button', { name: 'Refresh server information' }).click();
+    await expect(page.locator('.visitor-description em')).toHaveText('headline');
+    await expect(page.locator('.visitor-description')).toHaveText('Localized headline');
+  } finally { await browser.close(); }
+});

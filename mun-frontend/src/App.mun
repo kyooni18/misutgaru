@@ -1,10 +1,12 @@
 import { Element } from "@mun/core"
 import { api } from "./services/api.mjs"
+import { loadI18n } from "./services/locale.mjs"
 import VisitorStats from "./components/VisitorStats.mun"
 import misskeyLogo from "../../packages/frontend/assets/misskey.svg"
 struct App: View {
   @State var name = "Misutgaru"
   @State var description = ""
+  @State var headline = "A network connected by notes"
   @State var status = "Loading server information…"
   @State var request = 0
   @State var showStats = false
@@ -29,6 +31,13 @@ struct App: View {
       status = "Could not load server information."
     }
   }
+  func loadHeadline(signal) async {
+    try {
+      let i18n = await loadI18n()
+      if (signal.aborted) { return }
+      headline = i18n.ts.headlineMisskey || headline
+    } catch (error) { }
+  }
   var body: some View {
     Element("main", { class: entranceReady && window.location.pathname === "/" ? "shell entrance-" + entranceStyle : "shell" }) {
       if (entranceReady && window.location.pathname === "/") {
@@ -52,13 +61,18 @@ struct App: View {
         } else {
           Element("h1", {}) { Text(name) }
         }
-        Element("p", {}) { Text(description) }
+        if (window.location.pathname === "/") {
+          Element("div", { class: "visitor-description", unsafeHTML: description || headline }) { }
+        } else {
+          Element("p", {}) { Text(description) }
+        }
         Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
         Button("Refresh server information") { request += 1 }
       }
       if (window.location.pathname === "/" && showStats) { VisitorStats }
     }
     .task(id: request) { signal in await load(signal) }
+    .task { signal in await loadHeadline(signal) }
   }
 }
 export default App()
