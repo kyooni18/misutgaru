@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { PostForm } from "../../src/components/PostForm.mun"
+import { formServices, formLabels, formTarget } from "./post-form-props.js"
+export default PostForm(services: formServices, labels: formLabels, target: formTarget)
