@@ -1,0 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.note-simple { display: flex; margin: 0; padding: 0; font-size: 0.95em; }
+.note-simple-avatar { flex-shrink: 0; display: block; margin: 0 10px 0 0; width: 34px; height: 34px; border-radius: 8px; }
+.note-simple-main { flex: 1; min-width: 0; }
+.note-simple-header { display: flex; align-items: baseline; white-space: nowrap; margin-bottom: 2px; }
+.note-simple-name { flex-shrink: 1; display: block; margin: 0 .5em 0 0; padding: 0; overflow: hidden; font-size: 1em; font-weight: bold; text-decoration: none; text-overflow: ellipsis; }
+.note-simple-bot { flex-shrink: 0; align-self: center; margin: 0 .5em 0 0; padding: 1px 6px; font-size: 80%; border: solid 0.5px var(--MI_THEME-divider); border-radius: 3px; }
+.note-simple-username { flex-shrink: 9999999; margin: 0 .5em 0 0; overflow: hidden; text-overflow: ellipsis; }
+.note-simple-info { flex-shrink: 0; margin-left: auto; font-size: 0.9em; }
+.note-simple-cw { cursor: default; display: block; margin: 0; padding: 0; overflow-wrap: break-word; }
+.note-simple-cw-button { width: 100%; font-size: .9em; padding: 4px 8px; }
+.note-simple-cw-label { margin-left: 4px; }
+.note-simple-cw-label::before { content: '('; }
+.note-simple-cw-label::after { content: ')'; }
+.note-simple-text { cursor: default; margin: 0; padding: 0; white-space: pre-wrap; overflow-wrap: break-word; }
+.note-simple-deleted { text-align: center; padding: 8px; background-image: repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(0, 0, 0, 0.05) 4px, rgba(0, 0, 0, 0.05) 14px); border-radius: 8px; }

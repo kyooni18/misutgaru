@@ -1,0 +1,59 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import "./note-simple.css"
+
+// Counterpart of Vue's MkNoteSimple: avatar, header, collapsible content warning and plain text body.
+// `labels` carries resolved i18n strings; `formatTime` renders the relative timestamp.
+export struct NoteSimple: View {
+  let note
+  let labels
+  let formatTime
+  @State var showContent = false
+
+  func cwSummary() {
+    let parts = []
+    if (note.text) { parts.push(labels.cwChars(note.text.length)) }
+    if (note.files && note.files.length !== 0) { parts.push(labels.cwFiles(note.files.length)) }
+    if (note.poll != null) { parts.push(labels.poll) }
+    return parts.join(" / ")
+  }
+
+  func acct() {
+    return note.user.host ? "@" + note.user.username + "@" + note.user.host : "@" + note.user.username
+  }
+
+  var body: some View {
+    Element("div", { className: note == null ? "note-simple-deleted" : "note-simple" }) {
+      if (note == null) {
+        Text(labels.deletedNote)
+      } else {
+        Element("img", { className: "note-simple-avatar", src: note.user.avatarUrl, alt: "" }) {}
+        Element("div", { className: "note-simple-main" }) {
+          Element("header", { className: "note-simple-header" }) {
+            Element("span", { className: "note-simple-name" }) { Text(note.user.name || note.user.username) }
+            if (note.user.isBot) { Element("span", { className: "note-simple-bot" }) { Text("bot") } }
+            Element("span", { className: "note-simple-username" }) { Text(acct()) }
+            Element("span", { className: "note-simple-info" }) {
+              Element("time", { dateTime: note.createdAt }) { Text(formatTime(note.createdAt)) }
+            }
+          }
+          if (note.cw != null) {
+            Element("p", { className: "note-simple-cw" }) {
+              if (note.cw !== "") { Text(note.cw) }
+              Element("button", { className: "note-simple-cw-button", onClick: () => { showContent = !showContent } }) {
+                Element("b", {}) { Text(showContent ? labels.cwHide : labels.cwShow) }
+                if (!showContent) { Element("span", { className: "note-simple-cw-label" }) { Text(cwSummary()) } }
+              }
+            }
+          }
+          if (note.cw == null || showContent) {
+            Element("div", { className: "note-simple-text" }) { Text(note.text ?? "") }
+          }
+        }
+      }
+    }
+  }
+}

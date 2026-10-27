@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Mfm } from "../../src/components/Mfm.mun"
+import { Element } from "@mun/core"
+struct Fixture: View {
+  @State var text = "Hello **bold**"
+  var body: some View {
+    Element("div", {}) {
+      Mfm(text: text, author: null)
+      Element("button", { onClick: () => { text = "Updated **strong**" } }) { Text("Update") }
+    }
+  }
+}
+export default Fixture()

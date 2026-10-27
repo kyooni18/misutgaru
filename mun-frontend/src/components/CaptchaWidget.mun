@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { newRippleKey } from "../services/button-ripple.mjs"
+
+export struct CaptchaWidget: View {
+  let widget
+  @State var key = ""
+  var body: some View {
+    Element("div", { "data-captcha-widget": key }) {}
+    .onAppear { key = newRippleKey(); let currentKey = key; setTimeout(() => { if (key === currentKey) { let element = document.querySelector('[data-captcha-widget="' + currentKey + '"]'); if (element) { widget.mount(element) } } }, 0) }
+    .onDisappear { widget.dispose(); key = "" }
+  }
+}

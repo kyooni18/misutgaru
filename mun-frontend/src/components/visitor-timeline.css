@@ -1,0 +1,5 @@
+/* SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only */
+.visitor-timeline { position: relative; overflow: clip; background: var(--MI_THEME-panel); border-radius: var(--MI-radius); box-shadow: 0 12px 32px rgb(0 0 0 / 25%); }
+.visitor-timeline-header { padding: 12px 16px; border-bottom: solid 1px var(--MI_THEME-divider); }
+.visitor-timeline-body { height: 350px; overflow: auto; }

@@ -1,0 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { VisitorTimeline } from "../../src/components/VisitorTimeline.mun"
+import { labels, formatTime, api, services } from "./note-simple-props.js"
+import { meta } from "./visitor-timeline-props.js"
+export default VisitorTimeline(meta: meta, api: api, labels: labels, formatTime: formatTime, services: services)

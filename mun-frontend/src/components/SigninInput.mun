@@ -1,0 +1,48 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { buttonRipple, newRippleKey } from "../services/button-ripple.mjs"
+import { mountTotpInput, unmountTotpInput } from "../services/signin-totp-input.mjs"
+import "icons-subsetter/built/tabler-icons-frontend.css"
+import "./signin-passkey.css"
+import "./signin-totp.css"
+import "./signin-input.css"
+
+export struct SigninInput: View {
+  let services
+  @State var username = ""
+  @State var focused = false
+  @State var inputKey = ""
+  var body: some View {
+    Element("div", { class: "signin-passkey", "data-testid": "signin-page-input" }) {
+      Element("div", { class: "signin-input-root" }) {
+        Element("div", { class: "signin-input-avatar" }) { Element("i", { class: "ti ti-user" }) {} }
+        if (services.message) { Element("div", { class: "signin-input-message" }) { Text(services.message) } }
+        if (services.openOnRemote) {
+          Element("div", { class: "signin-totp-form" }) {
+            Element("button", { type: "button", class: "signin-passkey-button primary", onClick: () => services.openRemote() }) { Text(services.labels.continueOnRemote + " "); Element("i", { class: "ti ti-external-link" }) {} }
+            Element("button", { type: "button", class: "signin-input-remote", onClick: () => services.specifyRemote() }) { Text(services.labels.specifyServerHost) }
+          }
+          Element("div", { class: "signin-input-or" }) { Element("p", {}) { Text(services.labels.or) } }
+        }
+        Element("form", { class: "signin-totp-form", onSubmit: event => { event.preventDefault(); services.submit(username) } }) {
+          Element("div", { class: "signin-totp-field", "data-testid": "signin-username" }) {
+            Element("div", { class: "signin-totp-label" }) {}
+            Element("div", { class: "signin-totp-input-wrap" + (focused ? " focused" : "") }) {
+              Element("div", { class: "signin-totp-prefix" }) { Text("@") }
+              Element("input", { "data-totp-input": inputKey, class: "signin-totp-input signin-username-input", type: "text", value: username, placeholder: services.labels.username, pattern: "^[a-zA-Z0-9_]+$", spellcheck: false, autocomplete: "username webauthn", required: true, onInput: event => { username = event.target.value }, onFocus: () => { focused = true }, onBlur: () => { focused = false } }) {}
+              Element("div", { class: "signin-input-suffix" }) { Text("@" + services.host) }
+            }
+          }
+          Element("button", { type: "submit", class: "signin-passkey-button primary", "data-testid": "signin-page-input-continue", "data-ripple-key": inputKey + "-continue", onMouseDown: event => buttonRipple(event) }) { Element("div", { class: "signin-passkey-ripples" }) {}; Element("span", { class: "signin-passkey-button-content" }) { Text(services.labels.continue + " "); Element("i", { class: "ti ti-arrow-right" }) {} } }
+        }
+        Element("div", { class: "signin-input-or" }) { Element("p", {}) { Text(services.labels.or) } }
+        Element("div", {}) { Element("button", { type: "button", class: "signin-passkey-button primary signin-input-passkey", onClick: () => services.passkey() }) { Element("i", { class: "ti ti-device-usb" }) {}; Text(services.labels.signinWithPasskey) } }
+      }
+    }
+    .onAppear { username = services.initialUsername || ""; inputKey = newRippleKey(); mountTotpInput(inputKey) }
+    .onDisappear { unmountTotpInput(inputKey); username = "" }
+  }
+}

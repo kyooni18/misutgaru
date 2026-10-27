@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.signin-dialog { position: fixed; inset: 0; z-index: 10000; color: var(--MI_THEME-fg); }
+.signin-dialog-backdrop { position: absolute; inset: 0; background: var(--MI_THEME-modalBg); }
+.signin-dialog-position { position: absolute; inset: 0; display: flex; padding: 16px; pointer-events: none; }
+.signin-dialog-panel { pointer-events: auto; overflow: auto; margin: auto; position: relative; width: 100%; max-width: 400px; max-height: min(450px, 100%); box-sizing: border-box; background: var(--MI_THEME-panel); border-radius: var(--MI-radius, 12px); }
+.signin-dialog-header { position: sticky; top: 0; width: 100%; height: 50px; box-sizing: border-box; display: flex; align-items: center; font-weight: bold; backdrop-filter: var(--MI-blur, blur(15px)); background: color(from var(--MI_THEME-bg) srgb r g b / .5); z-index: 1; }
+.signin-dialog-title { padding: 0 20px; }
+.signin-dialog-close { appearance: none; margin-left: auto; padding: 16px; border: 0; background: none; color: inherit; font: inherit; font-size: 16px; line-height: 16px; cursor: pointer; }
+.signin-dialog-content { padding: 32px; box-sizing: border-box; }
+.signin-recovery { width: min(370px, calc(100% - 32px)); box-sizing: border-box; border: 0; border-radius: var(--MI-radius, 12px); padding: 24px; color: var(--MI_THEME-fg); background: var(--MI_THEME-panel); }
+.signin-recovery::backdrop { background: var(--MI_THEME-modalBg); }
+.signin-recovery form, .signin-recovery label { display: grid; gap: 12px; }
+.signin-recovery input { box-sizing: border-box; width: 100%; padding: 10px; font: inherit; }

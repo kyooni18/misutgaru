@@ -1,0 +1,83 @@
+import { Element } from "@mun/core"
+import { api } from "./services/api.mjs"
+import { loadI18n } from "./services/locale.mjs"
+import { openVisitorSignin, setSigninInstance } from "./services/visitor-signin.mjs"
+import VisitorStats from "./components/VisitorStats.mun"
+import misskeyLogo from "../../packages/frontend/assets/misskey.svg"
+struct App: View {
+  @State var name = "Misutgaru"
+  @State var description = ""
+  @State var headline = "A network connected by notes"
+  @State var loginLabel = "Log in"
+  @State var status = "Loading server information…"
+  @State var request = 0
+  @State var showStats = false
+  @State var entranceReady = false
+  @State var entranceStyle = "classic"
+  @State var backgroundUrl = ""
+  func load(signal) async {
+    let ticket = request
+    status = "Loading server information…"
+    try {
+      let meta = await api.post("meta", { detail: true }, undefined, signal)
+      if (signal.aborted || ticket !== request) { return }
+      setSigninInstance(meta)
+      name = meta.name || "Misutgaru"
+      description = meta.description || ""
+      showStats = meta.clientOptions?.showActivitiesForVisitor !== false
+      entranceStyle = meta.clientOptions?.entrancePageStyle === "simple" ? "simple" : "classic"
+      backgroundUrl = meta.backgroundImageUrl || ""
+      entranceReady = true
+      status = ""
+    } catch (error) {
+      if (signal.aborted || ticket !== request) { return }
+      status = "Could not load server information."
+    }
+  }
+  func loadHeadline(signal) async {
+    try {
+      let i18n = await loadI18n()
+      if (signal.aborted) { return }
+      headline = i18n.ts.headlineMisskey || headline
+      loginLabel = i18n.ts.login || loginLabel
+    } catch (error) { }
+  }
+  var body: some View {
+    Element("main", { class: entranceReady && window.location.pathname === "/" ? "shell entrance-" + entranceStyle : "shell" }) {
+      if (entranceReady && window.location.pathname === "/") {
+        Element("div", { class: "entrance-background " + entranceStyle, "aria-hidden": "true", style: { backgroundImage: backgroundUrl ? "url(" + JSON.stringify(backgroundUrl) + ")" : "none" } }) { }
+        if (entranceStyle === "classic") {
+          Element("div", { class: "entrance-shape entrance-shape-one", "aria-hidden": "true" }) { }
+          Element("div", { class: "entrance-shape entrance-shape-two", "aria-hidden": "true" }) { }
+        }
+        Element("div", { class: "entrance-logo", "aria-hidden": "true" }) {
+          Element("div", { class: "entrance-powered" }) { Text("Powered by") }
+          Element("img", { src: misskeyLogo, alt: "" }) { }
+        }
+      }
+      Element("nav", { "aria-label": "Main navigation" }) {
+        Element("a", { href: "/" }) { Text("Home") }
+        Element("a", { href: "/about" }) { Text("About") }
+      }
+      Element("section", { class: "panel" }) {
+        if (window.location.pathname === "/about") {
+          Element("h1", {}) { Text("About \(name)") }
+        } else {
+          Element("h1", {}) { Text(name) }
+        }
+        if (window.location.pathname === "/") {
+          Element("div", { class: "visitor-description", unsafeHTML: description || headline }) { }
+        } else {
+          Element("p", {}) { Text(description) }
+        }
+        Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
+        Button("Refresh server information") { request += 1 }
+        if (entranceReady) { Button(loginLabel) { openVisitorSignin() } }
+      }
+      if (window.location.pathname === "/" && showStats) { VisitorStats }
+    }
+    .task(id: request) { signal in await load(signal) }
+    .task { signal in await loadHeadline(signal) }
+  }
+}
+export default App()

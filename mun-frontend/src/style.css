@@ -1,0 +1,28 @@
+/* SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only */
+:root { --MI_THEME-fg: #252a30; font-family: system-ui, sans-serif; color: #252a30; background: #eef1f2; }
+body { margin: 0; }
+.shell { width: min(430px, calc(100% - 32px)); margin: 80px auto; }
+nav { display: flex; gap: 20px; margin-bottom: 16px; }
+a { color: #477b32; }
+.panel { padding: 32px; background: white; border-radius: 12px; box-shadow: 0 12px 32px #0004; }
+button { padding: 10px 16px; border: 0; border-radius: 999px; background: #86b850; color: #fff; cursor: pointer; }
+
+.visitor-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.visitor-stats-item { overflow: clip; padding: 16px 20px; }
+.visitor-stats-label { color: color(from var(--MI_THEME-fg) srgb r g b / 0.75); font-size: .9em; }
+.visitor-stats-count { color: #86b850; font-size: 1.2em; font-weight: bold; }
+
+.entrance-background { position: fixed; top: 0; right: 0; width: 100vw; height: 100vh; background-position: center; background-size: cover; pointer-events: none; }
+.entrance-background.classic { width: 80vw; }
+.entrance-shape { position: fixed; inset: 0; width: 100vw; height: 100vh; background: #86b850; pointer-events: none; }
+.entrance-shape-one { clip-path: polygon(0% 0%, 45% 0%, 20% 100%, 0% 100%); }
+.entrance-shape-two { clip-path: polygon(0% 0%, 25% 0%, 35% 100%, 0% 100%); opacity: .5; }
+.entrance-logo { position: fixed; top: 36px; left: 36px; color: white; user-select: none; pointer-events: none; }
+.entrance-powered { margin-bottom: 2px; }
+.entrance-logo img { width: 120px; }
+.entrance-classic, .entrance-simple { position: relative; margin-top: 0; padding: 100px 0; }
+.entrance-classic { margin-left: 128px; }
+.entrance-classic > nav, .entrance-simple > nav, .entrance-classic > section, .entrance-simple > section, .entrance-classic > div:not(.entrance-background):not(.entrance-shape):not(.entrance-logo), .entrance-simple > div:not(.entrance-background):not(.entrance-logo) { position: relative; }
+@media (max-width: 1200px) { .entrance-classic { margin-left: auto; } }
+@media (max-width: 450px) { .entrance-logo img { width: 100px; } }

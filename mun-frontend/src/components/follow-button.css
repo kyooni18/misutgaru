@@ -1,0 +1,21 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.follow-button { appearance: none; margin: 0; font-family: inherit; line-height: inherit; max-width: 100%; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; position: relative; display: inline-block; font-weight: bold; color: var(--MI_THEME-fgOnWhite); border: solid 1px var(--MI_THEME-accent); padding: 0; height: 31px; font-size: 16px; border-radius: 32px; background: #fff; cursor: pointer; }
+.follow-button.full { padding: 0 8px 0 12px; font-size: 14px; }
+.follow-button.large { font-size: 16px; height: 38px; padding: 0 12px 0 16px; }
+.follow-button:not(.full) { width: 31px; }
+.follow-button:focus-visible { outline-offset: 2px; }
+.follow-button.active { color: var(--MI_THEME-fgOnAccent); background: var(--MI_THEME-accent); }
+.follow-button.active:hover { background: hsl(from var(--MI_THEME-accent) h s calc(l + 10)); border-color: hsl(from var(--MI_THEME-accent) h s calc(l + 10)); }
+.follow-button.active:active { background: hsl(from var(--MI_THEME-accent) h s calc(l - 10)); border-color: hsl(from var(--MI_THEME-accent) h s calc(l - 10)); }
+.follow-button.wait { cursor: wait !important; opacity: .7; }
+.follow-button .text { margin-right: 6px; }
+@keyframes follow-loading-in { to { opacity: .8; } }
+@keyframes follow-spinner { to { transform: rotate(360deg); } }
+.follow-button .loading { display: inline-block; vertical-align: middle; padding: 0; --size: 1em; opacity: 0; animation: follow-loading-in .25s ease .4s forwards; color: var(--MI_THEME-fg); cursor: wait; }
+.follow-button .loading-container { position: relative; width: var(--size); height: var(--size); margin: 0 auto; }
+.follow-button .spinner { position: absolute; top: 0; left: 0; width: var(--size); height: var(--size); fill-rule: evenodd; clip-rule: evenodd; stroke-linecap: round; stroke-linejoin: round; stroke-miterlimit: 1.5; }
+.follow-button .spinner.bg { opacity: .12; }
+.follow-button .spinner.fg { animation: follow-spinner .9s linear infinite; }

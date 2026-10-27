@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { FollowButton } from "../../mun-frontend/src/components/FollowButton.mun"
+import { user, services, full, large } from "./services.js"
+export default FollowButton(user: user, full: full, large: large, services: services)

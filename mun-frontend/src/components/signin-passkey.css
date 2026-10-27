@@ -1,0 +1,23 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.signin-passkey { display: flex; align-items: center; width: 100%; min-height: 336px; }
+.signin-passkey-root { width: 100%; display: flex; flex-direction: column; gap: var(--MI-margin); }
+.signin-passkey-intro { display: flex; flex-direction: column; gap: 10px; }
+.signin-passkey-icon { margin: 0 auto; background: var(--MI_THEME-accentedBg); color: var(--MI_THEME-accent); text-align: center; height: 64px; width: 64px; font-size: 24px; line-height: 64px; border-radius: 50%; }
+.signin-passkey-description { text-align: center; font-size: 1.1em; }
+.signin-passkey-button { appearance: none; font-family: inherit; line-height: inherit; color: inherit; border: none; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; position: relative; z-index: 1; display: block; min-width: 100px; width: max-content; max-width: 100%; margin: 0 auto; padding: 7px 14px; text-align: center; font-weight: normal; font-size: 95%; background: var(--MI_THEME-buttonBg); border-radius: 999px; overflow: clip; box-sizing: border-box; box-shadow: 0 0 0 1px var(--MI-hairline); transition: background .15s var(--MI-easeOut), box-shadow .15s var(--MI-easeOut), transform .1s var(--MI-easeOut); }
+.signin-passkey-button.primary { font-size: 100%; padding: 8px 16px; font-weight: bold; color: var(--MI_THEME-fgOnAccent); background: var(--MI_THEME-accent); box-shadow: none; }
+.signin-passkey-button.transparent { background: transparent; box-shadow: none; }
+.signin-passkey-button:not(:disabled):hover { background: var(--MI_THEME-buttonHoverBg); }
+.signin-passkey-button.primary:not(:disabled):hover { background: hsl(from var(--MI_THEME-accent) h s calc(l + 3)); }
+.signin-passkey-button:not(:disabled):active { background: var(--MI_THEME-buttonHoverBg); }
+.signin-passkey-button.primary:not(:disabled):active { background: hsl(from var(--MI_THEME-accent) h s calc(l - 3)); }
+.signin-passkey-button:disabled { opacity: .5; cursor: default; }
+.signin-passkey-button:not(:disabled):active { transform: translateY(.5px); }
+.signin-passkey-button:focus-visible { outline-offset: 2px; }
+.signin-passkey-button-content { position: relative; z-index: 1; pointer-events: none; }
+.signin-passkey-ripples { position: absolute; z-index: 0; inset: 0; border-radius: 6px; overflow: clip; pointer-events: none; }
+.signin-passkey-ripple { position: absolute; width: 2px; height: 2px; border-radius: 100%; background: rgba(0, 0, 0, .1); opacity: 1; transform: scale(1); transition: transform var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut), opacity var(--MI-motion-duration-layout, 240ms) var(--MI-easeOut); }
+.signin-passkey-button.primary .signin-passkey-ripple { background: rgba(0, 0, 0, .15); }

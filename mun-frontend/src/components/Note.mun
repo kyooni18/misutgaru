@@ -1,0 +1,151 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { NoteSimple } from "./NoteSimple.mun"
+import { Mfm } from "./Mfm.mun"
+import { Poll } from "./Poll.mun"
+import { MediaList } from "./MediaList.mun"
+import { canRenote, reactionCount, reactIcon, showReactionCount } from "../services/note-footer.mjs"
+import { toggleReaction } from "../services/reaction-toggle.mjs"
+import "./note-simple.css"
+import "./note.css"
+
+// Read-only counterpart of Vue's MkNote: renote bar, article, content warning, media, quote and reactions.
+// Interactive footer actions (reply, renote, react) need an account and arrive with the signed-in services.
+export struct Note: View {
+  let note
+  let labels
+  let formatTime
+  let services
+  @State var showContent = false
+  @State var reactionOverride = null
+
+  func isRenote() {
+    return note.renoteId != null && note.text == null && note.cw == null && (note.files ?? []).length === 0 && note.poll == null
+  }
+
+  func appear() {
+    if (isRenote() && note.renote != null) { return note.renote }
+    return note
+  }
+
+  func acct(user) {
+    return user.host ? "@" + user.username + "@" + user.host : "@" + user.username
+  }
+
+  func cwSummary(n) {
+    let parts = []
+    if (n.text) { parts.push(labels.cwChars(n.text.length)) }
+    if (n.renote != null) { parts.push(labels.quote) }
+    if (n.files && n.files.length !== 0) { parts.push(labels.cwFiles(n.files.length)) }
+    if (n.poll != null) { parts.push(labels.poll) }
+    return parts.join(" / ")
+  }
+
+  func reactions(n) {
+    let out = []
+    let counts = reactionOverride != null ? reactionOverride.reactions : (n.reactions || {})
+    let mine = reactionOverride != null ? reactionOverride.myReaction : n.myReaction
+    for (let key of Object.keys(counts)) { out.push({ key: key, count: counts[key], mine: mine === key, url: n.reactionEmojis?.[key.replace(/^:|:$/g, "").replace(/@\.$/, "")] }) }
+    return out
+  }
+
+  func currentReactions(n) {
+    return reactionOverride != null ? reactionOverride.reactions : (n.reactions || {})
+  }
+
+  func currentMine(n) {
+    return reactionOverride != null ? reactionOverride.myReaction : (n.myReaction ?? null)
+  }
+
+  func react(n, key) async {
+    try {
+      let counts = reactionOverride != null ? reactionOverride.reactions : (n.reactions || {})
+      let mine = reactionOverride != null ? reactionOverride.myReaction : n.myReaction
+      let result = await toggleReaction({ services: services, noteId: n.id, reaction: key, myReaction: mine ?? null, reactions: counts })
+      if (result != null) { reactionOverride = result }
+    } catch (error) { services.reportError(error) }
+  }
+
+  var body: some View {
+    Element("div", { className: "note" }) {
+      if (isRenote()) {
+        Element("div", { className: "note-renote" }) {
+          Element("img", { className: "note-renote-avatar", src: note.user.avatarUrl, alt: "" }) {}
+          Element("span", { className: "note-renote-text" }) { Text(labels.renotedBy(note.user.name || note.user.username)) }
+          Element("span", { className: "note-renote-info" }) { Text(formatTime(note.createdAt)) }
+        }
+      }
+      if (isRenote() && note.renote == null) {
+        Element("div", { className: "note-simple-deleted" }) { Text(labels.deletedNote) }
+      } else {
+        Element("article", { className: "note-article" }) {
+          Element("img", { className: "note-avatar", src: appear().user.avatarUrl, alt: "" }) {}
+          Element("div", { className: "note-main" }) {
+            Element("header", { className: "note-simple-header" }) {
+              Element("span", { className: "note-simple-name" }) { Text(appear().user.name || appear().user.username) }
+              if (appear().user.isBot) { Element("span", { className: "note-simple-bot" }) { Text("bot") } }
+              Element("span", { className: "note-simple-username" }) { Text(acct(appear().user)) }
+              Element("span", { className: "note-simple-info" }) { Element("time", { dateTime: appear().createdAt }) { Text(formatTime(appear().createdAt)) } }
+            }
+            if (appear().cw != null) {
+              Element("p", { className: "note-simple-cw" }) {
+                if (appear().cw !== "") { Text(appear().cw) }
+                Element("button", { className: "note-simple-cw-button", onClick: () => { showContent = !showContent } }) {
+                  Element("b", {}) { Text(showContent ? labels.cwHide : labels.cwShow) }
+                  if (!showContent) { Element("span", { className: "note-simple-cw-label" }) { Text(cwSummary(appear())) } }
+                }
+              }
+            }
+            if (appear().cw == null || showContent) {
+              Element("div", { className: "note-content" }) {
+                if (appear().text) { Element("div", { className: "note-text" }) { Mfm(text: appear().text, author: appear().user) } }
+                if (appear().files && appear().files.length > 0) {
+                  Element("div", { className: "note-media" }) { MediaList(files: appear().files, forceShow: false, services: services, labels: labels) }
+                }
+                if (appear().poll != null) {
+                  Poll(noteId: appear().id, multiple: appear().poll.multiple, expiresAt: appear().poll.expiresAt, choices: appear().poll.choices, readOnly: false, services: services, labels: labels)
+                }
+                if (appear().renote != null) {
+                  Element("div", { className: "note-quote" }) { NoteSimple(note: appear().renote, labels: labels, formatTime: formatTime) }
+                }
+              }
+            }
+            if (appear().reactionAcceptance !== "likeOnly" && reactions(appear()).length > 0) {
+              Element("div", { className: "note-reactions" }) {
+                ForEach(reactions(appear()), key: (x) => x.key) { r in
+                  Element("button", { className: "note-reaction" + (r.mine ? " reacted" : ""), title: r.key, onClick: () => react(appear(), r.key) }) {
+                    if (r.url) { Element("img", { src: r.url, alt: r.key }) {} } else { Text(r.key) }
+                    Element("span", { className: "note-reaction-count" }) { Text(String(r.count)) }
+                  }
+                }
+              }
+            }
+            Element("footer", { className: "note-footer" }) {
+              Element("button", { className: "note-footer-button note-reply", "aria-label": labels.reply, onClick: () => services.reply(appear()) }) {
+                Element("i", { className: "ti ti-arrow-back-up" }) {}
+                if (appear().repliesCount > 0) { Element("p", { className: "note-footer-count" }) { Text(String(appear().repliesCount)) } }
+              }
+              if (canRenote(appear(), services.account())) {
+                Element("button", { className: "note-footer-button note-renote-button", "aria-label": labels.renote, onClick: () => services.renote(appear()) }) {
+                  Element("i", { className: "ti ti-repeat" }) {}
+                  if (appear().renoteCount > 0) { Element("p", { className: "note-footer-count" }) { Text(String(appear().renoteCount)) } }
+                }
+              } else {
+                Element("button", { className: "note-footer-button note-renote-disabled", disabled: true }) { Element("i", { className: "ti ti-ban" }) {} }
+              }
+              Element("button", { className: "note-footer-button note-react", "aria-label": labels.reaction, onClick: () => services.reactPicker(appear()) }) {
+                Element("i", { className: "ti ti-" + reactIcon(appear(), currentMine(appear())) }) {}
+                if (showReactionCount(appear(), services.showReactionsCount, reactionCount(currentReactions(appear())))) {
+                  Element("p", { className: "note-footer-count" }) { Text(String(reactionCount(currentReactions(appear())))) }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

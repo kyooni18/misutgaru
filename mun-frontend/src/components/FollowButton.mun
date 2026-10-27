@@ -1,0 +1,104 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import "icons-subsetter/built/tabler-icons-frontend.css"
+import "./follow-button.css"
+
+export struct FollowButton: View {
+  let user
+  let full
+  let large
+  let services
+  @State var following = false
+  @State var pending = false
+  @State var wait = false
+  @State var initialized = false
+
+  func currentFollowing() {
+    if (!initialized) { return user.isFollowing }
+    return following
+  }
+
+  func currentPending() {
+    if (!initialized) { return user.hasPendingFollowRequestFromYou }
+    return pending
+  }
+
+  func update(next) {
+    if (next.id === user.id) {
+      following = next.isFollowing
+      pending = next.hasPendingFollowRequestFromYou
+    }
+  }
+
+  func start() {
+    if (initialized) { return }
+    initialized = true
+    update(user)
+    services.subscribe(update)
+    if (user.isFollowing == null && services.signedIn()) {
+      services.api("users/show", { userId: user.id }).then(update)
+    }
+  }
+
+  func click() async {
+    if (!(await services.login(`/@${user.username}@${user.host ?? services.host}`))) { return }
+    wait = true
+    services.haptic()
+    try {
+      if (following) {
+        if (await services.confirm("unfollow", user.name || user.username)) { return }
+        await services.api("following/delete", { userId: user.id })
+      } else if (pending) {
+        if (await services.confirm("cancel", user.name || user.username)) { return }
+        await services.api("following/requests/cancel", { userId: user.id })
+        pending = false
+      } else {
+        if (services.alwaysConfirmFollow && await services.confirm("follow", user.name || user.username)) { return }
+        await services.api("following/create", { userId: user.id, withReplies: services.defaultFollowWithReplies })
+        services.updateUser({ ...user, withReplies: services.defaultFollowWithReplies })
+        pending = true
+        if (services.signedIn()) { services.achievements() }
+      }
+    } catch (error) {
+      services.reportError(error)
+    } finally {
+      wait = false
+    }
+  }
+
+  var body: some View {
+    Element("button", { className: "_button follow-button" + (full ? " full" : "") + (large ? " large" : "") + ((currentFollowing() || currentPending()) ? " active" : "") + (wait ? " wait" : ""), disabled: wait, onClick: () => click() }) {
+      if (wait || (currentPending() && !user.isLocked)) {
+        if (full) { Element("span", { className: "text" }) { Text(services.labels.processing) } }
+        Element("div", { className: "loading", "aria-hidden": "true" }) {
+          Element("div", { className: "loading-container" }) {
+            Element("svg", { className: "spinner bg", viewBox: "0 0 168 168" }) {
+              Element("g", { transform: "matrix(1.125,0,0,1.125,12,12)" }) {
+                Element("circle", { cx: "64", cy: "64", r: "64", style: "fill:none;stroke:currentColor;stroke-width:14px" }) {}
+              }
+            }
+            Element("svg", { className: "spinner fg", viewBox: "0 0 168 168" }) {
+              Element("g", { transform: "matrix(1.125,0,0,1.125,12,12)" }) {
+                Element("path", { d: "M128,64C128,28.654 99.346,0 64,0C99.346,0 128,28.654 128,64Z", style: "fill:none;stroke:currentColor;stroke-width:14px" }) {}
+              }
+            }
+          }
+        }
+      } else if (currentPending() && user.isLocked) {
+        if (full) { Element("span", { className: "text" }) { Text(services.labels.pending) } }
+        Element("i", { className: "ti ti-hourglass-empty" }) {}
+      } else if (currentFollowing()) {
+        if (full) { Element("span", { className: "text" }) { Text(services.labels.following) } }
+        Element("i", { className: "ti ti-minus" }) {}
+      } else {
+        if (full) { Element("span", { className: "text" }) { Text(user.isLocked ? services.labels.request : services.labels.follow) } }
+        Element("i", { className: "ti ti-plus" }) {}
+      }
+    }
+    .onAppear { start() }
+    .onDisappear { services.dispose() }
+  }
+}

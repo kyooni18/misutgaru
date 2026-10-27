@@ -1,0 +1,32 @@
+{
+  "name": "misutgaru-mun-frontend",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:browser": "node --test test/smoke.mjs test/note-simple.mjs test/note-card.mjs test/timeline.mjs test/visitor-timeline.mjs test/poll.mjs test/media.mjs test/reaction-toggle.mjs test/note-footer.mjs",
+    "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs test/locale.mjs"
+  },
+  "dependencies": {
+    "@mcaptcha/core-glue": "0.1.0-alpha-5",
+    "@mun/core": "0.1.20",
+    "@mun/web": "0.1.20",
+    "mfm-js": "0.28.0",
+    "punycode.js": "2.3.1",
+    "@simplewebauthn/browser": "14.0.0",
+    "broadcast-channel": "7.4.0",
+    "icons-subsetter": "file:../packages/icons-subsetter",
+    "ios-haptics": "0.1.5",
+    "misskey-js": "file:../packages/misskey-js",
+    "tinycolor2": "1.6.0",
+    "idb-keyval": "6.3.0"
+  },
+  "devDependencies": {
+    "@mun/vite": "0.1.20",
+    "vite": "^8.0.0",
+    "@playwright/test": "^1.64.1"
+  }
+}

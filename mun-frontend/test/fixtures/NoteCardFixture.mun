@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Note } from "../../src/components/Note.mun"
+import { note, labels, formatTime, services } from "./note-simple-props.js"
+export default Note(note: note, labels: labels, formatTime: formatTime, services: services)

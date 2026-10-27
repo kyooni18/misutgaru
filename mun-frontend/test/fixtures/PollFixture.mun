@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Poll } from "../../src/components/Poll.mun"
+import { multiple, expiresAt, choices, readOnly, pollServices, pollLabels } from "./poll-props.js"
+export default Poll(noteId: "n1", multiple: multiple, expiresAt: expiresAt, choices: choices, readOnly: readOnly, services: pollServices, labels: pollLabels)

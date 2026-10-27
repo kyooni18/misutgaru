@@ -14,10 +14,10 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(repoRoot, 'docs/source-map/INVENTORY.md');
-const roots = ['packages', 'packages-private', 'scripts'];
+const roots = ['packages', 'packages-private', 'scripts', 'mun-frontend', 'prototypes'];
 const ignoredDirectories = new Set(['node_modules', '.git', '.pi', 'dist', 'built', 'build', 'coverage', 'storybook-static', 'target']);
 const sourceExtensions = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue',
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.mun',
   '.scss', '.sass', '.css', '.html', '.json', '.json5', '.yml', '.yaml', '.sh',
 ]);
 
