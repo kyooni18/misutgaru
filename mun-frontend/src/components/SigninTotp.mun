@@ -1,0 +1,46 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { buttonRipple, newRippleKey } from "../services/button-ripple.mjs"
+import { focusTotpInput, mountTotpInput, unmountTotpInput } from "../services/signin-totp-input.mjs"
+import "icons-subsetter/built/tabler-icons-frontend.css"
+import "./signin-passkey.css"
+import "./signin-totp.css"
+
+export struct SigninTotp: View {
+  let services
+  @State var token = ""
+  @State var backup = false
+  @State var focused = false
+  @State var inputKey = ""
+  var body: some View {
+    Element("div", { class: "signin-passkey" }) {
+      Element("div", { class: "signin-passkey-root" }) {
+        Element("div", { class: "signin-passkey-intro" }) {
+          Element("div", { class: "signin-passkey-icon" }) { Element("i", { class: "ti ti-key" }) {} }
+          Element("div", { class: "signin-passkey-description" }) { Text(services.labels["2fa"]) }
+        }
+        Element("form", { class: "signin-totp-form", onSubmit: event => { event.preventDefault(); services.submit(token) } }) {
+          Element("div", { class: "signin-totp-field" }) {
+            Element("div", { class: "signin-totp-label", onClick: () => focusTotpInput(inputKey) }) { Text(services.labels.token + " (" + services.labels["2fa"] + ")") }
+            Element("div", { class: "signin-totp-input-wrap" + (focused ? " focused" : "") }) {
+              Element("div", { class: "signin-totp-prefix" }) { Element("i", { class: backup ? "ti ti-key" : "ti ti-123" }) {} }
+              Element("input", { "data-totp-input": inputKey, class: "signin-totp-input", type: "text", value: token, pattern: backup ? "^[A-Z0-9]{32}$" : "^[0-9]{6}$", autocomplete: "one-time-code", required: true, spellcheck: false, inputmode: backup ? null : "numeric", onInput: event => { token = event.target.value }, onFocus: () => { focused = true }, onBlur: () => { focused = false } }) {}
+            }
+            Element("div", { class: "signin-totp-caption" }) {
+              Element("button", { type: "button", class: "signin-totp-toggle", onClick: () => { backup = !backup } }) { Text(backup ? services.labels.useTotp : services.labels.useBackupCode) }
+            }
+          }
+          Element("button", { type: "submit", class: "signin-passkey-button primary", "data-ripple-key": inputKey + "-continue", onMouseDown: event => buttonRipple(event) }) {
+            Element("div", { class: "signin-passkey-ripples" }) {}
+            Element("span", { class: "signin-passkey-button-content" }) { Text(services.labels.continue + " "); Element("i", { class: "ti ti-arrow-right" }) {} }
+          }
+        }
+      }
+    }
+    .onAppear { inputKey = newRippleKey(); mountTotpInput(inputKey) }
+    .onDisappear { unmountTotpInput(inputKey); token = "" }
+  }
+}

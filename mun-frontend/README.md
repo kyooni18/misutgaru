@@ -98,6 +98,10 @@ standalone comparison (`node --test test/passkey-parity.mjs`) checks appearance,
 prompt state, retry and TOTP fallback against Vue with controlled prompts; it
 does not require a real authenticator or sign-in account.
 
+`SigninTotp` implements six-digit and backup-code input. The standalone
+`node --test test/totp-parity.mjs` comparison exercises Vue's input and button
+components alongside the native step, including validation and focus.
+
 `node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
 and compares background, logo, shapes, and content geometry at mobile and
 desktop widths; it does not compare the unfinished dashboard or timeline.
