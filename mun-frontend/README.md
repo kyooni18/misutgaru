@@ -3,9 +3,9 @@
 This is a separate, early visitor metadata slice, not a replacement for the Vue
 frontend. It fetches the existing `/api/meta` endpoint, renders a server name
 and plain-text description, supports retry, and navigates between `/` and
-`/about` using ordinary browser links. Authentication, the Vue visitor dashboard,
-localization, rich descriptions, and visual/behavioral parity are not yet
-implemented. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
+`/about` using ordinary browser links. Authentication, most of the Vue visitor dashboard, rich descriptions, and
+visual/behavioral parity are not yet implemented. The visitor dashboard now
+includes localized, animated users/notes statistics when activities are enabled. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
 
 ## Local build
@@ -65,3 +65,11 @@ uses no mock. Point it only at an instance you are authorized to query.
   graph and subscribes to state changes. The `Text`, `Button`, and raw HTML
   `Element` components used here are implemented in `packages/core/src/views.ts`.
   `Element` takes a props argument before children, even when props are empty.
+
+The isolated comparison `node --test test/visitor-stats-parity.mjs` exercises
+the real Vue visitor dashboard and MkNumber against the Mün statistics cards
+with controlled API and localization fixtures. It checks the request, labels,
+counts and card computed styles, not whole-page parity. As with the follow
+prototype comparison, this test additionally requires Vue, `@vitejs/plugin-vue`
+and Sass available in the test environment; these are not production runtime
+dependencies. Set `MUN_ROOT` if the framework checkout is elsewhere.

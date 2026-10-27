@@ -1,0 +1,49 @@
+import { Element } from "@mun/core"
+import { api } from "../services/api.mjs"
+import { loadI18n } from "../services/locale.mjs"
+import { animateVisitorCounts } from "../services/visitor-number.mjs"
+
+struct VisitorStats: View {
+  @State var visible = false
+  @State var users = ""
+  @State var notes = ""
+  @State var usersLabel = "Users"
+  @State var notesLabel = "Notes"
+  func loadStats(signal) async {
+    try {
+      let stats = await api.post("stats", {}, undefined, signal)
+      if (signal.aborted) { return }
+      users = "0"
+      notes = "0"
+      visible = true
+      animateVisitorCounts(stats.originalUsersCount, stats.originalNotesCount, signal, (userCount, noteCount) => { users = userCount; notes = noteCount })
+    } catch (error) { }
+  }
+  func loadLabels(signal) async {
+    try {
+      let i18n = await loadI18n()
+      if (signal.aborted) { return }
+      usersLabel = i18n.ts.users || "Users"
+      notesLabel = i18n.ts.notes || "Notes"
+    } catch (error) { }
+  }
+  var body: some View {
+    Element("div", {}) {
+      if (visible) {
+        Element("div", { class: "visitor-stats" }) {
+          Element("div", { class: "panel visitor-stats-item" }) {
+            Element("div", { class: "visitor-stats-label" }) { Text(usersLabel) }
+            Element("div", { class: "visitor-stats-count" }) { Text(users) }
+          }
+          Element("div", { class: "panel visitor-stats-item" }) {
+            Element("div", { class: "visitor-stats-label" }) { Text(notesLabel) }
+            Element("div", { class: "visitor-stats-count" }) { Text(notes) }
+          }
+        }
+      }
+    }
+    .task { signal in await loadStats(signal) }
+    .task { signal in await loadLabels(signal) }
+  }
+}
+export default VisitorStats()

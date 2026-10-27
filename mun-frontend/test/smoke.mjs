@@ -9,6 +9,8 @@ test('visitor metadata, retry, and navigation', async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
+    await page.route('**/api/stats', route => route.abort());
+    await page.route('**/assets/locales/**', route => route.fulfill({ status: 404 }));
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     let count = 0;
@@ -42,6 +44,8 @@ test('refresh ignores a stale metadata response', async () => {
   const gate = new Promise(resolve => { release = resolve; });
   try {
     const page = await browser.newPage();
+    await page.route('**/api/stats', route => route.abort());
+    await page.route('**/assets/locales/**', route => route.fulfill({ status: 404 }));
     let count = 0;
     await page.route('**/api/meta', async route => {
       count++;
@@ -68,6 +72,8 @@ test('metadata request uses the cached account token', async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
+    await page.route('**/api/stats', route => route.abort());
+    await page.route('**/assets/locales/**', route => route.fulfill({ status: 404 }));
     await page.addInitScript(() => localStorage.setItem('account', JSON.stringify({ id: 'fixture-user', token: 'fixture-token' })));
     let recordMeta, recordAccount;
     const requestSeen = new Promise(resolve => { recordMeta = resolve; });
@@ -93,6 +99,8 @@ test('native locale loader uses the shared translation implementation', async ()
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
+    await page.route('**/api/stats', route => route.abort());
+    await page.route('**/assets/locales/**', route => route.fulfill({ status: 404 }));
     await page.addInitScript(() => localStorage.setItem('lang', 'ja-JP'));
     await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test server' } }));
     let localeUrl;
@@ -109,5 +117,41 @@ test('native locale loader uses the shared translation implementation', async ()
     const { version } = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
     assert.equal(decodeURIComponent(localeUrl), `/assets/locales/ja-JP.${version}.json`);
     assert.deepEqual(labels, ['フォロー', 'Aliceのフォローを解除しますか？']);
+  } finally { await browser.close(); }
+});
+
+test('visitor stats honor activity settings and localize API counts', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.addInitScript(() => localStorage.setItem('lang', 'ja-JP'));
+    let show = true;
+    let fail = false;
+    let statsCalls = 0;
+    await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test server', clientOptions: { showActivitiesForVisitor: show } } }));
+    await page.route('**/assets/locales/**', route => route.fulfill({ json: { users: 'ユーザー', notes: 'ノート' } }));
+    await page.route('**/api/stats', route => {
+      statsCalls++;
+      assert.equal(route.request().method(), 'POST');
+      assert.deepEqual(route.request().postDataJSON(), {});
+      if (fail) return route.fulfill({ status: 500, json: { error: {} } });
+      return route.fulfill({ json: { originalUsersCount: 1234, originalNotesCount: 56789 } });
+    });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await expect(page.locator('.visitor-stats-item').nth(0)).toHaveText('ユーザー1,234');
+    await expect(page.locator('.visitor-stats-item').nth(1)).toHaveText('ノート56,789');
+    assert.equal(statsCalls, 1);
+    show = false;
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Test server' })).toBeVisible();
+    await expect(page.locator('.visitor-stats')).toHaveCount(0);
+    assert.equal(statsCalls, 1);
+    show = true;
+    fail = true;
+    const failedResponse = page.waitForResponse(response => response.url().endsWith('/api/stats'));
+    await page.reload();
+    assert.equal((await failedResponse).status(), 500);
+    await expect(page.locator('.visitor-stats')).toHaveCount(0);
+    assert.equal(statsCalls, 2);
   } finally { await browser.close(); }
 });
