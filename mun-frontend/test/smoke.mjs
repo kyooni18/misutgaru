@@ -175,6 +175,17 @@ test('visitor description renders HTML and falls back to the localized headline'
   } finally { await browser.close(); }
 });
 
+test('visitor shell localizes its sign-in action', async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.route('**/assets/locales/**', route => route.fulfill({ json: { login: 'Anmelden' } }));
+    await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test', clientOptions: { showActivitiesForVisitor: false } } }));
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+  } finally { await browser.close(); }
+});
+
 test('visitor shell opens sign-in and submits password recovery', async () => {
   const browser = await chromium.launch();
   try {

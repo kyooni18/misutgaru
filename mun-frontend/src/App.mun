@@ -8,6 +8,7 @@ struct App: View {
   @State var name = "Misutgaru"
   @State var description = ""
   @State var headline = "A network connected by notes"
+  @State var loginLabel = "Log in"
   @State var status = "Loading server information…"
   @State var request = 0
   @State var showStats = false
@@ -38,6 +39,7 @@ struct App: View {
       let i18n = await loadI18n()
       if (signal.aborted) { return }
       headline = i18n.ts.headlineMisskey || headline
+      loginLabel = i18n.ts.login || loginLabel
     } catch (error) { }
   }
   var body: some View {
@@ -70,7 +72,7 @@ struct App: View {
         }
         Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
         Button("Refresh server information") { request += 1 }
-        if (entranceReady) { Button("Log in") { openVisitorSignin() } }
+        if (entranceReady) { Button(loginLabel) { openVisitorSignin() } }
       }
       if (window.location.pathname === "/" && showStats) { VisitorStats }
     }
