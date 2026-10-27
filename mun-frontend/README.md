@@ -87,6 +87,11 @@ prototype comparison, this test additionally requires Vue, `@vitejs/plugin-vue`
 and Sass available in the test environment; these are not production runtime
 dependencies. Set `MUN_ROOT` if the framework checkout is elsewhere.
 
+`node --test test/signin-reference.mjs` records the Vue sign-in coordinator's
+CAPTCHA, TOTP, passkey, fallback, and error requests using controlled page
+emitters, transition and backend stubs. It is a reference for future native
+login work, not a visual or end-to-end authentication test.
+
 `node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
 and compares background, logo, shapes, and content geometry at mobile and
 desktop widths; it does not compare the unfinished dashboard or timeline.
