@@ -1,0 +1,110 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { NoteSimple } from "./NoteSimple.mun"
+import "./note-simple.css"
+import "./note.css"
+
+// Read-only counterpart of Vue's MkNote: renote bar, article, content warning, media, quote and reactions.
+// Interactive footer actions (reply, renote, react) need an account and arrive with the signed-in services.
+export struct Note: View {
+  let note
+  let labels
+  let formatTime
+  @State var showContent = false
+
+  func isRenote() {
+    return note.renoteId != null && note.text == null && note.cw == null && (note.files ?? []).length === 0 && note.poll == null
+  }
+
+  func appear() {
+    if (isRenote() && note.renote != null) { return note.renote }
+    return note
+  }
+
+  func acct(user) {
+    return user.host ? "@" + user.username + "@" + user.host : "@" + user.username
+  }
+
+  func cwSummary(n) {
+    let parts = []
+    if (n.text) { parts.push(labels.cwChars(n.text.length)) }
+    if (n.renote != null) { parts.push(labels.quote) }
+    if (n.files && n.files.length !== 0) { parts.push(labels.cwFiles(n.files.length)) }
+    if (n.poll != null) { parts.push(labels.poll) }
+    return parts.join(" / ")
+  }
+
+  func reactions(n) {
+    let out = []
+    let counts = n.reactions || {}
+    for (let key of Object.keys(counts)) { out.push({ key: key, count: counts[key], mine: n.myReaction === key, url: n.reactionEmojis?.[key.replace(/^:|:$/g, "").replace(/@\.$/, "")] }) }
+    return out
+  }
+
+  var body: some View {
+    Element("div", { className: "note" }) {
+      if (isRenote()) {
+        Element("div", { className: "note-renote" }) {
+          Element("img", { className: "note-renote-avatar", src: note.user.avatarUrl, alt: "" }) {}
+          Element("span", { className: "note-renote-text" }) { Text(labels.renotedBy(note.user.name || note.user.username)) }
+          Element("span", { className: "note-renote-info" }) { Text(formatTime(note.createdAt)) }
+        }
+      }
+      if (isRenote() && note.renote == null) {
+        Element("div", { className: "note-simple-deleted" }) { Text(labels.deletedNote) }
+      } else {
+        Element("article", { className: "note-article" }) {
+          Element("img", { className: "note-avatar", src: appear().user.avatarUrl, alt: "" }) {}
+          Element("div", { className: "note-main" }) {
+            Element("header", { className: "note-simple-header" }) {
+              Element("span", { className: "note-simple-name" }) { Text(appear().user.name || appear().user.username) }
+              if (appear().user.isBot) { Element("span", { className: "note-simple-bot" }) { Text("bot") } }
+              Element("span", { className: "note-simple-username" }) { Text(acct(appear().user)) }
+              Element("span", { className: "note-simple-info" }) { Element("time", { dateTime: appear().createdAt }) { Text(formatTime(appear().createdAt)) } }
+            }
+            if (appear().cw != null) {
+              Element("p", { className: "note-simple-cw" }) {
+                if (appear().cw !== "") { Text(appear().cw) }
+                Element("button", { className: "note-simple-cw-button", onClick: () => { showContent = !showContent } }) {
+                  Element("b", {}) { Text(showContent ? labels.cwHide : labels.cwShow) }
+                  if (!showContent) { Element("span", { className: "note-simple-cw-label" }) { Text(cwSummary(appear())) } }
+                }
+              }
+            }
+            if (appear().cw == null || showContent) {
+              Element("div", { className: "note-content" }) {
+                if (appear().text) { Element("div", { className: "note-text" }) { Text(appear().text) } }
+                if (appear().files && appear().files.length > 0) {
+                  Element("div", { className: "note-media note-media-" + Math.min(appear().files.length, 4) }) {
+                    ForEach(appear().files, key: (f) => f.id) { file in
+                      Element("a", { className: "note-media-item", href: file.url, title: file.name }) {
+                        if (file.type.startsWith("image/")) { Element("img", { src: file.thumbnailUrl || file.url, alt: file.comment || file.name }) {} }
+                        else { Element("span", {}) { Text(file.name) } }
+                      }
+                    }
+                  }
+                }
+                if (appear().renote != null) {
+                  Element("div", { className: "note-quote" }) { NoteSimple(note: appear().renote, labels: labels, formatTime: formatTime) }
+                }
+              }
+            }
+            if (appear().reactionAcceptance !== "likeOnly" && reactions(appear()).length > 0) {
+              Element("div", { className: "note-reactions" }) {
+                ForEach(reactions(appear()), key: (x) => x.key) { r in
+                  Element("span", { className: "note-reaction" + (r.mine ? " reacted" : ""), title: r.key }) {
+                    if (r.url) { Element("img", { src: r.url, alt: r.key }) {} } else { Text(r.key) }
+                    Element("span", { className: "note-reaction-count" }) { Text(String(r.count)) }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
