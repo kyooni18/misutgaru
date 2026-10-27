@@ -6,6 +6,6 @@
 export const note = window.fixtureNote ?? null;
 export const labels = {
   deletedNote: 'Deleted note', cwShow: 'Show content', cwHide: 'Hide', poll: 'Poll',
-  cwChars: n => `${n} characters`, cwFiles: n => `${n} file(s)`,
+  quote: 'Quote', renotedBy: name => `Renoted by ${name}`, cwChars: n => `${n} characters`, cwFiles: n => `${n} file(s)`,
 };
 export const formatTime = () => '1m ago';
