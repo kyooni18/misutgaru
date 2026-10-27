@@ -64,6 +64,8 @@ uses no mock. Point it only at an instance you are authorized to query.
 
 The opt-in `test/live-signin.mjs` exercises password sign-in and checks the restored token against `/api/i`. Set `FRONTEND_URL`, `MUN_TEST_USERNAME` and `MUN_TEST_PASSWORD` only for an authorized disposable account and backend. If the backend image serves a different version of locale assets, `MUN_TEST_LOCALE_VERSION` redirects locale requests to that version; authentication API requests remain live. A disposable local 2026.10.1 backend passed this test in Chromium and WebKit with a test account and locale version override; set `MUN_TEST_BROWSER=webkit` to select WebKit. This does not verify live CAPTCHA providers, hardware authenticators, or complete visual parity.
 
+The unmounted local timeline update controller has controlled coverage in `test/timeline-live.mjs` and `test/timeline-live-browser.mjs`. The latter runs the actual Misskey streaming SDK in Chromium (or WebKit with `TIMELINE_BROWSER=webkit`) against an intercepted WebSocket, including reconnection and teardown. It does not exercise a mounted timeline or a live backend stream.
+
 ## Inspected boundaries
 
 - Vue's `packages/frontend/src/pages/welcome.vue` calls `fetchInstance(true)`;
