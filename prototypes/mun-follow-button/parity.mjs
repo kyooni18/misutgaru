@@ -17,8 +17,8 @@ const stubs = {
   'misskey-js': 'export {}',
   '@@/js/config.js': 'export const host="local.test"',
   '@/os.js': 'export const confirm=async()=>({canceled:false})',
-  '@/utility/misskey-api.js': 'export const misskeyApi=()=>new Promise(()=>{})',
-  '@/stream.js': 'export const useStream=()=>({useChannel:()=>({on(){},dispose(){}})})',
+  '@/utility/misskey-api.js': 'export const misskeyApi=(endpoint,data)=>{window.parity.calls.push([endpoint,data]);return new Promise(resolve=>window.parity.resolve=resolve)}',
+  '@/stream.js': 'export const useStream=()=>({useChannel:()=>({on(event,fn){window.parity.listeners[event]=fn},dispose(){}})})',
   '@/i18n.js': 'export const i18n={ts:{followRequestPending:"Pending",processing:"Processing",youFollowing:"Following",followRequest:"Request",follow:"Follow"},tsx:{unfollowConfirm:()=>"",cancelFollowRequestConfirm:()=>"",followConfirm:()=>""}}',
   '@/utility/achievements.js': 'export const claimAchievement=()=>{}',
   '@/utility/please-login.js': 'export const pleaseLogin=async()=>true',
@@ -29,6 +29,7 @@ const stubs = {
 const entry = `import {createApp,h} from 'vue';
 import FollowButton from '/@fs/${frontend}src/components/MkFollowButton.vue';
 import Loading from '/@fs/${frontend}src/components/global/MkLoading.vue';
+window.parity={calls:[],listeners:{}};
 const q=new URLSearchParams(location.search);
 const user={id:'1',username:'alice',host:null,isFollowing:q.has('following'),hasPendingFollowRequestFromYou:q.has('pending'),isLocked:q.has('locked')};
 const app=createApp({render:()=>h(FollowButton,{user,full:true})}); app.component('MkLoading',Loading); app.mount('#app');`;
@@ -53,4 +54,28 @@ try {
     assert.deepEqual(await page.locator('button').screenshot(), referenceShot, `pixels: ${query || 'default'}`);
     console.log(`PASS Vue/Mün initial rendering ${query || 'default'}`); await page.close();
   }
+  const page = await browser.newPage();
+  await page.goto(origin + '/__vue');
+  await page.locator('button').click();
+  await page.waitForFunction(() => parity.calls.length > 0);
+  const vueCall = await page.evaluate(() => parity.calls[0]);
+  assert.equal(await page.locator('button').isDisabled(), true);
+  await page.evaluate(() => parity.resolve({}));
+  await page.waitForFunction(() => !document.querySelector('button').disabled);
+  const vuePending = await page.locator('button').innerText();
+  await page.evaluate(() => parity.listeners.follow({id:'1',isFollowing:true,hasPendingFollowRequestFromYou:false}));
+  await page.waitForFunction(() => document.querySelector('button').textContent === 'Following');
+  await page.goto(origin + '/fixture.html');
+  await page.waitForFunction(() => window.fixture);
+  await page.locator('button').click();
+  await page.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/create'));
+  assert.deepEqual(await page.evaluate(() => fixture.calls.find(c => c[0] === 'following/create')), vueCall);
+  assert.equal(await page.locator('button').isDisabled(), true);
+  await page.evaluate(() => fixture.resolve({}));
+  await page.waitForFunction(() => !document.querySelector('button').disabled);
+  assert.equal(await page.locator('button').innerText(), vuePending);
+  await page.evaluate(() => fixture.emit({id:'1',isFollowing:true,hasPendingFollowRequestFromYou:false}));
+  await page.waitForFunction(() => document.querySelector('button').textContent === 'Following');
+  console.log('PASS Vue/Mün follow request and stream confirmation');
+  await page.close();
 } finally { await browser.close(); await server.close(); }
