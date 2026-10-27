@@ -21,6 +21,11 @@ export const services = {
   confirmReveal: async () => true,
   signedIn: () => window.fixtureSignedIn !== false,
   confirmOnReact: false,
+  showReactionsCount: false,
+  account: () => window.fixtureAccount ?? null,
+  reply: note => { (window.fixtureActions ??= []).push(['reply', note.id]); },
+  renote: note => { (window.fixtureActions ??= []).push(['renote', note.id]); },
+  reactPicker: note => { (window.fixtureActions ??= []).push(['react', note.id]); },
   confirm: async () => true,
   reportError: error => { window.fixtureErrors = [...(window.fixtureErrors ?? []), String(error)]; },
   open: () => {},
@@ -29,3 +34,4 @@ export const services = {
 labels.pollTexts = { votesCount: p => `${p.n} votes`, totalVotes: p => `${p.n} total`, remainingMinutes: p => `${p.m}m left`, remainingSeconds: p => `${p.s}s left`, remainingHours: p => `${p.h}h left`, remainingDays: p => `${p.d}d left` };
 labels.pollVote = 'Vote'; labels.pollShowResult = 'Show result'; labels.pollVoted = 'Voted'; labels.pollClosed = 'Closed';
 labels.sensitive = 'Sensitive'; labels.clickToShow = 'Click to show'; labels.hide = 'Hide'; labels.mediaKind = type => type.split('/')[0];
+labels.reply = 'Reply'; labels.renote = 'Renote'; labels.reaction = 'React';

@@ -35,3 +35,7 @@
 .poll-toggle { color: inherit; cursor: pointer; }
 .notes-timeline-sentinel { height: 1px; }
 .note-reaction { border: 0; cursor: pointer; font: inherit; color: inherit; }
+.note-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.note-footer-button { margin: 0; padding: 8px; opacity: 0.7; background: none; border: 0; color: inherit; cursor: pointer; }
+.note-footer-button:disabled { opacity: 0.3; cursor: default; }
+.note-footer-count { display: inline; margin: 0 0 0 8px; opacity: 0.9; }

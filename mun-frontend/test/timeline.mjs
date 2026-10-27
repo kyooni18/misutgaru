@@ -64,7 +64,7 @@ test('inserts a date separator between notes from different days only', async ()
 
 test('scrolling the end of the list into view fetches older notes automatically', async () => {
   const filler = Array.from({ length: 15 }, (_, i) => mk(`n${30 - i}`));
-  const { browser, page, requests } = await open((route, body) => route.fulfill({ json: body.untilId ? [mk('old')] : filler }));
+  const { browser, page, requests } = await open((route, body) => route.fulfill({ json: body.untilId === 'old' ? [] : body.untilId ? [mk('old')] : filler }));
   try {
     await expect(page.locator('.notes-timeline-item')).toHaveCount(15);
     await page.locator('.notes-timeline-sentinel').scrollIntoViewIfNeeded();
