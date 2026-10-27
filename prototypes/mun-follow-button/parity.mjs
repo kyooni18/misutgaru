@@ -44,11 +44,11 @@ try {
     const page = await browser.newPage({viewport:{width:400,height:150}});
     const errors=[]; page.on('pageerror', error=>errors.push(error.message));
     await page.goto(origin+'/__vue'+query); await page.locator('button').waitFor();
-    const reference = await page.locator('button').evaluate(el=>({text:el.textContent, width:el.getBoundingClientRect().width, height:el.getBoundingClientRect().height, color:getComputedStyle(el).color, background:getComputedStyle(el).backgroundColor, icon:el.querySelector('i')?.className ?? null}));
+    const reference = await page.locator('button').evaluate(el=>({type:el.getAttribute('type'), text:el.textContent, width:el.getBoundingClientRect().width, height:el.getBoundingClientRect().height, color:getComputedStyle(el).color, background:getComputedStyle(el).backgroundColor, icon:el.querySelector('i')?.className ?? null}));
     const referenceShot = await page.locator('button').screenshot();
     await page.goto(origin+'/fixture.html'+query); await page.waitForFunction(()=>window.fixture);
     await page.addStyleTag({content:':root{--MI_THEME-fgOnWhite:#222;--MI_THEME-fgOnAccent:#fff;--MI_THEME-accent:#3366dd;--MI_THEME-fg:#333}body{margin:20px;font:14px sans-serif}._button{appearance:none;cursor:pointer;font-family:inherit}*,*::before,*::after{animation:none!important;transition:none!important}'});
-    const actual = await page.locator('button').evaluate(el=>({text:el.textContent, width:el.getBoundingClientRect().width, height:el.getBoundingClientRect().height, color:getComputedStyle(el).color, background:getComputedStyle(el).backgroundColor, icon:el.querySelector('i')?.className ?? null}));
+    const actual = await page.locator('button').evaluate(el=>({type:el.getAttribute('type'), text:el.textContent, width:el.getBoundingClientRect().width, height:el.getBoundingClientRect().height, color:getComputedStyle(el).color, background:getComputedStyle(el).backgroundColor, icon:el.querySelector('i')?.className ?? null}));
     assert.deepEqual(errors, []); assert.deepEqual(actual,reference,query || 'default');
     assert.deepEqual(await page.locator('button').screenshot(), referenceShot, `pixels: ${query || 'default'}`);
     console.log(`PASS Vue/Mün initial rendering ${query || 'default'}`); await page.close();

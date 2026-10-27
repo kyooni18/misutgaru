@@ -68,7 +68,7 @@ export struct FollowButton: View {
   }
 
   var body: some View {
-    Element("button", { type: "button", className: "_button follow-button" + (full ? " full" : "") + (large ? " large" : "") + ((currentFollowing() || currentPending()) ? " active" : "") + (wait ? " wait" : ""), disabled: wait, onClick: () => click() }) {
+    Element("button", { className: "_button follow-button" + (full ? " full" : "") + (large ? " large" : "") + ((currentFollowing() || currentPending()) ? " active" : "") + (wait ? " wait" : ""), disabled: wait, onClick: () => click() }) {
       if (wait || (currentPending() && !user.isLocked)) {
         if (full) { Element("span", { className: "text" }) { Text(services.labels.processing) } }
         Element("div", { className: "loading", "aria-hidden": "true" }) {
