@@ -7,7 +7,7 @@ import { pollSummary, remainingText } from "../services/poll-state.mjs"
 import "./note.css"
 
 // Counterpart of Vue's MkPoll. `services` provides now(), login(noteId), confirmVote(text) and api.post;
-// `labels.poll` carries the _poll translations.
+// `labels.pollTexts` carries the _poll translations.
 export struct Poll: View {
   let noteId
   let multiple
@@ -53,21 +53,21 @@ export struct Poll: View {
             Element("span", { className: "poll-fg" }) {
               if (x.choice.isVoted) { Element("i", { className: "ti ti-check poll-check" }) {} }
               Text(x.choice.text)
-              if (showResult()) { Element("span", { className: "poll-votes" }) { Text("(" + labels.poll.votesCount({ n: x.choice.votes }) + ")") } }
+              if (showResult()) { Element("span", { className: "poll-votes" }) { Text("(" + labels.pollTexts.votesCount({ n: x.choice.votes }) + ")") } }
             }
           }
         }
       }
       if (!readOnly) {
         Element("p", { className: "poll-info" }) {
-          Element("span", {}) { Text(labels.poll.totalVotes({ n: summary().total })) }
+          Element("span", {}) { Text(labels.pollTexts.totalVotes({ n: summary().total })) }
           Element("span", {}) { Text(" · ") }
           if (!summary().closed && !summary().voted) {
             Element("a", { className: "poll-toggle", onClick: () => { showResultToggle = !showResultToggle } }) { Text(showResultToggle ? labels.pollVote : labels.pollShowResult) }
           }
           if (summary().voted) { Element("span", {}) { Text(labels.pollVoted) } }
           else if (summary().closed) { Element("span", {}) { Text(labels.pollClosed) } }
-          if (summary().remaining > 0) { Element("span", {}) { Text(" · " + remainingText(labels.poll, summary().remaining)) } }
+          if (summary().remaining > 0) { Element("span", {}) { Text(" · " + remainingText(labels.pollTexts, summary().remaining)) } }
         }
       }
     }

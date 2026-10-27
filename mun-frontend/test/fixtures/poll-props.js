@@ -14,6 +14,6 @@ export const pollServices = {
   api: createMisskeyApi({ apiUrl: '/api', getAccount: () => null }),
 };
 export const pollLabels = {
-  poll: { votesCount: p => `${p.n} votes`, totalVotes: p => `${p.n} total`, remainingMinutes: p => `${p.m}m left`, remainingSeconds: p => `${p.s}s left`, remainingHours: p => `${p.h}h left`, remainingDays: p => `${p.d}d left` },
+  pollTexts: { votesCount: p => `${p.n} votes`, totalVotes: p => `${p.n} total`, remainingMinutes: p => `${p.m}m left`, remainingSeconds: p => `${p.s}s left`, remainingHours: p => `${p.h}h left`, remainingDays: p => `${p.d}d left` },
   pollVote: 'Vote', pollShowResult: 'Show result', pollVoted: 'Voted', pollClosed: 'Closed',
 };
