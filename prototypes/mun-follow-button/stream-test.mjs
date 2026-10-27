@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { createFollowButtonServices } from './services-adapter.mjs';
+import { createFollowButtonServices } from '../../mun-frontend/src/components/follow-button-services.mjs';
 import { createStreamManager } from '../../mun-frontend/src/services/stream-manager.mjs';
 
 // The SDK is real; only its WebSocket transport is replaced, so no network or

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 import assert from 'node:assert/strict';
-import { createFollowButtonServices } from './services-adapter.mjs';
+import { createFollowButtonServices } from '../../mun-frontend/src/components/follow-button-services.mjs';
 
 const events = [];
 const listeners = {};

@@ -15,8 +15,9 @@ import { mount, renderToHTML } from '@mun/web';
 
 if (!process.env.MUN_COMPILER_MODULE) throw new Error('Set MUN_COMPILER_MODULE to the built patched Mün compiler index.js');
 const { compileMunFile } = await import(pathToFileURL(path.resolve(process.env.MUN_COMPILER_MODULE)).href);
-const source = await readFile(new URL('./FollowButton.mun', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../mun-frontend/src/components/FollowButton.mun', import.meta.url), 'utf8');
 const revised = source
+  .replace('import "./follow-button.css"', '')
   .replace('@State var following = false', '@State var following = user.isFollowing')
   .replace('@State var pending = false', '@State var pending = user.hasPendingFollowRequestFromYou')
   .replace('    if (!initialized) { return user.isFollowing }\n', '')

@@ -13,12 +13,12 @@ import { JSDOM } from 'jsdom';
 import { compileMunFile } from '@mun/compiler';
 import { namedArguments } from '@mun/core/compat';
 import { mount } from '@mun/web';
-import { createFollowButtonServices } from './services-adapter.mjs';
+import { createFollowButtonServices } from '../../mun-frontend/src/components/follow-button-services.mjs';
 
 const sdkPath = process.env.MISSKEY_STREAM_MODULE ?? new URL('../../packages/misskey-js/built/streaming.js', import.meta.url).pathname;
 const { default: Stream } = await import(pathToFileURL(path.resolve(sdkPath)).href);
-const source = await readFile(new URL('./FollowButton.mun', import.meta.url), 'utf8');
-const { code } = compileMunFile(source, 'FollowButton.mun');
+const source = await readFile(new URL('../../mun-frontend/src/components/FollowButton.mun', import.meta.url), 'utf8');
+const { code } = compileMunFile(source.replace('import "./follow-button.css"', ''), 'FollowButton.mun');
 const js = ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
   .replaceAll('"@mun/core/compat"', JSON.stringify(import.meta.resolve('@mun/core/compat')))
   .replaceAll('"@mun/core"', JSON.stringify(import.meta.resolve('@mun/core')));

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { createFollowButtonServices } from './services-adapter.mjs';
+import { createFollowButtonServices } from '../../mun-frontend/src/components/follow-button-services.mjs';
 
 const calls = [];
 const params = new URLSearchParams(location.search);

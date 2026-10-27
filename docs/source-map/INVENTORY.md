@@ -11,6 +11,9 @@ Source files indexed: 2885.
 | `mun-frontend/index.html` | mun-frontend | added | HTML entry/template for index. |
 | `mun-frontend/package.json` | mun-frontend | added | Package or tool configuration for package. |
 | `mun-frontend/src/App.mun` | mun-frontend | added | Source for App. |
+| `mun-frontend/src/components/follow-button-services.mjs` | mun-frontend | added | Frontend component support for follow button services. |
+| `mun-frontend/src/components/follow-button.css` | mun-frontend | added | Frontend component support for follow button. |
+| `mun-frontend/src/components/FollowButton.mun` | mun-frontend | added | Frontend component support for Follow Button. |
 | `mun-frontend/src/main.js` | mun-frontend | added | Source for main. |
 | `mun-frontend/src/services/api.mjs` | mun-frontend | added | Source for api; exports `account`, `api`. |
 | `mun-frontend/src/services/cached-account.mjs` | mun-frontend | added | Source for cached account; exports `readCachedAccount`. |
@@ -2863,13 +2866,10 @@ Source files indexed: 2885.
 | `prototypes/mun-follow-button/compiler-state-test.mjs` | prototypes | added | Source for compiler state test. |
 | `prototypes/mun-follow-button/fixture.html` | prototypes | added | HTML entry/template for fixture. |
 | `prototypes/mun-follow-button/fixture.js` | prototypes | added | Source for fixture. |
-| `prototypes/mun-follow-button/FollowButton.mun` | prototypes | added | Source for Follow Button. |
 | `prototypes/mun-follow-button/multi-stream-test.mjs` | prototypes | added | Source for multi stream test. |
 | `prototypes/mun-follow-button/parity.mjs` | prototypes | added | Source for parity. |
-| `prototypes/mun-follow-button/services-adapter.mjs` | prototypes | added | Source for services adapter; exports `createFollowButtonServices`. |
 | `prototypes/mun-follow-button/services.js` | prototypes | added | Source for services; exports `services`, `full`, `large`, `user`. |
 | `prototypes/mun-follow-button/stream-test.mjs` | prototypes | added | Source for stream test. |
-| `prototypes/mun-follow-button/style.css` | prototypes | added | Styles for style. |
 | `prototypes/mun-follow-button/test.mjs` | prototypes | added | Source for test. |
 | `prototypes/mun-follow-button/vite.config.mjs` | prototypes | added | Source for vite config. |
 | `scripts/build-assets.mjs` | tooling | same | Repository tooling script for build assets. |

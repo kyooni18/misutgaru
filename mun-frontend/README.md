@@ -5,7 +5,7 @@ frontend. It fetches the existing `/api/meta` endpoint, renders a server name
 and plain-text description, supports retry, and navigates between `/` and
 `/about` using ordinary browser links. Authentication, the Vue visitor dashboard,
 localization, rich descriptions, and visual/behavioral parity are not yet
-implemented. Metadata requests use the shared native API transport in
+implemented. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
 
 ## Local build
