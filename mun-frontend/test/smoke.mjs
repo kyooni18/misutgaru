@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 
 test('visitor metadata, retry, and navigation', async () => {
@@ -85,5 +86,28 @@ test('metadata request uses the cached account token', async () => {
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('account')).name)).toBe('Refreshed user');
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('account')).token), 'fixture-token');
     await expect(page.getByRole('heading', { name: 'Test server' })).toBeVisible();
+  } finally { await browser.close(); }
+});
+
+test('native locale loader uses the shared translation implementation', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.addInitScript(() => localStorage.setItem('lang', 'ja-JP'));
+    await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test server' } }));
+    let localeUrl;
+    await page.route('**/assets/locales/**', route => {
+      localeUrl = new URL(route.request().url()).pathname;
+      return route.fulfill({ json: { follow: 'フォロー', unfollowConfirm: '{name}のフォローを解除しますか？' } });
+    });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    const labels = await page.evaluate(async () => {
+      const { loadI18n } = await import('/src/services/locale.mjs');
+      const i18n = await loadI18n();
+      return [i18n.ts.follow, i18n.tsx.unfollowConfirm({ name: 'Alice' })];
+    });
+    const { version } = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
+    assert.equal(decodeURIComponent(localeUrl), `/assets/locales/ja-JP.${version}.json`);
+    assert.deepEqual(labels, ['フォロー', 'Aliceのフォローを解除しますか？']);
   } finally { await browser.close(); }
 });

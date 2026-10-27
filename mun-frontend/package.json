@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:browser": "node --test test/smoke.mjs",
-    "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs"
+    "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs test/locale.mjs"
   },
   "dependencies": {
     "@mun/core": "0.1.20",

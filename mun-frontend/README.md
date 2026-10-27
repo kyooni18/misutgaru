@@ -28,10 +28,10 @@ Build the checked-out `packages/misskey-js` package before installing this app; 
 
 `mun link` changes this directory's `package.json` and creates
 `pnpm-workspace.yaml` with machine-specific paths: do not commit those local
-changes. The Vite development server proxies `/api` to the configured origin
+changes. The Vite development server proxies `/api` and `/assets/locales` to the configured origin
 (default `http://localhost:3000`). Production hosts must serve the built files
-with an SPA fallback and proxy `/api` to the unchanged backend on the same
-origin. The Vue application is unaffected and remains independently buildable.
+with an SPA fallback and proxy `/api` and `/assets/locales` to the unchanged backend on the same
+origin. The locale service reuses the Vue frontend’s shared translation engine and generated versioned locale assets. The Vue application is unaffected and remains independently buildable.
 
 For the browser smoke test, install Playwright's Chromium (`pnpm exec playwright
 install chromium`), run `pnpm dev` in one terminal and run
