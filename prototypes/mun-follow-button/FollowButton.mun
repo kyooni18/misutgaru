@@ -58,7 +58,7 @@ export struct FollowButton: View {
         await services.api("following/create", { userId: user.id, withReplies: services.defaultFollowWithReplies })
         services.updateUser({ ...user, withReplies: services.defaultFollowWithReplies })
         pending = true
-        services.achievements()
+        if (services.signedIn()) { services.achievements() }
       }
     } catch (error) {
       services.reportError(error)

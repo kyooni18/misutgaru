@@ -83,6 +83,16 @@ try {
   assert.equal(await failed.locator('button').innerText(), 'Follow');
   await failed.close();
 
+  // Vue checks the current account again after the request resolves.
+  const signedOut = await page();
+  await signedOut.locator('button').click();
+  await signedOut.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/create'));
+  await signedOut.evaluate(() => { fixture.services.signedIn = () => false; fixture.resolve({}); });
+  await signedOut.waitForFunction(() => !document.querySelector('button').disabled);
+  assert.equal(await signedOut.evaluate(() => fixture.calls.some(c => c[0] === 'achievements')), false);
+  assert.match(await signedOut.locator('button').innerText(), /Processing/);
+  await signedOut.close();
+
   const missing = await page('?following=unknown');
   await missing.waitForFunction(() => fixture.calls.some(c => c[0] === 'users/show'));
   await missing.evaluate(() => fixture.resolve({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
