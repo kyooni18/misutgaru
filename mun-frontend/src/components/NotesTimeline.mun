@@ -4,6 +4,7 @@
  */
 import { Element } from "@mun/core"
 import { Note } from "./Note.mun"
+import { withSeparators } from "../services/timeline-date-separate.mjs"
 import "./note.css"
 
 // Counterpart of Vue's MkNotesTimeline + Paginator: first page of 15 (allowPartial), then pages of 30 older than the oldest id.
@@ -58,8 +59,17 @@ export struct NotesTimeline: View {
         Element("div", { className: "notes-timeline-empty" }) { Text(labels.noNotes) }
       } else {
         Element("div", { className: "notes-timeline-list" }) {
-          ForEach(items, key: (n) => n.id) { n in
-            Element("div", { className: "notes-timeline-item" }) { Note(note: n, labels: labels, formatTime: formatTime) }
+          ForEach(withSeparators(items), key: (row) => row.id) { row in
+            Element("div", { className: "notes-timeline-row" }) {
+              if (row.separator != null) {
+                Element("div", { className: "notes-timeline-date" }) {
+                  Element("span", {}) { Text("\u2191 " + row.separator.prevText) }
+                  Element("span", { className: "notes-timeline-date-divider" }) {}
+                  Element("span", {}) { Text(row.separator.nextText + " \u2193") }
+                }
+              }
+              Element("div", { className: "notes-timeline-item" }) { Note(note: row.note, labels: labels, formatTime: formatTime) }
+            }
           }
         }
         if (canFetchOlder) {
