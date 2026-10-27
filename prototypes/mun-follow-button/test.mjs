@@ -1,0 +1,66 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import assert from 'node:assert/strict';
+import { createServer } from 'vite';
+import { chromium } from '@playwright/test';
+import config from './vite.config.mjs';
+
+const server = await createServer({ ...config, configFile: false, server: { ...config.server, host: '127.0.0.1', port: 0 } });
+await server.listen();
+const browser = await chromium.launch();
+const base = `http://127.0.0.1:${server.httpServer.address().port}/fixture.html`;
+const errors = [];
+async function page(query = '') {
+  const p = await browser.newPage();
+  p.on('pageerror', error => errors.push(error.message));
+  await p.goto(base + query);
+  await p.waitForFunction(() => window.fixture);
+  return p;
+}
+try {
+  const p = await page();
+  const button = p.locator('button');
+  assert.equal(await button.innerText(), 'Follow');
+  await button.click();
+  await p.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/create'));
+  assert.equal(await button.isDisabled(), true);
+  assert.match(await button.innerText(), /Processing/);
+  assert.deepEqual(await p.evaluate(() => fixture.calls[2]), ['following/create', { userId: '1', withReplies: true }]);
+  await p.evaluate(() => fixture.resolve({}));
+  await p.waitForFunction(() => fixture.calls.some(c => c[0] === 'achievements'));
+  assert.equal(await button.isDisabled(), false);
+  assert.match(await button.getAttribute('class'), /active/);
+  await p.evaluate(() => fixture.emit({ id: 'other', isFollowing: true, hasPendingFollowRequestFromYou: false }));
+  assert.match(await button.innerText(), /Processing/);
+  await p.evaluate(() => fixture.emit({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
+  await p.waitForFunction(() => document.querySelector('button').textContent === 'Following');
+  await button.click();
+  await p.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/delete'));
+  assert.deepEqual(await p.evaluate(() => fixture.calls.find(c => c[0] === 'confirm')), ['confirm', 'unfollow', 'alice']);
+  await p.evaluate(() => fixture.resolve({}));
+  await p.waitForFunction(() => !document.querySelector('button').disabled);
+  await p.evaluate(() => fixture.cleanup());
+  assert.equal(await p.evaluate(() => fixture.calls.at(-1)[0]), 'dispose');
+  await p.close();
+
+  const locked = await page('?pending=1&locked=1');
+  await locked.waitForFunction(() => document.querySelector('button').textContent === 'Pending');
+  await locked.locator('button').click();
+  await locked.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/requests/cancel'));
+  await locked.evaluate(() => fixture.resolve({}));
+  await locked.waitForFunction(() => document.querySelector('button').textContent === 'Request');
+  await locked.close();
+
+  const missing = await page('?following=unknown');
+  await missing.waitForFunction(() => fixture.calls.some(c => c[0] === 'users/show'));
+  await missing.evaluate(() => fixture.resolve({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
+  await missing.waitForFunction(() => document.querySelector('button').textContent === 'Following');
+  await missing.close();
+  assert.deepEqual(errors, []);
+  console.log('PASS: native follow, pending cancellation, stream updates, lookup, and cleanup');
+} finally {
+  await browser.close();
+  await server.close();
+}
