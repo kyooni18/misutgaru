@@ -20,5 +20,5 @@ export const services = {
 };
 export const full = !params.has('compact');
 export const large = params.has('large');
-export const user = { id: '1', username: 'alice', host: null, isFollowing: params.get('following') === '1' ? true : params.get('following') === 'unknown' ? null : false, hasPendingFollowRequestFromYou: params.get('pending') === '1', isLocked: params.get('locked') === '1' };
+export const user = { id: '1', username: 'alice', host: params.get('host'), isFollowing: params.get('following') === '1' ? true : params.get('following') === 'unknown' ? null : false, hasPendingFollowRequestFromYou: params.get('pending') === '1', isLocked: params.get('locked') === '1' };
 export const control = { calls, services, user, emit: value => listener(value), resolve: value => resolveApi(value), reject: error => rejectApi(new Error(error)) };

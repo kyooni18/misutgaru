@@ -21,12 +21,12 @@ const iconCss = '/@fs/' + path.join(iconDir, 'tabler-icons-frontend.css');
 const stubs = {
   'misskey-js': 'export {}',
   '@@/js/config.js': 'export const host="local.test"',
-  '@/os.js': 'export const confirm=async()=>({canceled:false})',
+  '@/os.js': 'export const confirm=async options=>{window.parity.confirmations.push(options);return {canceled:window.parity.cancelConfirm}}',
   '@/utility/misskey-api.js': 'export const misskeyApi=(endpoint,data)=>{window.parity.calls.push([endpoint,data]);return new Promise(resolve=>window.parity.resolve=resolve)}',
   '@/stream.js': 'export const useStream=()=>({useChannel:()=>({on(event,fn){window.parity.listeners[event]=fn},dispose(){}})})',
-  '@/i18n.js': 'export const i18n={ts:{followRequestPending:"Pending",processing:"Processing",youFollowing:"Following",followRequest:"Request",follow:"Follow"},tsx:{unfollowConfirm:()=>"",cancelFollowRequestConfirm:()=>"",followConfirm:()=>""}}',
+  '@/i18n.js': 'export const i18n={ts:{followRequestPending:"Pending",processing:"Processing",youFollowing:"Following",followRequest:"Request",follow:"Follow"},tsx:{unfollowConfirm:({name})=>`unfollow:${name}`,cancelFollowRequestConfirm:({name})=>`cancel:${name}`,followConfirm:({name})=>`follow:${name}`}}',
   '@/utility/achievements.js': 'export const claimAchievement=()=>{}',
-  '@/utility/please-login.js': 'export const pleaseLogin=async()=>true',
+  '@/utility/please-login.js': 'export const pleaseLogin=async options=>{window.parity.login.push(options);return window.parity.loginAllowed}',
   '@/i.js': 'export const $i={followingCount:0}',
   '@/preferences.js': 'export const prefer={s:{alwaysConfirmFollow:false,defaultFollowWithReplies:true}}',
   '@/utility/haptic.js': 'export const haptic=()=>{}',
@@ -34,9 +34,9 @@ const stubs = {
 const entry = `import {createApp,h} from 'vue';
 import FollowButton from '/@fs/${frontend}src/components/MkFollowButton.vue';
 import Loading from '/@fs/${frontend}src/components/global/MkLoading.vue';
-window.parity={calls:[],listeners:{}};
+window.parity={calls:[],listeners:{},confirmations:[],cancelConfirm:false,login:[],loginAllowed:true};
 const q=new URLSearchParams(location.search);
-const user={id:'1',username:'alice',host:null,isFollowing:q.has('following'),hasPendingFollowRequestFromYou:q.has('pending'),isLocked:q.has('locked')};
+const user={id:'1',username:'alice',host:q.get('host'),isFollowing:q.has('following'),hasPendingFollowRequestFromYou:q.has('pending'),isLocked:q.has('locked')};
 const app=createApp({render:()=>h(FollowButton,{user,full:!q.has('compact'),large:q.has('large')})}); app.component('MkLoading',Loading); app.mount('#app');`;
 const html = `<!doctype html><style>:root{--MI_THEME-fgOnWhite:#222;--MI_THEME-fgOnAccent:#fff;--MI_THEME-accent:#3366dd;--MI_THEME-fg:#333}body{margin:20px;font:14px sans-serif}._button{appearance:none;cursor:pointer;font-family:inherit}*,*::before,*::after{animation:none!important;transition:none!important}</style><div id="app"></div><script type="module" src="/__vue-entry.js"></script>`;
 const virtual = { name: 'follow-vue-reference', enforce: 'pre', configureServer(vite) { vite.middlewares.use((req,res,next)=>{ if (req.url?.split('?')[0] !== '/__vue') return next(); res.setHeader('content-type','text/html'); res.end(html); }); }, resolveId(id) { if(id === '/__vue-entry.js') return '\0vue-entry'; if (Object.hasOwn(stubs,id)) return '\0stub:'+id; }, load(id) { if(id==='\0vue-entry') return entry; if(id.startsWith('\0stub:')) return stubs[id.slice(6)]; } };
@@ -105,4 +105,69 @@ try {
   await page.waitForFunction(() => document.querySelector('button').textContent === 'Following');
   console.log('PASS Vue/Mün follow request and stream confirmation');
   await page.close();
+
+  for (const query of ['', '?host=remote.test']) {
+    const denied = await browser.newPage();
+    await denied.goto(origin + '/__vue' + query);
+    await denied.evaluate(() => { parity.loginAllowed = false; });
+    await denied.locator('button').click();
+    await denied.waitForFunction(() => parity.login.length > 0);
+    const expected = await denied.evaluate(() => ({ options: parity.login[0], calls: parity.calls.length, disabled: document.querySelector('button').disabled }));
+    await denied.goto(origin + '/fixture.html' + query);
+    await denied.waitForFunction(() => window.fixture);
+    await denied.evaluate(() => { fixture.services.login = async path => { fixture.calls.push(['login', path]); return false; }; });
+    await denied.locator('button').click();
+    await denied.waitForFunction(() => fixture.calls.some(c => c[0] === 'login'));
+    const actual = await denied.evaluate(() => ({ call: fixture.calls[0], calls: fixture.calls.length, disabled: document.querySelector('button').disabled }));
+    assert.equal(actual.call[1], expected.options.openOnRemote.path);
+    assert.equal(expected.options.openOnRemote.type, 'web');
+    assert.equal(expected.calls, 0);
+    assert.equal(actual.calls, 1);
+    assert.equal(actual.disabled, expected.disabled);
+    console.log(`PASS Vue/Mün declined login ${query || 'local'}`);
+    await denied.close();
+  }
+  for (const item of [
+    { query: '?following=1', kind: 'unfollow', type: 'warning', endpoint: 'following/delete', final: 'Following' },
+    { query: '?pending=1&locked=1', kind: 'cancel', type: 'question', endpoint: 'following/requests/cancel', final: 'Request' },
+  ]) {
+    const interaction = await browser.newPage();
+    await interaction.goto(origin + '/__vue' + item.query);
+    await interaction.locator('button').click();
+    await interaction.waitForFunction(() => parity.calls.length > 0);
+    const expected = await interaction.evaluate(() => ({ call: parity.calls[0], confirmation: parity.confirmations[0], disabled: document.querySelector('button').disabled, text: document.querySelector('button').textContent }));
+    assert.deepEqual(expected.confirmation, { type: item.type, text: `${item.kind}:alice` });
+    assert.deepEqual(expected.call, [item.endpoint, { userId: '1' }]);
+    await interaction.evaluate(() => parity.resolve({}));
+    await interaction.waitForFunction(() => !document.querySelector('button').disabled);
+    assert.equal(await interaction.locator('button').innerText(), item.final);
+    await interaction.goto(origin + '/fixture.html' + item.query);
+    await interaction.waitForFunction(() => window.fixture);
+    await interaction.locator('button').click();
+    await interaction.waitForFunction(endpoint => fixture.calls.some(c => c[0] === endpoint), item.endpoint);
+    const actual = await interaction.evaluate(endpoint => ({ call: fixture.calls.find(c => c[0] === endpoint), confirmation: fixture.calls.find(c => c[0] === 'confirm'), disabled: document.querySelector('button').disabled, text: document.querySelector('button').textContent }), item.endpoint);
+    assert.deepEqual(actual.call, expected.call);
+    assert.deepEqual(actual.confirmation, ['confirm', item.kind, 'alice']);
+    assert.equal(actual.disabled, expected.disabled);
+    assert.equal(actual.text, expected.text);
+    await interaction.evaluate(() => fixture.resolve({}));
+    await interaction.waitForFunction(() => !document.querySelector('button').disabled);
+    assert.equal(await interaction.locator('button').innerText(), item.final);
+    console.log(`PASS Vue/Mün ${item.endpoint} interaction`);
+    await interaction.goto(origin + '/__vue' + item.query);
+    await interaction.evaluate(() => { parity.cancelConfirm = true; });
+    await interaction.locator('button').click();
+    await interaction.waitForFunction(() => parity.confirmations.length > 0 && !document.querySelector('button').disabled);
+    assert.equal(await interaction.evaluate(() => parity.calls.length), 0);
+    const unchanged = await interaction.locator('button').innerText();
+    await interaction.goto(origin + '/fixture.html' + item.query);
+    await interaction.waitForFunction(() => window.fixture);
+    await interaction.evaluate(() => { fixture.services.confirm = async (type, name) => { fixture.calls.push(['confirm', type, name]); return true; }; });
+    await interaction.locator('button').click();
+    await interaction.waitForFunction(() => fixture.calls.some(c => c[0] === 'confirm') && !document.querySelector('button').disabled);
+    assert.equal(await interaction.evaluate(endpoint => fixture.calls.some(c => c[0] === endpoint), item.endpoint), false);
+    assert.equal(await interaction.locator('button').innerText(), unchanged);
+    console.log(`PASS Vue/Mün canceled ${item.endpoint} confirmation`);
+    await interaction.close();
+  }
 } finally { await browser.close(); await server.close(); }
