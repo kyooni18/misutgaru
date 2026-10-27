@@ -1,0 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+.post-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.post-form-header { display: flex; align-items: center; gap: 8px; }
+.post-form-submit { margin-left: auto; padding: 4px 16px; border-radius: 99px; }
+.post-form-cw, .post-form-text { width: 100%; box-sizing: border-box; padding: 8px; border: solid 0.5px var(--MI_THEME-divider); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
+.post-form-text { min-height: 90px; resize: vertical; }
+.post-form-cw-toggle.active { color: var(--MI_THEME-accent); }

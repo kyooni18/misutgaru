@@ -1,0 +1,55 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { buildPostPayload, canPost } from "../services/post-payload.mjs"
+import "./post-form.css"
+
+// Counterpart of Vue's MkPostForm (text, content warning, visibility, reply/renote/quote targets).
+// `services` provides api.post, maxTextLength and onPosted(note); `target` is { reply, renote, quoteId } or empty.
+export struct PostForm: View {
+  let services
+  let labels
+  let target
+  @State var text = ""
+  @State var useCw = false
+  @State var cw = ""
+  @State var visibility = "public"
+  @State var localOnly = false
+  @State var posting = false
+
+  func form() {
+    return { text: text, useCw: useCw, cw: cw, visibility: visibility, localOnly: localOnly, posting: posting, reactionAcceptance: null, maxTextLength: services.maxTextLength, reply: target.reply, renote: target.renote, quoteId: target.quoteId }
+  }
+
+  func submit() async {
+    if (!canPost(form())) { return }
+    posting = true
+    let res = await services.api.post("notes/create", buildPostPayload(form()))
+    text = ""
+    cw = ""
+    useCw = false
+    posting = false
+    services.onPosted(res.createdNote)
+  }
+
+  var body: some View {
+    Element("form", { className: "post-form", onSubmit: (e) => { e.preventDefault(); submit() } }) {
+      Element("div", { className: "post-form-header" }) {
+        Element("select", { className: "post-form-visibility", value: visibility, onChange: (e) => { visibility = e.target.value } }) {
+          Element("option", { value: "public" }) { Text(labels.public) }
+          Element("option", { value: "home" }) { Text(labels.home) }
+          Element("option", { value: "followers" }) { Text(labels.followers) }
+          Element("option", { value: "specified" }) { Text(labels.specified) }
+        }
+        Element("button", { type: "button", className: "post-form-cw-toggle" + (useCw ? " active" : ""), onClick: () => { useCw = !useCw } }) { Text(labels.cw) }
+        Element("button", { type: "submit", className: "post-form-submit", disabled: !canPost(form()) }) { Text(labels.submit) }
+      }
+      Element("div", { className: "post-form-body" }) {
+        if (useCw) { Element("input", { className: "post-form-cw", placeholder: labels.cwPlaceholder, value: cw, onInput: (e) => { cw = e.target.value } }) {} }
+        Element("textarea", { className: "post-form-text", placeholder: labels.placeholder, value: text, onInput: (e) => { text = e.target.value } }) {}
+      }
+    }
+  }
+}
