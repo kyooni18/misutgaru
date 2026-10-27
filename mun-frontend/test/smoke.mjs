@@ -61,3 +61,21 @@ test('refresh ignores a stale metadata response', async () => {
     assert.equal(count, 2);
   } finally { release(); await browser.close(); }
 });
+
+// Existing Vue account caches are read once at boot and sent in the API body.
+test('metadata request uses the cached account token', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.addInitScript(() => localStorage.setItem('account', JSON.stringify({ id: 'fixture-user', token: 'fixture-token' })));
+    const requestSeen = new Promise(resolve => {
+      page.route('**/api/meta', async route => {
+        resolve(route.request().postDataJSON());
+        await route.fulfill({ json: { name: 'Test server' } });
+      });
+    });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    assert.deepEqual(await requestSeen, { detail: true, i: 'fixture-token' });
+    await expect(page.getByRole('heading', { name: 'Test server' })).toBeVisible();
+  } finally { await browser.close(); }
+});

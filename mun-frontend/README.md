@@ -6,7 +6,7 @@ and plain-text description, supports retry, and navigates between `/` and
 `/about` using ordinary browser links. Authentication, the Vue visitor dashboard,
 localization, rich descriptions, and visual/behavioral parity are not yet
 implemented. Metadata requests use the shared native API transport in
-`src/services/misskey-api.mjs`; the visitor shell supplies no account token. No backend files or API contracts are changed.
+`src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It does not yet refresh or validate that account, and sign-in and account switching remain unimplemented. No backend files or API contracts are changed.
 
 ## Local build
 
