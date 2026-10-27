@@ -6,6 +6,7 @@ import { Element } from "@mun/core"
 import { NoteSimple } from "./NoteSimple.mun"
 import { Poll } from "./Poll.mun"
 import { MediaList } from "./MediaList.mun"
+import { canRenote, reactionCount, reactIcon, showReactionCount } from "../services/note-footer.mjs"
 import { toggleReaction } from "../services/reaction-toggle.mjs"
 import "./note-simple.css"
 import "./note.css"
@@ -48,6 +49,14 @@ export struct Note: View {
     let mine = reactionOverride != null ? reactionOverride.myReaction : n.myReaction
     for (let key of Object.keys(counts)) { out.push({ key: key, count: counts[key], mine: mine === key, url: n.reactionEmojis?.[key.replace(/^:|:$/g, "").replace(/@\.$/, "")] }) }
     return out
+  }
+
+  func currentReactions(n) {
+    return reactionOverride != null ? reactionOverride.reactions : (n.reactions || {})
+  }
+
+  func currentMine(n) {
+    return reactionOverride != null ? reactionOverride.myReaction : (n.myReaction ?? null)
   }
 
   func react(n, key) async {
@@ -110,6 +119,26 @@ export struct Note: View {
                     if (r.url) { Element("img", { src: r.url, alt: r.key }) {} } else { Text(r.key) }
                     Element("span", { className: "note-reaction-count" }) { Text(String(r.count)) }
                   }
+                }
+              }
+            }
+            Element("footer", { className: "note-footer" }) {
+              Element("button", { className: "note-footer-button note-reply", "aria-label": labels.reply, onClick: () => services.reply(appear()) }) {
+                Element("i", { className: "ti ti-arrow-back-up" }) {}
+                if (appear().repliesCount > 0) { Element("p", { className: "note-footer-count" }) { Text(String(appear().repliesCount)) } }
+              }
+              if (canRenote(appear(), services.account())) {
+                Element("button", { className: "note-footer-button note-renote-button", "aria-label": labels.renote, onClick: () => services.renote(appear()) }) {
+                  Element("i", { className: "ti ti-repeat" }) {}
+                  if (appear().renoteCount > 0) { Element("p", { className: "note-footer-count" }) { Text(String(appear().renoteCount)) } }
+                }
+              } else {
+                Element("button", { className: "note-footer-button note-renote-disabled", disabled: true }) { Element("i", { className: "ti ti-ban" }) {} }
+              }
+              Element("button", { className: "note-footer-button note-react", "aria-label": labels.reaction, onClick: () => services.reactPicker(appear()) }) {
+                Element("i", { className: "ti ti-" + reactIcon(appear(), currentMine(appear())) }) {}
+                if (showReactionCount(appear(), services.showReactionsCount, reactionCount(currentReactions(appear())))) {
+                  Element("p", { className: "note-footer-count" }) { Text(String(reactionCount(currentReactions(appear())))) }
                 }
               }
             }
