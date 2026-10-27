@@ -93,6 +93,25 @@ try {
   assert.match(await signedOut.locator('button').innerText(), /Processing/);
   await signedOut.close();
 
+  const adapted = await page('?adapter=1');
+  assert.deepEqual(await adapted.evaluate(() => fixture.calls[0]), ['channel', 'main']);
+  await adapted.locator('button').click();
+  await adapted.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/create'));
+  assert.deepEqual(await adapted.evaluate(() => fixture.calls.find(c => c[0] === 'login')), ['login', { openOnRemote: { type: 'web', path: '/@alice@local.test' } }]);
+  await adapted.evaluate(() => fixture.resolve({}));
+  await adapted.waitForFunction(() => fixture.calls.some(c => c[0] === 'achievement'));
+  assert.deepEqual(await adapted.evaluate(() => fixture.calls.find(c => c[0] === 'achievement')), ['achievement', 'following1']);
+  await adapted.evaluate(() => fixture.emit({ id: '1', isFollowing: true, hasPendingFollowRequestFromYou: false }));
+  await adapted.waitForFunction(() => document.querySelector('button').textContent === 'Following');
+  await adapted.locator('button').click();
+  await adapted.waitForFunction(() => fixture.calls.some(c => c[0] === 'following/delete'));
+  assert.deepEqual(await adapted.evaluate(() => fixture.calls.find(c => c[0] === 'confirmation')), ['confirmation', { type: 'warning', text: 'unfollow:alice' }]);
+  await adapted.evaluate(() => fixture.resolve({}));
+  await adapted.waitForFunction(() => !document.querySelector('button').disabled);
+  await adapted.evaluate(() => fixture.cleanup());
+  assert.deepEqual(await adapted.evaluate(() => fixture.calls.at(-1)), ['dispose']);
+  await adapted.close();
+
   const wired = await browser.newPage();
   wired.on('pageerror', error => errors.push(error.message));
   let acceptRequest;
