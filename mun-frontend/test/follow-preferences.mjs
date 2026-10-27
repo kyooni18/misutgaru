@@ -22,7 +22,7 @@ test('local follow preferences select the same records as Vue', async () => {
     '@/utility/clone.js': 'export const deepClone=x=>structuredClone(x)',
   };
   const plugin = { name: 'preferences-reference-stubs', enforce: 'pre', resolveId(id) { if (Object.hasOwn(stubs, id)) return '\0pref:' + id; }, load(id) { if (id.startsWith('\0pref:')) return stubs[id.slice(6)]; } };
-  const server = await createServer({ configFile: false, plugins: [plugin], server: { middlewareMode: true, hmr: false }, appType: 'custom', define: { _DEV_: 'false' } });
+  const server = await createServer({ configFile: false, plugins: [plugin], server: { middlewareMode: true, ws: false }, appType: 'custom', define: { _DEV_: 'false' } });
   try {
     const source = fileURLToPath(new URL('../../packages/frontend/src/preferences/manager.ts', import.meta.url));
     const { PreferencesManager } = await server.ssrLoadModule(source);

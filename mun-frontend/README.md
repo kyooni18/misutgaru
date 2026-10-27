@@ -12,6 +12,8 @@ The follow flow also has a read-only local preference adapter for confirmation,
 reply inclusion, and animation. It applies Vue's scope selection and defaults;
 it does not yet synchronize cloud preferences or respond to changes in other tabs.
 The future profile integration must supply it to the follow and dialog services.
+The shared achievement session can issue the follow flow's achievement claims,
+using the same immediate deduplication and 500 ms pacing as Vue.
 
 ## Local build
 
