@@ -8,6 +8,7 @@
 .mfm-mention { display: inline-block; padding: 1px 8px 1px 3px; border-radius: 999px; color: var(--MI_THEME-fgHighlighted); background: color-mix(in srgb, var(--MI_THEME-fg) 7%, transparent); }
 .mfm-mention-icon { width: 1.5em; height: 1.5em; object-fit: cover; margin: 0 .2em 0 0; vertical-align: bottom; border-radius: 100%; }
 .mfm-mention-host { opacity: .5; }
+.mfm-unicode-emoji { height: 1.25em; vertical-align: -.25em; }
 ._mfm_blur_ { filter: blur(6px); transition: filter .3s; }
 ._mfm_blur_:hover { filter: blur(0); }
 ._mfm_rainbow_fallback_ { background-image: linear-gradient(to right, rgb(255,0,0) 0%, rgb(255,165,0) 17%, rgb(255,255,0) 33%, rgb(0,255,0) 50%, rgb(0,255,255) 67%, rgb(0,0,255) 83%, rgb(255,0,255) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }

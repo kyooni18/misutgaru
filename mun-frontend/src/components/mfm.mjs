@@ -82,9 +82,18 @@ function renderMention(node, author) {
     Element('span', null, Element('span', null, `@${name}`), ...(remote ? [Element('span', { class: 'mfm-mention-host' }, `@${toUnicode(host)}`)] : [])));
 }
 
+function renderUnicodeEmoji(emoji, emojiStyle) {
+  if (emojiStyle === 'native') return Element('span', { alt: emoji }, emoji);
+  let codes = Array.from(emoji, char => char.codePointAt(0).toString(16));
+  const fluent = emojiStyle === 'fluentEmoji' && !codes[0]?.startsWith('1f1');
+  if (!codes.includes('200d')) codes = codes.filter(code => code !== 'fe0f');
+  const src = `/${fluent ? 'fluent-emoji' : 'twemoji'}/${codes.join('-')}.${fluent ? 'png' : 'svg'}`;
+  return Element('img', { class: 'mfm-unicode-emoji', src, alt: emoji, decoding: 'async' });
+}
+
 // A native view-graph renderer, deliberately not an HTML string: note text is
 // untrusted. Unsupported MFM is retained as source instead of disappearing.
-export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true, animatedMfm = true, author = null } = {}) {
+export function renderMfm(text, { plain = false, nowrap = false, isNote = true, advancedMfm = true, animatedMfm = true, emojiStyle = 'twemoji', author = null } = {}) {
   const nodes = (plain ? mfm.parseSimple : mfm.parse)(text ?? '');
   const render = node => {
     const children = () => (node.children ?? []).flatMap(render);
@@ -104,7 +113,7 @@ export function renderMfm(text, { plain = false, nowrap = false, isNote = true, 
       case 'inlineCode': return Element('code', null, node.props.code);
       case 'blockCode': return Element('code', { lang: node.props.lang ?? undefined }, node.props.code);
       case 'mathInline': case 'mathBlock': return Element('code', null, node.props.formula);
-      case 'unicodeEmoji': return node.props.emoji;
+      case 'unicodeEmoji': return renderUnicodeEmoji(node.props.emoji, emojiStyle);
       case 'emojiCode': return `:${node.props.name}:`;
       case 'hashtag': return Element('a', { href: `/${isNote ? 'tags' : 'user-tags'}/${encodeURIComponent(node.props.hashtag)}`, style: 'color:var(--MI_THEME-hashtag);' }, `#${node.props.hashtag}`);
       case 'mention': return renderMention(node, author);

@@ -63,6 +63,16 @@ test('mentions without a host inherit the remote author host', async () => {
   } finally { await browser.close(); }
 });
 
+test('unicode emoji use the Vue default Twemoji asset', async () => {
+  const { browser, page, errors } = await render({ ...base_, id: 'emoji', user: alice, text: 'hello 👍' });
+  try {
+    const emoji = page.locator('.note-text .mfm-unicode-emoji');
+    await expect(emoji).toHaveAttribute('src', '/twemoji/1f44d.svg');
+    await expect(emoji).toHaveAttribute('alt', '👍');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
 test('renote shows the renoter bar and the renoted note', async () => {
   const { browser, page } = await render({ ...base_, id: '2', user: alice, text: null, renoteId: 'r1', renote: { ...base_, id: 'r1', user: bob, text: 'original' } });
   try {

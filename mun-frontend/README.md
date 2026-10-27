@@ -32,9 +32,9 @@ Build the checked-out `packages/misskey-js` and `packages/icons-subsetter` packa
 
 `mun link` changes this directory's `package.json` and creates
 `pnpm-workspace.yaml` with machine-specific paths: do not commit those local
-changes. The Vite development server proxies `/api` and `/assets/locales` to the configured origin
+changes. The Vite development server proxies `/api`, `/assets/locales`, `/avatar`, `/twemoji` and `/fluent-emoji` to the configured origin
 (default `http://localhost:3000`). Production hosts must serve the built files
-with an SPA fallback and proxy `/api` and `/assets/locales` to the unchanged backend on the same
+with an SPA fallback and proxy `/api`, `/assets/locales`, `/avatar`, `/twemoji` and `/fluent-emoji` to the unchanged backend on the same
 origin. The locale service reuses the Vue frontend’s shared translation engine and generated versioned locale assets. The Vue application is unaffected and remains independently buildable.
 
 For the browser smoke test, install Playwright's Chromium (`pnpm exec playwright
@@ -63,7 +63,7 @@ you are authorized to query.
 It uses the same `mfm-js` parser as Vue and currently handles basic formatting,
 quotes, code, basic links, hashtags and a subset of MFM functions; unsupported constructs are retained as literal
 MFM source. The standalone native note card uses this subset, but it does not
-provide full MFM parity (in particular link previews, mention previews, emoji and preference integration are unfinished).
+provide full MFM parity (in particular link previews, mention previews, custom emoji and preference integration are unfinished).
 `node --test test/mfm-parity.mjs` compares a structural subset with the real
 shared Vue renderer in Chromium, including an untrusted-text fixture. The test
 requires Vue and Playwright as test-only dependencies.
