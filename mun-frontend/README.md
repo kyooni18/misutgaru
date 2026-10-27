@@ -92,8 +92,9 @@ dependencies. Set `MUN_ROOT` if the framework checkout is elsewhere.
 
 `node --test test/signin-reference.mjs` records the Vue sign-in coordinator's
 CAPTCHA, TOTP, passkey, fallback, and error requests using controlled page
-emitters, transition and backend stubs. It is a reference for future native
-login work, not a visual or end-to-end authentication test.
+emitters, transition and backend stubs, and compares those paths with the native
+sign-in coordinator. Native sign-in pages and account handoff are not yet wired;
+this is not a visual or end-to-end authentication test.
 
 `node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
 and compares background, logo, shapes, and content geometry at mobile and
