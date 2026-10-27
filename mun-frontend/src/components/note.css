@@ -11,10 +11,6 @@
 .note-avatar { flex-shrink: 0; display: block !important; margin: 0 14px 8px 0; width: 58px; height: 58px; border-radius: 8px; }
 .note-main { flex: 1; min-width: 0; }
 .note-text { overflow-wrap: break-word; white-space: pre-wrap; }
-.note-media { display: grid; gap: 4px; margin-top: 8px; border-radius: 8px; overflow: hidden; }
-.note-media-1 { grid-template-columns: 1fr; }
-.note-media-2, .note-media-3, .note-media-4 { grid-template-columns: 1fr 1fr; }
-.note-media-item img { display: block; width: 100%; max-height: 400px; object-fit: cover; }
 .note-quote { padding: 8px 0; margin-top: 8px; border: solid 1px var(--MI_THEME-divider); border-radius: 8px; padding: 12px; }
 .note-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .note-reaction { display: inline-flex; align-items: center; height: 42px; padding: 0 6px; border-radius: 6px; background: var(--MI_THEME-buttonBg, rgba(0,0,0,.05)); }

@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { MediaList } from "../../src/components/MediaList.mun"
+import { files, forceShow, mediaServices, mediaLabels } from "./media-props.js"
+export default MediaList(files: files, forceShow: forceShow, services: mediaServices, labels: mediaLabels)

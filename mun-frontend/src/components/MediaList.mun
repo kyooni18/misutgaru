@@ -1,0 +1,93 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { splitMedia, shouldHideByDefault, layoutClass } from "../services/media-rules.mjs"
+import "./media-list.css"
+
+// Counterpart of Vue's MkMediaList + MkMediaImage/Video/Audio.
+// `services.media()` returns { nsfw, dataSaverMedia }; services.confirmReveal(file) resolves to whether revealing is allowed;
+// services.open(file) opens the lightbox.
+export struct MediaList: View {
+  let files
+  let forceShow
+  let services
+  let labels
+  @State var revealed = {}
+  @State var concealed = {}
+
+  func isHidden(file) {
+    if (revealed[file.id]) { return false }
+    if (concealed[file.id]) { return true }
+    if (forceShow) { return services.media().dataSaverMedia }
+    return shouldHideByDefault(file, services.media())
+  }
+
+  func click(file) async {
+    if (isHidden(file)) {
+      if (file.isSensitive && !(await services.confirmReveal(file))) { return }
+      revealed = { ...revealed, [file.id]: true }
+    } else {
+      services.open(file)
+    }
+  }
+
+  func conceal(file) {
+    concealed = { ...concealed, [file.id]: true }
+    revealed = { ...revealed, [file.id]: false }
+  }
+
+  func media() { return splitMedia(files) }
+
+  var body: some View {
+    Element("div", { className: "media-list" }) {
+      ForEach(media().nonPreviewable, key: (f) => f.id) { file in
+        Element("a", { className: "media-banner", href: file.url, download: file.name, title: file.name }) {
+          Element("span", { className: "media-banner-name" }) { Text(file.name) }
+          Element("span", { className: "media-banner-type" }) { Text(file.type) }
+        }
+      }
+      if (media().previewable.length > 0) {
+        Element("div", { className: "media-grid " + layoutClass(media().previewable.length) }) {
+          ForEach(media().previewable, key: (f) => f.id) { file in
+            Element("div", { className: "media-item" + (isHidden(file) ? " hidden" : " visible") + (file.isSensitive ? " sensitive" : ""), onClick: () => click(file) }) {
+              if (file.type.startsWith("image")) {
+                if (isHidden(file)) {
+                  Element("div", { className: "media-placeholder", title: file.comment || file.name }) {}
+                } else {
+                  Element("img", { src: file.thumbnailUrl || file.url, alt: file.comment || file.name, title: file.comment || file.name }) {}
+                }
+              } else if (file.type.startsWith("video")) {
+                if (isHidden(file)) {
+                  Element("div", { className: "media-placeholder" }) {}
+                } else {
+                  Element("video", { src: file.url, poster: file.thumbnailUrl, controls: true, preload: "metadata", title: file.comment || file.name }) {}
+                }
+              } else {
+                if (isHidden(file)) {
+                  Element("div", { className: "media-placeholder" }) {}
+                } else {
+                  Element("audio", { src: file.url, controls: true, preload: "metadata" }) {}
+                }
+              }
+              if (isHidden(file)) {
+                Element("div", { className: "media-hidden-text" }) {
+                  Element("b", {}) { Text(file.isSensitive ? labels.sensitive : labels.mediaKind(file.type)) }
+                  Element("span", {}) { Text(labels.clickToShow) }
+                }
+              } else {
+                Element("div", { className: "media-indicators" }) {
+                  if (file.type === "image/gif" || file.type === "image/apng") { Element("div", { className: "media-indicator" }) { Text("GIF") } }
+                  if (file.comment) { Element("div", { className: "media-indicator" }) { Text("ALT") } }
+                  if (file.isSensitive) { Element("div", { className: "media-indicator warn", title: labels.sensitive }) { Text("!") } }
+                }
+                Element("button", { className: "media-hide", "aria-label": labels.hide, onClick: (event) => { event.stopPropagation(); conceal(file) } }) { Text("×") }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

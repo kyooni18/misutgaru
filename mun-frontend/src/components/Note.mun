@@ -5,6 +5,7 @@
 import { Element } from "@mun/core"
 import { NoteSimple } from "./NoteSimple.mun"
 import { Poll } from "./Poll.mun"
+import { MediaList } from "./MediaList.mun"
 import "./note-simple.css"
 import "./note.css"
 
@@ -80,14 +81,7 @@ export struct Note: View {
               Element("div", { className: "note-content" }) {
                 if (appear().text) { Element("div", { className: "note-text" }) { Text(appear().text) } }
                 if (appear().files && appear().files.length > 0) {
-                  Element("div", { className: "note-media note-media-" + Math.min(appear().files.length, 4) }) {
-                    ForEach(appear().files, key: (f) => f.id) { file in
-                      Element("a", { className: "note-media-item", href: file.url, title: file.name }) {
-                        if (file.type.startsWith("image/")) { Element("img", { src: file.thumbnailUrl || file.url, alt: file.comment || file.name }) {} }
-                        else { Element("span", {}) { Text(file.name) } }
-                      }
-                    }
-                  }
+                  Element("div", { className: "note-media" }) { MediaList(files: appear().files, forceShow: false, services: services, labels: labels) }
                 }
                 if (appear().poll != null) {
                   Poll(noteId: appear().id, multiple: appear().poll.multiple, expiresAt: appear().poll.expiresAt, choices: appear().poll.choices, readOnly: false, services: services, labels: labels)
