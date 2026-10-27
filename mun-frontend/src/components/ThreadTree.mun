@@ -1,0 +1,46 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { Note } from "./Note.mun"
+import { fetchChildren, childMode, MAX_THREAD_DEPTH } from "../services/note-thread.mjs"
+import "./note.css"
+
+// Counterpart of Vue's MkNoteThreadTree: replies of a note, recursively nested up to MAX_THREAD_DEPTH.
+export struct ThreadTree: View {
+  let noteId
+  let depth
+  let api
+  let labels
+  let formatTime
+  let services
+  @State var children = []
+  @State var loading = true
+
+  func load(signal) async {
+    loading = true
+    try {
+      children = await fetchChildren(api, noteId)
+    } catch (error) { }
+    loading = false
+  }
+
+  var body: some View {
+    Element("div", { className: "thread-tree" }) {
+      ForEach(children, key: (c) => c.id) { child in
+        Element("div", { className: "thread-tree-item" }) {
+          Note(note: child, labels: labels, formatTime: formatTime, services: services)
+          if (childMode(child, depth) === "nested") {
+            Element("div", { className: "thread-tree-nested" }) {
+              ThreadTree(noteId: child.id, depth: depth + 1, api: api, labels: labels, formatTime: formatTime, services: services)
+            }
+          } else if (childMode(child, depth) === "continue") {
+            Element("a", { className: "thread-tree-more", href: "/notes/" + child.id }) { Text(labels.continueThread) }
+          }
+        }
+      }
+    }
+    .task(id: noteId) { signal in await load(signal) }
+  }
+}

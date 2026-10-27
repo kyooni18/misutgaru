@@ -45,3 +45,8 @@
 .notifications-page-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 4px 8px; }
 .notifications-page-filter.active { color: var(--MI_THEME-accent); }
 .notifications-page-filter-list { display: flex; flex-direction: column; max-height: 50vh; overflow: auto; }
+.note-page-thread, .thread-tree { display: block; }
+.thread-tree-item { position: relative; border-top: solid 1px var(--MI_THEME-divider); }
+.thread-tree-nested { margin-left: 32px; }
+.thread-tree-more { display: block; padding: 8px 16px; color: var(--MI_THEME-link); }
+.note-page-focus { background: var(--MI_THEME-panel); }
