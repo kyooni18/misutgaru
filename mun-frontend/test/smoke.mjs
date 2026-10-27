@@ -210,3 +210,35 @@ test('visitor shell opens sign-in and submits password recovery', async () => {
     await expect(page.getByRole('dialog', { name: 'Log in' })).toBeVisible();
   } finally { await browser.close(); }
 });
+
+test('visitor sign-in reports errors and persists a successful handoff', async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const labels = { login:'Log in', close:'Close', username:'Username', password:'Password', forgotPassword:'Forgot password', continue:'Continue', or:'or', signinWithPasskey:'Sign in with passkey', loading:'Loading', welcomeBackWithName:'Welcome {name}', loginFailed:'Login failed', incorrectPassword:'Incorrect password', error:'Error' };
+    await page.route('**/assets/locales/**', route => route.fulfill({ json:labels }));
+    await page.route('**/api/meta', route => route.fulfill({ json:{ name:'Test', clientOptions:{showActivitiesForVisitor:false} } }));
+    await page.route('**/api/users/show', route => route.fulfill({ json:{username:'alice',name:'Alice'} }));
+    let passwordAttempts=0;
+    await page.route('**/api/signin-flow', route => {
+      const request=route.request().postDataJSON();
+      if(!request.password) return route.fulfill({json:{finished:false,next:'password'}});
+      if(++passwordAttempts===1) return route.fulfill({status:400,json:{error:{id:'932c904e-9460-45b7-9ce6-7ed33be7eb2c'}}});
+      return route.fulfill({json:{finished:true,i:'fixture-token'}});
+    });
+    await page.route('**/api/i', route => route.fulfill({json:{id:'alice-id',username:'alice'}}));
+    const dialogs=[]; page.on('dialog', async dialog => { dialogs.push(dialog.message()); await dialog.accept(); });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await page.getByRole('button',{name:'Log in'}).click();
+    await page.locator('input[autocomplete="username webauthn"]').fill('alice');
+    await page.getByTestId('signin-page-input-continue').click();
+    await page.locator('input[type=password]').fill('bad');
+    await page.getByTestId('signin-page-password-continue').click();
+    await expect.poll(()=>dialogs).toEqual(['Login failed: Incorrect password']);
+    await page.locator('input[type=password]').fill('good');
+    await page.getByTestId('signin-page-password-continue').click();
+    await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('account') ?? 'null'))).toMatchObject({id:'alice-id',username:'alice',token:'fixture-token'});
+    await expect(page.getByRole('dialog',{name:'Log in'})).toHaveCount(0);
+    assert.equal(passwordAttempts,2);
+  } finally { await browser.close(); }
+});
