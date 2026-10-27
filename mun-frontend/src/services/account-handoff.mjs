@@ -21,7 +21,7 @@ export function createAccountHandoff({ fetch: fetchImpl = (...args) => globalThi
       await registry.add(key, me, token);
       preferences.setAccounts([...accounts, [host, { id: me.id, username: me.username }]]);
       // Vue treats service-worker synchronization as best effort.
-      void Promise.resolve().then(() => syncServiceWorkerAccounts()).catch(() => {});
+      await Promise.resolve().then(() => syncServiceWorkerAccounts()).catch(() => {});
     }
     await reload(redirect);
     return me;
