@@ -28,7 +28,7 @@ pnpm test:unit
 MISUTGARU_API_ORIGIN=http://localhost:3000 pnpm dev
 ```
 
-Build the checked-out `packages/misskey-js` package before installing this app; the native stream service uses its local `file:` dependency. The stream is lazy and opens only when a component requests it.
+Build the checked-out `packages/misskey-js` and `packages/icons-subsetter` packages before installing this app; native streaming and icons use their local `file:` dependencies. The stream is lazy and opens only when a component requests it.
 
 `mun link` changes this directory's `package.json` and creates
 `pnpm-workspace.yaml` with machine-specific paths: do not commit those local
@@ -95,6 +95,11 @@ CAPTCHA, TOTP, passkey, fallback, and error requests using controlled page
 emitters, transition and backend stubs, and compares those paths with the native
 sign-in coordinator. Native sign-in pages and account handoff are not yet wired;
 this is not a visual or end-to-end authentication test.
+
+The native `SigninPasskey` step uses the same WebAuthn library as Vue. Its
+standalone comparison (`node --test test/passkey-parity.mjs`) checks appearance,
+prompt state, retry and TOTP fallback against Vue with controlled prompts; it
+does not require a real authenticator or sign-in account.
 
 `node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
 and compares background, logo, shapes, and content geometry at mobile and
