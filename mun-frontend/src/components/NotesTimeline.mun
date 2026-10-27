@@ -14,6 +14,7 @@ export struct NotesTimeline: View {
   let api
   let labels
   let formatTime
+  let services
   @State var items = []
   @State var loading = true
   @State var failed = false
@@ -68,7 +69,7 @@ export struct NotesTimeline: View {
                   Element("span", {}) { Text(row.separator.nextText + " \u2193") }
                 }
               }
-              Element("div", { className: "notes-timeline-item" }) { Note(note: row.note, labels: labels, formatTime: formatTime) }
+              Element("div", { className: "notes-timeline-item" }) { Note(note: row.note, labels: labels, formatTime: formatTime, services: services) }
             }
           }
         }

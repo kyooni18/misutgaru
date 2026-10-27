@@ -4,6 +4,7 @@
  */
 import { Element } from "@mun/core"
 import { NoteSimple } from "./NoteSimple.mun"
+import { Poll } from "./Poll.mun"
 import "./note-simple.css"
 import "./note.css"
 
@@ -13,6 +14,7 @@ export struct Note: View {
   let note
   let labels
   let formatTime
+  let services
   @State var showContent = false
 
   func isRenote() {
@@ -86,6 +88,9 @@ export struct Note: View {
                       }
                     }
                   }
+                }
+                if (appear().poll != null) {
+                  Poll(noteId: appear().id, multiple: appear().poll.multiple, expiresAt: appear().poll.expiresAt, choices: appear().poll.choices, readOnly: false, services: services, labels: labels)
                 }
                 if (appear().renote != null) {
                   Element("div", { className: "note-quote" }) { NoteSimple(note: appear().renote, labels: labels, formatTime: formatTime) }

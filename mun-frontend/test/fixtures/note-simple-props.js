@@ -13,3 +13,11 @@ export const labels = {
 export const formatTime = () => '1m ago';
 labels.error = 'Error'; labels.retry = 'Retry'; labels.noNotes = 'No notes'; labels.more = 'Load more';
 export const api = createMisskeyApi({ apiUrl: '/api', getAccount: () => null });
+export const services = {
+  now: () => Date.parse('2026-01-01T00:00:00Z'),
+  login: async () => true,
+  confirmVote: async () => true,
+  api,
+};
+labels.pollTexts = { votesCount: p => `${p.n} votes`, totalVotes: p => `${p.n} total`, remainingMinutes: p => `${p.m}m left`, remainingSeconds: p => `${p.s}s left`, remainingHours: p => `${p.h}h left`, remainingDays: p => `${p.d}d left` };
+labels.pollVote = 'Vote'; labels.pollShowResult = 'Show result'; labels.pollVoted = 'Voted'; labels.pollClosed = 'Closed';

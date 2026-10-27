@@ -71,3 +71,12 @@ test('content warning hides text, media and reactions-free until toggled', async
     await expect(page.locator('.note-media-item')).toHaveCount(1);
   } finally { await browser.close(); }
 });
+
+test('a poll inside a note renders its choices and total votes', async () => {
+  const { browser, page, errors } = await render({ ...base_, id: '6', user: alice, text: 'vote!', poll: { multiple: false, expiresAt: null, choices: [{ text: 'Yes', votes: 2, isVoted: false }, { text: 'No', votes: 1, isVoted: false }] } });
+  try {
+    await expect(page.locator('.poll-choice')).toHaveCount(2);
+    await expect(page.locator('.poll-info')).toContainText('3 total');
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
