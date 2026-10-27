@@ -13,10 +13,10 @@ function events() {
 function fixture(options = {}) {
   const document = events(), scrollContainer = events(), counts = [], channels = [];
   let items = [{id:'02'}], top = true, onNote, disposed = 0, callback, interval, cleared = 0;
-  const stream = { useChannel(name, params) { channels.push([name,params]); return { on(event, fn) { assert.equal(event,'note'); onNote = fn; }, dispose() { disposed++; } }; } };
+  let connected; const stream = { on(event,fn) { assert.equal(event,'_connected_'); connected=fn; }, off(event,fn) { assert.equal(fn,connected); connected=undefined; }, useChannel(name, params) { channels.push([name,params]); return { on(event, fn) { assert.equal(event,'note'); onNote = fn; }, dispose() { disposed++; } }; } };
   const controller = createTimelineLive({ api:options.api, stream, params:{withRenotes:true,withReplies:false}, realtime:options.realtime ?? true, pollingInterval:options.pollingInterval, initialLoading:options.initialLoading, getItems:()=>items, setItems:next=>{items=next;}, setQueuedCount:n=>counts.push(n), isTop:()=>top, document, scrollContainer, setTimer:(fn,ms)=>{callback=fn;interval=ms;return 1;}, clearTimer:()=>{cleared++;} });
   controller.start();
-  return { controller, document, scrollContainer, channels, counts, note:n=>onNote(n), items:()=>items, replace:v=>{items=v;}, top:v=>{top=v;}, tick:()=>callback(), interval:()=>interval, disposed:()=>disposed, cleared:()=>cleared };
+  return { controller, document, scrollContainer, channels, counts, note:n=>onNote(n), items:()=>items, replace:v=>{items=v;}, top:v=>{top=v;}, tick:()=>callback(), interval:()=>interval, disposed:()=>disposed, cleared:()=>cleared, connect:()=>connected?.() };
 }
 
 test('live local notes queue while away and release without duplicates', () => {
@@ -66,4 +66,25 @@ test('initial notes stay queued while hidden and polling waits for initializatio
   const polling=fixture({initialLoading:true,realtime:false,api:{post:async()=>{calls++;return [];}}});
   await polling.tick(); assert.equal(calls,0);
   polling.controller.finishInitial(); await polling.tick(); assert.equal(calls,1); polling.controller.dispose();
+});
+
+
+test('catches up after connection or reconnection without racing initial loading', async () => {
+  const requests=[];
+  const f=fixture({initialLoading:true,api:{post:async(endpoint,data)=>{requests.push(data);return [{id:'03'}];}}});
+  f.connect(); await Promise.resolve(); assert.equal(requests.length,0);
+  f.replace([{id:'02'}]); f.controller.finishInitial();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests[0].sinceId,'02'); assert.deepEqual(f.items().map(x=>x.id),['03','02']);
+  f.connect(); await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests[1].sinceId,'03'); assert.equal(f.items().length,2);
+  f.controller.dispose();
+});
+
+
+test('catch-up does not reorder a newer streaming note received while fetching', async () => {
+  let resolve; const f=fixture({api:{post:()=>new Promise(r=>{resolve=r;})}});
+  f.connect(); await Promise.resolve(); f.note({id:'05'});
+  resolve([{id:'03'},{id:'04'}]); await new Promise(done=>setImmediate(done));
+  assert.deepEqual(f.items().map(x=>x.id),['05','04','03','02']); f.controller.dispose();
 });
