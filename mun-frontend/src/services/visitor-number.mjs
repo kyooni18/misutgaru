@@ -10,19 +10,3 @@ export function formatVisitorNumber(value, getStorage = () => globalThis.localSt
   catch { return new Intl.NumberFormat('en-US').format(value); }
 }
 
-// MkNumber animates from zero over 500ms when each stats card is mounted.
-export function animateVisitorCounts(users, notes, signal, update) {
-  let frame;
-  let start;
-  const stop = () => cancelAnimationFrame(frame);
-  const step = timestamp => {
-    if (signal.aborted) return;
-    if (start === undefined) start = timestamp;
-    const progress = Math.min((timestamp - start) / 500, 1);
-    update(formatVisitorNumber(Math.floor(users * progress)), formatVisitorNumber(Math.floor(notes * progress)));
-    if (progress < 1) frame = requestAnimationFrame(step);
-    else signal.removeEventListener('abort', stop);
-  };
-  signal.addEventListener('abort', stop, { once: true });
-  frame = requestAnimationFrame(step);
-}

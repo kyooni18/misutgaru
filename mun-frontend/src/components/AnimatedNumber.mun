@@ -1,0 +1,24 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { createNumberAnimator } from "../services/animated-number.mjs"
+import { formatVisitorNumber } from "../services/visitor-number.mjs"
+
+// Native equivalent of MkNumber. Each value change starts at the previous
+// input value, just as the Vue watcher does.
+export struct AnimatedNumber: View {
+  let value
+  @State var current = 0
+  @State var animator = null
+  var body: some View {
+    Element("span", {}) { Text(formatVisitorNumber(Math.floor(current))) }
+    .onAppear {
+      animator = createNumberAnimator(next => { current = next })
+      animator.start(0, value)
+    }
+    .onChange(of: value) { previous, next in animator?.start(previous, next) }
+    .onDisappear { animator?.dispose() }
+  }
+}

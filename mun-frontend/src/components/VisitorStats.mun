@@ -1,22 +1,21 @@
 import { Element } from "@mun/core"
 import { api } from "../services/api.mjs"
 import { loadI18n } from "../services/locale.mjs"
-import { animateVisitorCounts } from "../services/visitor-number.mjs"
+import { AnimatedNumber } from "./AnimatedNumber.mun"
 
 struct VisitorStats: View {
   @State var visible = false
-  @State var users = ""
-  @State var notes = ""
+  @State var users = 0
+  @State var notes = 0
   @State var usersLabel = "Users"
   @State var notesLabel = "Notes"
   func loadStats(signal) async {
     try {
       let stats = await api.post("stats", {}, undefined, signal)
       if (signal.aborted) { return }
-      users = "0"
-      notes = "0"
+      users = stats.originalUsersCount
+      notes = stats.originalNotesCount
       visible = true
-      animateVisitorCounts(stats.originalUsersCount, stats.originalNotesCount, signal, (userCount, noteCount) => { users = userCount; notes = noteCount })
     } catch (error) { }
   }
   func loadLabels(signal) async {
@@ -33,11 +32,11 @@ struct VisitorStats: View {
         Element("div", { class: "visitor-stats" }) {
           Element("div", { class: "panel visitor-stats-item" }) {
             Element("div", { class: "visitor-stats-label" }) { Text(usersLabel) }
-            Element("div", { class: "visitor-stats-count" }) { Text(users) }
+            Element("div", { class: "visitor-stats-count" }) { AnimatedNumber(value: users) }
           }
           Element("div", { class: "panel visitor-stats-item" }) {
             Element("div", { class: "visitor-stats-label" }) { Text(notesLabel) }
-            Element("div", { class: "visitor-stats-count" }) { Text(notes) }
+            Element("div", { class: "visitor-stats-count" }) { AnimatedNumber(value: notes) }
           }
         }
       }
