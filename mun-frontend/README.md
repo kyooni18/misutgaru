@@ -8,6 +8,11 @@ visual/behavioral parity are not yet implemented. The visitor dashboard now
 includes localized, animated users/notes statistics when activities are enabled. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. A confirmation dialog supports the follow flow’s warning and question variants; it currently renders plain text and does not implement MFM or progressive backdrop blur. Metadata requests use the shared native API transport in
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
 
+The follow flow also has a read-only local preference adapter for confirmation,
+reply inclusion, and animation. It applies Vue's scope selection and defaults;
+it does not yet synchronize cloud preferences or respond to changes in other tabs.
+The future profile integration must supply it to the follow and dialog services.
+
 ## Local build
 
 The `@mun/*` 0.1.20 packages were not available from the public npm registry
