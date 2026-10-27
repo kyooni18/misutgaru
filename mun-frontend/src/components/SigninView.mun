@@ -1,0 +1,28 @@
+/*
+ * SPDX-FileCopyrightText: Misutgaru contributors
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { SigninInput } from "./SigninInput.mun"
+import { SigninPassword } from "./SigninPassword.mun"
+import { SigninTotp } from "./SigninTotp.mun"
+import { SigninPasskey } from "./SigninPasskey.mun"
+import "./signin-view.css"
+
+export struct SigninView: View {
+  let services
+  @State var state = null
+  var body: some View {
+    Element("div", { class: "signin-view" }) {
+      Element("div", { inert: state && state.waiting }) {
+        if (!state || state.page === "input") { SigninInput(services: services.input) }
+        if (state && state.page === "password" && state.user) { SigninPassword(user: state.user, needCaptcha: state.needCaptcha, services: services.password) }
+        if (state && state.page === "totp") { SigninTotp(services: services.totp) }
+        if (state && state.page === "passkey") { SigninPasskey(credentialRequest: state.credentialRequest, passwordless: state.passwordless, services: services.passkey) }
+      }
+      if (state && state.waiting) { Element("div", { class: "signin-view-waiting", role: "status", "aria-label": services.input.labels.loading }) { Element("span", { class: "signin-view-spinner" }) {} } }
+    }
+    .onAppear { services.attach(value => { state = value }) }
+    .onDisappear { services.dispose(); state = null }
+  }
+}
