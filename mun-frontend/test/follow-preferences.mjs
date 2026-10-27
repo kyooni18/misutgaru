@@ -13,7 +13,7 @@ test('local follow preferences select the same records as Vue', async () => {
     vue: 'export const ref = value => ({value}); export const customRef = () => {}; export const watch = () => {}; export const onScopeDispose = () => {};',
     eventemitter3: 'export class EventEmitter {}',
     '@@/js/config.js': 'export const host="example.test", version="test"',
-    './def.js': 'export const PREF_DEF={alwaysConfirmFollow:{default:true},defaultFollowWithReplies:{default:false},animation:{default:true}}',
+    './def.js': 'export const PREF_DEF={alwaysConfirmFollow:{default:true},defaultFollowWithReplies:{default:false},animation:{default:true},"experimental.enableHapticFeedback":{default:false}}',
     '@/utility/id.js': 'export const genId=()=>"id"',
     '@/utility/copy-to-clipboard.js': 'export const copyToClipboard=()=>{}',
     '@/i18n.js': 'export const i18n={}',
@@ -30,6 +30,7 @@ test('local follow preferences select the same records as Vue', async () => {
       alwaysConfirmFollow: [[{}, true, {}], [{ server: 'example.test' }, false, {}], [{ server: 'example.test', account: 'a' }, true, {}]],
       defaultFollowWithReplies: [[{ device: 'other' }, true, {}], [{ server: 'example.test', account: 'a' }, false, {}]],
       animation: [],
+      'experimental.enableHapticFeedback': [[{}, false, {}], [{ server: 'example.test' }, true, {}], [{ server: 'example.test', account: 'a' }, false, {}]],
     } };
     for (const account of [null, { id: 'a' }, { id: 'b' }]) {
       const reference = new PreferencesManager({ load: () => structuredClone(profile), save() {}, cloudGetBulk: async () => ({}) }, account);
@@ -39,9 +40,9 @@ test('local follow preferences select the same records as Vue', async () => {
     }
     let saved = '{bad';
     const native = createFollowPreferences({ host: 'example.test', account: null, prefersReducedMotion: true, getStorage: () => ({ getItem: () => saved }) });
-    assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: false, animation: false });
+    assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: false, animation: false, 'experimental.enableHapticFeedback': false });
     saved = JSON.stringify(profile);
     native.reload();
-    assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: true, animation: false });
+    assert.deepEqual(native.read(), { alwaysConfirmFollow: true, defaultFollowWithReplies: true, animation: false, 'experimental.enableHapticFeedback': false });
   } finally { await server.close(); }
 });

@@ -10,11 +10,11 @@ and classic/simple entrance background decoration and responsive placement. A na
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
 
 The follow flow also has a read-only local preference adapter for confirmation,
-reply inclusion, and animation. It applies Vue's scope selection and defaults;
+reply inclusion, animation, and haptics. It applies Vue's scope selection and defaults;
 it does not yet synchronize cloud preferences or respond to changes in other tabs.
 The session follow adapter connects these preferences to the native confirmation,
-API transport, shared stream and achievement service. The profile host must
-still supply login, haptics and user-store updates. Achievement claims use the
+API transport, shared stream, haptics and achievement service. The profile host must
+still supply login and user-store updates. Achievement claims use the
 same immediate deduplication and 500 ms pacing as Vue.
 
 ## Local build

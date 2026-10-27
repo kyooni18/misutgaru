@@ -6,7 +6,7 @@
 // Read only the preferences used by the follow flow. Cloud synchronization and
 // preference editing belong to the eventual native preferences manager.
 export function createFollowPreferences({ host, account, prefersReducedMotion = false, getStorage = () => globalThis.localStorage }) {
-  const defaults = { alwaysConfirmFollow: true, defaultFollowWithReplies: false, animation: !prefersReducedMotion };
+  const defaults = { alwaysConfirmFollow: true, defaultFollowWithReplies: false, animation: !prefersReducedMotion, 'experimental.enableHapticFeedback': false };
   let preferences = {};
   function reload() {
     try {

@@ -8,15 +8,17 @@ import { claimAchievement } from './achievement-session.mjs';
 import { createConfirm } from './confirm.mjs';
 import { createFollowPreferences } from './follow-preferences.mjs';
 import { useStream } from './stream.mjs';
+import { haptic as performHaptic } from 'ios-haptics';
 
-// The profile host supplies its login UI, haptics, and user-store update.
+// The profile host supplies its login UI and user-store update.
 // Transport, confirmation, local preferences, achievements and streaming are
 // shared with the native session; the stream is opened only on subscription.
-export function createSessionFollowServices({ i18n, pleaseLogin, haptic, updateUser, reportError = console.error }) {
+export function createSessionFollowServices({ i18n, pleaseLogin, updateUser, reportError = console.error }) {
   const host = window.location.host;
   const preferences = createFollowPreferences({ host, account, prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
   return createFollowButtonServices({
-    host, i18n, pleaseLogin, haptic, updateUser, reportError,
+    host, i18n, pleaseLogin, updateUser, reportError,
+    haptic: () => { if (preferences.read()['experimental.enableHapticFeedback']) performHaptic(); },
     api: (endpoint, data) => api.post(endpoint, data),
     stream: { useChannel: channel => useStream().useChannel(channel) },
     getAccount: () => account,
