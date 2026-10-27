@@ -490,3 +490,12 @@ proxyBypassHosts:
 #     # Disable query truncation. If set to true, the full text of the query will be output to the log.
 #     # default: false
 #     disableQueryTruncation: false
+
+# Experimental timeline recommendations (disabled by default).
+# A URL alone does not enable this feature. Opt-in affects Home/Hybrid/Local/Global
+# timelines server-wide; this is not a per-user preference.
+# recommendation:
+#   enabled: false
+#   url: http://recommendation:3080
+#   timeoutMs: 250
+#   preservePageBoundaries: true

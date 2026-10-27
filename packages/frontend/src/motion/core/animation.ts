@@ -222,6 +222,11 @@ class MotionAnimationHandle implements MotionHandle, MotionPropertyOwner {
 			// A replacement, retarget, or explicit cancellation advances generation
 			// before cancelling the native animation, so its rejected `finished`
 			// promise must not change the new owner's lifecycle.
+			if (generation !== this.generation || this.isTerminal()) return;
+			// Native cancellation (for example via getAnimations()) must also
+			// settle our handle, releasing ownership and transition callbacks.
+			this.nativeAnimation = null;
+			this.finalize('cancelled');
 		});
 	}
 

@@ -249,17 +249,24 @@ defineExpose({
 <style lang="scss" module>
 .transition_root_enterActive,
 .transition_root_leaveActive {
-	> .bg,
-	> .backdropBlur > * {
-		transition: opacity v-bind("closeAnimDuration + 'ms'"); // 子Itemコンポーネントがフェードイン/アウトするdurationと合わせる
+	> .bg {
+		transition: opacity v-bind("closeAnimDuration + 'ms'");
+	}
+
+	> .backdropBlur {
+		// Match modal blur fades without making a band a backdrop root.
+		transition: --MI-fade v-bind("closeAnimDuration + 'ms'");
 	}
 }
 .transition_root_enterFrom,
 .transition_root_leaveTo {
 	pointer-events: none;
-	> .bg,
-	> .backdropBlur > * {
+	> .bg {
 		opacity: 0;
+	}
+
+	> .backdropBlur {
+		--MI-fade: 0;
 	}
 }
 

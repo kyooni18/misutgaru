@@ -491,25 +491,31 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 }
 
 .transition_modal_enterActive {
-	@include fading(220ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 220ms var(--MI-easeOut));
+	@include fading(220ms var(--MI-easeOut), 100ms var(--MI-easeOut), transform 220ms var(--MI-easeOut));
 }
 .transition_modal_leaveActive {
-	@include fading(160ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
+	@include fading(160ms var(--MI-easeOut), 80ms var(--MI-easeOut), transform 160ms var(--MI-motion-ease-exit));
 }
-.transition_modal_enterFrom,
+// Enter establishes depth; exit only withdraws slightly, without replaying
+// the entrance backwards. Opacity is a short supporting cue.
+.transition_modal_enterFrom {
+	@include faded(translateY(10px) scale(0.90));
+}
 .transition_modal_leaveTo {
-	@include faded(scale(0.98) translateY(4px));
+	@include faded(translateY(4px) scale(0.96));
 }
 
 .transition_modalPopup_enterActive {
-	@include fading(160ms var(--MI-easeOut), 120ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
+	@include fading(160ms var(--MI-easeOut), 80ms var(--MI-easeOut), transform 160ms var(--MI-easeOut));
 }
 .transition_modalPopup_leaveActive {
-	@include fading(120ms var(--MI-easeOut), 120ms var(--MI-easeOut), transform 120ms var(--MI-easeOut));
+	@include fading(120ms var(--MI-easeOut), 80ms var(--MI-easeOut), transform 120ms var(--MI-motion-ease-exit));
 }
-.transition_modalPopup_enterFrom,
+.transition_modalPopup_enterFrom {
+	@include faded(scale(0.88));
+}
 .transition_modalPopup_leaveTo {
-	@include faded(scale(0.98));
+	@include faded(scale(0.96));
 }
 
 // Grows out of the pressed element on a slightly underdamped spring
@@ -521,10 +527,10 @@ $blurHost: ':has(> * > [data-progressive-blur])';
 	@include fading(200ms var(--MI-easeOut), 160ms var(--MI-easeOut), transform 200ms var(--MI-motion-ease-exit, cubic-bezier(.4,0,1,1)));
 }
 .transition_modalFloating_enterFrom {
-	@include faded(scale(0.6));
+	@include faded(scale(0.86));
 }
 .transition_modalFloating_leaveTo {
-	@include faded(scale(0.9));
+	@include faded(scale(0.96));
 }
 
 .transition_modalDrawer_enterActive {

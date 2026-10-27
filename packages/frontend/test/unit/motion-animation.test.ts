@@ -104,3 +104,31 @@ describe('animateMotion', () => {
 		expect(native.animation.cancel).toHaveBeenCalledOnce();
 	});
 });
+
+// Repeated popup reversals must keep property ownership discoverable.
+describe('animation replacement lifecycle', () => {
+	test('cancels every previous owner across repeated replacements', async () => {
+		const element = document.createElement('div');
+		const natives = Array.from({ length: 4 }, () => fakeNativeAnimation());
+		const animate = vi.fn();
+		for (const native of natives) animate.mockReturnValueOnce(native.animation);
+		Object.defineProperty(element, 'animate', { configurable: true, value: animate });
+		const handles = natives.map((_, index) => animateMotion(element, [{ opacity: index % 2 }, { opacity: (index + 1) % 2 }]));
+		for (let index = 0; index < 3; index++) {
+			expect(await handles[index].finished).toBe('cancelled');
+			expect(natives[index].animation.cancel).toHaveBeenCalledOnce();
+		}
+		expect(handles[3].status).toBe('running');
+		handles[3].cancel();
+	});
+
+	test('settles the handle after external native cancellation', async () => {
+		const element = document.createElement('div');
+		const native = fakeNativeAnimation();
+		Object.defineProperty(element, 'animate', { configurable: true, value: vi.fn(() => native.animation) });
+		const handle = animateMotion(element, [{ opacity: 0 }, { opacity: 1 }]);
+		native.animation.cancel();
+		expect(await handle.finished).toBe('cancelled');
+		expect(handle.status).toBe('cancelled');
+	});
+});

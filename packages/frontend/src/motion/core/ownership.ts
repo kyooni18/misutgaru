@@ -21,6 +21,10 @@ export function claimMotionProperties(element: Element, properties: readonly str
 		if (current != null && current !== owner) replaced.add(current);
 	}
 	for (const current of replaced) current.replaceByNewOwner();
+	// Releasing the previous owner's last property may remove the map from
+	// the WeakMap. Reattach it before registering the replacement, otherwise
+	// a third animation cannot discover (and cancel) the second owner.
+	ownership.set(element, elementOwners);
 	for (const property of properties) elementOwners.set(property, owner);
 }
 

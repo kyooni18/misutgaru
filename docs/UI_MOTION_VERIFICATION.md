@@ -72,3 +72,47 @@ Standalone Chromium with real advancing animation clocks; no animation finishing
 ### Boundary
 
 This is a cross-cutting UI-motion pass, not a claim that every animation in the product was visually tested. Game motion, authored MFM effects, chart/data animations, loading indicators, media gestures and decorative widget timelines were inventoried but not indiscriminately retimed: they have different semantic or functional timing. They receive the shared reduced-motion CSS protection where applicable. JS-driven game/chart/media behavior and subjective physical-device feel still require dedicated evaluation. Earlier drawer/FAB timing measurements do not describe this pass's changed timings.
+
+## Follow-up animation assessment
+
+Reviewed the shared WAAPI lifecycle and popup/blur paths (modal, user popup,
+menu, toast, floating backdrop and lightbox). Fixed three concrete defects:
+
+- Replacing the last property owner removed its WeakMap entry; registering the
+  replacement into the detached map left subsequent replacements undiscoverable.
+  Reattach the map so repeated reversals cancel all previous owners.
+- External native animation cancellation never settled the shared handle. It now
+  releases ownership and resolves as cancelled, without affecting newer generations.
+- Lightbox bands faded with opacity instead of the shared blur-strength property.
+  They now use `--MI-fade`, consistent with modal backdrops.
+
+Added regression tests for repeated ownership replacement and native cancellation.
+Repaired the progressive-blur browser fixture's stale user-helper import stub.
+
+Validation: frontend unit suite passed (39 files, 240 tests), frontend typecheck
+and production build passed, SPDX and whitespace checks passed. The actual
+user-popup fixture passed in Chromium and WebKit: initial entry, exit, reopening,
+rapid reversals, reduced motion and disabled-animation preference. These checks
+exercise naturally advancing animation clocks, not forced completion.
+
+Boundary: this is not a claim that every animation on every authenticated page or
+physical device is flawless. The lightbox change was build/type checked, not
+visually exercised in an authenticated gallery. Linting the unit test directly is
+blocked by the existing typed-ESLint configuration for test files.
+
+### Transform-led popup refinement
+
+Popup motion now emphasizes visible scale and directional travel rather than
+extending opacity fades. User cards enter from 88% scale with 6px of lift over
+280ms, and withdraw to 96% with only 2px of travel over 120ms. Toasts use the
+same scale hierarchy, arriving from above their top-edge origin. Dialogs enter
+from 90% with 10px of lift; anchored menus grow from 88% at the existing anchor
+origin. Their content fades finish in 80–100ms, before the transform settles.
+Floating menus retain their existing sampled spring but start at 86% rather than
+60%, avoiding exaggerated zoom and text distortion. Exits are smaller and faster
+than entrances; drawers keep their purposeful edge translation.
+
+Blur remains independent from content opacity, and the shared duration tokens
+continue to suppress user-card/toast motion for reduced motion. The browser
+fixture now additionally checks an actual intermediate scale and exact native
+size at rest in Chromium and WebKit.

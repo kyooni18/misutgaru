@@ -73,6 +73,7 @@ type Source = {
 		baseUrl?: string;
 		model?: string;
 	};
+	/** Experimental timeline discovery/reranking. Requires explicit opt-in. */
 	recommendation?: {
 		enabled?: boolean;
 		url?: string;
@@ -338,7 +339,7 @@ export function loadConfig(): Config {
 	const openaiTranslationApiKey = config.openaiTranslation?.apiKey ?? process.env.OPENAI_API_KEY ?? '';
 	const openaiTranslationEnabled = config.openaiTranslation?.enabled ?? (process.env.OPENAI_TRANSLATION_ENABLED == null ? openaiTranslationApiKey.trim() !== '' : process.env.OPENAI_TRANSLATION_ENABLED === 'true');
 	const recommendationUrl = (config.recommendation?.url ?? process.env.MISUTGARU_RECOMMENDATION_URL ?? '').replace(/\/+$/, '');
-	const recommendationEnabled = config.recommendation?.enabled ?? (process.env.MISUTGARU_RECOMMENDATION_ENABLED == null ? recommendationUrl !== '' : process.env.MISUTGARU_RECOMMENDATION_ENABLED === 'true');
+	const recommendationEnabled = (config.recommendation?.enabled ?? (process.env.MISUTGARU_RECOMMENDATION_ENABLED === 'true')) === true;
 	const recommendationTimeoutMs = config.recommendation?.timeoutMs ?? (parseInt(process.env.MISUTGARU_RECOMMENDATION_TIMEOUT_MS ?? '', 10) || 250);
 	const recommendationPreservePageBoundaries = config.recommendation?.preservePageBoundaries ?? (process.env.MISUTGARU_RECOMMENDATION_PRESERVE_PAGE_BOUNDARIES == null ? true : process.env.MISUTGARU_RECOMMENDATION_PRESERVE_PAGE_BOUNDARIES !== 'false');
 

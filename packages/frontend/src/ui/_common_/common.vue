@@ -4,6 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
+<!-- Drawers own an edge ProgressiveBlur; their click-away backdrops must not blur the whole page again. -->
 <Transition
 	:enterActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_enterActive : ''"
 	:leaveActiveClass="prefer.s.animation ? $style.transition_menuDrawerBg_leaveActive : ''"
@@ -17,7 +18,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		@click="drawerMenuShowing = false"
 		@touchstart.passive="drawerMenuShowing = false"
 	>
-		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" variant="viewport" origin="0% 50%"/>
 	</div>
 </Transition>
 
@@ -45,7 +45,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		@click="widgetsShowing = false"
 		@touchstart.passive="widgetsShowing = false"
 	>
-		<MkProgressiveBlur v-if="prefer.s.useProgressiveBlurForModal" variant="viewport" origin="0% 50%"/>
 	</div>
 </Transition>
 

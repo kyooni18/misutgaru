@@ -28,7 +28,7 @@ const stubs = {
 	'@/utility/misskey-api.js': 'export const misskeyApi=()=>Promise.resolve({});',
 	'@/utility/get-user-menu.js': 'export const getUserMenu=()=>({menu:[],cleanup(){}});',
 	'@/filters/number.js': 'export default value=>value;',
-	'@/filters/user.js': 'export const userPage=()=>"/user";',
+	'@@/js/user.js': 'export const userPage=()=>"/user";',
 	'@/i18n.js': 'export const i18n={ts:{}};',
 	'@/i.js': 'export const $i=null;',
 	'@/utility/isFfVisibleForMe.js': 'export const isFollowingVisibleForMe=()=>true; export const isFollowersVisibleForMe=()=>true;',
@@ -55,6 +55,7 @@ window.blurTest={
 			blur:parseFloat(style.backdropFilter.match(/[\\d.]+/)?.[0]??'0'),
 			duration:parseFloat(style.transitionDuration),
 			opacity:getComputedStyle(shell).opacity,
+			scale:new DOMMatrixReadOnly(getComputedStyle(shell).transform).a,
 			contentOpacity:getComputedStyle(pbe.querySelector('.pbe-content')).opacity,
 			display:getComputedStyle(shell).display,
 			animations:document.getAnimations().length,
@@ -173,6 +174,9 @@ try {
 			const target = initial.at(-1).blur;
 			assert(target > 0, 'Final blur must be nonzero');
 			console.log(name, 'enter', verifyTrajectory(initial, target, 'enter'));
+			assert(Math.abs(initial[0].scale - 0.88) < 0.001, 'Popup starts at a clearly visible 88% scale');
+			assert(initial.some(sample => sample.scale > 0.881 && sample.scale < 0.999), 'Popup must interpolate scale, not only fade');
+			assert.equal(initial.at(-1).scale, 1, 'Popup settles at native size');
 			if (name === 'chromium') {
 				const blurred = await edgeContrast(page);
 				await page.locator('.pbe').evaluate(pbe => { pbe.parentElement.style.opacity = '0.999'; });

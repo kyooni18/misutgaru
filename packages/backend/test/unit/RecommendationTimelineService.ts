@@ -87,6 +87,20 @@ describe('RecommendationTimelineService', () => {
 		expect(sendMock).not.toHaveBeenCalled();
 	});
 
+	test('does not discover, hydrate, or rerank when disabled', async () => {
+		const service = makeService({ enabled: false });
+		const notes = [note('a', 'u1'), note('b', 'u2'), note('c', 'u3')];
+		const loadCandidates = vi.fn();
+
+		await expect(service.mix(notes, 'viewer', {
+			limit: 3,
+			enableDiscovery: true,
+			loadCandidates,
+		})).resolves.toEqual(notes);
+		expect(loadCandidates).not.toHaveBeenCalled();
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
 	test('uses the internal-address HTTP path with a tight timeout', async () => {
 		const service = makeService({ preservePageBoundaries: false, timeoutMs: 123 });
 		const notes = [note('a', 'u1'), note('b', 'u2')];

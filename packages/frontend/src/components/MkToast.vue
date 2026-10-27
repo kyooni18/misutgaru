@@ -49,14 +49,19 @@ onMounted(() => {
 <style lang="scss" module>
 // Fade through --MI-fade rather than opacity, which would cut the edge blur off
 // from the page behind the toast while it animates.
-.transition_toast_enterActive,
-.transition_toast_leaveActive {
-	transition: --MI-fade var(--MI-dur) var(--MI-easeOut), transform var(--MI-dur) var(--MI-easeOut) !important;
+.transition_toast_enterActive {
+	transition: --MI-fade var(--MI-durFast) var(--MI-easeOut), transform var(--MI-motion-duration-surface-enter) var(--MI-motion-ease-emphasized) !important;
 }
-.transition_toast_enterFrom,
+.transition_toast_leaveActive {
+	transition: --MI-fade var(--MI-durFast) var(--MI-easeOut), transform var(--MI-durFast) var(--MI-motion-ease-exit) !important;
+}
+.transition_toast_enterFrom {
+	--MI-fade: 0;
+	transform: translateY(-12px) scale(0.88);
+}
 .transition_toast_leaveTo {
 	--MI-fade: 0;
-	transform: translateY(-8px);
+	transform: translateY(-4px) scale(0.96);
 }
 
 .root {
@@ -73,6 +78,7 @@ onMounted(() => {
 	box-shadow: 0 4px 16px rgb(0 0 0 / calc(0.3 * var(--MI-fade)));
 	border-radius: 8px;
 	isolation: isolate;
+	transform-origin: center top;
 	text-align: center;
 	pointer-events: none;
 

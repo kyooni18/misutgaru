@@ -460,15 +460,14 @@ function renderNavbar() {
 		width: var(--top-height);
 	}
 
-	.realtimeMode {
-		display: inline-block;
-		width: var(--top-height);
-		margin-left: auto;
-	}
-
+	.realtimeMode,
 	.widget {
 		display: inline-block;
-		width: var(--top-height);
+		width: calc(var(--top-height) / 2);
+		flex-shrink: 0;
+	}
+
+	.realtimeMode {
 		margin-left: auto;
 	}
 

@@ -23,10 +23,13 @@ services:
       - ./files:/misskey/files
       - ./.config:/misskey/.config:ro
     environment:
-      MISUTGARU_RECOMMENDATION_ENABLED: "true"
+      # Experimental: opt in separately from starting the recommendation profile.
+      MISUTGARU_RECOMMENDATION_ENABLED: "${MISUTGARU_RECOMMENDATION_ENABLED:-false}"
       MISUTGARU_RECOMMENDATION_URL: "http://recommendation:3080"
 
   recommendation:
+    # Never start the experimental indexer during a normal compose up.
+    profiles: [experimental-recommendation]
     build:
       context: ./packages/recommendation
     restart: always

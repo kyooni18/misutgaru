@@ -155,17 +155,29 @@ onUnmounted(() => cancelAnimationFrame(blurFrame));
 </script>
 
 <style lang="scss" module>
-.transition_popup_enterActive,
-.transition_popup_leaveActive {
-	transition: transform var(--MI-dur) var(--MI-easeOut) !important;
+.transition_popup_enterActive {
+	transition: transform var(--MI-motion-duration-surface-enter) var(--MI-motion-ease-emphasized) !important;
 
 	:global(.pbe-content) {
 		transition: opacity var(--MI-durFast) var(--MI-easeOut);
 	}
 }
-.transition_popup_enterFrom,
+.transition_popup_leaveActive {
+	transition: transform var(--MI-motion-duration-feedback) var(--MI-motion-ease-exit) !important;
+
+	:global(.pbe-content) {
+		transition: opacity var(--MI-durFast) var(--MI-easeOut);
+	}
+}
+.transition_popup_enterFrom {
+	transform: translateY(6px) scale(0.88);
+
+	:global(.pbe-content) {
+		opacity: 0;
+	}
+}
 .transition_popup_leaveTo {
-	transform: translateY(4px);
+	transform: translateY(2px) scale(0.96);
 
 	// Opacity on the ancestor creates a backdrop root: the blur can no longer
 	// sample the page. Fade only the content, which is a sibling of the bands.
