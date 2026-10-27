@@ -59,6 +59,14 @@ you are authorized to query.
 
 ## Inspected boundaries
 
+`src/components/mfm.mjs` is an experimental native view-graph MFM renderer.
+It uses the same `mfm-js` parser as Vue and currently handles basic formatting,
+quotes, code and hashtags only; unsupported constructs are retained as literal
+MFM source. It is not yet wired into notes and does not provide full MFM parity.
+`node --test test/mfm-parity.mjs` compares a structural subset with the real
+shared Vue renderer in Chromium, including an untrusted-text fixture. The test
+requires Vue and Playwright as test-only dependencies.
+
 - Vue's `packages/frontend/src/pages/welcome.vue` calls `fetchInstance(true)`;
   `instance.ts` sends `meta` with `{ detail: true }`, and `misskey-api.ts`
   defines its POST, JSON, omitted credentials, and no-cache wire format.
