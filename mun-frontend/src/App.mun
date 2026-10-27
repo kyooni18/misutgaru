@@ -1,5 +1,6 @@
 import { Element } from "@mun/core"
 import { api } from "./services/api.mjs"
+import { openVisitorSignin, setSigninInstance } from "./services/visitor-signin.mjs"
 import VisitorStats from "./components/VisitorStats.mun"
 import misskeyLogo from "../../packages/frontend/assets/misskey.svg"
 struct App: View {
@@ -17,6 +18,7 @@ struct App: View {
     try {
       let meta = await api.post("meta", { detail: true }, undefined, signal)
       if (signal.aborted || ticket !== request) { return }
+      setSigninInstance(meta)
       name = meta.name || "Misutgaru"
       description = meta.description || ""
       showStats = meta.clientOptions?.showActivitiesForVisitor !== false
@@ -55,6 +57,7 @@ struct App: View {
         Element("p", {}) { Text(description) }
         Element("p", { role: "status", "aria-live": "polite" }) { Text(status) }
         Button("Refresh server information") { request += 1 }
+        if (entranceReady) { Button("Log in") { openVisitorSignin() } }
       }
       if (window.location.pathname === "/" && showStats) { VisitorStats }
     }

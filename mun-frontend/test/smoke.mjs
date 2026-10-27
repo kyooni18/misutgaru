@@ -155,3 +155,28 @@ test('visitor stats honor activity settings and localize API counts', async () =
     assert.equal(statsCalls, 2);
   } finally { await browser.close(); }
 });
+
+test('visitor shell opens sign-in and submits password recovery', async () => {
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const labels = { login: 'Log in', close: 'Close', username: 'Username', password: 'Password', forgotPassword: 'Forgot password', emailAddress: 'Email', send: 'Send', continue: 'Continue', or: 'or', signinWithPasskey: 'Sign in with passkey', loading: 'Loading', welcomeBackWithName: 'Welcome {name}', _forgotPassword: { enterEmail: 'Enter email', ifNoEmail: 'Contact admin', contactAdmin: 'Contact admin' } };
+    await page.route('**/assets/locales/**', route => route.fulfill({ json: labels }));
+    await page.route('**/api/meta', route => route.fulfill({ json: { name: 'Test', enableEmail: true, clientOptions: { showActivitiesForVisitor: false } } }));
+    await page.route('**/api/users/show', route => route.fulfill({ json: { username: 'alice', name: 'Alice' } }));
+    await page.route('**/api/signin-flow', route => route.fulfill({ json: { finished: false, next: 'password' } }));
+    let reset;
+    await page.route('**/api/request-reset-password', route => { reset = route.request().postDataJSON(); return route.fulfill({ status: 204 }); });
+    await page.goto(process.env.FRONTEND_URL || 'http://127.0.0.1:5173/');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await page.locator('input[autocomplete="username webauthn"]').fill('alice');
+    await page.getByTestId('signin-page-input-continue').click();
+    await page.getByRole('button', { name: 'Forgot password' }).click();
+    await page.locator('dialog input[name=username]').fill('alice');
+    await page.locator('dialog input[name=email]').fill('alice@example.com');
+    await page.locator('dialog button[type=submit]').click();
+    await expect(page.locator('dialog')).toHaveCount(0);
+    assert.deepEqual(reset, { username: 'alice', email: 'alice@example.com' });
+    await expect(page.getByRole('dialog', { name: 'Log in' })).toBeVisible();
+  } finally { await browser.close(); }
+});
