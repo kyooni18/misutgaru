@@ -17,6 +17,14 @@ function renderFunction(node, children, advancedMfm, animatedMfm) {
   const useAnim = advancedMfm && animatedMfm;
   const delay = time(args.delay, '0s');
   switch (name) {
+    case 'tada': style = 'font-size: 150%;' + (useAnim ? `animation: global-tada ${time(args.speed, '1s')} linear infinite both; animation-delay: ${delay};` : ''); break;
+    case 'jelly': style = useAnim ? `animation: mfm-rubberBand ${time(args.speed, '1s')} linear infinite both; animation-delay: ${delay};` : ''; break;
+    case 'twitch': case 'shake': style = useAnim ? `animation: mfm-${name} ${time(args.speed, '0.5s')} ease infinite; animation-delay: ${delay};` : ''; break;
+    case 'rainbow': {
+      if (!useAnim) return Element('span', { class: '_mfm_rainbow_fallback_' }, ...children);
+      style = `animation: mfm-rainbow ${time(args.speed, '1s')} linear infinite; animation-delay: ${delay};`;
+      break;
+    }
     case 'font': {
       const family = ['serif', 'monospace', 'cursive', 'fantasy', 'emoji', 'math'].find(key => args[key]);
       if (family) style = `font-family: ${family};`;
