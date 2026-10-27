@@ -4,12 +4,13 @@
  */
 
 // Local visitor timeline updates. The host owns initial/older loading and DOM;
-// create one controller per mounted timeline after its initial page is ready.
-export function createTimelineLive({ api, stream, params, realtime = true, pollingInterval = 3, getItems, setItems, setQueuedCount = () => {}, onTrim = () => {}, isTop, document, scrollContainer, setTimer = setInterval, clearTimer = clearInterval }) {
-  let active = false, queue = [], connection = null, timer = null, pending = false, generation = 0;
+// start before the initial fetch with initialLoading, then call finishInitial
+// once the page is applied. This prevents stream events from being overwritten.
+export function createTimelineLive({ api, stream, params, realtime = true, pollingInterval = 3, initialLoading = false, getItems, setItems, setQueuedCount = () => {}, onTrim = () => {}, isTop, document, scrollContainer, setTimer = setInterval, clearTimer = clearInterval }) {
+  let active = false, queue = [], initialQueue = false, connection = null, timer = null, pending = false, generation = 0;
   const queued = () => setQueuedCount(queue.length);
   const visibleAtTop = () => document.visibilityState !== 'hidden' && isTop();
-  function merge(notes, trim) {
+  function merge(notes, trim, sort = false) {
     const items = getItems();
     const seen = new Set(items.map(item => item.id));
     const fresh = notes.filter(note => {
@@ -18,23 +19,24 @@ export function createTimelineLive({ api, stream, params, realtime = true, polli
     });
     if (!fresh.length) return;
     const next = fresh.concat(items);
+    if (sort) next.sort((a, b) => a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
     if (trim && next.length > 30) { setItems(next.slice(0, 30)); onTrim(); }
     else setItems(next);
   }
   function releaseQueue() {
     if (!active || !queue.length) return;
-    merge(queue, true); queue = []; queued();
+    merge(queue, true, initialQueue); queue = []; initialQueue = false; queued();
   }
   function accept(notes, trim = true) {
     if (!active || !notes.length) return;
-    if (visibleAtTop()) merge(notes, trim);
-    else { queue = notes.concat(queue).slice(0, 100); queued(); }
+    if (!initialLoading && visibleAtTop()) merge(notes, trim);
+    else { if (initialLoading) initialQueue = true; queue = notes.concat(queue).slice(0, 100); queued(); }
   }
   function onNote(note) { accept([note]); }
-  function onVisibility() { if (visibleAtTop()) releaseQueue(); }
-  function onScroll() { if (isTop()) releaseQueue(); }
+  function onVisibility() { if (!initialLoading && visibleAtTop()) releaseQueue(); }
+  function onScroll() { if (!initialLoading && isTop()) releaseQueue(); }
   async function poll() {
-    if (!active || pending) return;
+    if (!active || pending || initialLoading) return;
     pending = true;
     const ticket = generation;
     const source = queue.length ? queue : getItems();
@@ -59,14 +61,19 @@ export function createTimelineLive({ api, stream, params, realtime = true, polli
         timer = setTimer(poll, interval);
       }
     },
-    releaseQueue,
+    releaseQueue() { if (!initialLoading) releaseQueue(); },
+    finishInitial() {
+      if (!active || !initialLoading) return;
+      initialLoading = false;
+      if (visibleAtTop()) releaseQueue();
+    },
     dispose() {
       if (!active) return;
       active = false; generation++; pending = false;
       document.removeEventListener('visibilitychange', onVisibility);
       scrollContainer?.removeEventListener('scroll', onScroll);
       if (timer != null) clearTimer(timer);
-      timer = null; connection?.dispose(); connection = null; queue = []; queued();
+      timer = null; connection?.dispose(); connection = null; queue = []; initialQueue = false; queued();
     },
   };
 }

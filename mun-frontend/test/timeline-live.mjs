@@ -14,9 +14,9 @@ function fixture(options = {}) {
   const document = events(), scrollContainer = events(), counts = [], channels = [];
   let items = [{id:'02'}], top = true, onNote, disposed = 0, callback, interval, cleared = 0;
   const stream = { useChannel(name, params) { channels.push([name,params]); return { on(event, fn) { assert.equal(event,'note'); onNote = fn; }, dispose() { disposed++; } }; } };
-  const controller = createTimelineLive({ api:options.api, stream, params:{withRenotes:true,withReplies:false}, realtime:options.realtime ?? true, pollingInterval:options.pollingInterval, getItems:()=>items, setItems:next=>{items=next;}, setQueuedCount:n=>counts.push(n), isTop:()=>top, document, scrollContainer, setTimer:(fn,ms)=>{callback=fn;interval=ms;return 1;}, clearTimer:()=>{cleared++;} });
+  const controller = createTimelineLive({ api:options.api, stream, params:{withRenotes:true,withReplies:false}, realtime:options.realtime ?? true, pollingInterval:options.pollingInterval, initialLoading:options.initialLoading, getItems:()=>items, setItems:next=>{items=next;}, setQueuedCount:n=>counts.push(n), isTop:()=>top, document, scrollContainer, setTimer:(fn,ms)=>{callback=fn;interval=ms;return 1;}, clearTimer:()=>{cleared++;} });
   controller.start();
-  return { controller, document, scrollContainer, channels, counts, note:n=>onNote(n), items:()=>items, top:v=>{top=v;}, tick:()=>callback(), interval:()=>interval, disposed:()=>disposed, cleared:()=>cleared };
+  return { controller, document, scrollContainer, channels, counts, note:n=>onNote(n), items:()=>items, replace:v=>{items=v;}, top:v=>{top=v;}, tick:()=>callback(), interval:()=>interval, disposed:()=>disposed, cleared:()=>cleared };
 }
 
 test('live local notes queue while away and release without duplicates', () => {
@@ -41,4 +41,29 @@ test('polling advances from the queue and ignores results after disposal', async
   const second=f.tick(); assert.equal(requests[1][1].sinceId,'04');
   f.controller.dispose(); resolve([{id:'05'}]); await second;
   assert.deepEqual(f.items().map(x=>x.id),['02']); assert.equal(f.cleared(),1); assert.equal(f.counts.at(-1),0);
+});
+
+
+test('initial page cannot overwrite streamed notes received during its fetch', () => {
+  const f=fixture({initialLoading:true});
+  f.note({id:'03'}); f.note({id:'04'});
+  f.scrollContainer.fire('scroll'); assert.equal(f.counts.at(-1),2);
+  f.replace([{id:'05'},{id:'03'},{id:'02'}]);
+  f.controller.finishInitial();
+  assert.deepEqual(f.items().map(x=>x.id),['05','04','03','02']);
+  assert.equal(f.counts.at(-1),0);
+  f.controller.dispose();
+});
+
+test('initial notes stay queued while hidden and polling waits for initialization', async () => {
+  const hidden=fixture({initialLoading:true});
+  hidden.document.visibilityState='hidden'; hidden.note({id:'03'});
+  hidden.replace([{id:'04'},{id:'02'}]); hidden.controller.finishInitial();
+  assert.equal(hidden.counts.at(-1),1);
+  hidden.document.visibilityState='visible'; hidden.document.fire('visibilitychange');
+  assert.deepEqual(hidden.items().map(x=>x.id),['04','03','02']); hidden.controller.dispose();
+  let calls=0;
+  const polling=fixture({initialLoading:true,realtime:false,api:{post:async()=>{calls++;return [];}}});
+  await polling.tick(); assert.equal(calls,0);
+  polling.controller.finishInitial(); await polling.tick(); assert.equal(calls,1); polling.controller.dispose();
 });
