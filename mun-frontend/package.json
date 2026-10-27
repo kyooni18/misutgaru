@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:browser": "node --test test/smoke.mjs",
+    "test:browser": "node --test test/smoke.mjs test/note-simple.mjs",
     "test:unit": "node --test test/cached-account.mjs test/stream-manager.mjs test/locale.mjs"
   },
   "dependencies": {
