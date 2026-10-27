@@ -51,9 +51,11 @@ proxy as above and run:
 FRONTEND_URL=http://127.0.0.1:5173/ node --test test/live-meta.mjs
 ```
 
- This sends only the unauthenticated,
-read-only metadata request and checks that the real response is rendered; it
-uses no mock. Point it only at an instance you are authorized to query.
+This checks the unauthenticated, read-only metadata request without a mock and
+verifies that the real response is rendered. The page may also request read-only
+visitor statistics and locale assets, depending on server configuration. Use a
+fresh browser profile with no cached account, and point it only at an instance
+you are authorized to query.
 
 ## Inspected boundaries
 
