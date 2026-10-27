@@ -3,6 +3,8 @@
 .mfm-x2 { --mfm-zoom-size: 200%; }
 .mfm-x3 { --mfm-zoom-size: 400%; }
 .mfm-x4 { --mfm-zoom-size: 600%; }
+.mfm-link { word-break: break-all; }
+.mfm-link-icon { padding-left: 2px; font-size: .9em; }
 .mfm-x2, .mfm-x3, .mfm-x4 { font-size: var(--mfm-zoom-size); }
 .mfm-x2 :is(.mfm-x2, .mfm-x3, .mfm-x4),
 .mfm-x3 :is(.mfm-x2, .mfm-x3, .mfm-x4),

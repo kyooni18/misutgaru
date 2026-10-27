@@ -64,6 +64,14 @@ test('native MFM structural subset matches Vue and treats text as untrusted', as
     assert.equal(await page.locator('#app b').innerText(), 'bold');
     await page.getByRole('button', { name: 'Update' }).click();
     await page.waitForSelector('#app b:text-is("strong")');
+    const links = new URLSearchParams({ text: `[external](https://example.org/path) [local](${url}/local) [bad](javascript:alert(1)) #tag` });
+    await page.goto(`${url}?${links}`);
+    await page.waitForSelector('#app a');
+    assert.equal(await page.getByRole('link', { name: 'external' }).getAttribute('target'), '_blank');
+    assert.equal(await page.getByRole('link', { name: 'external' }).getAttribute('rel'), 'nofollow noopener');
+    assert.equal(await page.getByRole('link', { name: 'local' }).getAttribute('href'), '/fixture/local');
+    assert.equal(await page.getByRole('link', { name: '#tag' }).getAttribute('href'), '/tags/tag');
+    assert.equal(await page.locator('a[href^="javascript:"]').count(), 0);
     assert.deepEqual(errors, []);
   } finally { await browser.close(); await server.close(); }
 });
