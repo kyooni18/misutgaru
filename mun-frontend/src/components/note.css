@@ -39,3 +39,6 @@
 .note-footer-button { margin: 0; padding: 8px; opacity: 0.7; background: none; border: 0; color: inherit; cursor: pointer; }
 .note-footer-button:disabled { opacity: 0.3; cursor: default; }
 .note-footer-count { display: inline; margin: 0 0 0 8px; opacity: 0.9; }
+.user-timeline-tabs { display: flex; justify-content: center; gap: 4px; padding: 4px 0; }
+.user-timeline-tab { padding: 6px 14px; border: none; border-radius: 99px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.user-timeline-tab.active { background: var(--MI_THEME-accentedBg); color: var(--MI_THEME-accent); }

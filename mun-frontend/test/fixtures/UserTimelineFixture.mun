@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { UserTimeline } from "../../src/components/UserTimeline.mun"
+import { userLabels, formatTime, api, services } from "./user-timeline-props.js"
+export default UserTimeline(userId: "u1", api: api, labels: userLabels, formatTime: formatTime, services: services)

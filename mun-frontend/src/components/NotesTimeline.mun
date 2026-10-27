@@ -16,6 +16,7 @@ export struct NotesTimeline: View {
   let labels
   let formatTime
   let services
+  let firstLimit = 15
   @State var items = []
   @State var loading = true
   @State var failed = false
@@ -28,7 +29,7 @@ export struct NotesTimeline: View {
     failed = false
     items = []
     try {
-      let res = await api.post(endpoint, { ...params, limit: 15, allowPartial: true }, undefined, signal)
+      let res = await api.post(endpoint, { ...params, limit: firstLimit, allowPartial: true }, undefined, signal)
       if (signal.aborted) { return }
       items = res
       canFetchOlder = res.length !== 0
