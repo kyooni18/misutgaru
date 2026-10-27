@@ -1,0 +1,52 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { Element } from "@mun/core"
+import { buttonRipple, newRippleKey } from "../services/button-ripple.mjs"
+import "icons-subsetter/built/tabler-icons-frontend.css"
+import "./signin-passkey.css"
+
+export struct SigninPasskey: View {
+  let credentialRequest
+  let passwordless
+  let services
+  @State var querying = true
+  @State var generation = 0
+  @State var rippleKey = ""
+  func query() async {
+    generation += 1
+    let ticket = generation
+    querying = true
+    try {
+      let credential = await services.authenticate({ optionsJSON: credentialRequest })
+      if (ticket === generation) { services.done(credential) }
+    } catch (error) {
+      // A cancelled browser prompt returns to the retry state in Vue.
+    } finally {
+      if (ticket === generation) { querying = false }
+    }
+  }
+  var body: some View {
+    Element("div", { class: "signin-passkey" }) {
+      Element("div", { class: "signin-passkey-root" }) {
+        Element("div", { class: "signin-passkey-intro" }) {
+          Element("div", { class: "signin-passkey-icon" }) { Element("i", { class: "ti ti-fingerprint" }) {} }
+          Element("div", { class: "signin-passkey-description" }) { Text(services.labels.useSecurityKey) }
+        }
+        Element("button", { type: "button", class: "signin-passkey-button primary", "data-ripple-key": rippleKey + "-retry", disabled: querying, onMouseDown: event => buttonRipple(event), onClick: () => query() }) {
+          Element("div", { class: "signin-passkey-ripples" }) {}
+          Element("span", { class: "signin-passkey-button-content" }) { Text(services.labels.retry) }
+        }
+        if (!passwordless) {
+          Element("button", { type: "button", class: "signin-passkey-button transparent", "data-ripple-key": rippleKey + "-totp", disabled: querying, onMouseDown: event => buttonRipple(event), onClick: () => services.useTotp() }) {
+            Element("div", { class: "signin-passkey-ripples" }) {}
+            Element("span", { class: "signin-passkey-button-content" }) { Text(services.labels.useTotp) }
+          }
+        }
+      }
+    }
+    .onAppear { rippleKey = newRippleKey(); query() }
+    .onDisappear { generation += 1 }
+  }
+}

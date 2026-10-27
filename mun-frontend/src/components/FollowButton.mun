@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 import { Element } from "@mun/core"
+import "icons-subsetter/built/tabler-icons-frontend.css"
 import "./follow-button.css"
 
 export struct FollowButton: View {
