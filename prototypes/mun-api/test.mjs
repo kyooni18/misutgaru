@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { createMisskeyApi } from './misskey-api.mjs';
+import { createMisskeyApi } from '../../mun-frontend/src/services/misskey-api.mjs';
 
 const require = createRequire(new URL('../mun-follow-button/fixture.js', import.meta.url));
 const { createServer } = await import(require.resolve('vite'));

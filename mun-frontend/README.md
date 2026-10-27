@@ -5,7 +5,8 @@ frontend. It fetches the existing `/api/meta` endpoint, renders a server name
 and plain-text description, supports retry, and navigates between `/` and
 `/about` using ordinary browser links. Authentication, the Vue visitor dashboard,
 localization, rich descriptions, and visual/behavioral parity are not yet
-implemented. No backend files or API contracts are changed.
+implemented. Metadata requests use the shared native API transport in
+`src/services/misskey-api.mjs`; the visitor shell supplies no account token. No backend files or API contracts are changed.
 
 ## Local build
 

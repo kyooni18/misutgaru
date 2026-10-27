@@ -1,4 +1,5 @@
 import { Element } from "@mun/core"
+import { api } from "./services/api.mjs"
 struct App: View {
   @State var name = "Misutgaru"
   @State var description = ""
@@ -8,12 +9,7 @@ struct App: View {
     let ticket = request
     status = "Loading server information…"
     try {
-      let response = await fetch("/api/meta", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        credentials: "omit", cache: "no-cache", body: JSON.stringify({ detail: true }), signal
-      })
-      if (!response.ok) { throw new Error("Metadata request failed") }
-      let meta = await response.json()
+      let meta = await api.post("meta", { detail: true }, undefined, signal)
       if (signal.aborted || ticket !== request) { return }
       name = meta.name || "Misutgaru"
       description = meta.description || ""
