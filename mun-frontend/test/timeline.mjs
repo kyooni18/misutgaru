@@ -49,3 +49,15 @@ test('shows the empty state and the error state with retry', async () => {
     await expect(failing.page.locator('.notes-timeline-item')).toHaveCount(1);
   } finally { await failing.browser.close(); }
 });
+
+test('inserts a date separator between notes from different days only', async () => {
+  const at = (id, createdAt) => ({ ...mk(id), createdAt });
+  const { browser, page } = await open(route => route.fulfill({ json: [at('c', '2026-03-05T12:00:00'), at('b', '2026-03-05T08:00:00'), at('a', '2026-03-04T23:00:00')] }));
+  try {
+    await expect(page.locator('.notes-timeline-item')).toHaveCount(3);
+    await expect(page.locator('.notes-timeline-date')).toHaveCount(1);
+    await expect(page.locator('.notes-timeline-date')).toHaveText(/↑ 3\/5\s*3\/4 ↓/);
+    // the separator sits above the first note of the older day
+    await expect(page.locator('.notes-timeline-row').nth(2).locator('.notes-timeline-date')).toHaveCount(1);
+  } finally { await browser.close(); }
+});

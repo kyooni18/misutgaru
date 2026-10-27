@@ -25,3 +25,6 @@
 .notes-timeline-item { background: var(--MI_THEME-panel, #fff); border-radius: var(--MI-radius, 12px); }
 .notes-timeline-empty, .notes-timeline-error { padding: 32px; text-align: center; opacity: .7; }
 .notes-timeline-more { display: block; margin: 16px auto; }
+.notes-timeline-row { display: flex; flex-direction: column; gap: 8px; }
+.notes-timeline-date { display: flex; font-size: 85%; align-items: center; justify-content: center; gap: 1em; opacity: 0.75; padding: 8px; margin: 0 auto; }
+.notes-timeline-date-divider { height: 1em; width: 1px; background: var(--MI_THEME-divider); }
