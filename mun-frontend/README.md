@@ -5,7 +5,8 @@ frontend. It fetches the existing `/api/meta` endpoint, renders a server name
 and plain-text description, supports retry, and navigates between `/` and
 `/about` using ordinary browser links. Authentication, most of the Vue visitor dashboard, rich descriptions, and
 visual/behavioral parity are not yet implemented. The visitor dashboard now
-includes localized, animated users/notes statistics when activities are enabled. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
+includes localized, animated users/notes statistics when activities are enabled,
+and classic/simple entrance background decoration and responsive placement. A native follow component and injectable service adapter are present under `src/components`, but no profile surface uses them yet. Metadata requests use the shared native API transport in
 `src/services/misskey-api.mjs`; at startup the shell reads the same cached account as Vue and supplies its token when present. It refreshes that account through `/api/i` without delaying the initial render. Failed refreshes retain the cached account; invalid-account dialogs, sign-out, and account switching are not yet implemented. No backend files or API contracts are changed.
 
 ## Local build
@@ -73,3 +74,7 @@ counts and card computed styles, not whole-page parity. As with the follow
 prototype comparison, this test additionally requires Vue, `@vitejs/plugin-vue`
 and Sass available in the test environment; these are not production runtime
 dependencies. Set `MUN_ROOT` if the framework checkout is elsewhere.
+
+`node --test test/entrance-parity.mjs` uses the same Vue-only test dependencies
+and compares background, logo, shapes, and content geometry at mobile and
+desktop widths; it does not compare the unfinished dashboard or timeline.
