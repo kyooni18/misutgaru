@@ -1,0 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+import { UserPage } from "../../src/components/UserPage.mun"
+import { pageLabels, formatTime, api, services, followServices, me } from "./user-page-props.js"
+export default UserPage(acct: "alice", api: api, labels: pageLabels, formatTime: formatTime, services: services, followServices: followServices, me: me, localHost: "m.example")
