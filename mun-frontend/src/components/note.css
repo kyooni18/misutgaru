@@ -21,3 +21,7 @@
 .note-reaction.reacted { background: var(--MI_THEME-accentedBg, rgba(134,184,80,.2)); color: var(--MI_THEME-accent, #86b850); }
 .note-reaction img { height: 1.5em; vertical-align: middle; }
 .note-reaction-count { margin-left: 6px; font-size: 0.9em; }
+.notes-timeline-list { display: flex; flex-direction: column; gap: 8px; container-type: inline-size; }
+.notes-timeline-item { background: var(--MI_THEME-panel, #fff); border-radius: var(--MI-radius, 12px); }
+.notes-timeline-empty, .notes-timeline-error { padding: 32px; text-align: center; opacity: .7; }
+.notes-timeline-more { display: block; margin: 16px auto; }
